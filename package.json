@@ -16,6 +16,7 @@
     "pretest": "jest --clearCache && env-cmd -f ./.env.test prisma migrate dev",
     "db:create-migrations": "env-cmd -f .env prisma migrate dev --create-only",
     "db:migrate": "env-cmd -f .env prisma migrate dev",
+    "db:generate": "env-cmd -f .env prisma generate",
     "db:introspect": "env-cmd -f .env prisma db pull",
     "db:format": "env-cmd -f ./.env prisma format",
     "db:reset": "env-cmd -f ./.env prisma migrate reset"

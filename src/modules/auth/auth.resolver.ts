@@ -27,8 +27,8 @@ export class AuthResolver {
   @Query(() => User)
   @UseGuards(GqlAuthGuard)
   async currentUser(@CurrentUser() currentUser: User) {
-    return this.userService.findOneByUsername({
-      username: currentUser.username,
+    return this.userService.findOneByEmail({
+      email: currentUser.email,
     });
   }
 
@@ -39,9 +39,9 @@ export class AuthResolver {
 
   @Query(() => Boolean)
   @UseGuards(GqlAuthGuard)
-  async isUserOccupied(@Args('username') username: string) {
-    const user = await this.userService.findOneByUsername({
-      username,
+  async isUserOccupied(@Args('email') email: string) {
+    const user = await this.userService.findOneByEmail({
+      email,
     });
     return !!user;
   }
@@ -62,7 +62,6 @@ export class AuthResolver {
   }
 
   @Query(() => [User])
-  @UseGuards(GqlAuthGuard)
   async users() {
     return this.userService.findAll();
   }

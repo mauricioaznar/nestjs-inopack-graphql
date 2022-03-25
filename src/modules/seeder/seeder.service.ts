@@ -18,7 +18,7 @@ export class SeederService {
 
   async user(): Promise<User> {
     return this.userService.create({
-      username: adminUser.username,
+      email: adminUser.email,
       password: adminUser.password,
     });
   }

@@ -1,6 +1,6 @@
 import { UserInput } from '../../dto/entities/auth.dto';
 
 export const adminUser: UserInput = {
-  username: 'john',
+  email: 'john@example',
   password: 'changeme',
 };

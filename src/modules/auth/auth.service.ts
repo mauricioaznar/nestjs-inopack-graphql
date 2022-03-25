@@ -13,12 +13,12 @@ export class AuthService {
   constructor(private jwtService: JwtService, private prisma: PrismaService) {}
 
   async validateUser(
-    username: string,
+    email: string,
     pass: string,
   ): Promise<UserWithPassword | null> {
-    const user = await this.prisma.user.findFirst({
+    const user = await this.prisma.users.findFirst({
       where: {
-        username: username,
+        email: email,
       },
     });
     if (!user) {
@@ -32,7 +32,7 @@ export class AuthService {
   }
 
   async login(userInput: LoginInput): Promise<AccessToken> {
-    const res = await this.validateUser(userInput.username, userInput.password);
+    const res = await this.validateUser(userInput.email, userInput.password);
     if (!res) {
       throw new BadRequestException(
         'Could not log-in with the provided credentials',

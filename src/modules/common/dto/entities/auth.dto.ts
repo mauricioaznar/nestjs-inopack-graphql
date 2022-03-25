@@ -5,7 +5,7 @@ import { IsString } from 'class-validator';
 @InputType({ isAbstract: true })
 export class UserBase {
   @Field()
-  username: string;
+  email: string;
 }
 
 @InputType('loginInput')
@@ -16,7 +16,7 @@ export class LoginInput {
 
   @Field()
   @IsString()
-  username: string;
+  email: string;
 }
 
 @InputType('userInput')

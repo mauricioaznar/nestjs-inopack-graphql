@@ -15,14 +15,14 @@ describe('Users', () => {
   });
 
   it('user logs in', async () => {
-    const username = adminUser.username;
+    const email = adminUser.email;
     const password = adminUser.password;
     const response = await request(app.getHttpServer())
       .post('/graphql')
       .send({
         query: `mutation {
             login(
-              loginInput: {username: "${username}", password: "${password}"})
+              loginInput: {email: "${email}", password: "${password}"})
                 {
                   accessToken
                 }
