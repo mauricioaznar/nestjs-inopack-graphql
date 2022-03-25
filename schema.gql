@@ -1,0 +1,97 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type User {
+  username: String!
+  id: Float!
+}
+
+type AccessToken {
+  accessToken: String!
+}
+
+type Part {
+  name: String!
+  imageUrl: String
+  partCategoryId: Float!
+  defaultGeneratedQuantity: Int!
+  partId: Float!
+  componentAssignments: [ComponentAssignment!]!
+  parentAssignments: [ParentAssignment!]!
+  currentQuantity: Int!
+}
+
+type ComponentAssignment {
+  component: Part!
+  requiredQuantity: Float!
+}
+
+type ParentAssignment {
+  parent: Part!
+  requiredQuantity: Float!
+}
+
+type PartCategory {
+  name: String!
+  partCategoryId: Float!
+  parts: [Part!]!
+}
+
+type Query {
+  currentUser: User!
+  getServerVersion: String
+  isUserOccupied(username: String!): Boolean!
+  users: [User!]!
+  getParts: [Part!]!
+  getPartCategories: [PartCategory!]!
+}
+
+type Mutation {
+  login(loginInput: loginInput!): AccessToken!
+  createUser(userInput: userInput!): User!
+  updateUser(userInput: userInput!, id: Float!): User!
+  createPart(partInput: partInput!): Part!
+  updatePart(partInput: partInput!, partId: Float!): Part!
+  craft(CraftInput: CraftInput!): Boolean!
+  farm(FarmInput: FarmInput!): Boolean!
+  assignComponent(PartAssignmentInput: PartAssignmentInput!): ComponentAssignment!
+  addCategory(partCategoryInput: partCategoryInput!): PartCategory!
+}
+
+input loginInput {
+  password: String!
+  username: String!
+}
+
+input userInput {
+  username: String!
+  password: String!
+}
+
+input partInput {
+  name: String!
+  imageUrl: String
+  partCategoryId: Float!
+  defaultGeneratedQuantity: Int!
+}
+
+input CraftInput {
+  partId: Float!
+  quantity: Float!
+}
+
+input FarmInput {
+  partId: Float!
+  quantity: Float!
+}
+
+input PartAssignmentInput {
+  parentId: Float!
+  componentId: Float!
+  requiredQuantity: Float!
+}
+
+input partCategoryInput {
+  name: String!
+}

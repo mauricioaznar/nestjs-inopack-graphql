@@ -1,0 +1,570 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("MYSQL_URL")
+}
+
+model activities {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  active      Int       @default(1)
+  created_at  DateTime? @db.DateTime(0)
+  updated_at  DateTime? @db.DateTime(0)
+  user_id     Int       @db.UnsignedInt
+  description String    @db.VarChar(255)
+  type        String    @db.VarChar(255)
+  entity_name String    @db.VarChar(255)
+  entity_id   Int       @db.UnsignedInt
+  role_id     Int?      @db.UnsignedInt
+  branch_id   Int?      @db.UnsignedInt
+  branches    branches? @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activities_branch_id_foreign")
+  roles       roles?    @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activities_role_id_foreign")
+  users       users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activities_user_id_foreign")
+
+  @@index([branch_id], map: "activities_branch_id_foreign")
+  @@index([role_id], map: "activities_role_id_foreign")
+  @@index([user_id], map: "activities_user_id_foreign")
+}
+
+model branches {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  active            Int                 @default(1)
+  name              String              @db.VarChar(255)
+  created_at        DateTime?           @db.DateTime(0)
+  updated_at        DateTime?           @db.DateTime(0)
+  activities        activities[]
+  employees         employees[]
+  machines          machines[]
+  order_productions order_productions[]
+  user_branches     user_branches[]
+  users             users[]
+}
+
+model client_contacts {
+  id             Int              @id @default(autoincrement()) @db.UnsignedInt
+  active         Int              @default(1)
+  first_name     String           @db.VarChar(255)
+  last_name      String           @db.VarChar(255)
+  cellphone      String           @db.VarChar(255)
+  email          String           @default("") @db.VarChar(255)
+  created_at     DateTime?        @db.DateTime(0)
+  updated_at     DateTime?        @db.DateTime(0)
+  client_id      Int?             @db.UnsignedInt
+  fullname       String           @db.VarChar(255)
+  clients        clients?         @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "client_contacts_client_id_foreign")
+  order_requests order_requests[]
+  order_sales    order_sales[]
+
+  @@index([client_id], map: "clients_company_id_foreign")
+}
+
+model clients {
+  id              Int               @id @default(autoincrement()) @db.UnsignedInt
+  active          Int               @default(1)
+  name            String            @db.VarChar(255)
+  abbreviation    String            @db.VarChar(255)
+  house_phone     String            @default("") @db.VarChar(255)
+  address1        String            @default("") @db.VarChar(60)
+  address2        String            @default("") @db.VarChar(60)
+  country         String            @default("") @db.VarChar(255)
+  city            String            @default("") @db.VarChar(255)
+  zip_code        String            @default("") @db.VarChar(255)
+  created_at      DateTime?         @db.DateTime(0)
+  updated_at      DateTime?         @db.DateTime(0)
+  client_contacts client_contacts[]
+  order_requests  order_requests[]
+}
+
+model employee_statuses {
+  id         Int         @id @default(autoincrement()) @db.UnsignedInt
+  name       String      @db.VarChar(255)
+  active     Int         @default(1)
+  created_at DateTime?   @db.DateTime(0)
+  updated_at DateTime?   @db.DateTime(0)
+  employees  employees[]
+}
+
+model employee_type {
+  id         Int         @id @default(autoincrement()) @db.UnsignedInt
+  active     Int         @default(1)
+  name       String      @db.VarChar(255)
+  created_at DateTime?   @db.DateTime(0)
+  updated_at DateTime?   @db.DateTime(0)
+  employees  employees[]
+}
+
+model employees {
+  id                         Int                          @id @default(autoincrement()) @db.UnsignedInt
+  active                     Int                          @default(1)
+  first_name                 String                       @default("") @db.VarChar(255)
+  last_name                  String                       @default("") @db.VarChar(255)
+  cellphone                  String                       @default("") @db.VarChar(255)
+  email                      String                       @default("") @db.VarChar(255)
+  created_at                 DateTime?                    @db.DateTime(0)
+  updated_at                 DateTime?                    @db.DateTime(0)
+  employee_type_id           Int?                         @db.UnsignedInt
+  fullname                   String                       @default("") @db.VarChar(255)
+  employee_status_id         Int?                         @db.UnsignedInt
+  branch_id                  Int?                         @db.UnsignedInt
+  base_salary                Float                        @default(0.00)
+  hours_should_work          Float                        @default(0.00)
+  infonavit                  Float                        @default(0.00)
+  credit                     Float                        @default(0.00)
+  credit_required            Int                          @default(0)
+  order_production_type_id   Int?                         @db.UnsignedInt
+  branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_branch_id_foreign")
+  employee_statuses          employee_statuses?           @relation(fields: [employee_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_status_id_foreign")
+  employee_type              employee_type?               @relation(fields: [employee_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_type_id_foreign")
+  order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_order_production_type_id_foreign")
+  order_production_employees order_production_employees[]
+  order_productions          order_productions[]
+
+  @@index([branch_id], map: "employees_branch_id_foreign")
+  @@index([employee_status_id], map: "employees_employee_status_id_foreign")
+  @@index([employee_type_id], map: "employees_employee_type_id_foreign")
+  @@index([order_production_type_id], map: "employees_order_production_type_id_foreign")
+}
+
+model machine_type {
+  id         Int        @id @default(autoincrement()) @db.UnsignedInt
+  active     Int        @default(1)
+  name       String     @db.VarChar(255)
+  created_at DateTime?  @db.DateTime(0)
+  updated_at DateTime?  @db.DateTime(0)
+  machines   machines[]
+}
+
+model machines {
+  id                        Int                         @id @default(autoincrement()) @db.UnsignedInt
+  active                    Int                         @default(1)
+  name                      String                      @db.VarChar(255)
+  created_at                DateTime?                   @db.DateTime(0)
+  updated_at                DateTime?                   @db.DateTime(0)
+  machine_type_id           Int?                        @db.UnsignedInt
+  branch_id                 Int?                        @db.UnsignedInt
+  order_production_type_id  Int?                        @db.UnsignedInt
+  branches                  branches?                   @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_branch_id_foreign")
+  machine_type              machine_type?               @relation(fields: [machine_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_machine_type_id_foreign")
+  order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_order_production_type_id_foreign")
+  order_production_products order_production_products[]
+
+  @@index([order_production_type_id], map: "machine_order_production_type_id_foreign")
+  @@index([branch_id], map: "machines_branch_id_foreign")
+  @@index([machine_type_id], map: "machines_machine_type_id_foreign")
+}
+
+model migrations {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  timestamp BigInt
+  name      String @db.VarChar(255)
+}
+
+model order_adjustment_products {
+  id                  Int                @id @default(autoincrement()) @db.UnsignedInt
+  name                String             @default("") @db.VarChar(255)
+  active              Int                @default(1)
+  created_at          DateTime?          @db.DateTime(0)
+  updated_at          DateTime?          @db.DateTime(0)
+  kilos               Float
+  groups              Float              @default(0.00)
+  group_weight        Float              @default(0.00)
+  product_id          Int?               @db.UnsignedInt
+  order_adjustment_id Int?               @db.UnsignedInt
+  order_adjustments   order_adjustments? @relation(fields: [order_adjustment_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_adjustment_products_order_adjustment_id_foreign")
+  products            products?          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_adjustment_products_product_id_foreign")
+
+  @@index([order_adjustment_id], map: "order_adjustment_products_order_adjustment_id_foreign")
+  @@index([product_id], map: "order_adjustment_products_product_id_foreign")
+}
+
+model order_adjustment_type {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  name              String              @db.VarChar(255)
+  active            Int                 @default(1)
+  created_at        DateTime?           @db.DateTime(0)
+  updated_at        DateTime?           @db.DateTime(0)
+  order_adjustments order_adjustments[]
+}
+
+model order_adjustments {
+  id                        Int                         @id @default(autoincrement()) @db.UnsignedInt
+  active                    Int                         @default(1)
+  date                      DateTime                    @db.Date
+  created_at                DateTime?                   @db.DateTime(0)
+  updated_at                DateTime?                   @db.DateTime(0)
+  order_adjustment_type_id  Int?                        @db.UnsignedInt
+  order_adjustment_type     order_adjustment_type?      @relation(fields: [order_adjustment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_adjustments_order_adjustment_type_id_foreign")
+  order_adjustment_products order_adjustment_products[]
+
+  @@index([order_adjustment_type_id], map: "order_adjustments_order_adjustment_type_id_foreign")
+}
+
+model order_production_employees {
+  id                  Int                @id @default(autoincrement()) @db.UnsignedInt
+  active              Int                @default(1)
+  is_leader           Int                @default(0)
+  created_at          DateTime?          @db.DateTime(0)
+  updated_at          DateTime?          @db.DateTime(0)
+  order_production_id Int?               @db.UnsignedInt
+  employee_id         Int?               @db.UnsignedInt
+  employees           employees?         @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_employees_employee_id_foreign")
+  order_productions   order_productions? @relation(fields: [order_production_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_employees_order_production_id_foreign")
+
+  @@index([employee_id], map: "order_production_employees_employee_id_foreign")
+  @@index([order_production_id], map: "order_production_employees_order_production_id_foreign")
+}
+
+model order_production_products {
+  id                  Int                @id @default(autoincrement()) @db.UnsignedInt
+  active              Int                @default(1)
+  created_at          DateTime?          @db.DateTime(0)
+  updated_at          DateTime?          @db.DateTime(0)
+  kilos               Float
+  groups              Float              @default(0.00)
+  group_weight        Float              @default(0.00)
+  product_id          Int?               @db.UnsignedInt
+  machine_id          Int?               @db.UnsignedInt
+  order_production_id Int?               @db.UnsignedInt
+  machines            machines?          @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_products_machine_id_foreign")
+  order_productions   order_productions? @relation(fields: [order_production_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_products_order_production_id_foreign")
+  products            products?          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_products_product_id_foreign")
+
+  @@index([machine_id], map: "order_production_products_machine_id_foreign")
+  @@index([order_production_id], map: "order_production_products_order_production_id_foreign")
+  @@index([product_id], map: "order_production_products_product_id_foreign")
+}
+
+model order_production_resources {
+  id                  Int                @id @default(autoincrement()) @db.UnsignedInt
+  active              Int                @default(1)
+  created_at          DateTime?          @db.Timestamp(0)
+  updated_at          DateTime?          @db.Timestamp(0)
+  kilos               Float
+  groups              Float?
+  group_weight        Float?
+  product_id          Int?               @db.UnsignedInt
+  order_production_id Int?               @db.UnsignedInt
+  order_productions   order_productions? @relation(fields: [order_production_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_resources_order_production_id_foreign")
+  products            products?          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_resources_product_id_foreign")
+
+  @@index([order_production_id], map: "order_production_resources_order_production_id_foreign")
+  @@index([product_id], map: "order_production_resources_product_id_foreign")
+}
+
+model order_production_type {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  active            Int                 @default(1)
+  name              String              @db.VarChar(255)
+  created_at        DateTime?           @db.DateTime(0)
+  updated_at        DateTime?           @db.DateTime(0)
+  employees         employees[]
+  machines          machines[]
+  order_productions order_productions[]
+  product_type      product_type[]
+  products          products[]
+}
+
+model order_productions {
+  id                         Int                          @id @default(autoincrement()) @db.UnsignedInt
+  active                     Int                          @default(1)
+  waste                      Float
+  created_at                 DateTime?                    @db.DateTime(0)
+  updated_at                 DateTime?                    @db.DateTime(0)
+  employee_id                Int?                         @db.UnsignedInt
+  order_production_type_id   Int?                         @db.UnsignedInt
+  performance                Float
+  branch_id                  Int?                         @db.UnsignedInt
+  start_date                 DateTime                     @db.Date
+  branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_branch_id_foreign")
+  employees                  employees?                   @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_employee_id_foreign")
+  order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_order_production_type_id_foreign")
+  order_production_employees order_production_employees[]
+  order_production_products  order_production_products[]
+  order_production_resources order_production_resources[]
+
+  @@index([branch_id], map: "order_productions_branch_id_foreign")
+  @@index([employee_id], map: "order_productions_employee_id_foreign")
+  @@index([order_production_type_id], map: "order_productions_order_production_type_id_foreign")
+}
+
+model order_request_products {
+  id               Int             @id @default(autoincrement()) @db.UnsignedInt
+  active           Int             @default(1)
+  created_at       DateTime?       @db.DateTime(0)
+  updated_at       DateTime?       @db.DateTime(0)
+  kilos            Float
+  groups           Float           @default(0.00)
+  kilo_price       Float
+  group_weight     Float           @default(0.00)
+  product_id       Int?            @db.UnsignedInt
+  order_request_id Int?            @db.UnsignedInt
+  order_requests   order_requests? @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_request_products_order_request_id_foreign")
+  products         products?       @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_request_products_product_id_foreign")
+
+  @@index([order_request_id], map: "order_request_products_order_request_id_foreign")
+  @@index([product_id], map: "order_request_products_product_id_foreign")
+}
+
+model order_request_statuses {
+  id             Int              @id @default(autoincrement()) @db.UnsignedInt
+  active         Int              @default(1)
+  name           String           @db.VarChar(255)
+  created_at     DateTime?        @db.DateTime(0)
+  updated_at     DateTime?        @db.DateTime(0)
+  order_requests order_requests[]
+}
+
+model order_requests {
+  id                      Int                      @id @default(autoincrement()) @db.UnsignedInt
+  order_code              Int
+  active                  Int                      @default(1)
+  date                    DateTime                 @db.Date
+  created_at              DateTime?                @db.DateTime(0)
+  updated_at              DateTime?                @db.DateTime(0)
+  client_id               Int?                     @db.UnsignedInt
+  client_contact_id       Int?                     @db.UnsignedInt
+  order_request_status_id Int?                     @db.UnsignedInt
+  estimated_delivery_date DateTime                 @db.Date
+  priority                Float
+  client_contacts         client_contacts?         @relation(fields: [client_contact_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_client_contact_id_foreign")
+  clients                 clients?                 @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_client_id_foreign")
+  order_request_statuses  order_request_statuses?  @relation(fields: [order_request_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_order_request_status_id_foreign")
+  order_request_products  order_request_products[]
+  order_sales             order_sales[]
+
+  @@index([client_contact_id], map: "order_requests_client_id_foreign")
+  @@index([client_id], map: "order_requests_company_id_foreign")
+  @@index([order_request_status_id], map: "order_requests_order_request_status_id_foreign")
+}
+
+model order_sale_collection_statuses {
+  id                  Int                   @id @default(autoincrement()) @db.UnsignedInt
+  active              Int                   @default(1)
+  name                String                @db.VarChar(255)
+  created_at          DateTime?             @db.DateTime(0)
+  updated_at          DateTime?             @db.DateTime(0)
+  order_sale_payments order_sale_payments[]
+  order_sales         order_sales[]
+}
+
+model order_sale_payment_type {
+  id          Int           @id @default(autoincrement()) @db.UnsignedInt
+  name        String        @db.VarChar(255)
+  active      Int           @default(1)
+  created_at  DateTime?     @db.DateTime(0)
+  updated_at  DateTime?     @db.DateTime(0)
+  order_sales order_sales[]
+}
+
+model order_sale_payments {
+  id                              Int                             @id @default(autoincrement()) @db.UnsignedInt
+  active                          Int                             @default(1)
+  date_paid                       DateTime                        @db.Date
+  amount                          Float
+  created_at                      DateTime?                       @db.DateTime(0)
+  updated_at                      DateTime?                       @db.DateTime(0)
+  order_sale_id                   Int?                            @db.UnsignedInt
+  order_sale_collection_status_id Int?                            @db.UnsignedInt
+  order_sale_collection_statuses  order_sale_collection_statuses? @relation(fields: [order_sale_collection_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_payments_order_sale_collection_status_id_foreign")
+  order_sales                     order_sales?                    @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_payments_order_sale_id_foreign")
+
+  @@index([order_sale_collection_status_id], map: "order_sale_payments_order_sale_collection_status_id_foreign")
+  @@index([order_sale_id], map: "order_sale_payments_order_sale_id_foreign")
+}
+
+model order_sale_products {
+  id            Int          @id @default(autoincrement()) @db.UnsignedInt
+  active        Int          @default(1)
+  created_at    DateTime?    @db.DateTime(0)
+  updated_at    DateTime?    @db.DateTime(0)
+  kilos         Float
+  groups        Float        @default(0.00)
+  kilo_price    Float
+  group_weight  Float        @default(0.00)
+  product_id    Int?         @db.UnsignedInt
+  order_sale_id Int?         @db.UnsignedInt
+  order_sales   order_sales? @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_products_order_sale_id_foreign")
+  products      products?    @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_products_product_id_foreign")
+
+  @@index([order_sale_id], map: "order_sale_products_order_sale_id_foreign")
+  @@index([product_id], map: "order_sale_products_product_id_foreign")
+}
+
+model order_sale_receipt_type {
+  id          Int           @id @default(autoincrement()) @db.UnsignedInt
+  name        String        @db.VarChar(255)
+  active      Int           @default(1)
+  created_at  DateTime?     @db.DateTime(0)
+  updated_at  DateTime?     @db.DateTime(0)
+  order_sales order_sales[]
+}
+
+model order_sale_statuses {
+  id          Int           @id @default(autoincrement()) @db.UnsignedInt
+  active      Int           @default(1)
+  name        String        @db.VarChar(255)
+  created_at  DateTime?     @db.DateTime(0)
+  updated_at  DateTime?     @db.DateTime(0)
+  order_sales order_sales[]
+}
+
+model order_sales {
+  id                              Int                             @id @default(autoincrement()) @db.UnsignedInt
+  order_code                      Int
+  active                          Int                             @default(1)
+  date                            DateTime                        @db.Date
+  created_at                      DateTime?                       @db.DateTime(0)
+  updated_at                      DateTime?                       @db.DateTime(0)
+  client_contact_id               Int?                            @db.UnsignedInt
+  order_sale_status_id            Int?                            @db.UnsignedInt
+  order_request_id                Int?                            @db.UnsignedInt
+  order_sale_receipt_type_id      Int?                            @db.UnsignedInt
+  order_sale_payment_type_id      Int?                            @db.UnsignedInt
+  amount_collected                Float                           @default(0.00)
+  order_sale_collection_status_id Int?                            @db.UnsignedInt
+  date_collected                  DateTime?                       @db.Date
+  invoice_code                    Int                             @default(0)
+  client_contacts                 client_contacts?                @relation(fields: [client_contact_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_client_contact_id_foreign")
+  order_requests                  order_requests?                 @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_request_id_foreign")
+  order_sale_collection_statuses  order_sale_collection_statuses? @relation(fields: [order_sale_collection_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_collection_status_id_foreign")
+  order_sale_payment_type         order_sale_payment_type?        @relation(fields: [order_sale_payment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_payment_type_id_foreign")
+  order_sale_receipt_type         order_sale_receipt_type?        @relation(fields: [order_sale_receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_receipt_type_id_foreign")
+  order_sale_statuses             order_sale_statuses?            @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
+  order_sale_payments             order_sale_payments[]
+  order_sale_products             order_sale_products[]
+
+  @@index([client_contact_id], map: "order_sales_client_id_foreign")
+  @@index([order_request_id], map: "order_sales_order_request_id_foreign")
+  @@index([order_sale_collection_status_id], map: "order_sales_order_sale_collection_status_id_foreign")
+  @@index([order_sale_payment_type_id], map: "order_sales_order_sale_payment_type_id_foreign")
+  @@index([order_sale_receipt_type_id], map: "order_sales_order_sale_receipt_type_id_foreign")
+  @@index([order_sale_status_id], map: "order_sales_order_sale_status_id_foreign")
+}
+
+model packings {
+  id         Int        @id @default(autoincrement()) @db.UnsignedInt
+  name       String     @db.VarChar(255)
+  active     Int        @default(1)
+  created_at DateTime?  @db.DateTime(0)
+  updated_at DateTime?  @db.DateTime(0)
+  products   products[]
+}
+
+model product_type {
+  id                       Int                      @id @default(autoincrement()) @db.UnsignedInt
+  name                     String                   @db.VarChar(255)
+  active                   Int                      @default(1)
+  created_at               DateTime?                @db.DateTime(0)
+  updated_at               DateTime?                @db.DateTime(0)
+  order_production_type_id Int?                     @db.UnsignedInt
+  product_type_category_id Int?                     @db.UnsignedInt
+  order_production_type    order_production_type?   @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "materials_order_production_type_id_foreign")
+  product_type_categories  product_type_categories? @relation(fields: [product_type_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_type_product_type_category_id_foreign")
+  products                 products[]
+
+  @@index([order_production_type_id], map: "materials_order_production_type_id_foreign")
+  @@index([product_type_category_id], map: "product_type_product_type_category_id_foreign")
+}
+
+model product_type_categories {
+  id           Int            @id @default(autoincrement()) @db.UnsignedInt
+  active       Int            @default(1)
+  created_at   DateTime?      @db.Timestamp(0)
+  updated_at   DateTime?      @db.Timestamp(0)
+  name         String         @db.VarChar(255)
+  product_type product_type[]
+}
+
+model products {
+  id                         Int                          @id @default(autoincrement()) @db.UnsignedInt
+  active                     Int                          @default(1)
+  group_weight_strict        Int                          @default(0)
+  code                       String                       @db.VarChar(255)
+  description                String                       @db.VarChar(255)
+  current_kilo_price         Float
+  width                      Float
+  length                     Float?
+  current_group_weight       Float                        @default(0.00)
+  created_at                 DateTime?                    @db.DateTime(0)
+  updated_at                 DateTime?                    @db.DateTime(0)
+  product_type_id            Int?                         @db.UnsignedInt
+  packing_id                 Int?                         @db.UnsignedInt
+  calibre                    Float
+  order_production_type_id   Int?                         @db.UnsignedInt
+  order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_order_production_type_id_foreign")
+  packings                   packings?                    @relation(fields: [packing_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_packing_id_foreign")
+  product_type               product_type?                @relation(fields: [product_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_product_type_id_foreign")
+  order_adjustment_products  order_adjustment_products[]
+  order_production_products  order_production_products[]
+  order_production_resources order_production_resources[]
+  order_request_products     order_request_products[]
+  order_sale_products        order_sale_products[]
+
+  @@index([product_type_id], map: "products_material_id_foreign")
+  @@index([order_production_type_id], map: "products_order_production_type_id_foreign")
+  @@index([packing_id], map: "products_packing_id_foreign")
+}
+
+model roles {
+  id         Int          @id @default(autoincrement()) @db.UnsignedInt
+  name       String       @db.VarChar(255)
+  active     Int          @default(1)
+  created_at DateTime?    @db.DateTime(0)
+  updated_at DateTime?    @db.DateTime(0)
+  activities activities[]
+  user_roles user_roles[]
+  users      users[]
+}
+
+model user_branches {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  active     Int       @default(1)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  user_id    Int?      @db.UnsignedInt
+  branch_id  Int?      @db.UnsignedInt
+  branches   branches? @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_branches_branch_id_foreign")
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_branches_user_id_foreign")
+
+  @@index([branch_id], map: "user_branches_branch_id_foreign")
+  @@index([user_id], map: "user_branches_user_id_foreign")
+}
+
+model user_roles {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  active     Int       @default(1)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  user_id    Int?      @db.UnsignedInt
+  role_id    Int?      @db.UnsignedInt
+  roles      roles?    @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_roles_role_id_foreign")
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_roles_user_id_foreign")
+
+  @@index([role_id], map: "user_roles_role_id_foreign")
+  @@index([user_id], map: "user_roles_user_id_foreign")
+}
+
+model users {
+  id             Int             @id @default(autoincrement()) @db.UnsignedInt
+  first_name     String          @db.VarChar(255)
+  last_name      String          @db.VarChar(255)
+  email          String          @unique(map: "users_email_unique") @db.VarChar(255)
+  password       String          @db.VarChar(60)
+  active         Int             @default(1)
+  remember_token String?         @db.VarChar(100)
+  created_at     DateTime?       @db.DateTime(0)
+  updated_at     DateTime?       @db.DateTime(0)
+  role_id        Int?            @db.UnsignedInt
+  fullname       String          @db.VarChar(255)
+  branch_id      Int?            @db.UnsignedInt
+  branches       branches?       @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_branch_id_foreign")
+  roles          roles?          @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_role_id_foreign")
+  activities     activities[]
+  user_branches  user_branches[]
+  user_roles     user_roles[]
+
+  @@index([branch_id], map: "users_branch_id_foreign")
+  @@index([role_id], map: "users_role_id_foreign")
+}
