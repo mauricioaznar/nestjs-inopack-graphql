@@ -11,6 +11,17 @@ type AccessToken {
   accessToken: String!
 }
 
+type Branch {
+  name: String!
+  created_at: DateTime!
+  id: Float!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
 type Query {
   currentUser: User!
   getServerVersion: String
@@ -22,6 +33,7 @@ type Mutation {
   login(loginInput: loginInput!): AccessToken!
   createUser(userInput: userInput!): User!
   updateUser(userInput: userInput!, id: Float!): User!
+  createBranch(branchInput: branchInput!): Branch!
 }
 
 input loginInput {
@@ -32,4 +44,9 @@ input loginInput {
 input userInput {
   email: String!
   password: String!
+}
+
+input branchInput {
+  name: String!
+  created_at: DateTime!
 }
