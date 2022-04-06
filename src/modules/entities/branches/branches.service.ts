@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../common/services/prisma/prisma.service';
-import { Branch, BranchInput } from '../../common/dto/entities/branch.dto';
+import { PrismaService } from '../../../common/services/prisma/prisma.service';
+import { Branch, BranchInput } from '../../../common/dto/entities/branch.dto';
 
 @Injectable()
 export class BranchesService {

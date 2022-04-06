@@ -1,7 +1,10 @@
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { MachinesService } from './machines.service';
-import { Machine, MachineInput } from '../../common/dto/entities/machine.dto';
+import {
+  Machine,
+  MachineInput,
+} from '../../../common/dto/entities/machine.dto';
 
 @Resolver(() => Machine)
 @Injectable()

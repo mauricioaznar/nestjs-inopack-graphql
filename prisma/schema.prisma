@@ -269,6 +269,8 @@ model order_production_type {
 model order_productions {
   id                         Int                          @id @default(autoincrement()) @db.UnsignedInt
   active                     Int                          @default(1)
+  start_date_time            DateTime                     @db.DateTime(0)
+  end_date_time              DateTime                     @db.DateTime(0)
   waste                      Float
   created_at                 DateTime?                    @db.DateTime(0)
   updated_at                 DateTime?                    @db.DateTime(0)
@@ -276,7 +278,6 @@ model order_productions {
   order_production_type_id   Int?                         @db.UnsignedInt
   performance                Float
   branch_id                  Int?                         @db.UnsignedInt
-  start_date                 DateTime                     @db.Date
   branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_branch_id_foreign")
   employees                  employees?                   @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_employee_id_foreign")
   order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_order_production_type_id_foreign")
@@ -567,4 +568,25 @@ model users {
 
   @@index([branch_id], map: "users_branch_id_foreign")
   @@index([role_id], map: "users_role_id_foreign")
+}
+
+model parts {
+  id               Int              @id @default(autoincrement()) @db.UnsignedInt
+  active           Int              @default(1)
+  created_at       DateTime?        @db.DateTime(0)
+  updated_at       DateTime?        @db.DateTime(0)
+  part_category_id Int?             @db.UnsignedInt
+  name             String           @db.VarChar(255)
+  part_categories  part_categories? @relation(fields: [part_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "parts_part_category_id_foreign")
+
+  @@index([part_category_id], map: "parts_part_category_id_foreign")
+}
+
+model part_categories {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  active     Int       @default(1)
+  created_at DateTime? @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  name       String    @db.VarChar(255)
+  parts      parts[]
 }

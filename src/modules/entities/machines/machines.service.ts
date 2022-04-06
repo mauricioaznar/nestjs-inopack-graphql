@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../common/services/prisma/prisma.service';
-import { Machine, MachineInput } from '../../common/dto/entities/machine.dto';
+import { PrismaService } from '../../../common/services/prisma/prisma.service';
+import {
+  Machine,
+  MachineInput,
+} from '../../../common/dto/entities/machine.dto';
 
 @Injectable()
 export class MachinesService {

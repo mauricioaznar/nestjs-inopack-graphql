@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { FilesService } from './files.service';
 import { FilesController } from './files.controller';
 import { JwtModule } from '@nestjs/jwt';
-import { jwtConstants } from '../common/constants/jwt';
+import { jwtConstants } from '../../common/constants/jwt';
 
 @Module({
   imports: [

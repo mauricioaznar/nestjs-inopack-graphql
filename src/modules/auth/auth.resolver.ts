@@ -5,7 +5,7 @@ import {
   LoginInput,
   User,
   UserInput,
-} from '../common/dto/entities/auth.dto';
+} from '../../common/dto/entities/auth.dto';
 import { Injectable, UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';

@@ -10,7 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ApolloError } from 'apollo-server-express';
 import { GraphQLError, GraphQLFormattedError } from 'graphql';
 import { FilesModule } from './modules/files/files.module';
-import { MemoryTokenModule } from './modules/common/services/memory-token/memory-token.module';
+import { MemoryTokenModule } from './common/services/memory-token/memory-token.module';
 import { EntitiesModule } from './modules/entities/entities.module';
 
 @Module({

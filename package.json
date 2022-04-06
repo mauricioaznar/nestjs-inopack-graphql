@@ -19,6 +19,7 @@
     "db:generate": "env-cmd -f .env prisma generate",
     "db:introspect": "env-cmd -f .env prisma db pull",
     "db:format": "env-cmd -f ./.env prisma format",
+    "db:seed": "env-cmd -f ./.env prisma db seed",
     "db:reset": "env-cmd -f ./.env prisma migrate reset"
   },
   "prisma": {

@@ -1,7 +1,7 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { BranchesService } from './branches.service';
-import { Branch, BranchInput } from '../../common/dto/entities/branch.dto';
+import { Branch, BranchInput } from '../../../common/dto/entities/branch.dto';
 
 @Resolver(() => Branch)
 @Injectable()
