@@ -1,9 +1,9 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
-import { IsDate } from 'class-validator';
+import { IsDate, IsDateString, IsISO8601 } from 'class-validator';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
-export class BranchBase {
+export class MachineBase {
   @Field()
   name: string;
 
@@ -12,11 +12,11 @@ export class BranchBase {
   created_at: Date;
 }
 
-@InputType('BranchInput')
-export class BranchInput extends BranchBase {}
+@InputType('MachineInput')
+export class MachineInput extends MachineBase {}
 
-@ObjectType('Branch')
-export class Branch extends BranchBase {
+@ObjectType('Machine')
+export class Machine extends MachineBase {
   @Field({ nullable: false })
   id: number;
 }

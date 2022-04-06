@@ -9,7 +9,7 @@ export class BranchesResolver {
   constructor(private branchesService: BranchesService) {}
 
   @Mutation(() => Branch)
-  async createBranch(@Args('branchInput') input: BranchInput) {
-    return this.branchesService.createPart(input);
+  async createBranch(@Args('BranchInput') input: BranchInput) {
+    return this.branchesService.createBranch(input);
   }
 }

@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/services/prisma/prisma.service';
-import { Branch, BranchInput } from '../../common/dto/entities/branch.dto';
+import { Machine, MachineInput } from '../../common/dto/entities/machine.dto';
 
 @Injectable()
-export class BranchesService {
+export class MachinesService {
   constructor(private prisma: PrismaService) {}
 
-  async createBranch(branchInput: BranchInput): Promise<Branch> {
+  async createMachine(machineInput: MachineInput): Promise<Machine> {
     return this.prisma.branches.create({
       data: {
-        name: branchInput.name,
-        created_at: branchInput.created_at,
+        name: machineInput.name,
+        created_at: machineInput.created_at,
       },
     });
   }
