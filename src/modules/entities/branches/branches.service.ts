@@ -14,4 +14,8 @@ export class BranchesService {
       },
     });
   }
+
+  async getBranches(): Promise<Branch[]> {
+    return this.prisma.branches.findMany();
+  }
 }
