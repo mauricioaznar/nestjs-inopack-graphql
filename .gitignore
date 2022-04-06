@@ -33,6 +33,6 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
-schema.gql
+./schema.gql
 
-package-lock.json
+./package-lock.json
