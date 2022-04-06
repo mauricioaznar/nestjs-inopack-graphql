@@ -7,9 +7,9 @@ export class BranchBase {
   @Field()
   name: string;
 
-  @Field()
+  @Field({ nullable: true })
   @IsDate()
-  created_at: Date;
+  created_at: Date | null;
 }
 
 @InputType('BranchInput')
