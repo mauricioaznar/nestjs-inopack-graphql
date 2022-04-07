@@ -148,6 +148,7 @@ model machines {
   branches                  branches?                   @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_branch_id_foreign")
   machine_type              machine_type?               @relation(fields: [machine_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_machine_type_id_foreign")
   order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_order_production_type_id_foreign")
+  machine_sections          machine_sections[]
   order_production_products order_production_products[]
 
   @@index([order_production_type_id], map: "machine_order_production_type_id_foreign")
@@ -236,23 +237,6 @@ model order_production_products {
   @@index([product_id], map: "order_production_products_product_id_foreign")
 }
 
-model order_production_resources {
-  id                  Int                @id @default(autoincrement()) @db.UnsignedInt
-  active              Int                @default(1)
-  created_at          DateTime?          @db.Timestamp(0)
-  updated_at          DateTime?          @db.Timestamp(0)
-  kilos               Float
-  groups              Float?
-  group_weight        Float?
-  product_id          Int?               @db.UnsignedInt
-  order_production_id Int?               @db.UnsignedInt
-  order_productions   order_productions? @relation(fields: [order_production_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_resources_order_production_id_foreign")
-  products            products?          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_resources_product_id_foreign")
-
-  @@index([order_production_id], map: "order_production_resources_order_production_id_foreign")
-  @@index([product_id], map: "order_production_resources_product_id_foreign")
-}
-
 model order_production_type {
   id                Int                 @id @default(autoincrement()) @db.UnsignedInt
   active            Int                 @default(1)
@@ -269,21 +253,18 @@ model order_production_type {
 model order_productions {
   id                         Int                          @id @default(autoincrement()) @db.UnsignedInt
   active                     Int                          @default(1)
-  start_date_time            DateTime                     @db.DateTime(0)
-  end_date_time              DateTime                     @db.DateTime(0)
   waste                      Float
   created_at                 DateTime?                    @db.DateTime(0)
   updated_at                 DateTime?                    @db.DateTime(0)
   employee_id                Int?                         @db.UnsignedInt
   order_production_type_id   Int?                         @db.UnsignedInt
-  performance                Float
   branch_id                  Int?                         @db.UnsignedInt
+  start_date                 DateTime                     @db.Date
   branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_branch_id_foreign")
   employees                  employees?                   @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_employee_id_foreign")
   order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_order_production_type_id_foreign")
   order_production_employees order_production_employees[]
   order_production_products  order_production_products[]
-  order_production_resources order_production_resources[]
 
   @@index([branch_id], map: "order_productions_branch_id_foreign")
   @@index([employee_id], map: "order_productions_employee_id_foreign")
@@ -479,29 +460,28 @@ model product_type_categories {
 }
 
 model products {
-  id                         Int                          @id @default(autoincrement()) @db.UnsignedInt
-  active                     Int                          @default(1)
-  group_weight_strict        Int                          @default(0)
-  code                       String                       @db.VarChar(255)
-  description                String                       @db.VarChar(255)
-  current_kilo_price         Float
-  width                      Float
-  length                     Float?
-  current_group_weight       Float                        @default(0.00)
-  created_at                 DateTime?                    @db.DateTime(0)
-  updated_at                 DateTime?                    @db.DateTime(0)
-  product_type_id            Int?                         @db.UnsignedInt
-  packing_id                 Int?                         @db.UnsignedInt
-  calibre                    Float
-  order_production_type_id   Int?                         @db.UnsignedInt
-  order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_order_production_type_id_foreign")
-  packings                   packings?                    @relation(fields: [packing_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_packing_id_foreign")
-  product_type               product_type?                @relation(fields: [product_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_product_type_id_foreign")
-  order_adjustment_products  order_adjustment_products[]
-  order_production_products  order_production_products[]
-  order_production_resources order_production_resources[]
-  order_request_products     order_request_products[]
-  order_sale_products        order_sale_products[]
+  id                        Int                         @id @default(autoincrement()) @db.UnsignedInt
+  active                    Int                         @default(1)
+  group_weight_strict       Int                         @default(0)
+  code                      String                      @db.VarChar(255)
+  description               String                      @db.VarChar(255)
+  current_kilo_price        Float
+  width                     Float
+  length                    Float?
+  current_group_weight      Float                       @default(0.00)
+  created_at                DateTime?                   @db.DateTime(0)
+  updated_at                DateTime?                   @db.DateTime(0)
+  product_type_id           Int?                        @db.UnsignedInt
+  packing_id                Int?                        @db.UnsignedInt
+  calibre                   Float
+  order_production_type_id  Int?                        @db.UnsignedInt
+  order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_order_production_type_id_foreign")
+  packings                  packings?                   @relation(fields: [packing_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_packing_id_foreign")
+  product_type              product_type?               @relation(fields: [product_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_product_type_id_foreign")
+  order_adjustment_products order_adjustment_products[]
+  order_production_products order_production_products[]
+  order_request_products    order_request_products[]
+  order_sale_products       order_sale_products[]
 
   @@index([product_type_id], map: "products_material_id_foreign")
   @@index([order_production_type_id], map: "products_order_production_type_id_foreign")
@@ -570,6 +550,40 @@ model users {
   @@index([role_id], map: "users_role_id_foreign")
 }
 
+model machine_components {
+  id                 Int               @id @default(autoincrement()) @db.UnsignedInt
+  active             Int               @default(1)
+  created_at         DateTime?         @db.DateTime(0)
+  updated_at         DateTime?         @db.DateTime(0)
+  machine_section_id Int?              @db.UnsignedInt
+  name               String            @db.VarChar(255)
+  machine_sections   machine_sections? @relation(fields: [machine_section_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_machine_section_id_foreign")
+
+  @@index([machine_section_id], map: "machine_components_machine_section_id_foreign")
+}
+
+model machine_sections {
+  id                 Int                  @id @default(autoincrement()) @db.UnsignedInt
+  active             Int                  @default(1)
+  created_at         DateTime?            @db.DateTime(0)
+  updated_at         DateTime?            @db.DateTime(0)
+  machine_id         Int?                 @db.UnsignedInt
+  name               String               @db.VarChar(255)
+  machines           machines?            @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_sections_machine_id_foreign")
+  machine_components machine_components[]
+
+  @@index([machine_id], map: "machine_sections_machine_id_foreign")
+}
+
+model part_categories {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  active     Int       @default(1)
+  created_at DateTime? @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  name       String    @db.VarChar(255)
+  parts      parts[]
+}
+
 model parts {
   id               Int              @id @default(autoincrement()) @db.UnsignedInt
   active           Int              @default(1)
@@ -580,13 +594,4 @@ model parts {
   part_categories  part_categories? @relation(fields: [part_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "parts_part_category_id_foreign")
 
   @@index([part_category_id], map: "parts_part_category_id_foreign")
-}
-
-model part_categories {
-  id         Int       @id @default(autoincrement()) @db.UnsignedInt
-  active     Int       @default(1)
-  created_at DateTime? @db.DateTime(0)
-  updated_at DateTime? @db.DateTime(0)
-  name       String    @db.VarChar(255)
-  parts      parts[]
 }

@@ -1,7 +1,43 @@
 import { Machine } from '../../../common/dto/entities/machine.dto';
+import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
+import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
 
 export interface MachinesSeed {
-  cmd: Machine;
+  cmd: {
+    machine: Machine;
+    sections: {
+      seccion1: {
+        section: MachineSection;
+        components: {
+          componente1: MachineComponent;
+          componente2: MachineComponent;
+          componente3: MachineComponent;
+        };
+      };
+      seccion2: {
+        section: MachineSection;
+        components: {
+          componente4: MachineComponent;
+          componente5: MachineComponent;
+        };
+      };
+      seccion3: {
+        section: MachineSection;
+        components: {
+          componente6: MachineComponent;
+          componente7: MachineComponent;
+          componente8: MachineComponent;
+          componente9: MachineComponent;
+        };
+      };
+      seccion4: {
+        section: MachineSection;
+        components: {
+          componente10: MachineComponent;
+        };
+      };
+    };
+  };
   camisetera1: Machine;
   camisetera2: Machine;
   camisetera3: Machine;
