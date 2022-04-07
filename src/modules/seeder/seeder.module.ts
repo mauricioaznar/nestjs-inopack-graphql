@@ -2,12 +2,12 @@ import { Logger, Module } from '@nestjs/common';
 import { SeederService } from './seeder.service';
 import { PrismaService } from '../../common/services/prisma/prisma.service';
 import { UserService } from '../auth/user.service';
-import { PartsService } from '../entities/parts/parts.service';
-import { PartCreationModule } from './modules/part-creation/part-creation.module';
-import { PartCategoryCreationModule } from './modules/part-category-creation/part-category-creation.module';
+import { PartSeederModule } from './modules/part-seeder/part-seeder.module';
+import { PartCategorySeederModule } from './modules/part-category-seeder/part-category-seeder.module';
+import { MachineSeederModule } from './modules/machine-seeder/machine-seeder.module';
 
 @Module({
-  providers: [Logger, SeederService, UserService, PrismaService, PartsService],
-  imports: [PartCreationModule, PartCategoryCreationModule],
+  providers: [Logger, SeederService, UserService, PrismaService],
+  imports: [PartSeederModule, PartCategorySeederModule, MachineSeederModule],
 })
 export class SeederModule {}

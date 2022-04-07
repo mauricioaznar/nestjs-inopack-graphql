@@ -4,7 +4,7 @@ import { PartCategoriesSeed } from '../../types/part-categories-seed';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 
 @Injectable()
-export class PartCreationService {
+export class PartSeederService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly logger: Logger,

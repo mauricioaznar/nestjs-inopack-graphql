@@ -17,4 +17,12 @@ export class MachinesService {
       },
     });
   }
+
+  async getMachine({ id }: { id: number }): Promise<Machine> {
+    return this.prisma.branches.findFirst({
+      where: {
+        id: id,
+      },
+    });
+  }
 }

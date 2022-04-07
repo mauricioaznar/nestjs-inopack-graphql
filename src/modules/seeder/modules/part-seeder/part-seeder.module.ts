@@ -1,10 +1,10 @@
 import { Logger, Module } from '@nestjs/common';
-import { PartCreationService } from './part-creation.service';
+import { PartSeederService } from './part-seeder.service';
 import { PartsService } from '../../../entities/parts/parts.service';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 
 @Module({
-  providers: [Logger, PrismaService, PartsService, PartCreationService],
-  exports: [PartCreationService],
+  providers: [Logger, PrismaService, PartsService, PartSeederService],
+  exports: [PartSeederService],
 })
-export class PartCreationModule {}
+export class PartSeederModule {}
