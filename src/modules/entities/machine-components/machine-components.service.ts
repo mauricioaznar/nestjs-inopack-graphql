@@ -91,7 +91,9 @@ export class MachineComponentsService {
     current_part_id,
   }: {
     current_part_id: number | null;
-  }): Promise<Part> {
+  }): Promise<Part | null> {
+    if (!current_part_id) return null;
+
     return this.prisma.parts.findFirst({
       where: {
         id: current_part_id,

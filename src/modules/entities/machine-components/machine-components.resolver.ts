@@ -9,6 +9,7 @@ import {
 import { MachineComponentCompatibilityInput } from '../../../common/dto/entities/machine-component-compatibility.dto';
 import { Part } from '../../../common/dto/entities/part.dto';
 import { Machine } from '../../../common/dto/entities/machine.dto';
+import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
 
 @Resolver(() => MachineComponent)
 @Injectable()
@@ -67,12 +68,9 @@ export class MachineComponentsResolver {
     });
   }
 
-  @ResolveField(() => Boolean)
-  async hello(machine: Machine): Promise<boolean> {
-    return true;
-  }
-
-  @ResolveField(() => Part)
+  @ResolveField(() => Part, {
+    nullable: true,
+  })
   async current_part(machineComponent: MachineComponent) {
     return this.machineComponentsService.getCurrentPart({
       current_part_id: machineComponent.current_part_id,
