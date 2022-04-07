@@ -6,6 +6,7 @@ import {
   MachineComponentPartInput,
 } from '../../../common/dto/entities/machine-component.dto';
 import { MachineComponentCompatibilityInput } from '../../../common/dto/entities/machine-component-compatibility.dto';
+import { Part } from '../../../common/dto/entities/part.dto';
 
 @Injectable()
 export class MachineComponentsService {
@@ -74,7 +75,7 @@ export class MachineComponentsService {
     }));
   }
 
-  async removeMachineCompatibility({
+  async removeMachineCompatiblePart({
     machineComponentCompatibilityId,
   }: {
     machineComponentCompatibilityId: number;
@@ -84,5 +85,17 @@ export class MachineComponentsService {
         id: machineComponentCompatibilityId,
       },
     }));
+  }
+
+  async getCurrentPart({
+    current_part_id,
+  }: {
+    current_part_id: number | null;
+  }): Promise<Part> {
+    return this.prisma.parts.findFirst({
+      where: {
+        id: current_part_id,
+      },
+    });
   }
 }

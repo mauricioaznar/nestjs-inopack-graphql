@@ -10,6 +10,7 @@ export class PartsService {
     return this.prisma.parts.create({
       data: {
         name: partInput.name,
+        part_category_id: partInput.part_category_id,
         created_at: new Date(),
         updated_at: new Date(),
       },
@@ -21,6 +22,7 @@ export class PartsService {
       data: {
         name: partInput.name,
         updated_at: new Date(),
+        part_category_id: partInput.part_category_id,
       },
       where: {
         id,

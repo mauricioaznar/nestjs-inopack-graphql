@@ -8,8 +8,7 @@ export class PartBase {
   name: string;
 
   @Field()
-  @IsDate()
-  created_at: Date;
+  part_category_id: number;
 }
 
 @InputType('PartInput')

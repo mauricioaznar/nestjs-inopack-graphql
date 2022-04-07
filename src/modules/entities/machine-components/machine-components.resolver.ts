@@ -1,19 +1,21 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { MachineComponentsService } from './machine-components.service';
-import { Machine } from '../../../common/dto/entities/machine.dto';
 import {
+  MachineComponent,
   MachineComponentInput,
   MachineComponentPartInput,
 } from '../../../common/dto/entities/machine-component.dto';
 import { MachineComponentCompatibilityInput } from '../../../common/dto/entities/machine-component-compatibility.dto';
+import { Part } from '../../../common/dto/entities/part.dto';
+import { Machine } from '../../../common/dto/entities/machine.dto';
 
-@Resolver(() => Machine)
+@Resolver(() => MachineComponent)
 @Injectable()
 export class MachineComponentsResolver {
   constructor(private machineComponentsService: MachineComponentsService) {}
 
-  @Mutation(() => Machine)
+  @Mutation(() => MachineComponent)
   async addMachineComponent(
     @Args('MachineComponentInput') machineComponentInput: MachineComponentInput,
   ) {
@@ -22,7 +24,7 @@ export class MachineComponentsResolver {
     );
   }
 
-  @Mutation(() => Machine)
+  @Mutation(() => MachineComponent)
   async updateMachineComponent(
     @Args('MachineComponentId') machineComponentId: number,
     @Args('MachineComponentInput') machineComponentInput: MachineComponentInput,
@@ -33,7 +35,7 @@ export class MachineComponentsResolver {
     );
   }
 
-  @Mutation(() => Machine)
+  @Mutation(() => MachineComponent)
   async updateMachineComponentCurrentPart(
     @Args('MachineComponentId') machineComponentId: number,
     @Args('MachineComponentPartInput')
@@ -57,11 +59,23 @@ export class MachineComponentsResolver {
 
   @Mutation(() => Boolean)
   async removeMachineCompatiblePart(
-    @Args('machineComponentCompatibilityId')
+    @Args('MachineComponentCompatibilityId')
     machineComponentCompatibilityId: number,
   ) {
-    return this.machineComponentsService.removeMachineCompatibility({
+    return this.machineComponentsService.removeMachineCompatiblePart({
       machineComponentCompatibilityId,
+    });
+  }
+
+  @ResolveField(() => Boolean)
+  async hello(machine: Machine): Promise<boolean> {
+    return true;
+  }
+
+  @ResolveField(() => Part)
+  async current_part(machineComponent: MachineComponent) {
+    return this.machineComponentsService.getCurrentPart({
+      current_part_id: machineComponent.current_part_id,
     });
   }
 }

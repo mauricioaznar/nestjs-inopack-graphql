@@ -30,7 +30,7 @@ export class MachineSectionsResolver {
     );
   }
 
-  @ResolveField(() => [MachineSection])
+  @ResolveField(() => [MachineComponent])
   async machine_components(
     machineSection: MachineSection,
   ): Promise<MachineComponent[]> {
