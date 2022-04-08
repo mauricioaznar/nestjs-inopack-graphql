@@ -5,7 +5,10 @@ import {
   MachineComponentInput,
   MachineComponentPartInput,
 } from '../../../common/dto/entities/machine-component.dto';
-import { MachineComponentCompatibilityInput } from '../../../common/dto/entities/machine-component-compatibility.dto';
+import {
+  MachineComponentCompatibility,
+  MachineComponentCompatibilityInput,
+} from '../../../common/dto/entities/machine-component-compatibility.dto';
 import { Part } from '../../../common/dto/entities/part.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
 
@@ -63,31 +66,6 @@ export class MachineComponentsService {
     });
   }
 
-  async addMachineCompatiblePart(
-    machineComponentCompatibilityInput: MachineComponentCompatibilityInput,
-  ): Promise<boolean> {
-    return !!(await this.prisma.machine_component_compatibilities.create({
-      data: {
-        machine_component_id:
-          machineComponentCompatibilityInput.machine_component_id,
-        compatible_part_id:
-          machineComponentCompatibilityInput.compatible_part_id,
-      },
-    }));
-  }
-
-  async removeMachineCompatiblePart({
-    machineComponentCompatibilityId,
-  }: {
-    machineComponentCompatibilityId: number;
-  }): Promise<boolean> {
-    return !!(await this.prisma.machine_component_compatibilities.delete({
-      where: {
-        id: machineComponentCompatibilityId,
-      },
-    }));
-  }
-
   async getCurrentPart({
     current_part_id,
   }: {
@@ -112,6 +90,18 @@ export class MachineComponentsService {
     return this.prisma.machine_sections.findFirst({
       where: {
         id: machine_section_id,
+      },
+    });
+  }
+
+  async getMachineCompatibilities({
+    machine_component_id,
+  }: {
+    machine_component_id: number;
+  }): Promise<MachineComponentCompatibility[]> {
+    return this.prisma.machine_component_compatibilities.findMany({
+      where: {
+        machine_component_id: machine_component_id,
       },
     });
   }

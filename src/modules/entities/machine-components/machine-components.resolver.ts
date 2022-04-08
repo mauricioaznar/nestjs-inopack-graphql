@@ -6,10 +6,9 @@ import {
   MachineComponentInput,
   MachineComponentPartInput,
 } from '../../../common/dto/entities/machine-component.dto';
-import { MachineComponentCompatibilityInput } from '../../../common/dto/entities/machine-component-compatibility.dto';
 import { Part } from '../../../common/dto/entities/part.dto';
-import { Machine } from '../../../common/dto/entities/machine.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
+import { MachineComponentCompatibility } from '../../../common/dto/entities/machine-component-compatibility.dto';
 
 @Resolver(() => MachineComponent)
 @Injectable()
@@ -48,26 +47,6 @@ export class MachineComponentsResolver {
     );
   }
 
-  @Mutation(() => Boolean)
-  async addMachineCompatiblePart(
-    @Args('MachineComponentCompatibilityInput')
-    machineComponentCompatibilityInput: MachineComponentCompatibilityInput,
-  ) {
-    return this.machineComponentsService.addMachineCompatiblePart(
-      machineComponentCompatibilityInput,
-    );
-  }
-
-  @Mutation(() => Boolean)
-  async removeMachineCompatiblePart(
-    @Args('MachineComponentCompatibilityId')
-    machineComponentCompatibilityId: number,
-  ) {
-    return this.machineComponentsService.removeMachineCompatiblePart({
-      machineComponentCompatibilityId,
-    });
-  }
-
   @ResolveField(() => Part, {
     nullable: true,
   })
@@ -85,6 +64,16 @@ export class MachineComponentsResolver {
   ): Promise<MachineSection | null> {
     return this.machineComponentsService.getMachineSection({
       machine_section_id: machineComponent.machine_section_id,
+    });
+  }
+
+  @ResolveField(() => [MachineComponentCompatibility])
+  async machine_compatibilities(
+    machineComponent: MachineComponent,
+  ): Promise<MachineComponentCompatibility[]> {
+    console.log(machineComponent);
+    return this.machineComponentsService.getMachineCompatibilities({
+      machine_component_id: machineComponent.id,
     });
   }
 }
