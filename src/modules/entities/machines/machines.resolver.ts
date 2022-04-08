@@ -18,6 +18,11 @@ export class MachinesResolver {
     return this.machinesService.createMachine(input);
   }
 
+  @Query(() => Machine)
+  async getMachine(@Args('MachineId') id: number) {
+    return this.machinesService.getMachine({ id });
+  }
+
   @Query(() => [Machine])
   async getMachines() {
     return this.machinesService.getMachines();
