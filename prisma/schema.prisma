@@ -551,17 +551,17 @@ model users {
 }
 
 model machine_components {
-  id                                Int                                 @id @default(autoincrement()) @db.UnsignedInt
-  active                            Int                                 @default(1)
-  created_at                        DateTime?                           @db.DateTime(0)
-  updated_at                        DateTime?                           @db.DateTime(0)
-  machine_section_id                Int?                                @db.UnsignedInt
-  current_part_id                   Int?                                @db.UnsignedInt
-  current_part_required_quantity    Int?                                @db.UnsignedInt
-  name                              String                              @db.VarChar(255)
-  parts                             parts?                              @relation(fields: [current_part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_current_part_id_foreign")
-  machine_sections                  machine_sections?                   @relation(fields: [machine_section_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_machine_section_id_foreign")
-  machine_component_compatibilities machine_component_compatibilities[]
+  id                             Int                       @id @default(autoincrement()) @db.UnsignedInt
+  active                         Int                       @default(1)
+  created_at                     DateTime?                 @db.DateTime(0)
+  updated_at                     DateTime?                 @db.DateTime(0)
+  machine_section_id             Int?                      @db.UnsignedInt
+  current_part_id                Int?                      @db.UnsignedInt
+  current_part_required_quantity Int?                      @db.UnsignedInt
+  name                           String                    @db.VarChar(255)
+  parts                          parts?                    @relation(fields: [current_part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_current_part_id_foreign")
+  machine_sections               machine_sections?         @relation(fields: [machine_section_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_machine_section_id_foreign")
+  machine_compatibilities        machine_compatibilities[]
 
   @@index([current_part_id], map: "machine_components_current_part_id_foreign")
   @@index([machine_section_id], map: "machine_components_machine_section_id_foreign")
@@ -590,33 +590,19 @@ model part_categories {
 }
 
 model parts {
-  id                                Int                                 @id @default(autoincrement()) @db.UnsignedInt
-  active                            Int                                 @default(1)
-  created_at                        DateTime?                           @db.DateTime(0)
-  updated_at                        DateTime?                           @db.DateTime(0)
-  part_category_id                  Int?                                @db.UnsignedInt
-  name                              String                              @db.VarChar(255)
-  part_categories                   part_categories?                    @relation(fields: [part_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "parts_part_category_id_foreign")
-  machine_component_compatibilities machine_component_compatibilities[]
-  machine_components                machine_components[]
-  part_additions                    part_additions[]
-  part_subtractions                 part_subtractions[]
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  active                  Int                       @default(1)
+  created_at              DateTime?                 @db.DateTime(0)
+  updated_at              DateTime?                 @db.DateTime(0)
+  part_category_id        Int?                      @db.UnsignedInt
+  name                    String                    @db.VarChar(255)
+  part_categories         part_categories?          @relation(fields: [part_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "parts_part_category_id_foreign")
+  machine_compatibilities machine_compatibilities[]
+  machine_components      machine_components[]
+  part_additions          part_additions[]
+  part_subtractions       part_subtractions[]
 
   @@index([part_category_id], map: "parts_part_category_id_foreign")
-}
-
-model machine_component_compatibilities {
-  id                   Int                 @id @default(autoincrement()) @db.UnsignedInt
-  active               Int                 @default(1)
-  created_at           DateTime?           @db.DateTime(0)
-  updated_at           DateTime?           @db.DateTime(0)
-  machine_component_id Int?                @db.UnsignedInt
-  compatible_part_id   Int?                @db.UnsignedInt
-  parts                parts?              @relation(fields: [compatible_part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_component_compatibilities_compatible_part_id_foreign")
-  machine_components   machine_components? @relation(fields: [machine_component_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_component_compatibilities_machine_component_id_foreign")
-
-  @@index([compatible_part_id], map: "machine_component_compatibilities_compatible_part_id_foreign")
-  @@index([machine_component_id], map: "machine_component_compatibilities_machine_component_id_foreign")
 }
 
 model part_additions {
@@ -641,4 +627,18 @@ model part_subtractions {
   parts      parts?    @relation(fields: [part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "part_subtractions_part_id_foreign")
 
   @@index([part_id], map: "part_subtractions_part_id_foreign")
+}
+
+model machine_compatibilities {
+  id                   Int                 @id @default(autoincrement()) @db.UnsignedInt
+  active               Int                 @default(1)
+  created_at           DateTime?           @db.DateTime(0)
+  updated_at           DateTime?           @db.DateTime(0)
+  machine_component_id Int?                @db.UnsignedInt
+  part_id              Int?                @db.UnsignedInt
+  machine_components   machine_components? @relation(fields: [machine_component_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_compatibilities_machine_component_id_foreign")
+  parts                parts?              @relation(fields: [part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_compatibilities_part_id_foreign")
+
+  @@index([machine_component_id], map: "machine_compatibilities_machine_component_id_foreign")
+  @@index([part_id], map: "machine_compatibilities_part_id_foreign")
 }

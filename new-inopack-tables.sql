@@ -63,19 +63,19 @@ AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
-CREATE TABLE `machine_component_compatibilities`
+CREATE TABLE `machine_compatibilities`
 (
   `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
   `active`       int                                                     NOT NULL DEFAULT '1',
   `created_at`   datetime                                               NULL     DEFAULT NULL,
   `updated_at`   datetime                                               NULL     DEFAULT NULL,
   `machine_component_id`    int unsigned          DEFAULT NULL,
-  `compatible_part_id`    int unsigned          DEFAULT NULL,
+  `part_id`    int unsigned          DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `machine_component_compatibilities_machine_component_id_foreign` (`machine_component_id`),
-  CONSTRAINT `machine_component_compatibilities_machine_component_id_foreign` FOREIGN KEY (`machine_component_id`) REFERENCES `machine_components` (`id`),
-  KEY `machine_component_compatibilities_compatible_part_id_foreign` (`compatible_part_id`),
-  CONSTRAINT `machine_component_compatibilities_compatible_part_id_foreign` FOREIGN KEY (`compatible_part_id`) REFERENCES `parts` (`id`)
+  KEY `machine_compatibilities_machine_component_id_foreign` (`machine_component_id`),
+  CONSTRAINT `machine_compatibilities_machine_component_id_foreign` FOREIGN KEY (`machine_component_id`) REFERENCES `machine_components` (`id`),
+  KEY `machine_compatibilities_part_id_foreign` (`part_id`),
+  CONSTRAINT `machine_compatibilities_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`)
 ) ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4

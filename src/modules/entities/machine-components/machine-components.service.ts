@@ -6,9 +6,9 @@ import {
   MachineComponentPartInput,
 } from '../../../common/dto/entities/machine-component.dto';
 import {
-  MachineComponentCompatibility,
-  MachineComponentCompatibilityInput,
-} from '../../../common/dto/entities/machine-component-compatibility.dto';
+  MachineCompatibility,
+  MachineCompatibilityInput,
+} from '../../../common/dto/entities/machine-compatibility.dto';
 import { Part } from '../../../common/dto/entities/part.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
 
@@ -98,8 +98,8 @@ export class MachineComponentsService {
     machine_component_id,
   }: {
     machine_component_id: number;
-  }): Promise<MachineComponentCompatibility[]> {
-    return this.prisma.machine_component_compatibilities.findMany({
+  }): Promise<MachineCompatibility[]> {
+    return this.prisma.machine_compatibilities.findMany({
       where: {
         machine_component_id: machine_component_id,
       },

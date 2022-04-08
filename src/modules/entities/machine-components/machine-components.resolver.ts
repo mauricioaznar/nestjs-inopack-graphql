@@ -8,7 +8,7 @@ import {
 } from '../../../common/dto/entities/machine-component.dto';
 import { Part } from '../../../common/dto/entities/part.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
-import { MachineComponentCompatibility } from '../../../common/dto/entities/machine-component-compatibility.dto';
+import { MachineCompatibility } from '../../../common/dto/entities/machine-compatibility.dto';
 
 @Resolver(() => MachineComponent)
 @Injectable()
@@ -67,10 +67,10 @@ export class MachineComponentsResolver {
     });
   }
 
-  @ResolveField(() => [MachineComponentCompatibility])
+  @ResolveField(() => [MachineCompatibility])
   async machine_compatibilities(
     machineComponent: MachineComponent,
-  ): Promise<MachineComponentCompatibility[]> {
+  ): Promise<MachineCompatibility[]> {
     console.log(machineComponent);
     return this.machineComponentsService.getMachineCompatibilities({
       machine_component_id: machineComponent.id,

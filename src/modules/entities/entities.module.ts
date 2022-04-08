@@ -5,7 +5,7 @@ import { PartsModule } from './parts/parts.module';
 import { PartCategoriesModule } from './part-categories/part-categories.module';
 import { MachineSectionsModule } from './machine-sections/machine-sections.module';
 import { MachineComponentsModule } from './machine-components/machine-components.module';
-import { MachineComponentCompatibilitiesModule } from './machine-component-compatibilities/machine-component-compatibilities.module';
+import { MachineCompatibilitiesModule } from './machine-compatibilities/machine-compatibilities.module';
 
 @Module({
   imports: [
@@ -15,7 +15,7 @@ import { MachineComponentCompatibilitiesModule } from './machine-component-compa
     PartCategoriesModule,
     MachineSectionsModule,
     MachineComponentsModule,
-    MachineComponentCompatibilitiesModule,
+    MachineCompatibilitiesModule,
   ],
 })
 export class EntitiesModule {}
