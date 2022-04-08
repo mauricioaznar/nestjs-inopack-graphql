@@ -76,4 +76,15 @@ export class MachineComponentsResolver {
       current_part_id: machineComponent.current_part_id,
     });
   }
+
+  @ResolveField(() => MachineSection, {
+    nullable: true,
+  })
+  async machine_section(
+    machineComponent: MachineComponent,
+  ): Promise<MachineSection | null> {
+    return this.machineComponentsService.getMachineSection({
+      machine_section_id: machineComponent.machine_section_id,
+    });
+  }
 }

@@ -6,6 +6,7 @@ import {
   MachineInput,
 } from '../../../common/dto/entities/machine.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
+import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
 
 @Resolver(() => Machine)
 @Injectable()
@@ -25,5 +26,10 @@ export class MachinesResolver {
   @ResolveField(() => [MachineSection])
   async machine_sections(machine: Machine): Promise<MachineSection[]> {
     return this.machinesService.getMachineSections({ machineId: machine.id });
+  }
+
+  @ResolveField(() => [MachineComponent])
+  async machine_components(machine: Machine): Promise<MachineComponent[]> {
+    return this.machinesService.getMachineComponents({ machineId: machine.id });
   }
 }

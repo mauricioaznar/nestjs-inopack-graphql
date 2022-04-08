@@ -5,6 +5,7 @@ import {
   MachineInput,
 } from '../../../common/dto/entities/machine.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
+import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
 
 @Injectable()
 export class MachinesService {
@@ -39,6 +40,20 @@ export class MachinesService {
     return this.prisma.machine_sections.findMany({
       where: {
         machine_id: machineId,
+      },
+    });
+  }
+
+  async getMachineComponents({
+    machineId,
+  }: {
+    machineId: number;
+  }): Promise<MachineComponent[]> {
+    return this.prisma.machine_components.findMany({
+      where: {
+        machine_sections: {
+          machine_id: machineId,
+        },
       },
     });
   }
