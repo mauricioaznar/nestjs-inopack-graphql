@@ -80,4 +80,38 @@ CREATE TABLE `machine_component_compatibilities`
 AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
+
+
+CREATE TABLE `part_additions`
+(
+  `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
+  `active`       int                                                     NOT NULL DEFAULT '1',
+  `created_at`   datetime                                               NULL     DEFAULT NULL,
+  `updated_at`   datetime                                               NULL     DEFAULT NULL,
+  `part_id`    int unsigned          DEFAULT NULL,
+  `quantity`    int unsigned         NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `part_additions_part_id_foreign` (`part_id`),
+  CONSTRAINT `part_additions_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`)
+) ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE `part_subtractions`
+(
+  `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
+  `active`       int                                                     NOT NULL DEFAULT '1',
+  `created_at`   datetime                                               NULL     DEFAULT NULL,
+  `updated_at`   datetime                                               NULL     DEFAULT NULL,
+  `part_id`    int unsigned          DEFAULT NULL,
+  `quantity`    int unsigned         NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `part_subtractions_part_id_foreign` (`part_id`),
+  CONSTRAINT `part_subtractions_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`)
+) ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
             

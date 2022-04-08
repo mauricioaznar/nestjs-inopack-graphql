@@ -599,6 +599,8 @@ model parts {
   part_categories                   part_categories?                    @relation(fields: [part_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "parts_part_category_id_foreign")
   machine_component_compatibilities machine_component_compatibilities[]
   machine_components                machine_components[]
+  part_additions                    part_additions[]
+  part_subtractions                 part_subtractions[]
 
   @@index([part_category_id], map: "parts_part_category_id_foreign")
 }
@@ -615,4 +617,28 @@ model machine_component_compatibilities {
 
   @@index([compatible_part_id], map: "machine_component_compatibilities_compatible_part_id_foreign")
   @@index([machine_component_id], map: "machine_component_compatibilities_machine_component_id_foreign")
+}
+
+model part_additions {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  active     Int       @default(1)
+  created_at DateTime? @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  part_id    Int?      @db.UnsignedInt
+  quantity   Int       @default(0) @db.UnsignedInt
+  parts      parts?    @relation(fields: [part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "part_additions_part_id_foreign")
+
+  @@index([part_id], map: "part_additions_part_id_foreign")
+}
+
+model part_subtractions {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  active     Int       @default(1)
+  created_at DateTime? @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  part_id    Int?      @db.UnsignedInt
+  quantity   Int       @default(0) @db.UnsignedInt
+  parts      parts?    @relation(fields: [part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "part_subtractions_part_id_foreign")
+
+  @@index([part_id], map: "part_subtractions_part_id_foreign")
 }
