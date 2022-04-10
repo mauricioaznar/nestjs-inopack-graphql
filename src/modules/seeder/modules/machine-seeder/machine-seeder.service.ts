@@ -22,49 +22,49 @@ export class MachineSeederService {
     // seccion 1
     const cmdSection1 = await this.machineSectionsService.addMachineSection({
       machine_id: cmd.id,
-      name: 'Cmd seccion 1',
+      name: 'Tablero',
     });
     const componente1 = await this.machineComponentsService.addMachineComponent(
       {
         machine_section_id: cmdSection1.id,
-        name: 'componente 1',
+        name: 'Bandas',
       },
     );
     const componente2 = await this.machineComponentsService.addMachineComponent(
       {
         machine_section_id: cmdSection1.id,
-        name: 'componente 2',
+        name: 'Resistencias',
       },
     );
     const componente3 = await this.machineComponentsService.addMachineComponent(
       {
         machine_section_id: cmdSection1.id,
-        name: 'componente 3',
+        name: 'Contactor',
       },
     );
 
     // seccion 2
     const cmdSection2 = await this.machineSectionsService.addMachineSection({
       machine_id: cmd.id,
-      name: 'Cmd seccion 2',
+      name: 'Cabezal',
     });
     const componente4 = await this.machineComponentsService.addMachineComponent(
       {
         machine_section_id: cmdSection2.id,
-        name: 'componente 4',
+        name: 'Contactor',
       },
     );
     const componente5 = await this.machineComponentsService.addMachineComponent(
       {
         machine_section_id: cmdSection2.id,
-        name: 'componente 5',
+        name: 'Banda',
       },
     );
 
     // seccion 3
     const cmdSection3 = await this.machineSectionsService.addMachineSection({
       machine_id: cmd.id,
-      name: 'Cmd seccion 3',
+      name: 'Seccion 3',
     });
     const componente6 = await this.machineComponentsService.addMachineComponent(
       {
@@ -97,7 +97,7 @@ export class MachineSeederService {
     // seccion 4
     const cmdSection4 = await this.machineSectionsService.addMachineSection({
       machine_id: cmd.id,
-      name: 'Cmd seccion 4',
+      name: 'Seccion 4',
     });
     const componente10 =
       await this.machineComponentsService.addMachineComponent({

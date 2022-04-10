@@ -24,9 +24,26 @@ export class PartSeederService {
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Contactor 500v',
     });
+
+    const contactor900 = await this.partsService.createPart({
+      part_category_id: partCategoriesSeed.materials.id,
+      name: 'Contactor 900v',
+    });
+    const contactor700 = await this.partsService.createPart({
+      part_category_id: partCategoriesSeed.materials.id,
+      name: 'Contactor 700v',
+    });
     const tornillo1 = await this.partsService.createPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Tornillo 1',
+    });
+    const tornillo2 = await this.partsService.createPart({
+      part_category_id: partCategoriesSeed.materials.id,
+      name: 'Tornillo 2',
+    });
+    const tornillo3 = await this.partsService.createPart({
+      part_category_id: partCategoriesSeed.materials.id,
+      name: 'Tornillo 3',
     });
 
     const banda600 = await this.partsService.createPart({
@@ -57,18 +74,32 @@ export class PartSeederService {
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Resistencia 40',
     });
+    const gomas1 = await this.partsService.createPart({
+      part_category_id: partCategoriesSeed.materials.id,
+      name: 'Goma circulares',
+    });
+    const gomas2 = await this.partsService.createPart({
+      part_category_id: partCategoriesSeed.materials.id,
+      name: 'Goma cuadradas',
+    });
 
     return {
       materials: {
         contactor400,
         contactor500,
+        contactor700,
+        contactor900,
         tornillo1,
+        tornillo2,
+        tornillo3,
         banda600,
         banda700,
         banda800,
         resistencia20,
         resistencia30,
         resistencia40,
+        gomas1,
+        gomas2,
       },
     };
   }
