@@ -71,7 +71,6 @@ export class MachineComponentsResolver {
   async machine_compatibilities(
     machineComponent: MachineComponent,
   ): Promise<MachineCompatibility[]> {
-    console.log(machineComponent);
     return this.machineComponentsService.getMachineCompatibilities({
       machine_component_id: machineComponent.id,
     });

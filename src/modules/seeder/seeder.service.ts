@@ -3,6 +3,7 @@ import { PartCategorySeederService } from './modules/part-category-seeder/part-c
 import { PartSeederService } from './modules/part-seeder/part-seeder.service';
 import { MachineSeederService } from './modules/machine-seeder/machine-seeder.service';
 import { MachinePartsSeederService } from './modules/machine-parts-seeder/machine-parts-seeder.service';
+import { PartInventorySeederService } from './modules/part-inventory-seeder/part-inventory-seeder.service';
 
 @Injectable()
 export class SeederService {
@@ -11,6 +12,7 @@ export class SeederService {
     private readonly partSeederService: PartSeederService,
     private readonly machineSeederService: MachineSeederService,
     private readonly machinePartsSeederService: MachinePartsSeederService,
+    private readonly partInventorySeederService: PartInventorySeederService,
   ) {}
 
   async seed() {
@@ -22,5 +24,6 @@ export class SeederService {
       partsSeed,
       machinesSeed,
     );
+    await this.partInventorySeederService.adjustInventory(partsSeed);
   }
 }

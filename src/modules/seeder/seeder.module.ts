@@ -5,6 +5,7 @@ import { PartSeederModule } from './modules/part-seeder/part-seeder.module';
 import { PartCategorySeederModule } from './modules/part-category-seeder/part-category-seeder.module';
 import { MachineSeederModule } from './modules/machine-seeder/machine-seeder.module';
 import { MachinePartsSeederModule } from './modules/machine-parts-seeder/machine-parts-seeder.module';
+import { PartInventorySeederModule } from './modules/part-inventory-seeder/part-inventory-seeder.module';
 
 @Module({
   providers: [Logger, SeederService, PrismaService],
@@ -13,6 +14,7 @@ import { MachinePartsSeederModule } from './modules/machine-parts-seeder/machine
     PartCategorySeederModule,
     MachineSeederModule,
     MachinePartsSeederModule,
+    PartInventorySeederModule,
   ],
 })
 export class SeederModule {}
