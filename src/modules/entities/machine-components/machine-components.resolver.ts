@@ -1,4 +1,4 @@
-import { Args, Mutation, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { MachineComponentsService } from './machine-components.service';
 import {
@@ -14,6 +14,15 @@ import { MachineCompatibility } from '../../../common/dto/entities/machine-compa
 @Injectable()
 export class MachineComponentsResolver {
   constructor(private machineComponentsService: MachineComponentsService) {}
+
+  @Query(() => MachineComponent)
+  async getMachineComponent(
+    @Args('MachineComponentId') machineComponentId: number,
+  ) {
+    return this.machineComponentsService.getMachineComponent(
+      machineComponentId,
+    );
+  }
 
   @Mutation(() => MachineComponent)
   async addMachineComponent(
