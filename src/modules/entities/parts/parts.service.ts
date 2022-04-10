@@ -33,4 +33,18 @@ export class PartsService {
   async getParts(): Promise<Part[]> {
     return this.prisma.parts.findMany();
   }
+
+  async getTotalRequiredQuantity(id: number): Promise<number> {
+    const {
+      _sum: { current_part_required_quantity },
+    } = await this.prisma.machine_components.aggregate({
+      _sum: {
+        current_part_required_quantity: true,
+      },
+      where: {
+        current_part_id: id,
+      },
+    });
+    return current_part_required_quantity || 0;
+  }
 }

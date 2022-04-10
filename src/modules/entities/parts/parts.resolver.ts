@@ -41,4 +41,9 @@ export class PartsResolver {
   async current_quantity(part: Part) {
     return this.partInventoryService.getCurrentQuantity(part.id);
   }
+
+  @ResolveField(() => Float)
+  async total_required_quantity(part: Part) {
+    return this.partsService.getTotalRequiredQuantity(part.id);
+  }
 }
