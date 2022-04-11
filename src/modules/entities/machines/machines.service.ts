@@ -15,7 +15,20 @@ export class MachinesService {
     return this.prisma.machines.create({
       data: {
         name: machineInput.name,
-        created_at: machineInput.created_at,
+      },
+    });
+  }
+
+  async updateMachine(
+    machineId: number,
+    machineInput: MachineInput,
+  ): Promise<Machine> {
+    return this.prisma.machines.update({
+      data: {
+        name: machineInput.name,
+      },
+      where: {
+        id: machineId,
       },
     });
   }
