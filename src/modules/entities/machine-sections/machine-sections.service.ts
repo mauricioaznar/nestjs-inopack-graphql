@@ -10,6 +10,14 @@ import { MachineComponent } from '../../../common/dto/entities/machine-component
 export class MachineSectionsService {
   constructor(private prisma: PrismaService) {}
 
+  async getMachineSection(machineSectionId: number): Promise<MachineSection> {
+    return this.prisma.machine_sections.findFirst({
+      where: {
+        id: machineSectionId,
+      },
+    });
+  }
+
   async addMachineSection(
     machineSectionInput: MachineSectionInput,
   ): Promise<MachineSection> {
