@@ -20,14 +20,14 @@ export class MachineSectionsResolver {
   }
 
   @Mutation(() => MachineSection)
-  async addMachineSection(
+  async createMachineSection(
     @Args('MachineSectionInput') machineSectionInput: MachineSectionInput,
   ) {
     return this.machineSectionsService.addMachineSection(machineSectionInput);
   }
 
   @Mutation(() => MachineSection)
-  async updateSection(
+  async updateMachineSection(
     @Args('MachineSectionId') machineSectionId: number,
     @Args('MachineSectionInput') machineSectionInput: MachineSectionInput,
   ) {
