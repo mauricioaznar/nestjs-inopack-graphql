@@ -9,6 +9,8 @@ import {
 import { MachineCompatibility } from '../../../common/dto/entities/machine-compatibility.dto';
 import { Part } from '../../../common/dto/entities/part.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
+import { vennDiagram } from '../../../common/helpers/venn-diagram';
+import { areUnique } from '../../../common/helpers/are-unique';
 
 @Injectable()
 export class MachineComponentsService {
@@ -31,10 +33,19 @@ export class MachineComponentsService {
   async upsertMachineComponent(
     upsertInput: MachineComponentUpsertInput,
   ): Promise<MachineComponent> {
-    const inputMachineCompatibilities = upsertInput.machine_compatibilities;
+    const machineCompatibilities = upsertInput.machine_compatibilities;
+    if (
+      !areUnique({
+        items: machineCompatibilities,
+        indexProperty: 'part_id',
+      })
+    ) {
+      throw new BadRequestException('Machine Compatibilities are not unique');
+    }
+
     const currentPartId = upsertInput.current_part_id;
 
-    const isCurrentInInputCompatibilities = !!inputMachineCompatibilities.find(
+    const isCurrentInInputCompatibilities = !!machineCompatibilities.find(
       (compat) => compat.part_id === currentPartId,
     );
 
@@ -62,40 +73,32 @@ export class MachineComponentsService {
       },
     });
 
-    const currentMachineCompatibilities =
+    const oldMachineCompatibilities =
       await this.prisma.machine_compatibilities.findMany({
         where: {
           machine_component_id: machineComponent.id,
         },
       });
 
-    const removedCurrentMachineCompatibilities =
-      currentMachineCompatibilities.filter((currentCompat) => {
-        const foundMachineCompatibilitiesInput =
-          inputMachineCompatibilities.find(
-            (inputMachineCompat) =>
-              inputMachineCompat.part_id === currentCompat.part_id,
-          );
-        return !foundMachineCompatibilitiesInput;
-      });
+    const {
+      aMinusB: removedMachineCompatibilities,
+      bMinusA: addedMachineCompatibilities,
+    } = vennDiagram({
+      a: oldMachineCompatibilities,
+      b: machineCompatibilities,
+      indexProperty: 'part_id',
+    });
 
-    for await (const removedMachineCompatibility of removedCurrentMachineCompatibilities) {
-      await this.prisma.machine_compatibilities.delete({
+    for await (const removedMachineCompatibility of removedMachineCompatibilities) {
+      await this.prisma.machine_compatibilities.deleteMany({
         where: {
-          id: removedMachineCompatibility.id,
+          part_id: removedMachineCompatibility.part_id,
+          machine_component_id: machineComponent.id,
         },
       });
     }
 
-    const addedCurrentMachineCompatibilities =
-      inputMachineCompatibilities.filter((inputCompat) => {
-        const foundCurrentCompat = currentMachineCompatibilities.find(
-          (currentCompat) => inputCompat.part_id === currentCompat.part_id,
-        );
-        return !foundCurrentCompat;
-      });
-
-    for await (const addedCurrentMachineCompat of addedCurrentMachineCompatibilities) {
+    for await (const addedCurrentMachineCompat of addedMachineCompatibilities) {
       await this.prisma.machine_compatibilities.create({
         data: {
           part_id: addedCurrentMachineCompat.part_id,
