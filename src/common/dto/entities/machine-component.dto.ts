@@ -18,8 +18,8 @@ export class MachineComponentUpsertInput {
   @Field()
   name: string;
 
-  @Field()
-  machine_section_id: number;
+  @Field({ nullable: true })
+  machine_section_id: number | null;
 
   @Field({ nullable: true })
   current_part_id?: number | null;
