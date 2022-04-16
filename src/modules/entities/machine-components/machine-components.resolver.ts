@@ -5,6 +5,7 @@ import {
   MachineComponent,
   MachineComponentInput,
   MachineComponentPartInput,
+  MachineComponentUpsertInput,
 } from '../../../common/dto/entities/machine-component.dto';
 import { Part } from '../../../common/dto/entities/part.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
@@ -24,22 +25,24 @@ export class MachineComponentsResolver {
     );
   }
 
+  @Query(() => [MachineComponent])
+  async getMachineComponents() {
+    return this.machineComponentsService.getMachineComponents();
+  }
+
+  @Mutation(() => MachineComponent)
+  async upsertMachineComponent(
+    @Args('MachineComponentUpsertInput')
+    upsertInput: MachineComponentUpsertInput,
+  ) {
+    return this.machineComponentsService.upsertMachineComponent(upsertInput);
+  }
+
   @Mutation(() => MachineComponent)
   async addMachineComponent(
     @Args('MachineComponentInput') machineComponentInput: MachineComponentInput,
   ) {
     return this.machineComponentsService.addMachineComponent(
-      machineComponentInput,
-    );
-  }
-
-  @Mutation(() => MachineComponent)
-  async updateMachineComponent(
-    @Args('MachineComponentId') machineComponentId: number,
-    @Args('MachineComponentInput') machineComponentInput: MachineComponentInput,
-  ) {
-    return this.machineComponentsService.updateMachineComponent(
-      { machineComponentId },
       machineComponentInput,
     );
   }
