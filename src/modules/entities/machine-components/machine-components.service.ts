@@ -11,6 +11,7 @@ import { Part } from '../../../common/dto/entities/part.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
 import { vennDiagram } from '../../../common/helpers/venn-diagram';
 import { areUnique } from '../../../common/helpers/are-unique';
+import { Machine } from '../../../common/dto/entities/machine.dto';
 
 @Injectable()
 export class MachineComponentsService {
@@ -170,6 +171,20 @@ export class MachineComponentsService {
     return this.prisma.machine_sections.findFirst({
       where: {
         id: machine_section_id,
+      },
+    });
+  }
+
+  async getMachine({
+    machine_id,
+  }: {
+    machine_id: number | null | undefined;
+  }): Promise<Machine | null> {
+    if (!machine_id) return null;
+
+    return this.prisma.machines.findFirst({
+      where: {
+        id: machine_id,
       },
     });
   }

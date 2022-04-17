@@ -18,6 +18,14 @@ export class MachineSectionsService {
     });
   }
 
+  async getMachineSections(machineId: number): Promise<MachineSection[]> {
+    return this.prisma.machine_sections.findMany({
+      where: {
+        machine_id: machineId,
+      },
+    });
+  }
+
   async addMachineSection(
     machineSectionInput: MachineSectionInput,
   ): Promise<MachineSection> {

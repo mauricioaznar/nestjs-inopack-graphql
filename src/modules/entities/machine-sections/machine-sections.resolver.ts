@@ -19,6 +19,13 @@ export class MachineSectionsResolver {
     return this.machineSectionsService.getMachineSection(machineSectionId);
   }
 
+  @Query(() => [MachineSection])
+  async getMachineSections(
+    @Args('MachineId') machineId: number,
+  ): Promise<MachineSection[]> {
+    return this.machineSectionsService.getMachineSections(machineId);
+  }
+
   @Mutation(() => MachineSection)
   async createMachineSection(
     @Args('MachineSectionInput') machineSectionInput: MachineSectionInput,

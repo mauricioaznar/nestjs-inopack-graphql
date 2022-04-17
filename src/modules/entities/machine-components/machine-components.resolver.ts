@@ -10,6 +10,7 @@ import {
 import { Part } from '../../../common/dto/entities/part.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
 import { MachineCompatibility } from '../../../common/dto/entities/machine-compatibility.dto';
+import { Machine } from '../../../common/dto/entities/machine.dto';
 
 @Resolver(() => MachineComponent)
 @Injectable()
@@ -76,6 +77,15 @@ export class MachineComponentsResolver {
   ): Promise<MachineSection | null> {
     return this.machineComponentsService.getMachineSection({
       machine_section_id: machineComponent.machine_section_id,
+    });
+  }
+
+  @ResolveField(() => Machine, {
+    nullable: true,
+  })
+  async machine(machineComponent: MachineComponent): Promise<Machine | null> {
+    return this.machineComponentsService.getMachine({
+      machine_id: machineComponent.machine_id,
     });
   }
 
