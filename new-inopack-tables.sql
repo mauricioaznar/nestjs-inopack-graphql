@@ -50,12 +50,15 @@ CREATE TABLE `machine_components`
   `created_at`   datetime                                               NULL     DEFAULT NULL,
   `updated_at`   datetime                                               NULL     DEFAULT NULL,
   `machine_section_id`    int unsigned          DEFAULT NULL,
+  `machine_id`    int unsigned          DEFAULT NULL,
   `current_part_id`    int unsigned          DEFAULT NULL,
   `current_part_required_quantity`    int unsigned          DEFAULT NULL,
   `name`   varchar(255)                                               NOT NULL,
   PRIMARY KEY (`id`),
   KEY `machine_components_machine_section_id_foreign` (`machine_section_id`),
   CONSTRAINT `machine_components_machine_section_id_foreign` FOREIGN KEY (`machine_section_id`) REFERENCES `machine_sections` (`id`),
+  KEY `machine_components_machine_id_foreign` (`machine_id`),
+  CONSTRAINT `machine_components_machine_id_foreign` FOREIGN KEY (`machine_id`) REFERENCES `machines` (`id`),
   KEY `machine_components_current_part_id_foreign` (`current_part_id`),
   CONSTRAINT `machine_components_current_part_id_foreign` FOREIGN KEY (`current_part_id`) REFERENCES `parts` (`id`)
 ) ENGINE = InnoDB
