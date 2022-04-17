@@ -61,6 +61,10 @@ export class MachineComponentsService {
         current_part_required_quantity:
           upsertInput.current_part_required_quantity,
         current_part_id: upsertInput.current_part_id,
+        machine_id: !upsertInput.machine_section_id
+          ? upsertInput.machine_id
+          : null,
+        machine_section_id: upsertInput.machine_section_id,
       },
       update: {
         name: upsertInput.name,
@@ -115,7 +119,8 @@ export class MachineComponentsService {
   ): Promise<MachineComponent> {
     return this.prisma.machine_components.create({
       data: {
-        machine_section_id: machineComponentInput.machine_section_id,
+        machine_section_id: machineComponentInput.machine_section_id || null,
+        machine_id: machineComponentInput.machine_id || null,
         name: machineComponentInput.name,
       },
     });

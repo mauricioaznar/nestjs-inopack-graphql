@@ -64,9 +64,35 @@ export class MachinesService {
   }): Promise<MachineComponent[]> {
     return this.prisma.machine_components.findMany({
       where: {
-        machine_sections: {
-          machine_id: machineId,
-        },
+        OR: [
+          {
+            machine_sections: {
+              machine_id: machineId,
+            },
+          },
+          {
+            machine_id: machineId,
+          },
+        ],
+      },
+    });
+  }
+
+  async getMachineUnassignedComponents({
+    machineId,
+  }: {
+    machineId: number;
+  }): Promise<MachineComponent[]> {
+    return this.prisma.machine_components.findMany({
+      where: {
+        AND: [
+          {
+            machine_section_id: null,
+          },
+          {
+            machine_id: machineId,
+          },
+        ],
       },
     });
   }

@@ -45,4 +45,11 @@ export class MachinesResolver {
   async machine_components(machine: Machine): Promise<MachineComponent[]> {
     return this.machinesService.getMachineComponents({ machineId: machine.id });
   }
+
+  @ResolveField(() => [MachineComponent])
+  async unassigned_components(machine: Machine): Promise<MachineComponent[]> {
+    return this.machinesService.getMachineUnassignedComponents({
+      machineId: machine.id,
+    });
+  }
 }

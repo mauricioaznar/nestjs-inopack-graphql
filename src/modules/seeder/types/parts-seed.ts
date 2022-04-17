@@ -17,5 +17,6 @@ export interface PartsSeed {
     resistencia40: Part;
     gomas1: Part;
     gomas2: Part;
+    balero1: Part;
   };
 }

@@ -148,6 +148,7 @@ model machines {
   branches                  branches?                   @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_branch_id_foreign")
   machine_type              machine_type?               @relation(fields: [machine_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_machine_type_id_foreign")
   order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_order_production_type_id_foreign")
+  machine_components        machine_components[]
   machine_sections          machine_sections[]
   order_production_products order_production_products[]
 
@@ -556,14 +557,17 @@ model machine_components {
   created_at                     DateTime?                 @db.DateTime(0)
   updated_at                     DateTime?                 @db.DateTime(0)
   machine_section_id             Int?                      @db.UnsignedInt
+  machine_id                     Int?                      @db.UnsignedInt
   current_part_id                Int?                      @db.UnsignedInt
   current_part_required_quantity Int?                      @db.UnsignedInt
   name                           String                    @db.VarChar(255)
   parts                          parts?                    @relation(fields: [current_part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_current_part_id_foreign")
+  machines                       machines?                 @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_machine_id_foreign")
   machine_sections               machine_sections?         @relation(fields: [machine_section_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_machine_section_id_foreign")
   machine_compatibilities        machine_compatibilities[]
 
   @@index([current_part_id], map: "machine_components_current_part_id_foreign")
+  @@index([machine_id], map: "machine_components_machine_id_foreign")
   @@index([machine_section_id], map: "machine_components_machine_section_id_foreign")
 }
 

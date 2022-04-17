@@ -83,6 +83,11 @@ export class PartSeederService {
       name: 'Goma cuadradas',
     });
 
+    const balero1 = await this.partsService.createPart({
+      part_category_id: partCategoriesSeed.materials.id,
+      name: 'Balero 1',
+    });
+
     return {
       materials: {
         contactor400,
@@ -100,6 +105,7 @@ export class PartSeederService {
         resistencia40,
         gomas1,
         gomas2,
+        balero1,
       },
     };
   }

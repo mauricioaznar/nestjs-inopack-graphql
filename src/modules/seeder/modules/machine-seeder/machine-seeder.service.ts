@@ -105,6 +105,14 @@ export class MachineSeederService {
         name: 'componente 10',
       });
 
+    // general
+    const component11 = await this.machineComponentsService.addMachineComponent(
+      {
+        machine_id: cmd.id,
+        name: 'componente 11',
+      },
+    );
+
     return {
       machine: cmd,
       sections: {
@@ -138,6 +146,9 @@ export class MachineSeederService {
             componente10,
           },
         },
+      },
+      unassigned_components: {
+        component11,
       },
     };
   }

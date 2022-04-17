@@ -227,5 +227,23 @@ export class MachinePartsSeederService {
         current_part_required_quantity: 3,
       },
     );
+
+    // component 11
+    await this.machineCompatibilitiesService.addMachineCompatiblePart({
+      machine_component_id:
+        machinesSeed.cmd.unassigned_components.component11.id,
+      part_id: partsSeed.materials.balero1.id,
+    });
+
+    await this.machineComponentsService.updateMachineComponentCurrentPart(
+      {
+        machineComponentId:
+          machinesSeed.cmd.unassigned_components.component11.id,
+      },
+      {
+        current_part_id: partsSeed.materials.balero1.id,
+        current_part_required_quantity: 3,
+      },
+    );
   }
 }

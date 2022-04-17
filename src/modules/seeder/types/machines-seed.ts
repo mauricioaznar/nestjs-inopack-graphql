@@ -37,6 +37,9 @@ export interface MachinesSeed {
         };
       };
     };
+    unassigned_components: {
+      component11: MachineComponent;
+    };
   };
   camisetera1: Machine;
   camisetera2: Machine;
