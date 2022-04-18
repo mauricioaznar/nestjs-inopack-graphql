@@ -10,6 +10,12 @@ export class MachineBase {
 @InputType('MachineInput')
 export class MachineInput extends MachineBase {}
 
+@InputType('MachineUpsertInput')
+export class MachineUpsertInput extends MachineBase {
+  @Field({ nullable: true })
+  id?: number | null;
+}
+
 @ObjectType('Machine')
 export class Machine extends MachineBase {
   @Field({ nullable: false })

@@ -18,5 +18,7 @@ export interface PartsSeed {
     gomas1: Part;
     gomas2: Part;
     balero1: Part;
+    piston1: Part;
+    piston2: Part;
   };
 }

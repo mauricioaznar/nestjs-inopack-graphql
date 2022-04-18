@@ -3,12 +3,31 @@ import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import {
   MachineSection,
   MachineSectionInput,
+  MachineSectionUpsertInput,
 } from '../../../common/dto/entities/machine-section.dto';
 import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
 
 @Injectable()
 export class MachineSectionsService {
   constructor(private prisma: PrismaService) {}
+
+  async upsertMachineSection(
+    machineSectionInput: MachineSectionUpsertInput,
+  ): Promise<MachineSection> {
+    return this.prisma.machine_sections.upsert({
+      create: {
+        name: machineSectionInput.name,
+        machine_id: machineSectionInput.machine_id,
+      },
+      update: {
+        name: machineSectionInput.name,
+        machine_id: machineSectionInput.machine_id,
+      },
+      where: {
+        id: machineSectionInput.id || 0,
+      },
+    });
+  }
 
   async getMachineSection(machineSectionId: number): Promise<MachineSection> {
     return this.prisma.machine_sections.findFirst({
@@ -22,36 +41,6 @@ export class MachineSectionsService {
     return this.prisma.machine_sections.findMany({
       where: {
         machine_id: machineId,
-      },
-    });
-  }
-
-  async addMachineSection(
-    machineSectionInput: MachineSectionInput,
-  ): Promise<MachineSection> {
-    return this.prisma.machine_sections.create({
-      data: {
-        machine_id: machineSectionInput.machine_id,
-        name: machineSectionInput.name,
-      },
-    });
-  }
-
-  async updateMachineSection(
-    {
-      machineSectionId,
-    }: {
-      machineSectionId: number;
-    },
-    machineSectionInput: MachineSectionInput,
-  ): Promise<MachineSection> {
-    return this.prisma.machine_sections.update({
-      data: {
-        name: machineSectionInput.name,
-        machine_id: machineSectionInput.machine_id,
-      },
-      where: {
-        id: machineSectionId,
       },
     });
   }

@@ -88,6 +88,15 @@ export class PartSeederService {
       name: 'Balero 1',
     });
 
+    const piston1 = await this.partsService.createPart({
+      part_category_id: partCategoriesSeed.materials.id,
+      name: 'Piston 1',
+    });
+    const piston2 = await this.partsService.createPart({
+      part_category_id: partCategoriesSeed.materials.id,
+      name: 'Piston 2',
+    });
+
     return {
       materials: {
         contactor400,
@@ -106,6 +115,8 @@ export class PartSeederService {
         gomas1,
         gomas2,
         balero1,
+        piston1,
+        piston2,
       },
     };
   }

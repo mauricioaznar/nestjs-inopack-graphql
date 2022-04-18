@@ -4,6 +4,7 @@ import { MachinesService } from './machines.service';
 import {
   Machine,
   MachineInput,
+  MachineUpsertInput,
 } from '../../../common/dto/entities/machine.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
 import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
@@ -14,16 +15,8 @@ export class MachinesResolver {
   constructor(private machinesService: MachinesService) {}
 
   @Mutation(() => Machine)
-  async createMachine(@Args('MachineInput') input: MachineInput) {
-    return this.machinesService.createMachine(input);
-  }
-
-  @Mutation(() => Machine)
-  async updateMachine(
-    @Args('MachineId') id: number,
-    @Args('MachineInput') input: MachineInput,
-  ) {
-    return this.machinesService.updateMachine(id, input);
+  async upsertMachine(@Args('MachineUpsertInput') input: MachineUpsertInput) {
+    return this.machinesService.upsertMachine(input);
   }
 
   @Query(() => Machine)

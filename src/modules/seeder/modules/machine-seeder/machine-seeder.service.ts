@@ -4,6 +4,7 @@ import { MachinesService } from '../../../entities/machines/machines.service';
 import { MachinesSeed } from '../../types/machines-seed';
 import { MachineSectionsService } from '../../../entities/machine-sections/machine-sections.service';
 import { MachineComponentsService } from '../../../entities/machine-components/machine-components.service';
+import { PartsSeed } from '../../types/parts-seed';
 
 @Injectable()
 export class MachineSeederService {
@@ -14,104 +15,224 @@ export class MachineSeederService {
     private readonly machineComponentsService: MachineComponentsService,
   ) {}
 
-  async getCmd(): Promise<MachinesSeed['cmd']> {
+  async getCmd(partsSeed: PartsSeed): Promise<MachinesSeed['cmd']> {
     const cmd = await this.machinesService.getMachine({
       id: 1,
     });
 
     // seccion 1
-    const cmdSection1 = await this.machineSectionsService.addMachineSection({
+    const cmdSection1 = await this.machineSectionsService.upsertMachineSection({
       machine_id: cmd.id,
       name: 'Tablero',
     });
-    const componente1 = await this.machineComponentsService.addMachineComponent(
-      {
-        machine_section_id: cmdSection1.id,
+    const componente1 =
+      await this.machineComponentsService.upsertMachineComponent({
         name: 'Bandas',
-      },
-    );
-    const componente2 = await this.machineComponentsService.addMachineComponent(
-      {
+        machine_id: cmdSection1.machine_id,
         machine_section_id: cmdSection1.id,
+        current_part_id: partsSeed.materials.banda700.id,
+        current_part_required_quantity: 2,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.banda700.id,
+          },
+          {
+            part_id: partsSeed.materials.banda800.id,
+          },
+        ],
+      });
+
+    const componente2 =
+      await this.machineComponentsService.upsertMachineComponent({
         name: 'Resistencias',
-      },
-    );
-    const componente3 = await this.machineComponentsService.addMachineComponent(
-      {
+        machine_id: cmdSection1.machine_id,
         machine_section_id: cmdSection1.id,
+        current_part_id: partsSeed.materials.resistencia20.id,
+        current_part_required_quantity: 3,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.resistencia20.id,
+          },
+          {
+            part_id: partsSeed.materials.resistencia30.id,
+          },
+        ],
+      });
+
+    const componente3 =
+      await this.machineComponentsService.upsertMachineComponent({
         name: 'Contactor',
-      },
-    );
+        machine_id: cmdSection1.machine_id,
+        machine_section_id: cmdSection1.id,
+        current_part_id: partsSeed.materials.contactor500.id,
+        current_part_required_quantity: 1,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.contactor400.id,
+          },
+          {
+            part_id: partsSeed.materials.contactor500.id,
+          },
+        ],
+      });
 
     // seccion 2
-    const cmdSection2 = await this.machineSectionsService.addMachineSection({
+    const cmdSection2 = await this.machineSectionsService.upsertMachineSection({
       machine_id: cmd.id,
       name: 'Cabezal',
     });
-    const componente4 = await this.machineComponentsService.addMachineComponent(
-      {
-        machine_section_id: cmdSection2.id,
+    const componente4 =
+      await this.machineComponentsService.upsertMachineComponent({
         name: 'Contactor',
-      },
-    );
-    const componente5 = await this.machineComponentsService.addMachineComponent(
-      {
+        machine_id: cmdSection2.machine_id,
         machine_section_id: cmdSection2.id,
+        current_part_id: partsSeed.materials.contactor400.id,
+        current_part_required_quantity: 1,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.contactor400.id,
+          },
+        ],
+      });
+
+    const componente5 =
+      await this.machineComponentsService.upsertMachineComponent({
         name: 'Banda',
-      },
-    );
+        machine_id: cmdSection2.machine_id,
+        machine_section_id: cmdSection2.id,
+        current_part_id: partsSeed.materials.banda600.id,
+        current_part_required_quantity: 2,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.banda600.id,
+          },
+          {
+            part_id: partsSeed.materials.banda700.id,
+          },
+        ],
+      });
 
     // seccion 3
-    const cmdSection3 = await this.machineSectionsService.addMachineSection({
+    const cmdSection3 = await this.machineSectionsService.upsertMachineSection({
       machine_id: cmd.id,
       name: 'Seccion 3',
     });
-    const componente6 = await this.machineComponentsService.addMachineComponent(
-      {
-        machine_section_id: cmdSection3.id,
-        name: 'componente 6',
-      },
-    );
 
-    const componente7 = await this.machineComponentsService.addMachineComponent(
-      {
+    const componente6 =
+      await this.machineComponentsService.upsertMachineComponent({
+        name: 'Componente 6',
+        machine_id: cmdSection3.machine_id,
         machine_section_id: cmdSection3.id,
-        name: 'componente 7',
-      },
-    );
+        current_part_id: partsSeed.materials.tornillo1.id,
+        current_part_required_quantity: 5,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.tornillo2.id,
+          },
+          {
+            part_id: partsSeed.materials.tornillo1.id,
+          },
+        ],
+      });
 
-    const componente8 = await this.machineComponentsService.addMachineComponent(
-      {
+    const componente7 =
+      await this.machineComponentsService.upsertMachineComponent({
+        name: 'Componente 7',
+        machine_id: cmdSection3.machine_id,
         machine_section_id: cmdSection3.id,
-        name: 'componente 8',
-      },
-    );
+        current_part_id: partsSeed.materials.gomas1.id,
+        current_part_required_quantity: 8,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.gomas1.id,
+          },
+        ],
+      });
 
-    const componente9 = await this.machineComponentsService.addMachineComponent(
-      {
+    const componente8 =
+      await this.machineComponentsService.upsertMachineComponent({
+        name: 'Componente 8',
+        machine_id: cmdSection3.machine_id,
         machine_section_id: cmdSection3.id,
-        name: 'componente 9',
-      },
-    );
+        current_part_id: partsSeed.materials.tornillo3.id,
+        current_part_required_quantity: 20,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.tornillo2.id,
+          },
+          {
+            part_id: partsSeed.materials.tornillo1.id,
+          },
+          {
+            part_id: partsSeed.materials.tornillo3.id,
+          },
+        ],
+      });
+
+    const componente9 =
+      await this.machineComponentsService.upsertMachineComponent({
+        name: 'Componente 9',
+        machine_id: cmdSection3.machine_id,
+        machine_section_id: cmdSection3.id,
+        current_part_id: partsSeed.materials.contactor900.id,
+        current_part_required_quantity: 1,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.contactor900.id,
+          },
+        ],
+      });
 
     // seccion 4
-    const cmdSection4 = await this.machineSectionsService.addMachineSection({
+    const cmdSection4 = await this.machineSectionsService.upsertMachineSection({
       machine_id: cmd.id,
       name: 'Seccion 4',
     });
+
     const componente10 =
-      await this.machineComponentsService.addMachineComponent({
+      await this.machineComponentsService.upsertMachineComponent({
+        name: 'Componente 10',
+        machine_id: cmdSection4.machine_id,
         machine_section_id: cmdSection4.id,
-        name: 'componente 10',
+        current_part_id: partsSeed.materials.banda800.id,
+        current_part_required_quantity: 3,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.banda800.id,
+          },
+        ],
       });
 
-    // general
-    const component11 = await this.machineComponentsService.addMachineComponent(
-      {
-        machine_id: cmd.id,
-        name: 'componente 11',
-      },
-    );
+    const componente11 =
+      await this.machineComponentsService.upsertMachineComponent({
+        name: 'Componente 11',
+        machine_id: cmdSection4.machine_id,
+        machine_section_id: null,
+        current_part_id: partsSeed.materials.balero1.id,
+        current_part_required_quantity: 3,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.balero1.id,
+          },
+        ],
+      });
+
+    const componente12 =
+      await this.machineComponentsService.upsertMachineComponent({
+        name: 'Componente 12',
+        machine_id: cmdSection4.machine_id,
+        machine_section_id: null,
+        current_part_id: partsSeed.materials.piston1.id,
+        current_part_required_quantity: 10,
+        machine_compatibilities: [
+          {
+            part_id: partsSeed.materials.piston1.id,
+          },
+          {
+            part_id: partsSeed.materials.piston2.id,
+          },
+        ],
+      });
 
     return {
       machine: cmd,
@@ -148,13 +269,14 @@ export class MachineSeederService {
         },
       },
       unassigned_components: {
-        component11,
+        componente11,
+        componente12,
       },
     };
   }
 
-  async getMachines(): Promise<MachinesSeed> {
-    const cmd = await this.getCmd();
+  async getMachines(partsSeed: PartsSeed): Promise<MachinesSeed> {
+    const cmd = await this.getCmd(partsSeed);
 
     // Camisetera 1
     const camisetera1 = await this.machinesService.getMachine({

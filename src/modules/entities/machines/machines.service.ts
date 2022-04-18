@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import {
   Machine,
-  MachineInput,
+  MachineUpsertInput,
 } from '../../../common/dto/entities/machine.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
 import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
@@ -11,24 +11,16 @@ import { MachineComponent } from '../../../common/dto/entities/machine-component
 export class MachinesService {
   constructor(private prisma: PrismaService) {}
 
-  async createMachine(machineInput: MachineInput): Promise<Machine> {
-    return this.prisma.machines.create({
-      data: {
+  async upsertMachine(machineInput: MachineUpsertInput): Promise<Machine> {
+    return this.prisma.machines.upsert({
+      create: {
         name: machineInput.name,
       },
-    });
-  }
-
-  async updateMachine(
-    machineId: number,
-    machineInput: MachineInput,
-  ): Promise<Machine> {
-    return this.prisma.machines.update({
-      data: {
+      update: {
         name: machineInput.name,
       },
       where: {
-        id: machineId,
+        id: machineInput.id || 0,
       },
     });
   }

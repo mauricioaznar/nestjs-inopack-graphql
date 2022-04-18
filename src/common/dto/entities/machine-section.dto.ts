@@ -13,6 +13,12 @@ export class MachineSectionBase {
 @InputType('MachineSectionInput')
 export class MachineSectionInput extends MachineSectionBase {}
 
+@InputType('MachineSectionUpsertInput')
+export class MachineSectionUpsertInput extends MachineSectionBase {
+  @Field({ nullable: true })
+  id?: number | null;
+}
+
 @ObjectType('MachineSection')
 export class MachineSection extends MachineSectionBase {
   @Field({ nullable: false })

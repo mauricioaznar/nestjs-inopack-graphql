@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { MachineSectionsService } from './machine-sections.service';
 import {
   MachineSection,
-  MachineSectionInput,
+  MachineSectionUpsertInput,
 } from '../../../common/dto/entities/machine-section.dto';
 import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
 
@@ -11,6 +11,16 @@ import { MachineComponent } from '../../../common/dto/entities/machine-component
 @Injectable()
 export class MachineSectionsResolver {
   constructor(private machineSectionsService: MachineSectionsService) {}
+
+  @Mutation(() => MachineSection)
+  async upsertMachineSection(
+    @Args('MachineSectionUpsertInput')
+    machineSectionInput: MachineSectionUpsertInput,
+  ) {
+    return this.machineSectionsService.upsertMachineSection(
+      machineSectionInput,
+    );
+  }
 
   @Query(() => MachineSection)
   async getMachineSection(
@@ -24,24 +34,6 @@ export class MachineSectionsResolver {
     @Args('MachineId') machineId: number,
   ): Promise<MachineSection[]> {
     return this.machineSectionsService.getMachineSections(machineId);
-  }
-
-  @Mutation(() => MachineSection)
-  async createMachineSection(
-    @Args('MachineSectionInput') machineSectionInput: MachineSectionInput,
-  ) {
-    return this.machineSectionsService.addMachineSection(machineSectionInput);
-  }
-
-  @Mutation(() => MachineSection)
-  async updateMachineSection(
-    @Args('MachineSectionId') machineSectionId: number,
-    @Args('MachineSectionInput') machineSectionInput: MachineSectionInput,
-  ) {
-    return this.machineSectionsService.updateMachineSection(
-      { machineSectionId },
-      machineSectionInput,
-    );
   }
 
   @ResolveField(() => [MachineComponent])
