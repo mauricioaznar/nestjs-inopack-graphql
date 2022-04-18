@@ -73,13 +73,17 @@ export class MachinesService {
     });
   }
 
-  async getCompletion({ machineId }: { machineId: number }): Promise<number> {
+  async getCompletionPercentage({
+    machineId,
+  }: {
+    machineId: number;
+  }): Promise<number> {
     const machineComponents = await this.getMachineComponents({ machineId });
 
     if (machineComponents.length === 0) return 0;
 
     let totalRequiredComponents = 0;
-    let minimunInventoryQuantity = 0;
+    let sufficientTotalInventoryQuantity = 0;
 
     for await (const component of machineComponents) {
       const currentInventoryQuantity =
@@ -89,7 +93,7 @@ export class MachinesService {
       const requiredQuantity = component.current_part_required_quantity;
       if (requiredQuantity > 0) {
         totalRequiredComponents += requiredQuantity;
-        minimunInventoryQuantity +=
+        sufficientTotalInventoryQuantity +=
           currentInventoryQuantity > requiredQuantity
             ? requiredQuantity
             : currentInventoryQuantity;
@@ -97,7 +101,7 @@ export class MachinesService {
     }
 
     return Math.round(
-      (minimunInventoryQuantity / totalRequiredComponents) * 100,
+      (sufficientTotalInventoryQuantity / totalRequiredComponents) * 100,
     );
   }
 

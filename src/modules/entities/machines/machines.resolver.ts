@@ -44,7 +44,9 @@ export class MachinesResolver {
 
   @ResolveField(() => Float, { nullable: false })
   async completion(machine: Machine): Promise<number> {
-    return this.machinesService.getCompletion({ machineId: machine.id });
+    return this.machinesService.getCompletionPercentage({
+      machineId: machine.id,
+    });
   }
 
   @ResolveField(() => [MachineSection])

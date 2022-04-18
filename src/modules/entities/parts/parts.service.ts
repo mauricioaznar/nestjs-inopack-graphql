@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import { Part, PartInput } from '../../../common/dto/entities/part.dto';
+import { PartCategory } from '../../../common/dto/entities/part-category.dto';
 
 @Injectable()
 export class PartsService {
@@ -32,6 +33,19 @@ export class PartsService {
 
   async getParts(): Promise<Part[]> {
     return this.prisma.parts.findMany();
+  }
+
+  async getPartCategory({
+    part_category_id,
+  }: {
+    part_category_id: number | null;
+  }): Promise<PartCategory> {
+    if (!part_category_id) return null;
+    return this.prisma.part_categories.findFirst({
+      where: {
+        id: part_category_id,
+      },
+    });
   }
 
   async getTotalRequiredQuantity(id: number): Promise<number> {
