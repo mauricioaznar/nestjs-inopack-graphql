@@ -2,8 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import {
   MachineComponent,
-  MachineComponentInput,
-  MachineComponentPartInput,
   MachineComponentUpsertInput,
 } from '../../../common/dto/entities/machine-component.dto';
 import { MachineCompatibility } from '../../../common/dto/entities/machine-compatibility.dto';

@@ -1,15 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
-import {
-  MachineCompatibility,
-  MachineCompatibilityInput,
-} from '../../../common/dto/entities/machine-compatibility.dto';
+import { MachineCompatibility } from '../../../common/dto/entities/machine-compatibility.dto';
 import { Part } from '../../../common/dto/entities/part.dto';
 import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
 
 @Injectable()
 export class MachineCompatibilitiesService {
   constructor(private prisma: PrismaService) {}
+
   async getMachineCompatibilities(): Promise<MachineCompatibility[]> {
     return this.prisma.machine_compatibilities.findMany();
   }
