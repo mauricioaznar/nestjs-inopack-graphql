@@ -20,26 +20,6 @@ export class MachineCompatibilitiesResolver {
     return this.machineCompatibilitiesService.getMachineCompatibilities();
   }
 
-  @Mutation(() => Boolean)
-  async addMachineCompatiblePart(
-    @Args('MachineCompatibilityInput')
-    machineCompatibilityInput: MachineCompatibilityInput,
-  ) {
-    return this.machineCompatibilitiesService.addMachineCompatiblePart(
-      machineCompatibilityInput,
-    );
-  }
-
-  @Mutation(() => Boolean)
-  async removeMachineCompatiblePart(
-    @Args('MachineCompatibilityId')
-    machineCompatibilityId: number,
-  ) {
-    return this.machineCompatibilitiesService.removeMachineCompatiblePart({
-      machineCompatibilityId,
-    });
-  }
-
   @ResolveField(() => Part, {
     nullable: true,
   })

@@ -10,6 +10,17 @@ import { MachineComponent } from '../../../common/dto/entities/machine-component
 @Injectable()
 export class MachinesService {
   constructor(private prisma: PrismaService) {}
+  async getMachine({ id }: { id: number }): Promise<Machine> {
+    return this.prisma.machines.findFirst({
+      where: {
+        id: id,
+      },
+    });
+  }
+
+  async getMachines(): Promise<Machine[]> {
+    return this.prisma.machines.findMany();
+  }
 
   async upsertMachine(machineInput: MachineUpsertInput): Promise<Machine> {
     return this.prisma.machines.upsert({
@@ -23,18 +34,6 @@ export class MachinesService {
         id: machineInput.id || 0,
       },
     });
-  }
-
-  async getMachine({ id }: { id: number }): Promise<Machine> {
-    return this.prisma.machines.findFirst({
-      where: {
-        id: id,
-      },
-    });
-  }
-
-  async getMachines(): Promise<Machine[]> {
-    return this.prisma.machines.findMany();
   }
 
   async getMachineSections({

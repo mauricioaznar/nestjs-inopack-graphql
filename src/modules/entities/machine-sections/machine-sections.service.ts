@@ -11,6 +11,22 @@ import { MachineComponent } from '../../../common/dto/entities/machine-component
 export class MachineSectionsService {
   constructor(private prisma: PrismaService) {}
 
+  async getMachineSection(machineSectionId: number): Promise<MachineSection> {
+    return this.prisma.machine_sections.findFirst({
+      where: {
+        id: machineSectionId,
+      },
+    });
+  }
+
+  async getMachineSections(machineId: number): Promise<MachineSection[]> {
+    return this.prisma.machine_sections.findMany({
+      where: {
+        machine_id: machineId,
+      },
+    });
+  }
+
   async upsertMachineSection(
     machineSectionInput: MachineSectionUpsertInput,
   ): Promise<MachineSection> {
@@ -25,22 +41,6 @@ export class MachineSectionsService {
       },
       where: {
         id: machineSectionInput.id || 0,
-      },
-    });
-  }
-
-  async getMachineSection(machineSectionId: number): Promise<MachineSection> {
-    return this.prisma.machine_sections.findFirst({
-      where: {
-        id: machineSectionId,
-      },
-    });
-  }
-
-  async getMachineSections(machineId: number): Promise<MachineSection[]> {
-    return this.prisma.machine_sections.findMany({
-      where: {
-        machine_id: machineId,
       },
     });
   }

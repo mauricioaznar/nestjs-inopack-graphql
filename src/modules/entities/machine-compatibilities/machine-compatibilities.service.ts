@@ -10,30 +10,6 @@ import { MachineComponent } from '../../../common/dto/entities/machine-component
 @Injectable()
 export class MachineCompatibilitiesService {
   constructor(private prisma: PrismaService) {}
-
-  async addMachineCompatiblePart(
-    machineCompatibilityInput: MachineCompatibilityInput,
-  ): Promise<boolean> {
-    return !!(await this.prisma.machine_compatibilities.create({
-      data: {
-        machine_component_id: machineCompatibilityInput.machine_component_id,
-        part_id: machineCompatibilityInput.part_id,
-      },
-    }));
-  }
-
-  async removeMachineCompatiblePart({
-    machineCompatibilityId,
-  }: {
-    machineCompatibilityId: number;
-  }): Promise<boolean> {
-    return !!(await this.prisma.machine_compatibilities.delete({
-      where: {
-        id: machineCompatibilityId,
-      },
-    }));
-  }
-
   async getMachineCompatibilities(): Promise<MachineCompatibility[]> {
     return this.prisma.machine_compatibilities.findMany();
   }

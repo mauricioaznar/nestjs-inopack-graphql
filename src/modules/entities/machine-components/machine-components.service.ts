@@ -115,38 +115,6 @@ export class MachineComponentsService {
     return machineComponent;
   }
 
-  async addMachineComponent(
-    machineComponentInput: MachineComponentInput,
-  ): Promise<MachineComponent> {
-    return this.prisma.machine_components.create({
-      data: {
-        machine_section_id: machineComponentInput.machine_section_id || null,
-        machine_id: machineComponentInput.machine_id || null,
-        name: machineComponentInput.name,
-      },
-    });
-  }
-
-  async updateMachineComponentCurrentPart(
-    {
-      machineComponentId,
-    }: {
-      machineComponentId: number;
-    },
-    machineComponentPartInput: MachineComponentPartInput,
-  ): Promise<MachineComponent> {
-    return this.prisma.machine_components.update({
-      data: {
-        current_part_required_quantity:
-          machineComponentPartInput.current_part_required_quantity,
-        current_part_id: machineComponentPartInput.current_part_id,
-      },
-      where: {
-        id: machineComponentId,
-      },
-    });
-  }
-
   async getCurrentPart({
     current_part_id,
   }: {

@@ -39,27 +39,6 @@ export class MachineComponentsResolver {
     return this.machineComponentsService.upsertMachineComponent(upsertInput);
   }
 
-  @Mutation(() => MachineComponent)
-  async addMachineComponent(
-    @Args('MachineComponentInput') machineComponentInput: MachineComponentInput,
-  ) {
-    return this.machineComponentsService.addMachineComponent(
-      machineComponentInput,
-    );
-  }
-
-  @Mutation(() => MachineComponent)
-  async updateMachineComponentCurrentPart(
-    @Args('MachineComponentId') machineComponentId: number,
-    @Args('MachineComponentPartInput')
-    machineComponentPartInput: MachineComponentPartInput,
-  ) {
-    return this.machineComponentsService.updateMachineComponentCurrentPart(
-      { machineComponentId },
-      machineComponentPartInput,
-    );
-  }
-
   @ResolveField(() => Part, {
     nullable: true,
   })
