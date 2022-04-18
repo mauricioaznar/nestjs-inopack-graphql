@@ -1,4 +1,12 @@
-import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Float,
+  Int,
+  Mutation,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { MachinesService } from './machines.service';
 import {
@@ -29,14 +37,19 @@ export class MachinesResolver {
     return this.machinesService.getMachines();
   }
 
-  @ResolveField(() => [MachineSection])
-  async machine_sections(machine: Machine): Promise<MachineSection[]> {
-    return this.machinesService.getMachineSections({ machineId: machine.id });
-  }
-
   @ResolveField(() => [MachineComponent])
   async machine_components(machine: Machine): Promise<MachineComponent[]> {
     return this.machinesService.getMachineComponents({ machineId: machine.id });
+  }
+
+  @ResolveField(() => Float, { nullable: false })
+  async completion(machine: Machine): Promise<number> {
+    return this.machinesService.getCompletion({ machineId: machine.id });
+  }
+
+  @ResolveField(() => [MachineSection])
+  async machine_sections(machine: Machine): Promise<MachineSection[]> {
+    return this.machinesService.getMachineSections({ machineId: machine.id });
   }
 
   @ResolveField(() => [MachineComponent])

@@ -6,10 +6,14 @@ import {
 } from '../../../common/dto/entities/machine.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
 import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
+import { PartInventoryService } from '../../../common/services/entities/part-inventory.service';
 
 @Injectable()
 export class MachinesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private partsInventoryService: PartInventoryService,
+  ) {}
   async getMachine({ id }: { id: number }): Promise<Machine> {
     return this.prisma.machines.findFirst({
       where: {
@@ -67,6 +71,34 @@ export class MachinesService {
         ],
       },
     });
+  }
+
+  async getCompletion({ machineId }: { machineId: number }): Promise<number> {
+    const machineComponents = await this.getMachineComponents({ machineId });
+
+    if (machineComponents.length === 0) return 0;
+
+    let totalRequiredComponents = 0;
+    let minimunInventoryQuantity = 0;
+
+    for await (const component of machineComponents) {
+      const currentInventoryQuantity =
+        await this.partsInventoryService.getCurrentQuantity(
+          component.current_part_id,
+        );
+      const requiredQuantity = component.current_part_required_quantity;
+      if (requiredQuantity > 0) {
+        totalRequiredComponents += requiredQuantity;
+        minimunInventoryQuantity +=
+          currentInventoryQuantity > requiredQuantity
+            ? requiredQuantity
+            : currentInventoryQuantity;
+      }
+    }
+
+    return Math.round(
+      (minimunInventoryQuantity / totalRequiredComponents) * 100,
+    );
   }
 
   async getMachineUnassignedComponents({
