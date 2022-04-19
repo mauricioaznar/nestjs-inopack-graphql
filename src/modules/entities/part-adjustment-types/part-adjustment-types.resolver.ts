@@ -13,12 +13,12 @@ export class PartAdjustmentTypesResolver {
   constructor(private partAdjustmentTypesService: PartAdjustmentTypesService) {}
 
   @Query(() => [PartAdjustmentType])
-  async getPartAdjustments(): Promise<PartAdjustmentType[]> {
+  async getPartAdjustmentTypes(): Promise<PartAdjustmentType[]> {
     return this.partAdjustmentTypesService.getPartAdjustmentTypes();
   }
 
   @Mutation(() => PartAdjustmentType)
-  async upsertPartAdjustment(
+  async upsertPartAdjustmentType(
     @Args('PartAdjustmentTypeUpsertInput') input: PartAdjustmentTypeUpsertInput,
   ): Promise<PartAdjustmentType> {
     return this.partAdjustmentTypesService.upsertPartAdjustmentType(input);

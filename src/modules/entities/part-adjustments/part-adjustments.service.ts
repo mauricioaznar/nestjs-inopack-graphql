@@ -6,6 +6,7 @@ import {
 } from '../../../common/dto/entities/part-adjustment.dto';
 import { vennDiagram } from '../../../common/helpers/venn-diagram';
 import { PartInventoryService } from '../../../common/services/entities/part-inventory.service';
+import { PartAddition } from '../../../common/dto/entities/part-additions.dto';
 
 @Injectable()
 export class PartAdjustmentsService {
@@ -78,5 +79,17 @@ export class PartAdjustmentsService {
 
   async getPartAdjustments(): Promise<PartAdjustment[]> {
     return this.prisma.part_adjustments.findMany();
+  }
+
+  async getPartAdditions({
+    part_adjustment_id,
+  }: {
+    part_adjustment_id: number;
+  }): Promise<PartAddition[]> {
+    return this.prisma.part_additions.findMany({
+      where: {
+        part_adjustment_id,
+      },
+    });
   }
 }
