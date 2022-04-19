@@ -11,7 +11,10 @@ export class PartAdditionBase {
 }
 
 @InputType('PartAdditionInput')
-export class PartAdditionInput extends PartAdditionBase {}
+export class PartAdditionInput extends PartAdditionBase {
+  @Field({ nullable: true })
+  part_adjustment_id?: number | null;
+}
 
 @ObjectType('PartAddition')
 export class PartAddition extends PartAdditionBase {}

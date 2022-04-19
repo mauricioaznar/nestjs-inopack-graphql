@@ -89,7 +89,7 @@ export class MachineComponentsService {
     } = vennDiagram({
       a: oldMachineCompatibilities,
       b: machineCompatibilities,
-      indexProperty: 'part_id',
+      indexProperties: ['part_id'],
     });
 
     for await (const removedMachineCompatibility of removedMachineCompatibilities) {

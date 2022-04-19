@@ -1,7 +1,7 @@
 interface IVennDiagram<T> {
   a: T[];
   b: T[];
-  indexProperty: keyof T;
+  indexProperties: (keyof T)[];
 }
 
 interface IVennDiagramResult<T> {
@@ -13,13 +13,15 @@ interface IVennDiagramResult<T> {
 export function vennDiagram<T>(
   options: IVennDiagram<T>,
 ): IVennDiagramResult<T> {
-  const { a, b, indexProperty } = options;
+  const { a, b, indexProperties } = options;
 
   const intersections = [];
 
   const aMinusB = a.filter((aItem) => {
-    const foundBItem = b.find(
-      (bItem) => bItem[indexProperty] === aItem[indexProperty],
+    const foundBItem = b.find((bItem) =>
+      indexProperties.every(
+        (indexProperty) => aItem[indexProperty] === bItem[indexProperty],
+      ),
     );
 
     if (foundBItem) {
@@ -29,8 +31,10 @@ export function vennDiagram<T>(
   });
 
   const bMinusA = b.filter((bItem) => {
-    const foundAItem = a.find(
-      (aItem) => bItem[indexProperty] === aItem[indexProperty],
+    const foundAItem = a.find((aItem) =>
+      indexProperties.every(
+        (indexProperty) => aItem[indexProperty] === bItem[indexProperty],
+      ),
     );
     return !foundAItem;
   });

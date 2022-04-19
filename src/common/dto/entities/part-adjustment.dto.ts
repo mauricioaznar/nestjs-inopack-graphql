@@ -1,4 +1,5 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { PartAdditionInput } from './part-additions.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -14,6 +15,9 @@ export class PartAdjustmentBase {
 export class PartAdjustmentUpsertInput extends PartAdjustmentBase {
   @Field({ nullable: true })
   id?: number | null;
+
+  @Field(() => [PartAdditionInput])
+  part_additions: Omit<PartAdditionInput, 'part_adjustment_id'>[];
 }
 
 @ObjectType('PartAdjustment')
