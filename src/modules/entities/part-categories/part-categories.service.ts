@@ -32,11 +32,7 @@ export class PartCategoriesService {
   }
 
   async getPartCategories(): Promise<PartCategory[]> {
-    return this.prisma.parts.findMany({
-      orderBy: {
-        part_category_id: 'asc',
-      },
-    });
+    return this.prisma.part_categories.findMany();
   }
 
   async getParts(partCategory: PartCategory): Promise<Part[]> {

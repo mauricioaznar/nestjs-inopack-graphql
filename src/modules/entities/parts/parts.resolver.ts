@@ -8,7 +8,11 @@ import {
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { PartsService } from './parts.service';
-import { Part, PartInput } from '../../../common/dto/entities/part.dto';
+import {
+  Part,
+  PartInput,
+  PartUpsertInput,
+} from '../../../common/dto/entities/part.dto';
 import { PartInventoryService } from '../../../common/services/entities/part-inventory.service';
 import { PartCategory } from '../../../common/dto/entities/part-category.dto';
 
@@ -31,6 +35,13 @@ export class PartsResolver {
     @Args('PartInput') input: PartInput,
   ) {
     return this.partsService.updatePart(id, input);
+  }
+
+  @Mutation(() => Part)
+  async upsertPart(
+    @Args('PartUpsertInput') input: PartUpsertInput,
+  ): Promise<Part> {
+    return this.partsService.upsertPart(input);
   }
 
   @Query(() => [Part])

@@ -4,4 +4,9 @@
 
 ## TODO
 
+* remove unused dto properties
+* add buyout, retrievals. negative-adjustments, postivie adjustens 
+* part page
+* 
+
 ### Currently implementing

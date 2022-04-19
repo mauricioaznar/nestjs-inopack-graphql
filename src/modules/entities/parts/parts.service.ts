@@ -1,11 +1,35 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
-import { Part, PartInput } from '../../../common/dto/entities/part.dto';
+import {
+  Part,
+  PartInput,
+  PartUpsertInput,
+} from '../../../common/dto/entities/part.dto';
 import { PartCategory } from '../../../common/dto/entities/part-category.dto';
 
 @Injectable()
 export class PartsService {
   constructor(private prisma: PrismaService) {}
+
+  async upsertPart(partInput: PartUpsertInput): Promise<Part> {
+    return this.prisma.parts.upsert({
+      create: {
+        name: partInput.name,
+        part_category_id: partInput.part_category_id,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      update: {
+        name: partInput.name,
+        part_category_id: partInput.part_category_id,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      where: {
+        id: partInput.id || 0,
+      },
+    });
+  }
 
   async createPart(partInput: PartInput): Promise<Part> {
     return this.prisma.parts.create({

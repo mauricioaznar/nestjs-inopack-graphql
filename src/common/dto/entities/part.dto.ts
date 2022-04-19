@@ -11,6 +11,12 @@ export class PartBase {
   part_category_id: number;
 }
 
+@InputType('PartUpsertInput')
+export class PartUpsertInput extends PartBase {
+  @Field({ nullable: true })
+  id?: number | null;
+}
+
 @InputType('PartInput')
 export class PartInput extends PartBase {}
 
