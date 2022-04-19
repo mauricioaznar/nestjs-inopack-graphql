@@ -2,19 +2,19 @@ import { Field, InputType, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
-export class MachineBase {
+export class PartAdjustmentTypeBase {
   @Field()
   name: string;
 }
 
-@InputType('MachineUpsertInput')
-export class MachineUpsertInput extends MachineBase {
+@InputType('PartAdjustmentTypeUpsertInput')
+export class PartAdjustmentTypeUpsertInput extends PartAdjustmentTypeBase {
   @Field({ nullable: true })
   id?: number | null;
 }
 
-@ObjectType('Machine')
-export class Machine extends MachineBase {
+@ObjectType('PartAdjustmentType')
+export class PartAdjustmentType extends PartAdjustmentTypeBase {
   @Field({ nullable: false })
   id: number;
 }

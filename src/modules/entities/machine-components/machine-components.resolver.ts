@@ -3,8 +3,6 @@ import { Injectable } from '@nestjs/common';
 import { MachineComponentsService } from './machine-components.service';
 import {
   MachineComponent,
-  MachineComponentInput,
-  MachineComponentPartInput,
   MachineComponentUpsertInput,
 } from '../../../common/dto/entities/machine-component.dto';
 import { Part } from '../../../common/dto/entities/part.dto';

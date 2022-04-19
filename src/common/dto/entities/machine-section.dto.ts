@@ -10,9 +10,6 @@ export class MachineSectionBase {
   machine_id: number;
 }
 
-@InputType('MachineSectionInput')
-export class MachineSectionInput extends MachineSectionBase {}
-
 @InputType('MachineSectionUpsertInput')
 export class MachineSectionUpsertInput extends MachineSectionBase {
   @Field({ nullable: true })

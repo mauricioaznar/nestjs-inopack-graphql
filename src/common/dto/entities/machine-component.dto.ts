@@ -1,22 +1,6 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { MachineCompatibilityUpsertInput } from './machine-compatibility.dto';
 
-@InputType('MachineComponentInput')
-export class MachineComponentInput {
-  @Field()
-  name: string;
-
-  @Field({
-    nullable: true,
-  })
-  machine_section_id?: number | null;
-
-  @Field({
-    nullable: true,
-  })
-  machine_id?: number | null;
-}
-
 @InputType('MachineComponentUpsertInput')
 export class MachineComponentUpsertInput {
   @Field({ nullable: true })
@@ -39,15 +23,6 @@ export class MachineComponentUpsertInput {
 
   @Field(() => [MachineCompatibilityUpsertInput])
   machine_compatibilities: MachineCompatibilityUpsertInput[];
-}
-
-@InputType('MachineComponentPartInput')
-export class MachineComponentPartInput {
-  @Field({ nullable: true })
-  current_part_id?: number | null;
-
-  @Field({ nullable: true })
-  current_part_required_quantity?: number | null;
 }
 
 @ObjectType('MachineComponent')

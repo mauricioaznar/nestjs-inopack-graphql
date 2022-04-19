@@ -85,6 +85,38 @@ DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 
+CREATE TABLE `part_adjustment_types`
+(
+  `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
+  `active`       int                                                     NOT NULL DEFAULT '1',
+  `created_at`   datetime                                               NULL     DEFAULT NULL,
+  `updated_at`   datetime                                               NULL     DEFAULT NULL,
+  `name`   varchar(255)                                               NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE `part_adjustments`
+(
+  `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
+  `active`       int                                                     NOT NULL DEFAULT '1',
+  `created_at`   datetime                                               NULL     DEFAULT NULL,
+  `updated_at`   datetime                                               NULL     DEFAULT NULL,
+  `date`   datetime                                               NULL     DEFAULT NULL,
+  `part_adjustment_type_id`    int unsigned          DEFAULT NULL,
+  `description`   varchar(255)                                               NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `part_adjustment_type_id_part_adjustments_foreign` (`part_adjustment_type_id`),
+  CONSTRAINT `part_adjustment_type_id_part_adjustments_foreign` FOREIGN KEY (`part_adjustment_type_id`) REFERENCES `part_adjustment_types` (`id`)
+) ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+
+
 CREATE TABLE `part_additions`
 (
   `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
@@ -93,9 +125,12 @@ CREATE TABLE `part_additions`
   `updated_at`   datetime                                               NULL     DEFAULT NULL,
   `part_id`    int unsigned          DEFAULT NULL,
   `quantity`    int unsigned         NOT NULL DEFAULT 0,
+  `part_adjustment_id`    int unsigned          DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `part_additions_part_id_foreign` (`part_id`),
-  CONSTRAINT `part_additions_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`)
+  CONSTRAINT `part_additions_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`),
+  KEY `part_adjustment_id_part_additions_foreign` (`part_adjustment_id`),
+  CONSTRAINT `part_adjustment_id_part_additions_foreign` FOREIGN KEY (`part_adjustment_id`) REFERENCES `part_adjustments` (`id`)
 ) ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4
@@ -109,9 +144,12 @@ CREATE TABLE `part_subtractions`
   `updated_at`   datetime                                               NULL     DEFAULT NULL,
   `part_id`    int unsigned          DEFAULT NULL,
   `quantity`    int unsigned         NOT NULL DEFAULT 0,
+  `part_adjustment_id`    int unsigned          DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `part_subtractions_part_id_foreign` (`part_id`),
-  CONSTRAINT `part_subtractions_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`)
+  CONSTRAINT `part_subtractions_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`),
+  KEY `part_adjustment_id_part_subtractions_foreign` (`part_adjustment_id`),
+  CONSTRAINT `part_adjustment_id_part_subtractions_foreign` FOREIGN KEY (`part_adjustment_id`) REFERENCES `part_adjustments` (`id`)
 ) ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4

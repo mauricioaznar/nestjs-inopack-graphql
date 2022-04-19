@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { PartInventoryService } from '../../../../common/services/entities/part-inventory.service';
 import { PartsSeed } from '../../types/parts-seed';
+import { PartAdjustmentsService } from '../../../entities/part-adjustments/part-adjustments.service';
+import { PartAdjustmentTypesService } from '../../../entities/part-adjustment-types/part-adjustment-types.service';
 
 @Injectable()
 export class PartInventorySeederService {
@@ -9,6 +11,8 @@ export class PartInventorySeederService {
     private readonly prisma: PrismaService,
     private readonly logger: Logger,
     private readonly partInventoryService: PartInventoryService,
+    private readonly partAdjustmentsService: PartAdjustmentsService,
+    private readonly partAdjustmentTypesService: PartAdjustmentTypesService,
   ) {}
 
   async adjustInventory(partsSeed: PartsSeed): Promise<void> {
@@ -55,6 +59,16 @@ export class PartInventorySeederService {
     await this.partInventoryService.add({
       part_id: partsSeed.materials.gomas2.id,
       quantity: 80,
+    });
+
+    const adjustmentType =
+      await this.partAdjustmentTypesService.upsertPartAdjustmentType({
+        name: 'Adjustment type 1',
+      });
+
+    await this.partAdjustmentsService.upsertPartAdjustment({
+      description: 'adjustment 1',
+      part_adjustment_type_id: adjustmentType.id,
     });
   }
 }

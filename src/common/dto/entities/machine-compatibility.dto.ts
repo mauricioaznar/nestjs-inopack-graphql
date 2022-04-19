@@ -10,12 +10,6 @@ export class MachineCompatibilityBase {
 @InputType('MachineCompatibilityUpsertInput')
 export class MachineCompatibilityUpsertInput extends MachineCompatibilityBase {}
 
-@InputType('MachineCompatibilityInput')
-export class MachineCompatibilityInput extends MachineCompatibilityBase {
-  @Field({ nullable: true })
-  machine_component_id?: number | null;
-}
-
 @ObjectType('MachineCompatibility')
 export class MachineCompatibility extends MachineCompatibilityBase {
   @Field({ nullable: false })

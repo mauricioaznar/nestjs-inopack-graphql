@@ -1,7 +1,6 @@
 import {
   Args,
   Float,
-  Int,
   Mutation,
   Query,
   ResolveField,
@@ -11,7 +10,6 @@ import { Injectable } from '@nestjs/common';
 import { MachinesService } from './machines.service';
 import {
   Machine,
-  MachineInput,
   MachineUpsertInput,
 } from '../../../common/dto/entities/machine.dto';
 import { MachineSection } from '../../../common/dto/entities/machine-section.dto';

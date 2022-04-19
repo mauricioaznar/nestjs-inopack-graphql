@@ -17,7 +17,7 @@
 #### buyout
 
 
-  * buyout costs
-    * quantity, price, part_id
-  * buyout
-    * supplier, date
+* buyout costs
+  * quantity, price, part_id
+* buyout
+  * supplier, date
