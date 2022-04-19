@@ -13,8 +13,11 @@
 ### Currently implementing
 
 * buyout
+
   * parts substractions must have branch_id, component_id 
   * parts additions must have branch_id 
   * buyout additions
   * buyout costs
     * quantity, price, part_id
+  * buyout
+    * supplier, date
