@@ -5,18 +5,18 @@
 ## TODO
 
 * remove unused dto properties
-* add buyout, retrievals. negative-adjustments, postivie adjustens 
+* add buyout, retrievals, adjustments
+  * parts substractions must have branch_id, component_id  and (retrieval_id or adjustment_id)
+  * parts additions must have branch_id and (buyout_id or adjustment_id)
 * part page
 * logout button is updateing the localstorage but it is not updating the store.
 * section and compoment dialogs.
 
 ### Currently implementing
 
-* buyout
+#### buyout
 
-  * parts substractions must have branch_id, component_id 
-  * parts additions must have branch_id 
-  * buyout additions
+
   * buyout costs
     * quantity, price, part_id
   * buyout
