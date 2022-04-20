@@ -11,7 +11,6 @@ export class PartAdditionsResolver {
 
   @ResolveField(() => Part, { nullable: true })
   async part(partAddition: PartAddition): Promise<Part | null> {
-    console.log(partAddition);
     return this.partAdditionsService.getPart({
       part_id: partAddition.part_id,
     });
