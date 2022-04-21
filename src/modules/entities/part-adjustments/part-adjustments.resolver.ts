@@ -6,6 +6,7 @@ import {
   PartAdjustmentUpsertInput,
 } from '../../../common/dto/entities/part-adjustment.dto';
 import { PartAddition } from '../../../common/dto/entities/part-additions.dto';
+import { PartSubtraction } from '../../../common/dto/entities/part-subtractions.dto';
 
 @Resolver(() => PartAdjustment)
 @Injectable()
@@ -29,6 +30,15 @@ export class PartAdjustmentsResolver {
     partAdjustment: PartAdjustment,
   ): Promise<PartAddition[]> {
     return this.partAdjustmentsService.getPartAdditions({
+      part_adjustment_id: partAdjustment.id,
+    });
+  }
+
+  @ResolveField(() => [PartSubtraction])
+  async part_subtractions(
+    partAdjustment: PartAdjustment,
+  ): Promise<PartSubtraction[]> {
+    return this.partAdjustmentsService.getPartSubtractions({
       part_adjustment_id: partAdjustment.id,
     });
   }

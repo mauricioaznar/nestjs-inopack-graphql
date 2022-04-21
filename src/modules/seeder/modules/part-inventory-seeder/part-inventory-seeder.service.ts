@@ -66,6 +66,7 @@ export class PartInventorySeederService {
           quantity: 80,
         },
       ],
+      part_subtractions: [],
     });
   }
 }

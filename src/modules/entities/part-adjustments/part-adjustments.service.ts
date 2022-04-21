@@ -7,6 +7,7 @@ import {
 import { vennDiagram } from '../../../common/helpers/venn-diagram';
 import { PartInventoryService } from '../../../common/services/entities/part-inventory.service';
 import { PartAddition } from '../../../common/dto/entities/part-additions.dto';
+import { PartSubtraction } from '../../../common/dto/entities/part-subtractions.dto';
 
 @Injectable()
 export class PartAdjustmentsService {
@@ -74,6 +75,46 @@ export class PartAdjustmentsService {
       });
     }
 
+    const newPartSubtractions = partAdjustmentUpsertInput.part_subtractions;
+    const oldPartSubtractions = await this.prisma.part_subtractions.findMany({
+      where: {
+        part_adjustment_id: partAdjustment.id,
+      },
+    });
+
+    const {
+      aMinusB: deletePartSubtractions,
+      bMinusA: createPartSubtractions,
+      intersection: updatePartSubtractions,
+    } = vennDiagram({
+      a: oldPartSubtractions,
+      b: newPartSubtractions,
+      indexProperties: ['part_id'],
+    });
+
+    for await (const delPartSubtraction of deletePartSubtractions) {
+      await this.partInventoryService.deleteSubtraction({
+        part_id: delPartSubtraction.part_id,
+        part_adjustment_id: partAdjustment.id,
+      });
+    }
+
+    for await (const createPartSubtraction of createPartSubtractions) {
+      await this.partInventoryService.createSubtraction({
+        part_id: createPartSubtraction.part_id,
+        part_adjustment_id: partAdjustment.id,
+        quantity: createPartSubtraction.quantity,
+      });
+    }
+
+    for await (const updatePartSubtraction of updatePartSubtractions) {
+      await this.partInventoryService.updateAddition({
+        part_id: updatePartSubtraction.part_id,
+        part_adjustment_id: partAdjustment.id,
+        quantity: updatePartSubtraction.quantity,
+      });
+    }
+
     return partAdjustment;
   }
 
@@ -87,6 +128,18 @@ export class PartAdjustmentsService {
     part_adjustment_id: number;
   }): Promise<PartAddition[]> {
     return this.prisma.part_additions.findMany({
+      where: {
+        part_adjustment_id,
+      },
+    });
+  }
+
+  async getPartSubtractions({
+    part_adjustment_id,
+  }: {
+    part_adjustment_id: number;
+  }): Promise<PartSubtraction[]> {
+    return this.prisma.part_subtractions.findMany({
       where: {
         part_adjustment_id,
       },

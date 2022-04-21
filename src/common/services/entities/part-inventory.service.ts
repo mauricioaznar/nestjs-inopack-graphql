@@ -66,17 +66,55 @@ export class PartInventoryService {
     });
   }
 
-  async subtract(subtractionInput: PartSubtractionInput): Promise<void> {
-    const doesPartExist = await this.doesPartExist(subtractionInput.part_id);
+  async createSubtraction(input: PartSubtractionInput): Promise<void> {
+    const doesPartExist = await this.doesPartExist(input.part_id);
 
     if (!doesPartExist) {
       throw new BadRequestException('Part not found');
     }
 
-    await this.prisma.part_additions.create({
+    await this.prisma.part_subtractions.create({
       data: {
-        part_id: subtractionInput.part_id,
-        quantity: subtractionInput.quantity,
+        part_id: input.part_id,
+        quantity: input.quantity,
+        part_adjustment_id: input.part_adjustment_id || null,
+      },
+    });
+  }
+
+  async updateSubtraction(input: PartSubtractionInput): Promise<void> {
+    const doesPartExist = await this.doesPartExist(input.part_id);
+
+    if (!doesPartExist) {
+      throw new BadRequestException('Part not found');
+    }
+
+    await this.prisma.part_subtractions.updateMany({
+      data: {
+        part_id: input.part_id,
+        quantity: input.quantity,
+        part_adjustment_id: input.part_adjustment_id || null,
+      },
+      where: {
+        part_id: input.part_id,
+        part_adjustment_id: input.part_adjustment_id || undefined,
+      },
+    });
+  }
+
+  async deleteSubtraction(
+    input: Omit<PartSubtractionInput, 'quantity'>,
+  ): Promise<void> {
+    const doesPartExist = await this.doesPartExist(input.part_id);
+
+    if (!doesPartExist) {
+      throw new BadRequestException('Part not found');
+    }
+
+    await this.prisma.part_subtractions.deleteMany({
+      where: {
+        part_id: input.part_id,
+        part_adjustment_id: input.part_adjustment_id || undefined,
       },
     });
   }

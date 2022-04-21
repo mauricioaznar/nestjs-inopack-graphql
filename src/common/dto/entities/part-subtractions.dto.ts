@@ -11,7 +11,13 @@ export class PartSubtractionBase {
 }
 
 @InputType('PartSubtractionInput')
-export class PartSubtractionInput extends PartSubtractionBase {}
+export class PartSubtractionInput extends PartSubtractionBase {
+  @Field({ nullable: true })
+  part_adjustment_id?: number | null;
+}
 
 @ObjectType('PartSubtraction')
-export class PartSubtraction extends PartSubtractionBase {}
+export class PartSubtraction extends PartSubtractionBase {
+  @Field({ nullable: false })
+  id: number;
+}
