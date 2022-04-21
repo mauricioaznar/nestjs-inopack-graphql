@@ -25,19 +25,6 @@ export class PartsResolver {
   ) {}
 
   @Mutation(() => Part)
-  async createPart(@Args('PartInput') input: PartInput) {
-    return this.partsService.createPart(input);
-  }
-
-  @Mutation(() => Part)
-  async updatePart(
-    @Args('id') id: number,
-    @Args('PartInput') input: PartInput,
-  ) {
-    return this.partsService.updatePart(id, input);
-  }
-
-  @Mutation(() => Part)
   async upsertPart(
     @Args('PartUpsertInput') input: PartUpsertInput,
   ): Promise<Part> {

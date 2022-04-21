@@ -15,84 +15,84 @@ export class PartSeederService {
   async createParts(
     partCategoriesSeed: PartCategoriesSeed,
   ): Promise<PartsSeed> {
-    const contactor400 = await this.partsService.createPart({
+    const contactor400 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Contactor 400v',
     });
 
-    const contactor500 = await this.partsService.createPart({
+    const contactor500 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Contactor 500v',
     });
 
-    const contactor900 = await this.partsService.createPart({
+    const contactor900 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Contactor 900v',
     });
-    const contactor700 = await this.partsService.createPart({
+    const contactor700 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Contactor 700v',
     });
-    const tornillo1 = await this.partsService.createPart({
+    const tornillo1 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Tornillo 1',
     });
-    const tornillo2 = await this.partsService.createPart({
+    const tornillo2 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Tornillo 2',
     });
-    const tornillo3 = await this.partsService.createPart({
+    const tornillo3 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Tornillo 3',
     });
 
-    const banda600 = await this.partsService.createPart({
+    const banda600 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Banda 600',
     });
-    const banda700 = await this.partsService.createPart({
+    const banda700 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Banda 700',
     });
 
-    const banda800 = await this.partsService.createPart({
+    const banda800 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Banda 800',
     });
 
-    const resistencia20 = await this.partsService.createPart({
+    const resistencia20 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Resistencia 20',
     });
 
-    const resistencia30 = await this.partsService.createPart({
+    const resistencia30 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Resistencia 30',
     });
 
-    const resistencia40 = await this.partsService.createPart({
+    const resistencia40 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Resistencia 40',
     });
-    const gomas1 = await this.partsService.createPart({
+    const gomas1 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Goma circulares',
     });
-    const gomas2 = await this.partsService.createPart({
+    const gomas2 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Goma cuadradas',
     });
 
-    const balero1 = await this.partsService.createPart({
+    const balero1 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Balero 1',
     });
 
-    const piston1 = await this.partsService.createPart({
+    const piston1 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Piston 1',
     });
-    const piston2 = await this.partsService.createPart({
+    const piston2 = await this.partsService.upsertPart({
       part_category_id: partCategoriesSeed.materials.id,
       name: 'Piston 2',
     });
