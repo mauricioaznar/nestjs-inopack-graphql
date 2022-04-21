@@ -20,16 +20,21 @@ export class PartsResolver {
     private partInventoryService: PartInventoryService,
   ) {}
 
+  @Query(() => [Part])
+  async getParts() {
+    return this.partsService.getParts();
+  }
+
+  @Query(() => Part)
+  async getPart(@Args('PartId') partId: number): Promise<Part | null> {
+    return this.partsService.getPart({ part_id: partId });
+  }
+
   @Mutation(() => Part)
   async upsertPart(
     @Args('PartUpsertInput') input: PartUpsertInput,
   ): Promise<Part> {
     return this.partsService.upsertPart(input);
-  }
-
-  @Query(() => [Part])
-  async getParts() {
-    return this.partsService.getParts();
   }
 
   @ResolveField(() => Float)

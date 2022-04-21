@@ -27,6 +27,16 @@ export class PartsService {
     });
   }
 
+  async getPart({ part_id }: { part_id: number | null }): Promise<Part | null> {
+    if (!part_id) return null;
+
+    return this.prisma.parts.findFirst({
+      where: {
+        id: part_id,
+      },
+    });
+  }
+
   async getParts(): Promise<Part[]> {
     return this.prisma.parts.findMany();
   }
