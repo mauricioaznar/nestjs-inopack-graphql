@@ -16,9 +16,6 @@ export class PartUpsertInput extends PartBase {
   id?: number | null;
 }
 
-@InputType('PartInput')
-export class PartInput extends PartBase {}
-
 @ObjectType('Part')
 export class Part extends PartBase {
   @Field({ nullable: false })
