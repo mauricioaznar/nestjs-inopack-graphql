@@ -10,6 +10,9 @@ export class PartAdjustmentBase {
 
   @Field({ nullable: true })
   part_adjustment_type_id?: number | null;
+
+  @Field({ nullable: true })
+  date?: Date | null;
 }
 
 @InputType('PartAdjustmentUpsertInput')

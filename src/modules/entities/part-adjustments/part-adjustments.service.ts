@@ -24,11 +24,13 @@ export class PartAdjustmentsService {
         description: partAdjustmentUpsertInput.description,
         part_adjustment_type_id:
           partAdjustmentUpsertInput.part_adjustment_type_id,
+        date: partAdjustmentUpsertInput.date,
       },
       update: {
         description: partAdjustmentUpsertInput.description,
         part_adjustment_type_id:
           partAdjustmentUpsertInput.part_adjustment_type_id,
+        date: partAdjustmentUpsertInput.date,
       },
       where: {
         id: partAdjustmentUpsertInput.id || 0,
