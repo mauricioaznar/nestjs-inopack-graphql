@@ -6,8 +6,7 @@ import { PartCategoriesModule } from './part-categories/part-categories.module';
 import { MachineSectionsModule } from './machine-sections/machine-sections.module';
 import { MachineComponentsModule } from './machine-components/machine-components.module';
 import { MachineCompatibilitiesModule } from './machine-compatibilities/machine-compatibilities.module';
-import { PartAdjustmentsModule } from './part-adjustments/part-adjustments.module';
-import { PartAdjustmentTypesModule } from './part-adjustment-types/part-adjustment-types.module';
+import { PartOperationsModule } from './part-operations/part-operations.module';
 import { PartTransactionsModule } from './part-transactions/part-transactions.module';
 
 @Module({
@@ -19,8 +18,7 @@ import { PartTransactionsModule } from './part-transactions/part-transactions.mo
     MachineSectionsModule,
     MachineComponentsModule,
     MachineCompatibilitiesModule,
-    PartAdjustmentsModule,
-    PartAdjustmentTypesModule,
+    PartOperationsModule,
     PartTransactionsModule,
   ],
 })

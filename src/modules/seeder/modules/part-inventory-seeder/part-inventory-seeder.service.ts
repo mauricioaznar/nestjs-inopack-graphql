@@ -2,8 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { PartInventoryService } from '../../../../common/services/entities/part-inventory.service';
 import { PartsSeed } from '../../types/parts-seed';
-import { PartAdjustmentsService } from '../../../entities/part-adjustments/part-adjustments.service';
-import { PartAdjustmentTypesService } from '../../../entities/part-adjustment-types/part-adjustment-types.service';
+import { PartOperationsService } from '../../../entities/part-operations/part-operations.service';
 
 @Injectable()
 export class PartInventorySeederService {
@@ -11,19 +10,12 @@ export class PartInventorySeederService {
     private readonly prisma: PrismaService,
     private readonly logger: Logger,
     private readonly partInventoryService: PartInventoryService,
-    private readonly partAdjustmentsService: PartAdjustmentsService,
-    private readonly partAdjustmentTypesService: PartAdjustmentTypesService,
+    private readonly partAdjustmentsService: PartOperationsService,
   ) {}
 
   async adjustInventory(partsSeed: PartsSeed): Promise<void> {
-    const adjustmentType =
-      await this.partAdjustmentTypesService.upsertPartAdjustmentType({
-        name: 'Adjustment type 1',
-      });
-
     await this.partAdjustmentsService.upsertPartAdjustment({
       description: 'adjustment 1',
-      part_adjustment_type_id: adjustmentType.id,
       part_transactions: [
         {
           part_id: partsSeed.materials.banda700.id,

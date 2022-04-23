@@ -10,7 +10,7 @@ export class PartTransactionBase {
   quantity: number;
 
   @Field({ nullable: true })
-  part_adjustment_id?: number | null;
+  part_operation_id?: number | null;
 }
 
 @InputType('PartTransactionInput')

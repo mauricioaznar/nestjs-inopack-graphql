@@ -31,7 +31,7 @@ export class PartInventoryService {
       data: {
         part_id: input.part_id,
         quantity: input.quantity,
-        part_adjustment_id: input.part_adjustment_id || null,
+        part_operation_id: input.part_operation_id || null,
       },
     });
   }
@@ -47,11 +47,11 @@ export class PartInventoryService {
       data: {
         part_id: input.part_id,
         quantity: input.quantity,
-        part_adjustment_id: input.part_adjustment_id || null,
+        part_operation_id: input.part_operation_id || null,
       },
       where: {
         part_id: input.part_id,
-        part_adjustment_id: input.part_adjustment_id || undefined,
+        part_operation_id: input.part_operation_id || undefined,
       },
     });
   }
@@ -68,7 +68,7 @@ export class PartInventoryService {
     await this.prisma.part_transactions.deleteMany({
       where: {
         part_id: input.part_id,
-        part_adjustment_id: input.part_adjustment_id || undefined,
+        part_operation_id: input.part_operation_id || undefined,
       },
     });
   }

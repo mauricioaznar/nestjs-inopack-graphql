@@ -1,14 +1,19 @@
-import { ResolveField, Resolver } from '@nestjs/graphql';
+import { Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { PartTransactionsService } from './part-transactions.service';
 import { Part } from '../../../common/dto/entities/part.dto';
 import { PartTransaction } from '../../../common/dto/entities/part-transactions.dto';
-import { PartAdjustment } from '../../../common/dto/entities/part-adjustment.dto';
+import { PartOperation } from '../../../common/dto/entities/part-operation.dto';
 
 @Resolver(() => PartTransaction)
 @Injectable()
 export class PartTransactionsResolver {
   constructor(private partTransactionsService: PartTransactionsService) {}
+
+  @Query(() => [PartTransaction])
+  async getPartTransactions(): Promise<PartTransaction[]> {
+    return this.partTransactionsService.getPartTransactions();
+  }
 
   @ResolveField(() => Part, { nullable: true })
   async part(partTransaction: PartTransaction): Promise<Part | null> {
@@ -17,12 +22,12 @@ export class PartTransactionsResolver {
     });
   }
 
-  @ResolveField(() => PartAdjustment, { nullable: true })
-  async part_adjustment(
+  @ResolveField(() => PartOperation, { nullable: true })
+  async part_operation(
     partTransaction: PartTransaction,
-  ): Promise<PartAdjustment | null> {
-    return this.partTransactionsService.getPartAdjustment({
-      part_adjustment_id: partTransaction.part_adjustment_id,
+  ): Promise<PartOperation | null> {
+    return this.partTransactionsService.getPartOperation({
+      part_operation_id: partTransaction.part_operation_id,
     });
   }
 }
