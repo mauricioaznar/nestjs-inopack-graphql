@@ -598,21 +598,6 @@ model machine_sections {
   @@index([machine_id], map: "machine_sections_machine_id_foreign")
 }
 
-model part_additions {
-  id                 Int               @id @default(autoincrement()) @db.UnsignedInt
-  active             Int               @default(1)
-  created_at         DateTime?         @db.DateTime(0)
-  updated_at         DateTime?         @db.DateTime(0)
-  part_id            Int?              @db.UnsignedInt
-  quantity           Int               @default(0) @db.UnsignedInt
-  part_adjustment_id Int?              @db.UnsignedInt
-  part_adjustments   part_adjustments? @relation(fields: [part_adjustment_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "part_adjustment_id_part_additions_foreign")
-  parts              parts?            @relation(fields: [part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "part_additions_part_id_foreign")
-
-  @@index([part_id], map: "part_additions_part_id_foreign")
-  @@index([part_adjustment_id], map: "part_adjustment_id_part_additions_foreign")
-}
-
 model part_categories {
   id         Int       @id @default(autoincrement()) @db.UnsignedInt
   active     Int       @default(1)
@@ -620,21 +605,6 @@ model part_categories {
   updated_at DateTime? @db.DateTime(0)
   name       String    @db.VarChar(255)
   parts      parts[]
-}
-
-model part_subtractions {
-  id                 Int               @id @default(autoincrement()) @db.UnsignedInt
-  active             Int               @default(1)
-  created_at         DateTime?         @db.DateTime(0)
-  updated_at         DateTime?         @db.DateTime(0)
-  part_id            Int?              @db.UnsignedInt
-  quantity           Int               @default(0) @db.UnsignedInt
-  part_adjustment_id Int?              @db.UnsignedInt
-  part_adjustments   part_adjustments? @relation(fields: [part_adjustment_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "part_adjustment_id_part_subtractions_foreign")
-  parts              parts?            @relation(fields: [part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "part_subtractions_part_id_foreign")
-
-  @@index([part_adjustment_id], map: "part_adjustment_id_part_subtractions_foreign")
-  @@index([part_id], map: "part_subtractions_part_id_foreign")
 }
 
 model parts {
@@ -647,8 +617,7 @@ model parts {
   part_categories         part_categories?          @relation(fields: [part_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "parts_part_category_id_foreign")
   machine_compatibilities machine_compatibilities[]
   machine_components      machine_components[]
-  part_additions          part_additions[]
-  part_subtractions       part_subtractions[]
+  part_transactions       part_transactions[]
 
   @@index([part_category_id], map: "parts_part_category_id_foreign")
 }
@@ -671,8 +640,22 @@ model part_adjustments {
   part_adjustment_type_id Int?                   @db.UnsignedInt
   description             String                 @db.VarChar(255)
   part_adjustment_types   part_adjustment_types? @relation(fields: [part_adjustment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "part_adjustment_type_id_part_adjustments_foreign")
-  part_additions          part_additions[]
-  part_subtractions       part_subtractions[]
+  part_transactions       part_transactions[]
 
   @@index([part_adjustment_type_id], map: "part_adjustment_type_id_part_adjustments_foreign")
+}
+
+model part_transactions {
+  id                 Int               @id @default(autoincrement()) @db.UnsignedInt
+  active             Int               @default(1)
+  created_at         DateTime?         @db.DateTime(0)
+  updated_at         DateTime?         @db.DateTime(0)
+  part_id            Int?              @db.UnsignedInt
+  quantity           Int               @default(0) @db.UnsignedInt
+  part_adjustment_id Int?              @db.UnsignedInt
+  part_adjustments   part_adjustments? @relation(fields: [part_adjustment_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "part_transactions_part_adjustment_id_foreign")
+  parts              parts?            @relation(fields: [part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "part_transactions_part_id_foreign")
+
+  @@index([part_adjustment_id], map: "part_transactions_part_adjustment_id_foreign")
+  @@index([part_id], map: "part_transactions_part_id_foreign")
 }

@@ -24,7 +24,7 @@ export class PartInventorySeederService {
     await this.partAdjustmentsService.upsertPartAdjustment({
       description: 'adjustment 1',
       part_adjustment_type_id: adjustmentType.id,
-      part_additions: [
+      part_transactions: [
         {
           part_id: partsSeed.materials.banda700.id,
           quantity: 4,
@@ -63,10 +63,9 @@ export class PartInventorySeederService {
         },
         {
           part_id: partsSeed.materials.gomas2.id,
-          quantity: 80,
+          quantity: -80,
         },
       ],
-      part_subtractions: [],
     });
   }
 }

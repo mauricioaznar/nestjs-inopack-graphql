@@ -1,26 +1,33 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { PartAdditionInput } from '../../dto/entities/part-additions.dto';
-import { PartSubtractionInput } from '../../dto/entities/part-subtractions.dto';
+import { PartTransactionInput } from '../../dto/entities/part-transactions.dto';
 
 @Injectable()
 export class PartInventoryService {
   constructor(private prisma: PrismaService) {}
 
   async getCurrentQuantity(partId: number): Promise<number> {
-    const additionsTotal = await this.getAdditionsTotal(partId);
-    const subtractionsTotal = await this.getSubtractionTotal(partId);
-    return additionsTotal - subtractionsTotal;
+    const {
+      _sum: { quantity },
+    } = await this.prisma.part_transactions.aggregate({
+      _sum: {
+        quantity: true,
+      },
+      where: {
+        part_id: partId,
+      },
+    });
+    return quantity || 0;
   }
 
-  async createAddition(input: PartAdditionInput): Promise<void> {
+  async createTransaction(input: PartTransactionInput): Promise<void> {
     const doesPartExist = await this.doesPartExist(input.part_id);
 
     if (!doesPartExist) {
       throw new BadRequestException('Part not found');
     }
 
-    await this.prisma.part_additions.create({
+    await this.prisma.part_transactions.create({
       data: {
         part_id: input.part_id,
         quantity: input.quantity,
@@ -29,14 +36,14 @@ export class PartInventoryService {
     });
   }
 
-  async updateAddition(input: PartAdditionInput): Promise<void> {
+  async updateTransaction(input: PartTransactionInput): Promise<void> {
     const doesPartExist = await this.doesPartExist(input.part_id);
 
     if (!doesPartExist) {
       throw new BadRequestException('Part not found');
     }
 
-    await this.prisma.part_additions.updateMany({
+    await this.prisma.part_transactions.updateMany({
       data: {
         part_id: input.part_id,
         quantity: input.quantity,
@@ -49,8 +56,8 @@ export class PartInventoryService {
     });
   }
 
-  async deleteAddition(
-    input: Omit<PartAdditionInput, 'quantity'>,
+  async deleteTransaction(
+    input: Omit<PartTransactionInput, 'quantity'>,
   ): Promise<void> {
     const doesPartExist = await this.doesPartExist(input.part_id);
 
@@ -58,60 +65,7 @@ export class PartInventoryService {
       throw new BadRequestException('Part not found');
     }
 
-    await this.prisma.part_additions.deleteMany({
-      where: {
-        part_id: input.part_id,
-        part_adjustment_id: input.part_adjustment_id || undefined,
-      },
-    });
-  }
-
-  async createSubtraction(input: PartSubtractionInput): Promise<void> {
-    const doesPartExist = await this.doesPartExist(input.part_id);
-
-    if (!doesPartExist) {
-      throw new BadRequestException('Part not found');
-    }
-
-    await this.prisma.part_subtractions.create({
-      data: {
-        part_id: input.part_id,
-        quantity: input.quantity,
-        part_adjustment_id: input.part_adjustment_id || null,
-      },
-    });
-  }
-
-  async updateSubtraction(input: PartSubtractionInput): Promise<void> {
-    const doesPartExist = await this.doesPartExist(input.part_id);
-
-    if (!doesPartExist) {
-      throw new BadRequestException('Part not found');
-    }
-
-    await this.prisma.part_subtractions.updateMany({
-      data: {
-        part_id: input.part_id,
-        quantity: input.quantity,
-        part_adjustment_id: input.part_adjustment_id || null,
-      },
-      where: {
-        part_id: input.part_id,
-        part_adjustment_id: input.part_adjustment_id || undefined,
-      },
-    });
-  }
-
-  async deleteSubtraction(
-    input: Omit<PartSubtractionInput, 'quantity'>,
-  ): Promise<void> {
-    const doesPartExist = await this.doesPartExist(input.part_id);
-
-    if (!doesPartExist) {
-      throw new BadRequestException('Part not found');
-    }
-
-    await this.prisma.part_subtractions.deleteMany({
+    await this.prisma.part_transactions.deleteMany({
       where: {
         part_id: input.part_id,
         part_adjustment_id: input.part_adjustment_id || undefined,
@@ -123,33 +77,5 @@ export class PartInventoryService {
     return !!(await this.prisma.parts.findFirst({
       where: { id: partId },
     }));
-  }
-
-  private async getAdditionsTotal(partId: number): Promise<number> {
-    const {
-      _sum: { quantity },
-    } = await this.prisma.part_additions.aggregate({
-      _sum: {
-        quantity: true,
-      },
-      where: {
-        part_id: partId,
-      },
-    });
-    return quantity || 0;
-  }
-
-  private async getSubtractionTotal(partId: number): Promise<number> {
-    const {
-      _sum: { quantity },
-    } = await this.prisma.part_subtractions.aggregate({
-      _sum: {
-        quantity: true,
-      },
-      where: {
-        part_id: partId,
-      },
-    });
-    return quantity || 0;
   }
 }

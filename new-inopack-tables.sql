@@ -117,39 +117,20 @@ COLLATE = utf8mb4_unicode_ci;
 
 
 
-CREATE TABLE `part_additions`
+CREATE TABLE `part_transactions`
 (
   `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
   `active`       int                                                     NOT NULL DEFAULT '1',
   `created_at`   datetime                                               NULL     DEFAULT NULL,
   `updated_at`   datetime                                               NULL     DEFAULT NULL,
   `part_id`    int unsigned          DEFAULT NULL,
-  `quantity`    int unsigned         NOT NULL DEFAULT 0,
+  `quantity`    int signed         NOT NULL DEFAULT 0,
   `part_adjustment_id`    int unsigned          DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `part_additions_part_id_foreign` (`part_id`),
-  CONSTRAINT `part_additions_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`),
-  KEY `part_adjustment_id_part_additions_foreign` (`part_adjustment_id`),
-  CONSTRAINT `part_adjustment_id_part_additions_foreign` FOREIGN KEY (`part_adjustment_id`) REFERENCES `part_adjustments` (`id`)
-) ENGINE = InnoDB
-AUTO_INCREMENT = 1
-DEFAULT CHARSET = utf8mb4
-COLLATE = utf8mb4_unicode_ci;
-
-CREATE TABLE `part_subtractions`
-(
-  `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
-  `active`       int                                                     NOT NULL DEFAULT '1',
-  `created_at`   datetime                                               NULL     DEFAULT NULL,
-  `updated_at`   datetime                                               NULL     DEFAULT NULL,
-  `part_id`    int unsigned          DEFAULT NULL,
-  `quantity`    int unsigned         NOT NULL DEFAULT 0,
-  `part_adjustment_id`    int unsigned          DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `part_subtractions_part_id_foreign` (`part_id`),
-  CONSTRAINT `part_subtractions_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`),
-  KEY `part_adjustment_id_part_subtractions_foreign` (`part_adjustment_id`),
-  CONSTRAINT `part_adjustment_id_part_subtractions_foreign` FOREIGN KEY (`part_adjustment_id`) REFERENCES `part_adjustments` (`id`)
+  KEY `part_transactions_part_id_foreign` (`part_id`),
+  CONSTRAINT `part_transactions_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`),
+  KEY `part_transactions_part_adjustment_id_foreign` (`part_adjustment_id`),
+  CONSTRAINT `part_transactions_part_adjustment_id_foreign` FOREIGN KEY (`part_adjustment_id`) REFERENCES `part_adjustments` (`id`)
 ) ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4

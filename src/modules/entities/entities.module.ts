@@ -8,8 +8,7 @@ import { MachineComponentsModule } from './machine-components/machine-components
 import { MachineCompatibilitiesModule } from './machine-compatibilities/machine-compatibilities.module';
 import { PartAdjustmentsModule } from './part-adjustments/part-adjustments.module';
 import { PartAdjustmentTypesModule } from './part-adjustment-types/part-adjustment-types.module';
-import { PartAdditionsModule } from './part-additions/part-additions.module';
-import { PartSubtractionsModule } from './part-subtractions/part-subtractions.module';
+import { PartTransactionsModule } from './part-transactions/part-transactions.module';
 
 @Module({
   imports: [
@@ -22,8 +21,7 @@ import { PartSubtractionsModule } from './part-subtractions/part-subtractions.mo
     MachineCompatibilitiesModule,
     PartAdjustmentsModule,
     PartAdjustmentTypesModule,
-    PartAdditionsModule,
-    PartSubtractionsModule,
+    PartTransactionsModule,
   ],
 })
 export class EntitiesModule {}

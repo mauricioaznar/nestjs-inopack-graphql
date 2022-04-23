@@ -6,8 +6,7 @@ import {
 } from '../../../common/dto/entities/part-adjustment.dto';
 import { vennDiagram } from '../../../common/helpers/venn-diagram';
 import { PartInventoryService } from '../../../common/services/entities/part-inventory.service';
-import { PartAddition } from '../../../common/dto/entities/part-additions.dto';
-import { PartSubtraction } from '../../../common/dto/entities/part-subtractions.dto';
+import { PartTransaction } from '../../../common/dto/entities/part-transactions.dto';
 
 @Injectable()
 export class PartAdjustmentsService {
@@ -37,83 +36,43 @@ export class PartAdjustmentsService {
       },
     });
 
-    const newPartAdditions = partAdjustmentUpsertInput.part_additions;
-    const oldPartAdditions = await this.prisma.part_additions.findMany({
+    const newPartTransactions = partAdjustmentUpsertInput.part_transactions;
+    const oldPartTransactions = await this.prisma.part_transactions.findMany({
       where: {
         part_adjustment_id: partAdjustment.id,
       },
     });
 
     const {
-      aMinusB: deletePartAdditions,
-      bMinusA: createPartAdditions,
-      intersection: updatePartAdditions,
+      aMinusB: deletePartTransactions,
+      bMinusA: createPartTransactions,
+      intersection: updatePartTransactions,
     } = vennDiagram({
-      a: oldPartAdditions,
-      b: newPartAdditions,
+      a: oldPartTransactions,
+      b: newPartTransactions,
       indexProperties: ['part_id'],
     });
 
-    for await (const delPartAddition of deletePartAdditions) {
-      await this.partInventoryService.deleteAddition({
-        part_id: delPartAddition.part_id,
+    for await (const delPartTransaction of deletePartTransactions) {
+      await this.partInventoryService.deleteTransaction({
+        part_id: delPartTransaction.part_id,
         part_adjustment_id: partAdjustment.id,
       });
     }
 
-    for await (const createPartAddition of createPartAdditions) {
-      await this.partInventoryService.createAddition({
-        part_id: createPartAddition.part_id,
+    for await (const createPartTransaction of createPartTransactions) {
+      await this.partInventoryService.createTransaction({
+        part_id: createPartTransaction.part_id,
         part_adjustment_id: partAdjustment.id,
-        quantity: createPartAddition.quantity,
+        quantity: createPartTransaction.quantity,
       });
     }
 
-    for await (const updatePartAddition of updatePartAdditions) {
-      await this.partInventoryService.updateAddition({
+    for await (const updatePartAddition of updatePartTransactions) {
+      await this.partInventoryService.updateTransaction({
         part_id: updatePartAddition.part_id,
         part_adjustment_id: partAdjustment.id,
         quantity: updatePartAddition.quantity,
-      });
-    }
-
-    const newPartSubtractions = partAdjustmentUpsertInput.part_subtractions;
-    const oldPartSubtractions = await this.prisma.part_subtractions.findMany({
-      where: {
-        part_adjustment_id: partAdjustment.id,
-      },
-    });
-
-    const {
-      aMinusB: deletePartSubtractions,
-      bMinusA: createPartSubtractions,
-      intersection: updatePartSubtractions,
-    } = vennDiagram({
-      a: oldPartSubtractions,
-      b: newPartSubtractions,
-      indexProperties: ['part_id'],
-    });
-
-    for await (const delPartSubtraction of deletePartSubtractions) {
-      await this.partInventoryService.deleteSubtraction({
-        part_id: delPartSubtraction.part_id,
-        part_adjustment_id: partAdjustment.id,
-      });
-    }
-
-    for await (const createPartSubtraction of createPartSubtractions) {
-      await this.partInventoryService.createSubtraction({
-        part_id: createPartSubtraction.part_id,
-        part_adjustment_id: partAdjustment.id,
-        quantity: createPartSubtraction.quantity,
-      });
-    }
-
-    for await (const updatePartSubtraction of updatePartSubtractions) {
-      await this.partInventoryService.updateAddition({
-        part_id: updatePartSubtraction.part_id,
-        part_adjustment_id: partAdjustment.id,
-        quantity: updatePartSubtraction.quantity,
       });
     }
 
@@ -124,24 +83,12 @@ export class PartAdjustmentsService {
     return this.prisma.part_adjustments.findMany();
   }
 
-  async getPartAdditions({
+  async getPartTransactions({
     part_adjustment_id,
   }: {
     part_adjustment_id: number;
-  }): Promise<PartAddition[]> {
-    return this.prisma.part_additions.findMany({
-      where: {
-        part_adjustment_id,
-      },
-    });
-  }
-
-  async getPartSubtractions({
-    part_adjustment_id,
-  }: {
-    part_adjustment_id: number;
-  }): Promise<PartSubtraction[]> {
-    return this.prisma.part_subtractions.findMany({
+  }): Promise<PartTransaction[]> {
+    return this.prisma.part_transactions.findMany({
       where: {
         part_adjustment_id,
       },
