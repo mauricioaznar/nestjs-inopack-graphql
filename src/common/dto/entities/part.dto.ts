@@ -6,8 +6,8 @@ export class PartBase {
     @Field()
     name: string;
 
-    @Field()
-    part_category_id: number;
+    @Field({ nullable: true })
+    part_category_id: number | null;
 }
 
 @InputType('PartUpsertInput')

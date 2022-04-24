@@ -1,8 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import {
     PartCategory,
-    PartCategoryInput,
+    PartCategoryUpsertInput,
 } from '../../../common/dto/entities/part-category.dto';
 import { Part } from '../../../common/dto/entities/part.dto';
 
@@ -10,29 +10,43 @@ import { Part } from '../../../common/dto/entities/part.dto';
 export class PartCategoriesService {
     constructor(private prisma: PrismaService) {}
 
-    async addCategory(
-        partCategoryInput: PartCategoryInput,
+    async upsertPartCategory(
+        partCategoryInput: PartCategoryUpsertInput,
     ): Promise<PartCategory> {
-        const doesCategoryExistWithName =
-            await this.prisma.part_categories.findFirst({
-                where: {
-                    name: partCategoryInput.name,
-                },
-            });
-
-        if (doesCategoryExistWithName) {
-            throw new BadRequestException('Category already exists');
-        }
-
-        return this.prisma.part_categories.create({
-            data: {
+        return this.prisma.part_categories.upsert({
+            create: {
                 name: partCategoryInput.name,
+
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+            update: {
+                name: partCategoryInput.name,
+
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+            where: {
+                id: partCategoryInput.id || 0,
             },
         });
     }
 
     async getPartCategories(): Promise<PartCategory[]> {
         return this.prisma.part_categories.findMany();
+    }
+
+    async getPartCategory({
+        part_category_id,
+    }: {
+        part_category_id?: number | null;
+    }): Promise<PartCategory> {
+        if (!part_category_id) return null;
+        return this.prisma.part_categories.findFirst({
+            where: {
+                id: part_category_id,
+            },
+        });
     }
 
     async getParts(partCategory: PartCategory): Promise<Part[]> {

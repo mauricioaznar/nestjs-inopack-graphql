@@ -4,7 +4,7 @@ import { PartCategoriesService } from './part-categories.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import {
     PartCategory,
-    PartCategoryInput,
+    PartCategoryUpsertInput,
 } from '../../../common/dto/entities/part-category.dto';
 import { Part } from '../../../common/dto/entities/part.dto';
 
@@ -15,17 +15,28 @@ export class PartCategoriesResolver {
     constructor(private partCategoriesService: PartCategoriesService) {}
 
     @Mutation(() => PartCategory)
-    async addCategory(@Args('partCategoryInput') input: PartCategoryInput) {
-        return this.partCategoriesService.addCategory(input);
+    async upsertPartCategory(
+        @Args('PartCategoryUpsertInput') input: PartCategoryUpsertInput,
+    ): Promise<PartCategory> {
+        return this.partCategoriesService.upsertPartCategory(input);
     }
 
     @Query(() => [PartCategory])
-    async getPartCategories() {
+    async getPartCategories(): Promise<PartCategory[]> {
         return this.partCategoriesService.getPartCategories();
     }
 
+    @Query(() => PartCategory)
+    async getPartCategory(
+        @Args('PartCategoryId') id: number,
+    ): Promise<PartCategory> {
+        return this.partCategoriesService.getPartCategory({
+            part_category_id: id,
+        });
+    }
+
     @ResolveField(() => [Part])
-    async parts(partCategory: PartCategory) {
+    async parts(partCategory: PartCategory): Promise<Part[]> {
         return this.partCategoriesService.getParts(partCategory);
     }
 }
