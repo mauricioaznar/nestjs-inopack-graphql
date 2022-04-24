@@ -13,7 +13,7 @@ export class PartCategorySeederService {
 
     async createPartCategories(): Promise<PartCategoriesSeed> {
         const materials = await this.partCategoriesService.upsertPartCategory({
-            name: 'Materials',
+            name: 'Materiales',
         });
 
         return {
