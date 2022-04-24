@@ -7,15 +7,15 @@ import { MachineComponentsService } from '../../../entities/machine-components/m
 import { PartInventoryService } from '../../../../common/services/entities/part-inventory.service';
 
 @Module({
-  providers: [
-    Logger,
-    PrismaService,
-    MachinesService,
-    MachineSectionsService,
-    MachineComponentsService,
-    MachineSeederService,
-    PartInventoryService,
-  ],
-  exports: [MachineSeederService],
+    providers: [
+        Logger,
+        PrismaService,
+        MachinesService,
+        MachineSectionsService,
+        MachineComponentsService,
+        MachineSeederService,
+        PartInventoryService,
+    ],
+    exports: [MachineSeederService],
 })
 export class MachineSeederModule {}

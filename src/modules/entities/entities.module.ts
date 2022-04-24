@@ -10,16 +10,16 @@ import { PartOperationsModule } from './part-operations/part-operations.module';
 import { PartTransactionsModule } from './part-transactions/part-transactions.module';
 
 @Module({
-  imports: [
-    BranchesModule,
-    MachinesModule,
-    PartsModule,
-    PartCategoriesModule,
-    MachineSectionsModule,
-    MachineComponentsModule,
-    MachineCompatibilitiesModule,
-    PartOperationsModule,
-    PartTransactionsModule,
-  ],
+    imports: [
+        BranchesModule,
+        MachinesModule,
+        PartsModule,
+        PartCategoriesModule,
+        MachineSectionsModule,
+        MachineComponentsModule,
+        MachineCompatibilitiesModule,
+        PartOperationsModule,
+        PartTransactionsModule,
+    ],
 })
 export class EntitiesModule {}

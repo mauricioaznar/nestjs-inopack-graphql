@@ -4,7 +4,7 @@ import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import { MachineSectionsService } from './machine-sections.service';
 
 @Module({
-  providers: [PrismaService, MachineSectionsResolver, MachineSectionsService],
-  exports: [MachineSectionsResolver],
+    providers: [PrismaService, MachineSectionsResolver, MachineSectionsService],
+    exports: [MachineSectionsResolver],
 })
 export class MachineSectionsModule {}

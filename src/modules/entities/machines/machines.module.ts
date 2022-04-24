@@ -5,12 +5,12 @@ import { MachinesService } from './machines.service';
 import { PartInventoryService } from '../../../common/services/entities/part-inventory.service';
 
 @Module({
-  providers: [
-    PrismaService,
-    MachinesResolver,
-    PartInventoryService,
-    MachinesService,
-  ],
-  exports: [MachinesResolver],
+    providers: [
+        PrismaService,
+        MachinesResolver,
+        PartInventoryService,
+        MachinesService,
+    ],
+    exports: [MachinesResolver],
 })
 export class MachinesModule {}

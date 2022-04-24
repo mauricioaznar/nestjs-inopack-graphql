@@ -1,11 +1,11 @@
 import { FieldMiddleware, MiddlewareContext, NextFn } from '@nestjs/graphql';
 
 const AvatarMiddleware: FieldMiddleware = async (
-  ctx: MiddlewareContext,
-  next: NextFn,
+    ctx: MiddlewareContext,
+    next: NextFn,
 ) => {
-  const value = await next();
-  return '';
+    const value = await next();
+    return '';
 };
 
 export default AvatarMiddleware;

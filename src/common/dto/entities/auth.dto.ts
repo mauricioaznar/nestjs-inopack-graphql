@@ -4,35 +4,35 @@ import { IsString } from 'class-validator';
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
 export class UserBase {
-  @Field()
-  email: string;
+    @Field()
+    email: string;
 }
 
 @InputType('loginInput')
 export class LoginInput {
-  @Field()
-  @IsString()
-  password: string;
+    @Field()
+    @IsString()
+    password: string;
 
-  @Field()
-  @IsString()
-  email: string;
+    @Field()
+    @IsString()
+    email: string;
 }
 
 @InputType('userInput')
 export class UserInput extends UserBase {
-  @Field()
-  password: string;
+    @Field()
+    password: string;
 }
 
 @ObjectType('User')
 export class User extends UserBase {
-  @Field({ nullable: false })
-  id: number;
+    @Field({ nullable: false })
+    id: number;
 }
 
 @ObjectType('AccessToken')
 export class AccessToken {
-  @Field({ nullable: false })
-  accessToken: string;
+    @Field({ nullable: false })
+    accessToken: string;
 }

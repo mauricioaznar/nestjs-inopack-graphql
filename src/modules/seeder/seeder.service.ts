@@ -6,18 +6,20 @@ import { PartInventorySeederService } from './modules/part-inventory-seeder/part
 
 @Injectable()
 export class SeederService {
-  constructor(
-    private readonly partCategorySeederService: PartCategorySeederService,
-    private readonly partSeederService: PartSeederService,
-    private readonly machineSeederService: MachineSeederService,
-    private readonly partInventorySeederService: PartInventorySeederService,
-  ) {}
+    constructor(
+        private readonly partCategorySeederService: PartCategorySeederService,
+        private readonly partSeederService: PartSeederService,
+        private readonly machineSeederService: MachineSeederService,
+        private readonly partInventorySeederService: PartInventorySeederService,
+    ) {}
 
-  async seed() {
-    const categoriesSeed =
-      await this.partCategorySeederService.createPartCategories();
-    const partsSeed = await this.partSeederService.createParts(categoriesSeed);
-    await this.machineSeederService.getMachines(partsSeed);
-    await this.partInventorySeederService.adjustInventory(partsSeed);
-  }
+    async seed() {
+        const categoriesSeed =
+            await this.partCategorySeederService.createPartCategories();
+        const partsSeed = await this.partSeederService.createParts(
+            categoriesSeed,
+        );
+        await this.machineSeederService.getMachines(partsSeed);
+        await this.partInventorySeederService.adjustInventory(partsSeed);
+    }
 }

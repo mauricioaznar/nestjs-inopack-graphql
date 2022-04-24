@@ -4,7 +4,7 @@ import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import { BranchesService } from './branches.service';
 
 @Module({
-  providers: [PrismaService, BranchesResolver, BranchesService],
-  exports: [BranchesResolver],
+    providers: [PrismaService, BranchesResolver, BranchesService],
+    exports: [BranchesResolver],
 })
 export class BranchesModule {}

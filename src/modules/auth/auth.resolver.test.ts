@@ -4,31 +4,31 @@ import request from 'supertest';
 import { adminUser } from '../../common/__tests__/objects/users';
 
 describe('Users', () => {
-  let app: INestApplication;
+    let app: INestApplication;
 
-  beforeEach(async () => {
-    app = await setupApp();
-  });
+    beforeEach(async () => {
+        app = await setupApp();
+    });
 
-  afterEach(async () => {
-    await app.close();
-  });
+    afterEach(async () => {
+        await app.close();
+    });
 
-  it('user logs in', async () => {
-    const email = adminUser.email;
-    const password = adminUser.password;
-    const response = await request(app.getHttpServer())
-      .post('/graphql')
-      .send({
-        query: `mutation {
+    it('user logs in', async () => {
+        const email = adminUser.email;
+        const password = adminUser.password;
+        const response = await request(app.getHttpServer())
+            .post('/graphql')
+            .send({
+                query: `mutation {
             login(
               loginInput: {email: "${email}", password: "${password}"})
                 {
                   accessToken
                 }
               }`,
-      });
+            });
 
-    expect(response.body.data.login.accessToken).toBeDefined();
-  });
+        expect(response.body.data.login.accessToken).toBeDefined();
+    });
 });

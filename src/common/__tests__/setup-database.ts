@@ -4,15 +4,15 @@ import { UserService } from '../../modules/auth/user.service';
 import { setupApp } from './helpers/setup-app';
 
 export default async function setupDatabase() {
-  const app = await setupApp();
-  const prismaService = app.get(PrismaService);
+    const app = await setupApp();
+    const prismaService = app.get(PrismaService);
 
-  // cleaning
-  await prismaService.users.deleteMany();
+    // cleaning
+    await prismaService.users.deleteMany();
 
-  // create
-  const userService = app.get(UserService);
-  await userService.create({ ...adminUser });
+    // create
+    const userService = app.get(UserService);
+    await userService.create({ ...adminUser });
 
-  await app.close();
+    await app.close();
 }

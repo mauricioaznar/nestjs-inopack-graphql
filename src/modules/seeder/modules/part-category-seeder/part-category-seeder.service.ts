@@ -5,19 +5,19 @@ import { PrismaService } from '../../../../common/services/prisma/prisma.service
 
 @Injectable()
 export class PartCategorySeederService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly logger: Logger,
-    private readonly partCategoriesService: PartCategoriesService,
-  ) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly logger: Logger,
+        private readonly partCategoriesService: PartCategoriesService,
+    ) {}
 
-  async createPartCategories(): Promise<PartCategoriesSeed> {
-    const materials = await this.partCategoriesService.addCategory({
-      name: 'Materials',
-    });
+    async createPartCategories(): Promise<PartCategoriesSeed> {
+        const materials = await this.partCategoriesService.addCategory({
+            name: 'Materials',
+        });
 
-    return {
-      materials,
-    };
-  }
+        return {
+            materials,
+        };
+    }
 }

@@ -6,15 +6,15 @@ import { Branch, BranchInput } from '../../../common/dto/entities/branch.dto';
 @Resolver(() => Branch)
 @Injectable()
 export class BranchesResolver {
-  constructor(private branchesService: BranchesService) {}
+    constructor(private branchesService: BranchesService) {}
 
-  @Mutation(() => Branch)
-  async createBranch(@Args('BranchInput') input: BranchInput) {
-    return this.branchesService.createBranch(input);
-  }
+    @Mutation(() => Branch)
+    async createBranch(@Args('BranchInput') input: BranchInput) {
+        return this.branchesService.createBranch(input);
+    }
 
-  @Query(() => [Branch])
-  async getBranches() {
-    return this.branchesService.getBranches();
-  }
+    @Query(() => [Branch])
+    async getBranches() {
+        return this.branchesService.getBranches();
+    }
 }

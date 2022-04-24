@@ -4,7 +4,11 @@ import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import { PartTransactionsService } from './part-transactions.service';
 
 @Module({
-  providers: [PrismaService, PartTransactionsResolver, PartTransactionsService],
-  exports: [PartTransactionsResolver],
+    providers: [
+        PrismaService,
+        PartTransactionsResolver,
+        PartTransactionsService,
+    ],
+    exports: [PartTransactionsResolver],
 })
 export class PartTransactionsModule {}

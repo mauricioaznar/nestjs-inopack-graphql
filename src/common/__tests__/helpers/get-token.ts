@@ -3,23 +3,23 @@ import { adminUser } from '../objects/users';
 import { INestApplication } from '@nestjs/common';
 
 export async function getAdminToken(app: INestApplication) {
-  const email = adminUser.email;
-  const password = adminUser.password;
-  const response = await request(app.getHttpServer())
-    .post('/graphql')
-    .send({
-      query: `mutation {
+    const email = adminUser.email;
+    const password = adminUser.password;
+    const response = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({
+            query: `mutation {
             login(
               loginInput: {email: "${email}", password: "${password}"})
                 {
                   accessToken
                 }
               }`,
-    });
+        });
 
-  const access_token = response.body?.data?.login?.accessToken;
+    const access_token = response.body?.data?.login?.accessToken;
 
-  expect(access_token).toBeDefined();
+    expect(access_token).toBeDefined();
 
-  return { Authorization: `Bearer ${access_token}` };
+    return { Authorization: `Bearer ${access_token}` };
 }

@@ -7,12 +7,12 @@ import { MachineSeederModule } from './modules/machine-seeder/machine-seeder.mod
 import { PartInventorySeederModule } from './modules/part-inventory-seeder/part-inventory-seeder.module';
 
 @Module({
-  providers: [Logger, SeederService, PrismaService],
-  imports: [
-    PartSeederModule,
-    PartCategorySeederModule,
-    MachineSeederModule,
-    PartInventorySeederModule,
-  ],
+    providers: [Logger, SeederService, PrismaService],
+    imports: [
+        PartSeederModule,
+        PartCategorySeederModule,
+        MachineSeederModule,
+        PartInventorySeederModule,
+    ],
 })
 export class SeederModule {}

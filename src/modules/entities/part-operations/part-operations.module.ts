@@ -5,12 +5,12 @@ import { PartOperationsService } from './part-operations.service';
 import { PartInventoryService } from '../../../common/services/entities/part-inventory.service';
 
 @Module({
-  providers: [
-    PrismaService,
-    PartOperationsResolver,
-    PartOperationsService,
-    PartInventoryService,
-  ],
-  exports: [PartOperationsResolver],
+    providers: [
+        PrismaService,
+        PartOperationsResolver,
+        PartOperationsService,
+        PartInventoryService,
+    ],
+    exports: [PartOperationsResolver],
 })
 export class PartOperationsModule {}

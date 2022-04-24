@@ -5,13 +5,13 @@ import { PartInventoryService } from '../../../../common/services/entities/part-
 import { PartOperationsService } from '../../../entities/part-operations/part-operations.service';
 
 @Module({
-  providers: [
-    Logger,
-    PrismaService,
-    PartInventoryService,
-    PartOperationsService,
-    PartInventorySeederService,
-  ],
-  exports: [PartInventorySeederService],
+    providers: [
+        Logger,
+        PrismaService,
+        PartInventoryService,
+        PartOperationsService,
+        PartInventorySeederService,
+    ],
+    exports: [PartInventorySeederService],
 })
 export class PartInventorySeederModule {}

@@ -4,12 +4,12 @@ import { PrismaService } from '../../../../common/services/prisma/prisma.service
 import { PartCategoriesService } from '../../../entities/part-categories/part-categories.service';
 
 @Module({
-  providers: [
-    Logger,
-    PrismaService,
-    PartCategoriesService,
-    PartCategorySeederService,
-  ],
-  exports: [PartCategorySeederService],
+    providers: [
+        Logger,
+        PrismaService,
+        PartCategoriesService,
+        PartCategorySeederService,
+    ],
+    exports: [PartCategorySeederService],
 })
 export class PartCategorySeederModule {}

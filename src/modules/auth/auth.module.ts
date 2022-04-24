@@ -13,24 +13,24 @@ import { PrismaService } from '../../common/services/prisma/prisma.service';
 import { UserService } from './user.service';
 
 @Module({
-  imports: [
-    PassportModule,
-    JwtModule.register({
-      secret: jwtConstants.authSecret,
-      signOptions: { expiresIn: jwtConstants.authExpiresIn },
-    }),
-    FilesModule,
-    MemoryTokenModule,
-  ],
-  controllers: [AuthController],
-  providers: [
-    AuthService,
-    UserService,
-    LocalStrategy,
-    JwtStrategy,
-    AuthResolver,
-    PrismaService,
-  ],
-  exports: [AuthService],
+    imports: [
+        PassportModule,
+        JwtModule.register({
+            secret: jwtConstants.authSecret,
+            signOptions: { expiresIn: jwtConstants.authExpiresIn },
+        }),
+        FilesModule,
+        MemoryTokenModule,
+    ],
+    controllers: [AuthController],
+    providers: [
+        AuthService,
+        UserService,
+        LocalStrategy,
+        JwtStrategy,
+        AuthResolver,
+        PrismaService,
+    ],
+    exports: [AuthService],
 })
 export class AuthModule {}
