@@ -38,6 +38,11 @@ export class PartsResolver {
         return this.partsService.upsertPart(input);
     }
 
+    @Mutation(() => Boolean)
+    async deletePart(@Args('PartId') id: number): Promise<boolean> {
+        return this.partsService.deletePart({ part_id: id });
+    }
+
     @ResolveField(() => Float)
     async current_quantity(part: Part) {
         return this.partInventoryService.getCurrentQuantity(part.id);
@@ -52,11 +57,18 @@ export class PartsResolver {
 
     @ResolveField(() => Float)
     async total_required_quantity(part: Part) {
-        return this.partsService.getTotalRequiredQuantity(part.id);
+        return this.partsService.getTotalRequiredQuantity({
+            part_id: part.id,
+        });
     }
 
     @ResolveField(() => [PartTransaction])
     async part_transactions(part: Part) {
         return this.partsService.getPartTransactions({ part_id: part.id });
+    }
+
+    @ResolveField(() => Boolean)
+    async is_deletable(part: Part) {
+        return this.partsService.isDeletable({ part_id: part.id });
     }
 }

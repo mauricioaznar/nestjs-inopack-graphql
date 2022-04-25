@@ -59,7 +59,11 @@ export class PartsService {
         });
     }
 
-    async getTotalRequiredQuantity(id: number): Promise<number> {
+    async getTotalRequiredQuantity({
+        part_id,
+    }: {
+        part_id: number;
+    }): Promise<number> {
         const {
             _sum: { current_part_required_quantity },
         } = await this.prisma.machine_components.aggregate({
@@ -67,7 +71,7 @@ export class PartsService {
                 current_part_required_quantity: true,
             },
             where: {
-                current_part_id: id,
+                current_part_id: part_id,
             },
         });
         return current_part_required_quantity || 0;
@@ -83,5 +87,63 @@ export class PartsService {
                 part_id: part_id,
             },
         });
+    }
+
+    async deletePart({ part_id }: { part_id: number }): Promise<boolean> {
+        const isDeletable = await this.isDeletable({ part_id });
+
+        if (!isDeletable) return false;
+
+        try {
+            await this.prisma.parts.deleteMany({
+                where: {
+                    id: part_id,
+                },
+            });
+        } catch (e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    async isDeletable({ part_id }: { part_id: number }): Promise<boolean> {
+        const {
+            _count: { id: machineComponentCount },
+        } = await this.prisma.machine_components.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                current_part_id: part_id,
+            },
+        });
+
+        const {
+            _count: { id: machineCompatibilitiesCount },
+        } = await this.prisma.machine_compatibilities.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                part_id: part_id,
+            },
+        });
+
+        const {
+            _count: { id: machineTransactionsCount },
+        } = await this.prisma.part_transactions.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                part_id: part_id,
+            },
+        });
+        return (
+            machineComponentCount === 0 &&
+            machineCompatibilitiesCount === 0 &&
+            machineTransactionsCount === 0
+        );
     }
 }
