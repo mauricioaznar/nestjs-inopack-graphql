@@ -1,4 +1,4 @@
-import { Args, ArgsType, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { PartTransactionsService } from './part-transactions.service';
 import { Part } from '../../../common/dto/entities/part.dto';
