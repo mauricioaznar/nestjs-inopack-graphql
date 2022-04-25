@@ -18,6 +18,13 @@ export class PartOperationsResolver {
         return this.partOperationsService.getPartAdjustments();
     }
 
+    @Query(() => PartOperation)
+    async getPartOperation(@Args('PartOperationId') partOperationId: number) {
+        return this.partOperationsService.getPartOperation({
+            part_operation_id: partOperationId,
+        });
+    }
+
     @Mutation(() => PartOperation)
     async upsertPartAdjustment(
         @Args('PartAdjustmentUpsertInput') input: PartAdjustmentUpsertInput,

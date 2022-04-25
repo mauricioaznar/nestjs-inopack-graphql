@@ -149,6 +149,19 @@ export class PartOperationsService {
         });
     }
 
+    async getPartOperation({
+        part_operation_id,
+    }: {
+        part_operation_id?: number | null;
+    }): Promise<PartOperation> {
+        if (!part_operation_id) return null;
+        return this.prisma.part_operations.findFirst({
+            where: {
+                id: part_operation_id,
+            },
+        });
+    }
+
     async getPartTransactions({
         part_operation_id,
     }: {
