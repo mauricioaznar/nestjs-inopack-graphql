@@ -1,9 +1,10 @@
-import { Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, ArgsType, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { PartTransactionsService } from './part-transactions.service';
 import { Part } from '../../../common/dto/entities/part.dto';
 import { PartTransaction } from '../../../common/dto/entities/part-transactions.dto';
 import { PartOperation } from '../../../common/dto/entities/part-operation.dto';
+import { DatePaginatorArgs } from '../../../common/dto/pagination/date-paginator/date-paginator-args';
 
 @Resolver(() => PartTransaction)
 @Injectable()
@@ -11,8 +12,10 @@ export class PartTransactionsResolver {
     constructor(private partTransactionsService: PartTransactionsService) {}
 
     @Query(() => [PartTransaction])
-    async getPartTransactions(): Promise<PartTransaction[]> {
-        return this.partTransactionsService.getPartTransactions();
+    async getPartTransactions(
+        @Args() datePaginator: DatePaginatorArgs,
+    ): Promise<PartTransaction[]> {
+        return this.partTransactionsService.getPartTransactions(datePaginator);
     }
 
     @ResolveField(() => Part, { nullable: true })

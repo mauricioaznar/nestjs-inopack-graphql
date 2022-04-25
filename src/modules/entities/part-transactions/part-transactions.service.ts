@@ -3,13 +3,53 @@ import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import { Part } from '../../../common/dto/entities/part.dto';
 import { PartOperation } from '../../../common/dto/entities/part-operation.dto';
 import { PartTransaction } from '../../../common/dto/entities/part-transactions.dto';
+import dayjs from 'dayjs';
+import { DatePaginatorArgs } from '../../../common/dto/pagination/date-paginator/date-paginator-args';
 
 @Injectable()
 export class PartTransactionsService {
     constructor(private prisma: PrismaService) {}
 
-    async getPartTransactions(): Promise<PartTransaction[]> {
-        return this.prisma.part_transactions.findMany();
+    async getPartTransactions(
+        datePaginator: DatePaginatorArgs,
+    ): Promise<PartTransaction[]> {
+        if (!datePaginator.year || !datePaginator) return [];
+
+        const startDate: Date = dayjs()
+            .set('year', datePaginator.year)
+            .set('month', datePaginator.month)
+            .startOf('month')
+            .utc()
+            .toDate();
+
+        const endDate: Date = dayjs()
+            .set('year', datePaginator.year)
+            .set('month', datePaginator.month)
+            .add(1, 'month')
+            .startOf('month')
+            .utc()
+            .toDate();
+
+        return this.prisma.part_transactions.findMany({
+            where: {
+                AND: [
+                    {
+                        part_operations: {
+                            date: {
+                                gte: startDate,
+                            },
+                        },
+                    },
+                    {
+                        part_operations: {
+                            date: {
+                                lt: endDate,
+                            },
+                        },
+                    },
+                ],
+            },
+        });
     }
 
     async getPart({
