@@ -16,18 +16,18 @@ export class PartTransactionsService {
         if (!datePaginator.year || !datePaginator) return [];
 
         const startDate: Date = dayjs()
+            .utc()
             .set('year', datePaginator.year)
             .set('month', datePaginator.month)
             .startOf('month')
-            .utc()
             .toDate();
 
         const endDate: Date = dayjs()
+            .utc()
             .set('year', datePaginator.year)
             .set('month', datePaginator.month)
             .add(1, 'month')
             .startOf('month')
-            .utc()
             .toDate();
 
         return this.prisma.part_transactions.findMany({
