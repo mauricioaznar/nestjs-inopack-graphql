@@ -32,6 +32,15 @@ export class PartOperationsResolver {
         return this.partOperationsService.upsertPartAdjustment(input);
     }
 
+    @Mutation(() => Boolean)
+    async deletePartOperation(
+        @Args('PartOperationId') partOperationId: number,
+    ): Promise<boolean> {
+        return this.partOperationsService.deletePartOperation({
+            part_operation_id: partOperationId,
+        });
+    }
+
     @Mutation(() => PartOperation)
     async upsertPartWithdrawal(
         @Args('PartWithdrawalUpsertInput') input: PartWithdrawalUpsertInput,
@@ -44,6 +53,13 @@ export class PartOperationsResolver {
         partOperation: PartOperation,
     ): Promise<PartTransaction[]> {
         return this.partOperationsService.getPartTransactions({
+            part_operation_id: partOperation.id,
+        });
+    }
+
+    @ResolveField(() => Boolean)
+    async is_deletable(partOperation: PartOperation): Promise<boolean> {
+        return this.partOperationsService.isDeletable({
             part_operation_id: partOperation.id,
         });
     }

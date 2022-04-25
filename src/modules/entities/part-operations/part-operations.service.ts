@@ -173,4 +173,38 @@ export class PartOperationsService {
             },
         });
     }
+
+    async deletePartOperation({
+        part_operation_id,
+    }: {
+        part_operation_id: number;
+    }): Promise<boolean> {
+        const isDeletable = await this.isDeletable({
+            part_operation_id: part_operation_id,
+        });
+        if (!isDeletable) return false;
+        try {
+            await this.prisma.part_transactions.deleteMany({
+                where: {
+                    part_operation_id: part_operation_id,
+                },
+            });
+            await this.prisma.part_operations.deleteMany({
+                where: {
+                    id: part_operation_id,
+                },
+            });
+        } catch (e) {
+            return false;
+        }
+        return true;
+    }
+
+    async isDeletable({
+        part_operation_id,
+    }: {
+        part_operation_id: number;
+    }): Promise<boolean> {
+        return true;
+    }
 }
