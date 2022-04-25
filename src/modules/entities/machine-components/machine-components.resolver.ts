@@ -39,6 +39,15 @@ export class MachineComponentsResolver {
         );
     }
 
+    @Mutation(() => Boolean)
+    async deleteMachineComponent(
+        @Args('MachineComponentId') machineComponentId: number,
+    ) {
+        return this.machineComponentsService.deleteMachineComponent({
+            machine_component_id: machineComponentId,
+        });
+    }
+
     @ResolveField(() => Part, {
         nullable: true,
     })
@@ -75,5 +84,10 @@ export class MachineComponentsResolver {
         return this.machineComponentsService.getMachineCompatibilities({
             machine_component_id: machineComponent.id,
         });
+    }
+
+    @ResolveField(() => Boolean)
+    async is_deletable(): Promise<boolean> {
+        return this.machineComponentsService.isDeletable();
     }
 }

@@ -115,6 +115,33 @@ export class MachineComponentsService {
         return machineComponent;
     }
 
+    async deleteMachineComponent({
+        machine_component_id,
+    }: {
+        machine_component_id: number;
+    }): Promise<boolean> {
+        try {
+            await this.prisma.machine_compatibilities.deleteMany({
+                where: {
+                    machine_component_id: machine_component_id,
+                },
+            });
+            await this.prisma.machine_components.deleteMany({
+                where: {
+                    id: machine_component_id,
+                },
+            });
+        } catch (e) {
+            return false;
+        }
+        return true;
+    }
+
+    async isDeletable(): Promise<boolean> {
+        // has no dependencies
+        return true;
+    }
+
     async getCurrentPart({
         current_part_id,
     }: {

@@ -31,7 +31,7 @@
   * date processing
   * missing links
   * re-think tables
-  * 
+  * delete functionality
 
 
 
