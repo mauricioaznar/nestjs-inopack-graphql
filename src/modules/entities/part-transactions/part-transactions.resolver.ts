@@ -1,10 +1,12 @@
 import { Args, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { PartTransactionsService } from './part-transactions.service';
-import { Part } from '../../../common/dto/entities/part.dto';
-import { PartTransaction } from '../../../common/dto/entities/part-transactions.dto';
-import { PartOperation } from '../../../common/dto/entities/part-operation.dto';
-import { DatePaginatorArgs } from '../../../common/dto/pagination/date-paginator/date-paginator-args';
+import {
+    Part,
+    PartOperation,
+    PartTransaction,
+} from '../../../common/dto/entities';
+import { DatePaginatorArgs } from '../../../common/dto/pagination';
 
 @Resolver(() => PartTransaction)
 @Injectable()

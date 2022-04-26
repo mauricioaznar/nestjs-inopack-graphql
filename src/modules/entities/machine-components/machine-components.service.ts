@@ -1,15 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import {
+    Machine,
+    MachineCompatibility,
     MachineComponent,
     MachineComponentUpsertInput,
-} from '../../../common/dto/entities/machine-component.dto';
-import { MachineCompatibility } from '../../../common/dto/entities/machine-compatibility.dto';
-import { Part } from '../../../common/dto/entities/part.dto';
-import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
-import { vennDiagram } from '../../../common/helpers/venn-diagram';
-import { areUnique } from '../../../common/helpers/are-unique';
-import { Machine } from '../../../common/dto/entities/machine.dto';
+    MachineSection,
+    Part,
+} from '../../../common/dto/entities';
+import { areUnique, vennDiagram } from '../../../common/helpers';
 
 @Injectable()
 export class MachineComponentsService {

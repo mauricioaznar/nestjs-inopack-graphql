@@ -1,6 +1,8 @@
-import { Machine } from '../../../common/dto/entities/machine.dto';
-import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
-import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
+import {
+    Machine,
+    MachineComponent,
+    MachineSection,
+} from '../../../common/dto/entities';
 
 export interface MachinesSeed {
     cmd: {

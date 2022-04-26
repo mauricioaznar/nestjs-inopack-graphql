@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
-import { MachineCompatibility } from '../../../common/dto/entities/machine-compatibility.dto';
-import { Part } from '../../../common/dto/entities/part.dto';
-import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
+import {
+    MachineCompatibility,
+    MachineComponent,
+    Part,
+} from '../../../common/dto/entities';
 
 @Injectable()
 export class MachineCompatibilitiesService {

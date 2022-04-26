@@ -2,10 +2,10 @@ import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { MachineSectionsService } from './machine-sections.service';
 import {
+    MachineComponent,
     MachineSection,
     MachineSectionUpsertInput,
-} from '../../../common/dto/entities/machine-section.dto';
-import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
+} from '../../../common/dto/entities';
 
 @Resolver(() => MachineSection)
 @Injectable()

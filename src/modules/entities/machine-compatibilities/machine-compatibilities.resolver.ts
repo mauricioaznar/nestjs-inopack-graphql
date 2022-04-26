@@ -1,9 +1,11 @@
 import { Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { MachineCompatibilitiesService } from './machine-compatibilities.service';
-import { MachineCompatibility } from '../../../common/dto/entities/machine-compatibility.dto';
-import { Part } from '../../../common/dto/entities/part.dto';
-import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
+import {
+    MachineCompatibility,
+    MachineComponent,
+    Part,
+} from '../../../common/dto/entities';
 
 @Resolver(() => MachineCompatibility)
 @Injectable()

@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import {
     Machine,
+    MachineComponent,
+    MachineSection,
     MachineUpsertInput,
-} from '../../../common/dto/entities/machine.dto';
-import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
-import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
+} from '../../../common/dto/entities';
 import { PartInventoryService } from '../../../common/services/entities/part-inventory.service';
 
 @Injectable()
@@ -14,6 +14,7 @@ export class MachinesService {
         private prisma: PrismaService,
         private partsInventoryService: PartInventoryService,
     ) {}
+
     async getMachine({ id }: { id: number }): Promise<Machine> {
         return this.prisma.machines.findFirst({
             where: {

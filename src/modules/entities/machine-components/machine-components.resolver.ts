@@ -2,13 +2,13 @@ import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { MachineComponentsService } from './machine-components.service';
 import {
+    Machine,
+    MachineCompatibility,
     MachineComponent,
     MachineComponentUpsertInput,
-} from '../../../common/dto/entities/machine-component.dto';
-import { Part } from '../../../common/dto/entities/part.dto';
-import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
-import { MachineCompatibility } from '../../../common/dto/entities/machine-compatibility.dto';
-import { Machine } from '../../../common/dto/entities/machine.dto';
+    MachineSection,
+    Part,
+} from '../../../common/dto/entities';
 
 @Resolver(() => MachineComponent)
 @Injectable()

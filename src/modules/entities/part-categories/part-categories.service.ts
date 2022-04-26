@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import {
+    Part,
     PartCategory,
     PartCategoryUpsertInput,
-} from '../../../common/dto/entities/part-category.dto';
-import { Part } from '../../../common/dto/entities/part.dto';
+} from '../../../common/dto/entities';
 
 @Injectable()
 export class PartCategoriesService {

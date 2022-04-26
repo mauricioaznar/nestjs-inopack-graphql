@@ -8,10 +8,13 @@ import {
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { PartsService } from './parts.service';
-import { Part, PartUpsertInput } from '../../../common/dto/entities/part.dto';
+import {
+    Part,
+    PartCategory,
+    PartTransaction,
+    PartUpsertInput,
+} from '../../../common/dto/entities';
 import { PartInventoryService } from '../../../common/services/entities/part-inventory.service';
-import { PartCategory } from '../../../common/dto/entities/part-category.dto';
-import { PartTransaction } from '../../../common/dto/entities/part-transactions.dto';
 
 @Resolver(() => Part)
 @Injectable()

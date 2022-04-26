@@ -3,10 +3,10 @@ import { Injectable, UseGuards } from '@nestjs/common';
 import { PartCategoriesService } from './part-categories.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import {
+    Part,
     PartCategory,
     PartCategoryUpsertInput,
-} from '../../../common/dto/entities/part-category.dto';
-import { Part } from '../../../common/dto/entities/part.dto';
+} from '../../../common/dto/entities';
 
 @Resolver(() => PartCategory)
 @UseGuards(GqlAuthGuard)

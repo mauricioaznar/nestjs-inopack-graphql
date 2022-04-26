@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
-import { Part } from '../../../common/dto/entities/part.dto';
-import { PartOperation } from '../../../common/dto/entities/part-operation.dto';
-import { PartTransaction } from '../../../common/dto/entities/part-transactions.dto';
+import {
+    Part,
+    PartOperation,
+    PartTransaction,
+} from '../../../common/dto/entities';
 import dayjs from 'dayjs';
-import { DatePaginatorArgs } from '../../../common/dto/pagination/date-paginator/date-paginator-args';
+import { DatePaginatorArgs } from '../../../common/dto/pagination';
 
 @Injectable()
 export class PartTransactionsService {

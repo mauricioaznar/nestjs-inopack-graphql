@@ -10,10 +10,10 @@ import { Injectable } from '@nestjs/common';
 import { MachinesService } from './machines.service';
 import {
     Machine,
+    MachineComponent,
+    MachineSection,
     MachineUpsertInput,
-} from '../../../common/dto/entities/machine.dto';
-import { MachineSection } from '../../../common/dto/entities/machine-section.dto';
-import { MachineComponent } from '../../../common/dto/entities/machine-component.dto';
+} from '../../../common/dto/entities';
 
 @Resolver(() => Machine)
 @Injectable()

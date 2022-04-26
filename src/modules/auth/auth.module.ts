@@ -6,7 +6,6 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from '../../common/constants/jwt';
 import { AuthResolver } from './auth.resolver';
-import { MemoryTokenModule } from '../../common/services/memory-token/memory-token.module';
 import { FilesModule } from '../files/files.module';
 import { AuthController } from './auth.controller';
 import { PrismaService } from '../../common/services/prisma/prisma.service';
@@ -20,7 +19,6 @@ import { UserService } from './user.service';
             signOptions: { expiresIn: jwtConstants.authExpiresIn },
         }),
         FilesModule,
-        MemoryTokenModule,
     ],
     controllers: [AuthController],
     providers: [

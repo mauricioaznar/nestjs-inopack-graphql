@@ -2,11 +2,11 @@ import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { PartOperationsService } from './part-operations.service';
 import {
-    PartOperation,
     PartAdjustmentUpsertInput,
+    PartOperation,
+    PartTransaction,
     PartWithdrawalUpsertInput,
-} from '../../../common/dto/entities/part-operation.dto';
-import { PartTransaction } from '../../../common/dto/entities/part-transactions.dto';
+} from '../../../common/dto/entities';
 
 @Resolver(() => PartOperation)
 @Injectable()

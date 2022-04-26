@@ -1,4 +1,4 @@
-import { Part } from '../../../common/dto/entities/part.dto';
+import { Part } from '../../../common/dto/entities';
 
 export interface PartsSeed {
     materials: {

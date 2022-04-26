@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma/prisma.service';
 import {
-    PartOperation,
     PartAdjustmentUpsertInput,
-} from '../../../common/dto/entities/part-operation.dto';
-import { vennDiagram } from '../../../common/helpers/venn-diagram';
+    PartOperation,
+    PartTransaction,
+} from '../../../common/dto/entities';
+import { vennDiagram } from '../../../common/helpers';
 import { PartInventoryService } from '../../../common/services/entities/part-inventory.service';
-import { PartTransaction } from '../../../common/dto/entities/part-transactions.dto';
 
 @Injectable()
 export class PartOperationsService {

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Public } from './decorators/public.decorator';
 import { AuthService } from './auth.service';
-import { LoginInput } from '../../common/dto/entities/auth.dto';
+import { LoginInput } from '../../common/dto/entities';
 import { UserService } from './user.service';
 
 @Controller('auth')
