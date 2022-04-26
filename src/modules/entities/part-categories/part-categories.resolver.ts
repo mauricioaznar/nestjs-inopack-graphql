@@ -14,13 +14,6 @@ import { Part } from '../../../common/dto/entities/part.dto';
 export class PartCategoriesResolver {
     constructor(private partCategoriesService: PartCategoriesService) {}
 
-    @Mutation(() => PartCategory)
-    async upsertPartCategory(
-        @Args('PartCategoryUpsertInput') input: PartCategoryUpsertInput,
-    ): Promise<PartCategory> {
-        return this.partCategoriesService.upsertPartCategory(input);
-    }
-
     @Query(() => [PartCategory])
     async getPartCategories(): Promise<PartCategory[]> {
         return this.partCategoriesService.getPartCategories();
@@ -35,8 +28,31 @@ export class PartCategoriesResolver {
         });
     }
 
+    @Mutation(() => Boolean)
+    async deletePartCategory(
+        @Args('PartCategoryId') id: number,
+    ): Promise<boolean> {
+        return this.partCategoriesService.deletePartCategory({
+            part_category_id: id,
+        });
+    }
+
+    @Mutation(() => PartCategory)
+    async upsertPartCategory(
+        @Args('PartCategoryUpsertInput') input: PartCategoryUpsertInput,
+    ): Promise<PartCategory> {
+        return this.partCategoriesService.upsertPartCategory(input);
+    }
+
     @ResolveField(() => [Part])
     async parts(partCategory: PartCategory): Promise<Part[]> {
         return this.partCategoriesService.getParts(partCategory);
+    }
+
+    @ResolveField(() => Boolean)
+    async is_deletable(partCategory: PartCategory): Promise<boolean> {
+        return this.partCategoriesService.isDeletable({
+            part_category_id: partCategory.id,
+        });
     }
 }

@@ -32,6 +32,26 @@ export class PartCategoriesService {
         });
     }
 
+    async deletePartCategory({
+        part_category_id,
+    }: {
+        part_category_id: number;
+    }): Promise<boolean> {
+        const isDeletable = await this.isDeletable({ part_category_id });
+        if (!isDeletable) return false;
+        try {
+            await this.prisma.part_categories.deleteMany({
+                where: {
+                    id: part_category_id,
+                },
+            });
+        } catch (e) {
+            return false;
+        }
+
+        return true;
+    }
+
     async getPartCategories(): Promise<PartCategory[]> {
         return this.prisma.part_categories.findMany();
     }
@@ -58,5 +78,24 @@ export class PartCategoriesService {
                 name: 'asc',
             },
         });
+    }
+
+    async isDeletable({
+        part_category_id,
+    }: {
+        part_category_id: number;
+    }): Promise<boolean> {
+        const {
+            _count: { id: partsCount },
+        } = await this.prisma.parts.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                part_category_id: part_category_id,
+            },
+        });
+
+        return partsCount === 0;
     }
 }

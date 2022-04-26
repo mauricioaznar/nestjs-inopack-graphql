@@ -4,6 +4,10 @@
 
 ## Done
 
+
+### < 26/04/2022
+
+* delete part category dialog
 * missing links
 * delete functionality
 * remove unused dto properties
@@ -11,28 +15,26 @@
 * logout button is updateing the localstorage but it is not updating the store.
 * section and compoment dialogs.
 * adjustments
-  * part_subtractions and part_additions -> part_transactions
+    * part_subtractions and part_additions -> part_transactions
 
 ## Todo
 
-
 * adjustments
-  * parts substractions must have branch_id, component_id  and (retrieval_id or adjustment_id)
-  * parts additions must have branch_id and (buyout_id or adjustment_id)
+    * parts substractions must have branch_id, component_id and (retrieval_id or adjustment_id)
+    * parts additions must have branch_id and (buyout_id or adjustment_id)
 * Add buyout
-  * buyout costs
-    * quantity, price, part_id
-  * buyout
-    * supplier, date
+    * buyout costs
+        * quantity, price, part_id
+    * buyout
+        * supplier, date
 * add retrievals
-
 
 ### Currently implementing
 
 * refactor
     * date processing
     * re-think tables
-    * delete part category dialog
+
     
 
 
