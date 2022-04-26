@@ -55,4 +55,44 @@ export class MachineSectionsService {
             },
         });
     }
+
+    async deleteMachineSection({
+        machine_section_id,
+    }: {
+        machine_section_id: number;
+    }): Promise<boolean> {
+        const isDeletable = await this.isDeletable({ machine_section_id });
+        if (!isDeletable) return false;
+
+        try {
+            await this.prisma.machine_sections.deleteMany({
+                where: {
+                    id: machine_section_id,
+                },
+            });
+        } catch (e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    async isDeletable({
+        machine_section_id,
+    }: {
+        machine_section_id;
+    }): Promise<boolean> {
+        const {
+            _count: { id: machineComponentCount },
+        } = await this.prisma.machine_components.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                machine_section_id,
+            },
+        });
+
+        return machineComponentCount === 0;
+    }
 }

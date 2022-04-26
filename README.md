@@ -4,6 +4,8 @@
 
 ## Done
 
+* missing links
+* delete functionality
 * remove unused dto properties
 * part page
 * logout button is updateing the localstorage but it is not updating the store.
@@ -28,10 +30,10 @@
 ### Currently implementing
 
 * refactor
-  * date processing
-  * missing links
-  * re-think tables
-  * delete functionality
+    * date processing
+    * re-think tables
+    * move delete functionality to its own custom dialog
+    
 
 
 

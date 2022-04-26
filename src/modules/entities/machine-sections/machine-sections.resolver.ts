@@ -22,6 +22,16 @@ export class MachineSectionsResolver {
         );
     }
 
+    @Mutation(() => Boolean)
+    async deleteMachineSection(
+        @Args('MachineSectionId')
+        machineSectionId: number,
+    ): Promise<boolean> {
+        return this.machineSectionsService.deleteMachineSection({
+            machine_section_id: machineSectionId,
+        });
+    }
+
     @Query(() => MachineSection)
     async getMachineSection(
         @Args('MachineSectionId') machineSectionId: number,
@@ -42,6 +52,13 @@ export class MachineSectionsResolver {
     ): Promise<MachineComponent[]> {
         return this.machineSectionsService.getMachineSectionComponents({
             machineSectionId: machineSection.id,
+        });
+    }
+
+    @ResolveField(() => Boolean)
+    async is_deletable(machineSection: MachineSection): Promise<boolean> {
+        return this.machineSectionsService.isDeletable({
+            machine_section_id: machineSection.id,
         });
     }
 }
