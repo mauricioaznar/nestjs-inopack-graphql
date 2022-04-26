@@ -32,8 +32,9 @@
 * refactor
     * date processing
     * re-think tables
-    * move delete functionality to its own custom dialog
+    * delete part category dialog
     
 
 
 
+  
