@@ -7,6 +7,7 @@ import {
 } from '../../../common/dto/entities';
 import dayjs from 'dayjs';
 import { DatePaginatorArgs } from '../../../common/dto/pagination';
+import { getRangesFromYearMonth } from '../../../common/helpers';
 
 @Injectable()
 export class PartTransactionsService {
@@ -15,22 +16,19 @@ export class PartTransactionsService {
     async getPartTransactions(
         datePaginator: DatePaginatorArgs,
     ): Promise<PartTransaction[]> {
-        if (!datePaginator.year || !datePaginator) return [];
+        if (
+            !datePaginator ||
+            datePaginator?.year === null ||
+            datePaginator?.month === null
+        )
+            return [];
 
-        const startDate: Date = dayjs()
-            .utc()
-            .set('year', datePaginator.year)
-            .set('month', datePaginator.month)
-            .startOf('month')
-            .toDate();
-
-        const endDate: Date = dayjs()
-            .utc()
-            .set('year', datePaginator.year)
-            .set('month', datePaginator.month)
-            .add(1, 'month')
-            .startOf('month')
-            .toDate();
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+            value: 1,
+            unit: 'month',
+        });
 
         return this.prisma.part_transactions.findMany({
             where: {

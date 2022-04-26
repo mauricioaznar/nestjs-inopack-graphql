@@ -5,8 +5,9 @@
 ## Done
 
 
-### < 26/04/2022
+### <= 26/04/2022
 
+* refactor -- date processing
 * delete part category dialog
 * missing links
 * delete functionality
@@ -32,7 +33,6 @@
 ### Currently implementing
 
 * refactor
-    * date processing
     * re-think tables
 
     
