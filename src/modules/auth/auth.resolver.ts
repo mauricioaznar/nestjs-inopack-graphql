@@ -6,10 +6,10 @@ import {
     User,
     UserInput,
 } from '../../common/dto/entities';
-import { Injectable, UseGuards } from '@nestjs/common';
-import { GqlAuthGuard } from './guards/gql-auth.guard';
+import { Injectable } from '@nestjs/common';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { UserService } from './user.service';
+import { Public } from './decorators/public.decorator';
 
 @Resolver(() => User)
 @Injectable()
@@ -20,12 +20,12 @@ export class AuthResolver {
     ) {}
 
     @Mutation(() => AccessToken)
+    @Public()
     async login(@Args('loginInput') input: LoginInput) {
         return this.authService.login(input);
     }
 
     @Query(() => User)
-    @UseGuards(GqlAuthGuard)
     async currentUser(@CurrentUser() currentUser: User) {
         return this.userService.findOneByEmail({
             email: currentUser.email,
@@ -38,7 +38,6 @@ export class AuthResolver {
     }
 
     @Query(() => Boolean)
-    @UseGuards(GqlAuthGuard)
     async isUserOccupied(@Args('email') email: string) {
         const user = await this.userService.findOneByEmail({
             email,
@@ -47,13 +46,11 @@ export class AuthResolver {
     }
 
     @Mutation(() => User)
-    @UseGuards(GqlAuthGuard)
     async createUser(@Args('userInput') input: UserInput) {
         return this.userService.create(input);
     }
 
     @Mutation(() => User)
-    @UseGuards(GqlAuthGuard)
     async updateUser(
         @Args('id') id: number,
         @Args('userInput') input: UserInput,

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PartCategoriesService } from '../../../entities/part-categories/part-categories.service';
+import { PartCategoriesService } from '../../../entities/maintenance/part-categories/part-categories.service';
 import { PartCategoriesSeed } from '../../types/part-categories-seed';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 

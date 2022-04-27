@@ -13,3 +13,7 @@ export * from './maintenance/part.dto';
 export * from './maintenance/part-category.dto';
 export * from './maintenance/part-operation.dto';
 export * from './maintenance/part-transactions.dto';
+
+// production
+
+export * from './production/product.dto';

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { PartInventoryService } from '../../../../common/services/entities/part-inventory.service';
 import { PartsSeed } from '../../types/parts-seed';
-import { PartOperationsService } from '../../../entities/part-operations/part-operations.service';
+import { PartOperationsService } from '../../../entities/maintenance/part-operations/part-operations.service';
 
 @Injectable()
 export class PartInventorySeederService {

@@ -31,6 +31,14 @@ export class User extends UserBase {
     id: number;
 }
 
+@ObjectType('UserWithRoles')
+export class UserWithRoles extends User {
+    user_roles: {
+        id: number;
+        role_id: number;
+    }[];
+}
+
 @ObjectType('AccessToken')
 export class AccessToken {
     @Field({ nullable: false })

@@ -1,12 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AccessToken, LoginInput, User } from '../../common/dto/entities';
+import {
+    AccessToken,
+    LoginInput,
+    User,
+    UserWithRoles,
+} from '../../common/dto/entities';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/services/prisma/prisma.service';
-
-interface UserWithPassword extends User {
-    password: string;
-}
 
 @Injectable()
 export class AuthService {
@@ -18,8 +19,11 @@ export class AuthService {
     async validateUser(
         email: string,
         pass: string,
-    ): Promise<UserWithPassword | null> {
+    ): Promise<UserWithRoles | null> {
         const user = await this.prisma.users.findFirst({
+            include: {
+                user_roles: true,
+            },
             where: {
                 email: email,
             },
@@ -35,6 +39,7 @@ export class AuthService {
         if (!isMatch) {
             return null;
         }
+        delete user.password;
         return user;
     }
 
@@ -48,7 +53,7 @@ export class AuthService {
                 'Could not log-in with the provided credentials',
             );
         }
-        const { password, ...rest } = res;
+        const { ...rest } = res;
         return {
             accessToken: this.jwtService.sign({ ...rest }),
         };

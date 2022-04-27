@@ -2,6 +2,10 @@ import { SeederModule } from './seeder.module';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { SeederService } from './seeder.service';
+import dayjs from 'dayjs';
+import utcPlugin from 'dayjs/plugin/utc';
+
+dayjs.extend(utcPlugin);
 
 async function bootstrap() {
     NestFactory.createApplicationContext(SeederModule)

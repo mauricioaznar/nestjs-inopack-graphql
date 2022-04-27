@@ -11,7 +11,11 @@ import { ApolloError } from 'apollo-server-express';
 import { GraphQLError, GraphQLFormattedError } from 'graphql';
 import { FilesModule } from './modules/files/files.module';
 import { MemoryTokenModule } from './common/services/memory-token/memory-token.module';
-import { EntitiesModule } from './modules/entities/entities.module';
+import { MaintenanceModule } from './modules/entities/maintenance/maintenance.module';
+import { ProductionModule } from './modules/entities/production/production.module';
+import { APP_GUARD } from '@nestjs/core';
+import { GqlAuthGuard } from './modules/auth/guards/gql-auth.guard';
+import { GqlRolesGuard } from './modules/auth/guards/gql-roles.guard';
 
 @Module({
     imports: [
@@ -58,9 +62,20 @@ import { EntitiesModule } from './modules/entities/entities.module';
         }),
         CacheModule.register({ ttl: 0, isGlobal: true }),
         AuthModule,
-        EntitiesModule,
+        ProductionModule,
+        MaintenanceModule,
         MemoryTokenModule,
         FilesModule,
+    ],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: GqlAuthGuard,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: GqlRolesGuard,
+        },
     ],
 })
 export class AppModule implements NestModule {
