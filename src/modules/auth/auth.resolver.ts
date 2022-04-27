@@ -6,10 +6,10 @@ import {
     User,
     UserInput,
 } from '../../common/dto/entities';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { UserService } from './user.service';
-import { Public } from './decorators/public.decorator';
+import { GqlAuthGuard } from './guards/gql-auth.guard';
 
 @Resolver(() => User)
 @Injectable()
@@ -20,12 +20,12 @@ export class AuthResolver {
     ) {}
 
     @Mutation(() => AccessToken)
-    @Public()
     async login(@Args('loginInput') input: LoginInput) {
         return this.authService.login(input);
     }
 
     @Query(() => User)
+    @UseGuards(GqlAuthGuard)
     async currentUser(@CurrentUser() currentUser: User) {
         return this.userService.findOneByEmail({
             email: currentUser.email,

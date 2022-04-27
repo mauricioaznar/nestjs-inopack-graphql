@@ -1,18 +1,15 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { Product } from '../../../../common/dto/entities';
-import { GqlAuthGuard } from '../../../auth/guards/gql-auth.guard';
-import { Role } from '../../../auth/decorators/role.decorator';
 
 @Resolver(() => Product)
-@UseGuards(GqlAuthGuard)
+// @Role('super')
 @Injectable()
 export class ProductsResolver {
     constructor(private partsService: ProductsService) {}
 
     @Query(() => [Product])
-    @Role('super')
     async getProducts(): Promise<Product[]> {
         return this.partsService.getProducts();
     }
