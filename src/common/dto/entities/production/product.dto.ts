@@ -15,11 +15,11 @@ export class ProductBase {
     @Field()
     width: number;
 
-    @Field()
-    length: number;
+    @Field({ nullable: true })
+    length: number | null;
 
-    @Field()
-    current_group_weight: number;
+    @Field({ nullable: true })
+    current_group_weight: number | null;
 
     @Field()
     calibre: number;
