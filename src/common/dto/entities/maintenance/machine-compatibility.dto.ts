@@ -4,7 +4,7 @@ import { Field, InputType, ObjectType } from '@nestjs/graphql';
 @InputType({ isAbstract: true })
 export class MachineCompatibilityBase {
     @Field({ nullable: true })
-    part_id?: number | null;
+    spare_id?: number | null;
 }
 
 @InputType('MachineCompatibilityUpsertInput')

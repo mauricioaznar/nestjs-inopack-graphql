@@ -6,13 +6,13 @@ import {
     MachineSection,
     MachineUpsertInput,
 } from '../../../../common/dto/entities';
-import { PartInventoryService } from '../../../../common/services/entities/part-inventory.service';
+import { SpareInventoryService } from '../../../../common/services/entities/spare-inventory.service';
 
 @Injectable()
 export class MachinesService {
     constructor(
         private prisma: PrismaService,
-        private partsInventoryService: PartInventoryService,
+        private sparesInventoryService: SpareInventoryService,
     ) {}
 
     async getMachine({ id }: { id: number }): Promise<Machine> {
@@ -90,10 +90,10 @@ export class MachinesService {
 
         for await (const component of machineComponents) {
             const currentInventoryQuantity =
-                await this.partsInventoryService.getCurrentQuantity(
-                    component.current_part_id,
+                await this.sparesInventoryService.getCurrentQuantity(
+                    component.current_spare_id,
                 );
-            const requiredQuantity = component.current_part_required_quantity;
+            const requiredQuantity = component.current_spare_required_quantity;
             if (requiredQuantity > 0) {
                 totalRequiredComponents += requiredQuantity;
                 sufficientTotalInventoryQuantity +=

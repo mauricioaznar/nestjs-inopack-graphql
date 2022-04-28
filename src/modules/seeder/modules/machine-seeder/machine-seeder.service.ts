@@ -4,7 +4,7 @@ import { MachinesService } from '../../../entities/maintenance/machines/machines
 import { MachinesSeed } from '../../types/machines-seed';
 import { MachineSectionsService } from '../../../entities/maintenance/machine-sections/machine-sections.service';
 import { MachineComponentsService } from '../../../entities/maintenance/machine-components/machine-components.service';
-import { PartsSeed } from '../../types/parts-seed';
+import { SparesSeed } from '../../types/spares-seed';
 
 @Injectable()
 export class MachineSeederService {
@@ -15,7 +15,7 @@ export class MachineSeederService {
         private readonly machineComponentsService: MachineComponentsService,
     ) {}
 
-    async getCmd(partsSeed: PartsSeed): Promise<MachinesSeed['cmd']> {
+    async getCmd(sparesSeed: SparesSeed): Promise<MachinesSeed['cmd']> {
         const cmd = await this.machinesService.getMachine({
             id: 1,
         });
@@ -31,14 +31,14 @@ export class MachineSeederService {
                 name: 'Bandas',
                 machine_id: cmdSection1.machine_id,
                 machine_section_id: cmdSection1.id,
-                current_part_id: partsSeed.materials.banda700.id,
-                current_part_required_quantity: 2,
+                current_spare_id: sparesSeed.materials.banda700.id,
+                current_spare_required_quantity: 2,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.banda700.id,
+                        spare_id: sparesSeed.materials.banda700.id,
                     },
                     {
-                        part_id: partsSeed.materials.banda800.id,
+                        spare_id: sparesSeed.materials.banda800.id,
                     },
                 ],
             });
@@ -48,14 +48,14 @@ export class MachineSeederService {
                 name: 'Resistencias',
                 machine_id: cmdSection1.machine_id,
                 machine_section_id: cmdSection1.id,
-                current_part_id: partsSeed.materials.resistencia20.id,
-                current_part_required_quantity: 3,
+                current_spare_id: sparesSeed.materials.resistencia20.id,
+                current_spare_required_quantity: 3,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.resistencia20.id,
+                        spare_id: sparesSeed.materials.resistencia20.id,
                     },
                     {
-                        part_id: partsSeed.materials.resistencia30.id,
+                        spare_id: sparesSeed.materials.resistencia30.id,
                     },
                 ],
             });
@@ -65,14 +65,14 @@ export class MachineSeederService {
                 name: 'Contactor',
                 machine_id: cmdSection1.machine_id,
                 machine_section_id: cmdSection1.id,
-                current_part_id: partsSeed.materials.contactor500.id,
-                current_part_required_quantity: 1,
+                current_spare_id: sparesSeed.materials.contactor500.id,
+                current_spare_required_quantity: 1,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.contactor400.id,
+                        spare_id: sparesSeed.materials.contactor400.id,
                     },
                     {
-                        part_id: partsSeed.materials.contactor500.id,
+                        spare_id: sparesSeed.materials.contactor500.id,
                     },
                 ],
             });
@@ -88,11 +88,11 @@ export class MachineSeederService {
                 name: 'Contactor',
                 machine_id: cmdSection2.machine_id,
                 machine_section_id: cmdSection2.id,
-                current_part_id: partsSeed.materials.contactor400.id,
-                current_part_required_quantity: 1,
+                current_spare_id: sparesSeed.materials.contactor400.id,
+                current_spare_required_quantity: 1,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.contactor400.id,
+                        spare_id: sparesSeed.materials.contactor400.id,
                     },
                 ],
             });
@@ -102,14 +102,14 @@ export class MachineSeederService {
                 name: 'Banda',
                 machine_id: cmdSection2.machine_id,
                 machine_section_id: cmdSection2.id,
-                current_part_id: partsSeed.materials.banda600.id,
-                current_part_required_quantity: 2,
+                current_spare_id: sparesSeed.materials.banda600.id,
+                current_spare_required_quantity: 2,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.banda600.id,
+                        spare_id: sparesSeed.materials.banda600.id,
                     },
                     {
-                        part_id: partsSeed.materials.banda700.id,
+                        spare_id: sparesSeed.materials.banda700.id,
                     },
                 ],
             });
@@ -126,14 +126,14 @@ export class MachineSeederService {
                 name: 'Componente 6',
                 machine_id: cmdSection3.machine_id,
                 machine_section_id: cmdSection3.id,
-                current_part_id: partsSeed.materials.tornillo1.id,
-                current_part_required_quantity: 5,
+                current_spare_id: sparesSeed.materials.tornillo1.id,
+                current_spare_required_quantity: 5,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.tornillo2.id,
+                        spare_id: sparesSeed.materials.tornillo2.id,
                     },
                     {
-                        part_id: partsSeed.materials.tornillo1.id,
+                        spare_id: sparesSeed.materials.tornillo1.id,
                     },
                 ],
             });
@@ -143,11 +143,11 @@ export class MachineSeederService {
                 name: 'Componente 7',
                 machine_id: cmdSection3.machine_id,
                 machine_section_id: cmdSection3.id,
-                current_part_id: partsSeed.materials.gomas1.id,
-                current_part_required_quantity: 8,
+                current_spare_id: sparesSeed.materials.gomas1.id,
+                current_spare_required_quantity: 8,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.gomas1.id,
+                        spare_id: sparesSeed.materials.gomas1.id,
                     },
                 ],
             });
@@ -157,17 +157,17 @@ export class MachineSeederService {
                 name: 'Componente 8',
                 machine_id: cmdSection3.machine_id,
                 machine_section_id: cmdSection3.id,
-                current_part_id: partsSeed.materials.tornillo3.id,
-                current_part_required_quantity: 20,
+                current_spare_id: sparesSeed.materials.tornillo3.id,
+                current_spare_required_quantity: 20,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.tornillo2.id,
+                        spare_id: sparesSeed.materials.tornillo2.id,
                     },
                     {
-                        part_id: partsSeed.materials.tornillo1.id,
+                        spare_id: sparesSeed.materials.tornillo1.id,
                     },
                     {
-                        part_id: partsSeed.materials.tornillo3.id,
+                        spare_id: sparesSeed.materials.tornillo3.id,
                     },
                 ],
             });
@@ -177,11 +177,11 @@ export class MachineSeederService {
                 name: 'Componente 9',
                 machine_id: cmdSection3.machine_id,
                 machine_section_id: cmdSection3.id,
-                current_part_id: partsSeed.materials.contactor900.id,
-                current_part_required_quantity: 1,
+                current_spare_id: sparesSeed.materials.contactor900.id,
+                current_spare_required_quantity: 1,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.contactor900.id,
+                        spare_id: sparesSeed.materials.contactor900.id,
                     },
                 ],
             });
@@ -198,11 +198,11 @@ export class MachineSeederService {
                 name: 'Componente 10',
                 machine_id: cmdSection4.machine_id,
                 machine_section_id: cmdSection4.id,
-                current_part_id: partsSeed.materials.banda800.id,
-                current_part_required_quantity: 3,
+                current_spare_id: sparesSeed.materials.banda800.id,
+                current_spare_required_quantity: 3,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.banda800.id,
+                        spare_id: sparesSeed.materials.banda800.id,
                     },
                 ],
             });
@@ -212,11 +212,11 @@ export class MachineSeederService {
                 name: 'Componente 11',
                 machine_id: cmdSection4.machine_id,
                 machine_section_id: null,
-                current_part_id: partsSeed.materials.balero1.id,
-                current_part_required_quantity: 3,
+                current_spare_id: sparesSeed.materials.balero1.id,
+                current_spare_required_quantity: 3,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.balero1.id,
+                        spare_id: sparesSeed.materials.balero1.id,
                     },
                 ],
             });
@@ -226,14 +226,14 @@ export class MachineSeederService {
                 name: 'Componente 12',
                 machine_id: cmdSection4.machine_id,
                 machine_section_id: null,
-                current_part_id: partsSeed.materials.piston1.id,
-                current_part_required_quantity: 10,
+                current_spare_id: sparesSeed.materials.piston1.id,
+                current_spare_required_quantity: 10,
                 machine_compatibilities: [
                     {
-                        part_id: partsSeed.materials.piston1.id,
+                        spare_id: sparesSeed.materials.piston1.id,
                     },
                     {
-                        part_id: partsSeed.materials.piston2.id,
+                        spare_id: sparesSeed.materials.piston2.id,
                     },
                 ],
             });
@@ -279,8 +279,8 @@ export class MachineSeederService {
         };
     }
 
-    async getMachines(partsSeed: PartsSeed): Promise<MachinesSeed> {
-        const cmd = await this.getCmd(partsSeed);
+    async getMachines(sparesSeed: SparesSeed): Promise<MachinesSeed> {
+        const cmd = await this.getCmd(sparesSeed);
 
         // Camisetera 1
         const camisetera1 = await this.machinesService.getMachine({

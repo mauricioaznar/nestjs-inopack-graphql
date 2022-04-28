@@ -7,17 +7,17 @@ import { Product } from '../../../../common/dto/entities';
 // @Role('super')
 @Injectable()
 export class ProductsResolver {
-    constructor(private partsService: ProductsService) {}
+    constructor(private sparesService: ProductsService) {}
 
     @Query(() => [Product])
     async getProducts(): Promise<Product[]> {
-        return this.partsService.getProducts();
+        return this.sparesService.getProducts();
     }
 
     @Query(() => Product)
     async getProduct(
         @Args('ProductId') productId: number,
     ): Promise<Product | null> {
-        return this.partsService.getProduct({ product_id: productId });
+        return this.sparesService.getProduct({ product_id: productId });
     }
 }

@@ -1,25 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import { PartCategorySeederService } from './modules/part-category-seeder/part-category-seeder.service';
-import { PartSeederService } from './modules/part-seeder/part-seeder.service';
+import { SpareCategorySeederService } from './modules/spare-category-seeder/spare-category-seeder.service';
+import { SpareSeederService } from './modules/spare-seeder/spare-seeder.service';
 import { MachineSeederService } from './modules/machine-seeder/machine-seeder.service';
-import { PartInventorySeederService } from './modules/part-inventory-seeder/part-inventory-seeder.service';
+import { SpareInventorySeederService } from './modules/spare-inventory-seeder/spare-inventory-seeder.service';
 
 @Injectable()
 export class SeederService {
     constructor(
-        private readonly partCategorySeederService: PartCategorySeederService,
-        private readonly partSeederService: PartSeederService,
+        private readonly spareCategorySeederService: SpareCategorySeederService,
+        private readonly spareSeederService: SpareSeederService,
         private readonly machineSeederService: MachineSeederService,
-        private readonly partInventorySeederService: PartInventorySeederService,
+        private readonly spareInventorySeederService: SpareInventorySeederService,
     ) {}
 
     async seed() {
         const categoriesSeed =
-            await this.partCategorySeederService.createPartCategories();
-        const partsSeed = await this.partSeederService.createParts(
+            await this.spareCategorySeederService.createSpareCategories();
+        const sparesSeed = await this.spareSeederService.createSpares(
             categoriesSeed,
         );
-        await this.machineSeederService.getMachines(partsSeed);
-        await this.partInventorySeederService.adjustInventory(partsSeed);
+        await this.machineSeederService.getMachines(sparesSeed);
+        await this.spareInventorySeederService.adjustInventory(sparesSeed);
     }
 }

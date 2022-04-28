@@ -1,16 +1,16 @@
 import { Module } from '@nestjs/common';
-import { MachinesResolver } from './machines.resolver';
+import { SparesResolver } from './spares.resolver';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
-import { MachinesService } from './machines.service';
+import { SparesService } from './spares.service';
 import { SpareInventoryService } from '../../../../common/services/entities/spare-inventory.service';
 
 @Module({
     providers: [
         PrismaService,
-        MachinesResolver,
+        SparesResolver,
+        SparesService,
         SpareInventoryService,
-        MachinesService,
     ],
-    exports: [MachinesResolver],
+    exports: [SparesResolver],
 })
-export class MachinesModule {}
+export class SparesModule {}

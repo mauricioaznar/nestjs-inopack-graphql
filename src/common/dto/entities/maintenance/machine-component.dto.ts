@@ -16,10 +16,10 @@ export class MachineComponentUpsertInput {
     machine_id: number;
 
     @Field({ nullable: true })
-    current_part_id?: number | null;
+    current_spare_id?: number | null;
 
     @Field({ nullable: true })
-    current_part_required_quantity?: number | null;
+    current_spare_required_quantity?: number | null;
 
     @Field(() => [MachineCompatibilityUpsertInput])
     machine_compatibilities: MachineCompatibilityUpsertInput[];
@@ -40,8 +40,8 @@ export class MachineComponent {
     machine_id?: number | null;
 
     @Field({ nullable: true })
-    current_part_id?: number | null;
+    current_spare_id?: number | null;
 
     @Field({ nullable: true })
-    current_part_required_quantity?: number | null;
+    current_spare_required_quantity?: number | null;
 }

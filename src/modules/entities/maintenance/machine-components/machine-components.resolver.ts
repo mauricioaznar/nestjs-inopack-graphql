@@ -7,7 +7,7 @@ import {
     MachineComponent,
     MachineComponentUpsertInput,
     MachineSection,
-    Part,
+    Spare,
 } from '../../../../common/dto/entities';
 
 @Resolver(() => MachineComponent)
@@ -48,12 +48,12 @@ export class MachineComponentsResolver {
         });
     }
 
-    @ResolveField(() => Part, {
+    @ResolveField(() => Spare, {
         nullable: true,
     })
-    async current_part(machineComponent: MachineComponent) {
-        return this.machineComponentsService.getCurrentPart({
-            current_part_id: machineComponent.current_part_id,
+    async current_spare(machineComponent: MachineComponent) {
+        return this.machineComponentsService.getCurrentSpare({
+            current_spare_id: machineComponent.current_spare_id,
         });
     }
 

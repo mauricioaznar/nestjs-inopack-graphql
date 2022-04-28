@@ -3,7 +3,7 @@ import { PrismaService } from '../../../../common/services/prisma/prisma.service
 import {
     MachineCompatibility,
     MachineComponent,
-    Part,
+    Spare,
 } from '../../../../common/dto/entities';
 
 @Injectable()
@@ -14,16 +14,16 @@ export class MachineCompatibilitiesService {
         return this.prisma.machine_compatibilities.findMany();
     }
 
-    async getPart({
-        part_id,
+    async getSpare({
+        spare_id,
     }: {
-        part_id: number | null;
-    }): Promise<Part | null> {
-        if (!part_id) return null;
+        spare_id: number | null;
+    }): Promise<Spare | null> {
+        if (!spare_id) return null;
 
-        return this.prisma.parts.findFirst({
+        return this.prisma.spares.findFirst({
             where: {
-                id: part_id,
+                id: spare_id,
             },
         });
     }
@@ -42,12 +42,12 @@ export class MachineCompatibilitiesService {
         });
     }
 
-    async isCurrentPart({
+    async isCurrentSpare({
         machine_component_id,
-        part_id,
+        spare_id,
     }: {
         machine_component_id: number | null;
-        part_id: number | null;
+        spare_id: number | null;
     }): Promise<boolean> {
         if (!machine_component_id) return null;
 
@@ -59,6 +59,6 @@ export class MachineCompatibilitiesService {
             },
         );
 
-        return machineComponent.current_part_id === part_id;
+        return machineComponent.current_spare_id === spare_id;
     }
 }

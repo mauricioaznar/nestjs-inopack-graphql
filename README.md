@@ -8,24 +8,24 @@
 ### <= 26/04/2022
 
 * refactor -- date processing
-* delete part category dialog
+* delete spare category dialog
 * missing links
 * delete functionality
 * remove unused dto properties
-* part page
+* spare page
 * logout button is updateing the localstorage but it is not updating the store.
 * section and compoment dialogs.
 * adjustments
-    * part_subtractions and part_additions -> part_transactions
+    * spare_subtractions and spare_additions -> spare_transactions
 
 ## Todo
 
 * adjustments
-    * parts substractions must have branch_id, component_id and (retrieval_id or adjustment_id)
-    * parts additions must have branch_id and (buyout_id or adjustment_id)
+    * spares substractions must have branch_id, component_id and (retrieval_id or adjustment_id)
+    * spares additions must have branch_id and (buyout_id or adjustment_id)
 * Add buyout
     * buyout costs
-        * quantity, price, part_id
+        * quantity, price, spare_id
     * buyout
         * supplier, date
 * add retrievals

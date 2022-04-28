@@ -4,7 +4,7 @@ import { MachineCompatibilitiesService } from './machine-compatibilities.service
 import {
     MachineCompatibility,
     MachineComponent,
-    Part,
+    Spare,
 } from '../../../../common/dto/entities';
 
 @Resolver(() => MachineCompatibility)
@@ -19,12 +19,12 @@ export class MachineCompatibilitiesResolver {
         return this.machineCompatibilitiesService.getMachineCompatibilities();
     }
 
-    @ResolveField(() => Part, {
+    @ResolveField(() => Spare, {
         nullable: true,
     })
-    async part(machineCompatibility: MachineCompatibility) {
-        return this.machineCompatibilitiesService.getPart({
-            part_id: machineCompatibility.part_id,
+    async spare(machineCompatibility: MachineCompatibility) {
+        return this.machineCompatibilitiesService.getSpare({
+            spare_id: machineCompatibility.spare_id,
         });
     }
 
@@ -40,10 +40,10 @@ export class MachineCompatibilitiesResolver {
     @ResolveField(() => Boolean, {
         nullable: true,
     })
-    async is_current_part(machineCompatibility: MachineCompatibility) {
-        return this.machineCompatibilitiesService.isCurrentPart({
+    async is_current_spare(machineCompatibility: MachineCompatibility) {
+        return this.machineCompatibilitiesService.isCurrentSpare({
             machine_component_id: machineCompatibility.machine_component_id,
-            part_id: machineCompatibility.part_id,
+            spare_id: machineCompatibility.spare_id,
         });
     }
 }

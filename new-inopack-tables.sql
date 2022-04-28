@@ -1,4 +1,4 @@
-CREATE TABLE `part_categories`
+CREATE TABLE `spare_categories`
 (
   `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
   `active`       int                                                     NOT NULL DEFAULT '1',
@@ -11,17 +11,17 @@ AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
-CREATE TABLE `parts`
+CREATE TABLE `spares`
 (
   `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
   `active`       int                                                     NOT NULL DEFAULT '1',
   `created_at`   datetime                                               NULL     DEFAULT NULL,
   `updated_at`   datetime                                               NULL     DEFAULT NULL,
-  `part_category_id`    int unsigned          DEFAULT NULL,
+  `spare_category_id`    int unsigned          DEFAULT NULL,
   `name`   varchar(255)                                               NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `parts_part_category_id_foreign` (`part_category_id`),
-  CONSTRAINT `parts_part_category_id_foreign` FOREIGN KEY (`part_category_id`) REFERENCES `part_categories` (`id`)
+  KEY `spares_spare_category_id_foreign` (`spare_category_id`),
+  CONSTRAINT `spares_spare_category_id_foreign` FOREIGN KEY (`spare_category_id`) REFERENCES `spare_categories` (`id`)
 ) ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4
@@ -51,16 +51,16 @@ CREATE TABLE `machine_components`
   `updated_at`   datetime                                               NULL     DEFAULT NULL,
   `machine_section_id`    int unsigned          DEFAULT NULL,
   `machine_id`    int unsigned          DEFAULT NULL,
-  `current_part_id`    int unsigned          DEFAULT NULL,
-  `current_part_required_quantity`    int unsigned          DEFAULT NULL,
+  `current_spare_id`    int unsigned          DEFAULT NULL,
+  `current_spare_required_quantity`    int unsigned          DEFAULT NULL,
   `name`   varchar(255)                                               NOT NULL,
   PRIMARY KEY (`id`),
   KEY `machine_components_machine_section_id_foreign` (`machine_section_id`),
   CONSTRAINT `machine_components_machine_section_id_foreign` FOREIGN KEY (`machine_section_id`) REFERENCES `machine_sections` (`id`),
   KEY `machine_components_machine_id_foreign` (`machine_id`),
   CONSTRAINT `machine_components_machine_id_foreign` FOREIGN KEY (`machine_id`) REFERENCES `machines` (`id`),
-  KEY `machine_components_current_part_id_foreign` (`current_part_id`),
-  CONSTRAINT `machine_components_current_part_id_foreign` FOREIGN KEY (`current_part_id`) REFERENCES `parts` (`id`)
+  KEY `machine_components_current_spare_id_foreign` (`current_spare_id`),
+  CONSTRAINT `machine_components_current_spare_id_foreign` FOREIGN KEY (`current_spare_id`) REFERENCES `spares` (`id`)
 ) ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4
@@ -73,18 +73,18 @@ CREATE TABLE `machine_compatibilities`
   `created_at`   datetime                                               NULL     DEFAULT NULL,
   `updated_at`   datetime                                               NULL     DEFAULT NULL,
   `machine_component_id`    int unsigned          DEFAULT NULL,
-  `part_id`    int unsigned          DEFAULT NULL,
+  `spare_id`    int unsigned          DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `machine_compatibilities_machine_component_id_foreign` (`machine_component_id`),
   CONSTRAINT `machine_compatibilities_machine_component_id_foreign` FOREIGN KEY (`machine_component_id`) REFERENCES `machine_components` (`id`),
-  KEY `machine_compatibilities_part_id_foreign` (`part_id`),
-  CONSTRAINT `machine_compatibilities_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`)
+  KEY `machine_compatibilities_spare_id_foreign` (`spare_id`),
+  CONSTRAINT `machine_compatibilities_spare_id_foreign` FOREIGN KEY (`spare_id`) REFERENCES `spares` (`id`)
 ) ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
-CREATE TABLE `part_operations`
+CREATE TABLE `spare_operations`
 (
   `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
   `active`       int                                                     NOT NULL DEFAULT '1',
@@ -101,20 +101,20 @@ DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE `part_transactions`
+CREATE TABLE `spare_transactions`
 (
   `id`           int unsigned                                            NOT NULL AUTO_INCREMENT,
   `active`       int                                                     NOT NULL DEFAULT '1',
   `created_at`   datetime                                               NULL     DEFAULT NULL,
   `updated_at`   datetime                                               NULL     DEFAULT NULL,
-  `part_id`    int unsigned          DEFAULT NULL,
+  `spare_id`    int unsigned          DEFAULT NULL,
   `quantity`    int signed         NOT NULL DEFAULT 0,
-  `part_operation_id`    int unsigned          DEFAULT NULL,
+  `spare_operation_id`    int unsigned          DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `part_transactions_part_id_foreign` (`part_id`),
-  CONSTRAINT `part_transactions_part_id_foreign` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`),
-  KEY `part_transactions_part_operation_id_foreign` (`part_operation_id`),
-  CONSTRAINT `part_transactions_part_operation_id_foreign` FOREIGN KEY (`part_operation_id`) REFERENCES `part_operations` (`id`)
+  KEY `spare_transactions_spare_id_foreign` (`spare_id`),
+  CONSTRAINT `spare_transactions_spare_id_foreign` FOREIGN KEY (`spare_id`) REFERENCES `spares` (`id`),
+  KEY `spare_transactions_spare_operation_id_foreign` (`spare_operation_id`),
+  CONSTRAINT `spare_transactions_spare_operation_id_foreign` FOREIGN KEY (`spare_operation_id`) REFERENCES `spare_operations` (`id`)
 ) ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4
