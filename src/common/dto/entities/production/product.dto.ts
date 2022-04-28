@@ -40,6 +40,12 @@ export class ProductUpsertInput extends ProductBase {
     id?: number | null;
 }
 
+@InputType('BagProductUpsertInput')
+export class BagProductUpsertInput extends ProductUpsertInput {
+    @Field({ nullable: true })
+    id?: number | null;
+}
+
 @ObjectType('Product')
 export class Product extends ProductBase {
     @Field({ nullable: false })
