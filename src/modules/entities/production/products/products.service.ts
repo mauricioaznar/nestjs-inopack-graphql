@@ -1,8 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { Product, ProductUpsertInput } from '../../../../common/dto/entities';
-import { isEmpty, isNotEmpty, minLength } from 'class-validator';
-import { isRequiredArgument } from 'graphql';
+import { isEmpty } from 'class-validator';
 
 @Injectable()
 export class ProductsService {
@@ -64,7 +63,9 @@ export class ProductsService {
         });
     }
 
-    async validateUpsertInput(input: ProductUpsertInput): Promise<string[]> {
+    private async validateUpsertInput(
+        input: ProductUpsertInput,
+    ): Promise<string[]> {
         const errors: string[] = [];
 
         // width
@@ -101,26 +102,43 @@ export class ProductsService {
             errors.push('Packing is required');
         }
 
+        // product type
+        // DoesProductTypeBelongToOrderProductionType
+        const productType = await this.prisma.product_type.findUnique({
+            where: {
+                id: input.product_type_id,
+            },
+        });
+        if (!productType) {
+            errors.push('Product type not found');
+        }
+        if (
+            productType.order_production_type_id !==
+            input.order_production_type_id
+        ) {
+            errors.push('Product type doesnt belong to order production type');
+        }
+
         return errors;
     }
 
-    static isBag(input: ProductUpsertInput) {
+    private static isBag(input: ProductUpsertInput) {
         return input.order_production_type_id === 1;
     }
 
-    static isRoll(input: ProductUpsertInput) {
+    private static isRoll(input: ProductUpsertInput) {
         return input.order_production_type_id === 2;
     }
 
-    static isPellet(input: ProductUpsertInput) {
+    private static isPellet(input: ProductUpsertInput) {
         return input.order_production_type_id === 3;
     }
 
-    static isOthers(input: ProductUpsertInput) {
+    private static isOthers(input: ProductUpsertInput) {
         return input.order_production_type_id === null;
     }
 
-    static isWidthRequired(input: ProductUpsertInput) {
+    private static isWidthRequired(input: ProductUpsertInput) {
         return (
             ProductsService.isBag(input) ||
             ProductsService.isRoll(input) ||
@@ -128,15 +146,15 @@ export class ProductsService {
         );
     }
 
-    static isLengthRequired(input: ProductUpsertInput) {
+    private static isLengthRequired(input: ProductUpsertInput) {
         return ProductsService.isBag(input) || ProductsService.isOthers(input);
     }
 
-    static isCurrentGroupWeightRequired(input: ProductUpsertInput) {
+    private static isCurrentGroupWeightRequired(input: ProductUpsertInput) {
         return ProductsService.isBag(input) || ProductsService.isOthers(input);
     }
 
-    static isCalibreRequired(input: ProductUpsertInput) {
+    private static isCalibreRequired(input: ProductUpsertInput) {
         return (
             ProductsService.isBag(input) ||
             ProductsService.isRoll(input) ||
@@ -144,7 +162,7 @@ export class ProductsService {
         );
     }
 
-    static isPackingIdRequired(input: ProductUpsertInput) {
+    private static isPackingIdRequired(input: ProductUpsertInput) {
         return ProductsService.isBag(input) || ProductsService.isRoll(input);
     }
 }
