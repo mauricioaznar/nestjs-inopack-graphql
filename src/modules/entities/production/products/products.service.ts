@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { Product, ProductUpsertInput } from '../../../../common/dto/entities';
-import { validate } from 'class-validator';
+import { minLength } from 'class-validator';
 
 @Injectable()
 export class ProductsService {
@@ -26,9 +26,10 @@ export class ProductsService {
     }
 
     async upsertInput(input: ProductUpsertInput): Promise<Product> {
-        const errors = await validate(input);
-
-        console.log(errors);
+        const codeMinLength = minLength(input.code, 10);
+        if (!codeMinLength) {
+            throw new BadRequestException(['Min length is not enough']);
+        }
 
         return this.prisma.products.upsert({
             create: {
@@ -39,6 +40,9 @@ export class ProductsService {
                 description: input.description,
                 width: input.width,
                 length: input.length,
+                product_type_id: input.product_type_id,
+                order_production_type_id: input.order_production_type_id,
+                packing_id: input.packing_id,
             },
             update: {
                 calibre: input.calibre,
@@ -48,6 +52,9 @@ export class ProductsService {
                 description: input.description,
                 width: input.width,
                 length: input.length,
+                product_type_id: input.product_type_id,
+                order_production_type_id: input.order_production_type_id,
+                packing_id: input.packing_id,
             },
             where: {
                 id: input.id || 0,
