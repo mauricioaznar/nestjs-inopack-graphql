@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     MachineCompatibility,
-    MachineComponent,
+    MachinePart,
     Spare,
 } from '../../../../common/dto/entities';
 
@@ -28,37 +28,35 @@ export class MachineCompatibilitiesService {
         });
     }
 
-    async getMachineComponent({
-        machine_component_id,
+    async getMachinePart({
+        machine_part_id,
     }: {
-        machine_component_id: number | null;
-    }): Promise<MachineComponent | null> {
-        if (!machine_component_id) return null;
+        machine_part_id: number | null;
+    }): Promise<MachinePart | null> {
+        if (!machine_part_id) return null;
 
-        return this.prisma.machine_components.findFirst({
+        return this.prisma.machine_parts.findFirst({
             where: {
-                id: machine_component_id,
+                id: machine_part_id,
             },
         });
     }
 
     async isCurrentSpare({
-        machine_component_id,
+        machine_part_id,
         spare_id,
     }: {
-        machine_component_id: number | null;
+        machine_part_id: number | null;
         spare_id: number | null;
     }): Promise<boolean> {
-        if (!machine_component_id) return null;
+        if (!machine_part_id) return null;
 
-        const machineComponent = await this.prisma.machine_components.findFirst(
-            {
-                where: {
-                    id: machine_component_id,
-                },
+        const machinePart = await this.prisma.machine_parts.findFirst({
+            where: {
+                id: machine_part_id,
             },
-        );
+        });
 
-        return machineComponent.current_spare_id === spare_id;
+        return machinePart.current_spare_id === spare_id;
     }
 }

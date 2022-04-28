@@ -7,7 +7,7 @@ export * from './general/branch.dto';
 // maintenance
 export * from './maintenance/machine-compatibility.dto';
 export * from './maintenance/machine.dto';
-export * from './maintenance/machine-component.dto';
+export * from './maintenance/machine-part.dto';
 export * from './maintenance/machine-section.dto';
 export * from './maintenance/spare.dto';
 export * from './maintenance/spare-category.dto';

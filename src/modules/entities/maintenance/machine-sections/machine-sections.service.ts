@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
-    MachineComponent,
+    MachinePart,
     MachineSection,
     MachineSectionUpsertInput,
 } from '../../../../common/dto/entities';
@@ -44,12 +44,12 @@ export class MachineSectionsService {
         });
     }
 
-    async getMachineSectionComponents({
+    async getMachineSectionParts({
         machineSectionId,
     }: {
         machineSectionId: number;
-    }): Promise<MachineComponent[]> {
-        return this.prisma.machine_components.findMany({
+    }): Promise<MachinePart[]> {
+        return this.prisma.machine_parts.findMany({
             where: {
                 machine_section_id: machineSectionId,
             },
@@ -83,8 +83,8 @@ export class MachineSectionsService {
         machine_section_id;
     }): Promise<boolean> {
         const {
-            _count: { id: machineComponentCount },
-        } = await this.prisma.machine_components.aggregate({
+            _count: { id: machinePartCount },
+        } = await this.prisma.machine_parts.aggregate({
             _count: {
                 id: true,
             },
@@ -93,6 +93,6 @@ export class MachineSectionsService {
             },
         });
 
-        return machineComponentCount === 0;
+        return machinePartCount === 0;
     }
 }

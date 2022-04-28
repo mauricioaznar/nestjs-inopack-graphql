@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     Machine,
-    MachineComponent,
+    MachinePart,
     MachineSection,
     MachineUpsertInput,
 } from '../../../../common/dto/entities';
@@ -53,12 +53,12 @@ export class MachinesService {
         });
     }
 
-    async getMachineComponents({
+    async getMachineParts({
         machineId,
     }: {
         machineId: number;
-    }): Promise<MachineComponent[]> {
-        return this.prisma.machine_components.findMany({
+    }): Promise<MachinePart[]> {
+        return this.prisma.machine_parts.findMany({
             where: {
                 OR: [
                     {
@@ -79,23 +79,23 @@ export class MachinesService {
     }: {
         machineId: number;
     }): Promise<number> {
-        const machineComponents = await this.getMachineComponents({
+        const machineParts = await this.getMachineParts({
             machineId,
         });
 
-        if (machineComponents.length === 0) return 0;
+        if (machineParts.length === 0) return 0;
 
-        let totalRequiredComponents = 0;
+        let totalRequiredParts = 0;
         let sufficientTotalInventoryQuantity = 0;
 
-        for await (const component of machineComponents) {
+        for await (const part of machineParts) {
             const currentInventoryQuantity =
                 await this.sparesInventoryService.getCurrentQuantity(
-                    component.current_spare_id,
+                    part.current_spare_id,
                 );
-            const requiredQuantity = component.current_spare_required_quantity;
+            const requiredQuantity = part.current_spare_required_quantity;
             if (requiredQuantity > 0) {
-                totalRequiredComponents += requiredQuantity;
+                totalRequiredParts += requiredQuantity;
                 sufficientTotalInventoryQuantity +=
                     currentInventoryQuantity > requiredQuantity
                         ? requiredQuantity
@@ -104,16 +104,16 @@ export class MachinesService {
         }
 
         return Math.round(
-            (sufficientTotalInventoryQuantity / totalRequiredComponents) * 100,
+            (sufficientTotalInventoryQuantity / totalRequiredParts) * 100,
         );
     }
 
-    async getMachineUnassignedComponents({
+    async getMachineUnassignedParts({
         machineId,
     }: {
         machineId: number;
-    }): Promise<MachineComponent[]> {
-        return this.prisma.machine_components.findMany({
+    }): Promise<MachinePart[]> {
+        return this.prisma.machine_parts.findMany({
             where: {
                 AND: [
                     {

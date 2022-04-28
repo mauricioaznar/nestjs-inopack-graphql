@@ -4,7 +4,7 @@ import { MachinesModule } from './machines/machines.module';
 import { SparesModule } from './spares/spares.module';
 import { SpareCategoriesModule } from './spare-categories/spare-categories.module';
 import { MachineSectionsModule } from './machine-sections/machine-sections.module';
-import { MachineComponentsModule } from './machine-components/machine-components.module';
+import { MachinePartsModule } from './machine-parts/machine-parts.module';
 import { MachineCompatibilitiesModule } from './machine-compatibilities/machine-compatibilities.module';
 import { SpareOperationsModule } from './spare-operations/spare-operations.module';
 import { SpareTransactionsModule } from './spare-transactions/spare-transactions.module';
@@ -16,7 +16,7 @@ import { SpareTransactionsModule } from './spare-transactions/spare-transactions
         SparesModule,
         SpareCategoriesModule,
         MachineSectionsModule,
-        MachineComponentsModule,
+        MachinePartsModule,
         MachineCompatibilitiesModule,
         SpareOperationsModule,
         SpareTransactionsModule,

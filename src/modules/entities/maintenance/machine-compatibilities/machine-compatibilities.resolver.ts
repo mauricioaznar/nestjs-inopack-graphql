@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { MachineCompatibilitiesService } from './machine-compatibilities.service';
 import {
     MachineCompatibility,
-    MachineComponent,
+    MachinePart,
     Spare,
 } from '../../../../common/dto/entities';
 
@@ -28,12 +28,12 @@ export class MachineCompatibilitiesResolver {
         });
     }
 
-    @ResolveField(() => MachineComponent, {
+    @ResolveField(() => MachinePart, {
         nullable: true,
     })
-    async machine_component(machineCompatibility: MachineCompatibility) {
-        return this.machineCompatibilitiesService.getMachineComponent({
-            machine_component_id: machineCompatibility.machine_component_id,
+    async machine_part(machineCompatibility: MachineCompatibility) {
+        return this.machineCompatibilitiesService.getMachinePart({
+            machine_part_id: machineCompatibility.machine_part_id,
         });
     }
 
@@ -42,7 +42,7 @@ export class MachineCompatibilitiesResolver {
     })
     async is_current_spare(machineCompatibility: MachineCompatibility) {
         return this.machineCompatibilitiesService.isCurrentSpare({
-            machine_component_id: machineCompatibility.machine_component_id,
+            machine_part_id: machineCompatibility.machine_part_id,
             spare_id: machineCompatibility.spare_id,
         });
     }

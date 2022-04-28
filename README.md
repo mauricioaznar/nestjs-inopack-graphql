@@ -21,7 +21,7 @@
 ## Todo
 
 * adjustments
-    * spares substractions must have branch_id, component_id and (retrieval_id or adjustment_id)
+    * spares substractions must have branch_id, part_id and (retrieval_id or adjustment_id)
     * spares additions must have branch_id and (buyout_id or adjustment_id)
 * Add buyout
     * buyout costs

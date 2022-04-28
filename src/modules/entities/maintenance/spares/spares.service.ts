@@ -69,7 +69,7 @@ export class SparesService {
     }): Promise<number> {
         const {
             _sum: { current_spare_required_quantity },
-        } = await this.prisma.machine_components.aggregate({
+        } = await this.prisma.machine_parts.aggregate({
             _sum: {
                 current_spare_required_quantity: true,
             },
@@ -112,8 +112,8 @@ export class SparesService {
 
     async isDeletable({ spare_id }: { spare_id: number }): Promise<boolean> {
         const {
-            _count: { id: machineComponentCount },
-        } = await this.prisma.machine_components.aggregate({
+            _count: { id: machinePartCount },
+        } = await this.prisma.machine_parts.aggregate({
             _count: {
                 id: true,
             },
@@ -144,7 +144,7 @@ export class SparesService {
             },
         });
         return (
-            machineComponentCount === 0 &&
+            machinePartCount === 0 &&
             machineCompatibilitiesCount === 0 &&
             machineTransactionsCount === 0
         );

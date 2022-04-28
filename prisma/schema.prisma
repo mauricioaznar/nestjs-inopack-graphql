@@ -148,7 +148,7 @@ model machines {
   branches                  branches?                   @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_branch_id_foreign")
   machine_type              machine_type?               @relation(fields: [machine_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_machine_type_id_foreign")
   order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_order_production_type_id_foreign")
-  machine_components        machine_components[]
+  machine_parts             machine_parts[]
   machine_sections          machine_sections[]
   order_production_products order_production_products[]
 
@@ -552,20 +552,20 @@ model users {
 }
 
 model machine_compatibilities {
-  id                   Int                 @id @default(autoincrement()) @db.UnsignedInt
-  active               Int                 @default(1)
-  created_at           DateTime?           @db.DateTime(0)
-  updated_at           DateTime?           @db.DateTime(0)
-  machine_component_id Int?                @db.UnsignedInt
-  spare_id             Int?                @db.UnsignedInt
-  machine_components   machine_components? @relation(fields: [machine_component_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_compatibilities_machine_component_id_foreign")
-  spares               spares?             @relation(fields: [spare_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_compatibilities_spare_id_foreign")
+  id              Int            @id @default(autoincrement()) @db.UnsignedInt
+  active          Int            @default(1)
+  created_at      DateTime?      @db.DateTime(0)
+  updated_at      DateTime?      @db.DateTime(0)
+  machine_part_id Int?           @db.UnsignedInt
+  spare_id        Int?           @db.UnsignedInt
+  machine_parts   machine_parts? @relation(fields: [machine_part_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_compatibilities_machine_part_id_foreign")
+  spares          spares?        @relation(fields: [spare_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_compatibilities_spare_id_foreign")
 
-  @@index([machine_component_id], map: "machine_compatibilities_machine_component_id_foreign")
+  @@index([machine_part_id], map: "machine_compatibilities_machine_part_id_foreign")
   @@index([spare_id], map: "machine_compatibilities_spare_id_foreign")
 }
 
-model machine_components {
+model machine_parts {
   id                              Int                       @id @default(autoincrement()) @db.UnsignedInt
   active                          Int                       @default(1)
   created_at                      DateTime?                 @db.DateTime(0)
@@ -575,25 +575,25 @@ model machine_components {
   current_spare_id                Int?                      @db.UnsignedInt
   current_spare_required_quantity Int?                      @db.UnsignedInt
   name                            String                    @db.VarChar(255)
-  spares                          spares?                   @relation(fields: [current_spare_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_current_spare_id_foreign")
-  machines                        machines?                 @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_machine_id_foreign")
-  machine_sections                machine_sections?         @relation(fields: [machine_section_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_components_machine_section_id_foreign")
+  spares                          spares?                   @relation(fields: [current_spare_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_parts_current_spare_id_foreign")
+  machines                        machines?                 @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_parts_machine_id_foreign")
+  machine_sections                machine_sections?         @relation(fields: [machine_section_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_parts_machine_section_id_foreign")
   machine_compatibilities         machine_compatibilities[]
 
-  @@index([current_spare_id], map: "machine_components_current_spare_id_foreign")
-  @@index([machine_id], map: "machine_components_machine_id_foreign")
-  @@index([machine_section_id], map: "machine_components_machine_section_id_foreign")
+  @@index([current_spare_id], map: "machine_parts_current_spare_id_foreign")
+  @@index([machine_id], map: "machine_parts_machine_id_foreign")
+  @@index([machine_section_id], map: "machine_parts_machine_section_id_foreign")
 }
 
 model machine_sections {
-  id                 Int                  @id @default(autoincrement()) @db.UnsignedInt
-  active             Int                  @default(1)
-  created_at         DateTime?            @db.DateTime(0)
-  updated_at         DateTime?            @db.DateTime(0)
-  machine_id         Int?                 @db.UnsignedInt
-  name               String               @db.VarChar(255)
-  machines           machines?            @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_sections_machine_id_foreign")
-  machine_components machine_components[]
+  id            Int             @id @default(autoincrement()) @db.UnsignedInt
+  active        Int             @default(1)
+  created_at    DateTime?       @db.DateTime(0)
+  updated_at    DateTime?       @db.DateTime(0)
+  machine_id    Int?            @db.UnsignedInt
+  name          String          @db.VarChar(255)
+  machines      machines?       @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_sections_machine_id_foreign")
+  machine_parts machine_parts[]
 
   @@index([machine_id], map: "machine_sections_machine_id_foreign")
 }
@@ -643,7 +643,7 @@ model spares {
   name                    String                    @db.VarChar(255)
   spare_categories        spare_categories?         @relation(fields: [spare_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "spares_spare_category_id_foreign")
   machine_compatibilities machine_compatibilities[]
-  machine_components      machine_components[]
+  machine_parts           machine_parts[]
   spare_transactions      spare_transactions[]
 
   @@index([spare_category_id], map: "spares_spare_category_id_foreign")

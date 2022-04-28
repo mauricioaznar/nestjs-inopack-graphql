@@ -3,34 +3,32 @@ import { PrismaService } from '../../../../common/services/prisma/prisma.service
 import {
     Machine,
     MachineCompatibility,
-    MachineComponent,
-    MachineComponentUpsertInput,
+    MachinePart,
+    MachinePartUpsertInput,
     MachineSection,
     Spare,
 } from '../../../../common/dto/entities';
 import { areUnique, vennDiagram } from '../../../../common/helpers';
 
 @Injectable()
-export class MachineComponentsService {
+export class MachinePartsService {
     constructor(private prisma: PrismaService) {}
 
-    async getMachineComponent(
-        machineComponentId: number,
-    ): Promise<MachineComponent> {
-        return this.prisma.machine_components.findFirst({
+    async getMachinePart(machinePartId: number): Promise<MachinePart> {
+        return this.prisma.machine_parts.findFirst({
             where: {
-                id: machineComponentId,
+                id: machinePartId,
             },
         });
     }
 
-    async getMachineComponents(): Promise<MachineComponent[]> {
-        return this.prisma.machine_components.findMany();
+    async getMachineParts(): Promise<MachinePart[]> {
+        return this.prisma.machine_parts.findMany();
     }
 
-    async upsertMachineComponent(
-        upsertInput: MachineComponentUpsertInput,
-    ): Promise<MachineComponent> {
+    async upsertMachinePart(
+        upsertInput: MachinePartUpsertInput,
+    ): Promise<MachinePart> {
         const machineCompatibilities = upsertInput.machine_compatibilities;
         if (
             !areUnique({
@@ -55,7 +53,7 @@ export class MachineComponentsService {
             );
         }
 
-        const machineComponent = await this.prisma.machine_components.upsert({
+        const machinePart = await this.prisma.machine_parts.upsert({
             create: {
                 name: upsertInput.name,
                 current_spare_required_quantity:
@@ -80,7 +78,7 @@ export class MachineComponentsService {
         const oldMachineCompatibilities =
             await this.prisma.machine_compatibilities.findMany({
                 where: {
-                    machine_component_id: machineComponent.id,
+                    machine_part_id: machinePart.id,
                 },
             });
 
@@ -97,7 +95,7 @@ export class MachineComponentsService {
             await this.prisma.machine_compatibilities.deleteMany({
                 where: {
                     spare_id: removedMachineCompatibility.spare_id,
-                    machine_component_id: machineComponent.id,
+                    machine_part_id: machinePart.id,
                 },
             });
         }
@@ -106,28 +104,28 @@ export class MachineComponentsService {
             await this.prisma.machine_compatibilities.create({
                 data: {
                     spare_id: addedCurrentMachineCompat.spare_id,
-                    machine_component_id: machineComponent.id,
+                    machine_part_id: machinePart.id,
                 },
             });
         }
 
-        return machineComponent;
+        return machinePart;
     }
 
-    async deleteMachineComponent({
-        machine_component_id,
+    async deleteMachinePart({
+        machine_part_id,
     }: {
-        machine_component_id: number;
+        machine_part_id: number;
     }): Promise<boolean> {
         try {
             await this.prisma.machine_compatibilities.deleteMany({
                 where: {
-                    machine_component_id: machine_component_id,
+                    machine_part_id: machine_part_id,
                 },
             });
-            await this.prisma.machine_components.deleteMany({
+            await this.prisma.machine_parts.deleteMany({
                 where: {
-                    id: machine_component_id,
+                    id: machine_part_id,
                 },
             });
         } catch (e) {
@@ -184,13 +182,13 @@ export class MachineComponentsService {
     }
 
     async getMachineCompatibilities({
-        machine_component_id,
+        machine_part_id,
     }: {
-        machine_component_id: number;
+        machine_part_id: number;
     }): Promise<MachineCompatibility[]> {
         return this.prisma.machine_compatibilities.findMany({
             where: {
-                machine_component_id: machine_component_id,
+                machine_part_id: machine_part_id,
             },
         });
     }

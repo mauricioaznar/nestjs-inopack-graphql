@@ -3,7 +3,7 @@ import { MachineSeederService } from './machine-seeder.service';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { MachinesService } from '../../../entities/maintenance/machines/machines.service';
 import { MachineSectionsService } from '../../../entities/maintenance/machine-sections/machine-sections.service';
-import { MachineComponentsService } from '../../../entities/maintenance/machine-components/machine-components.service';
+import { MachinePartsService } from '../../../entities/maintenance/machine-parts/machine-parts.service';
 import { SpareInventoryService } from '../../../../common/services/entities/spare-inventory.service';
 
 @Module({
@@ -12,7 +12,7 @@ import { SpareInventoryService } from '../../../../common/services/entities/spar
         PrismaService,
         MachinesService,
         MachineSectionsService,
-        MachineComponentsService,
+        MachinePartsService,
         MachineSeederService,
         SpareInventoryService,
     ],

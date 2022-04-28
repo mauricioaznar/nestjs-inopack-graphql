@@ -2,7 +2,7 @@ import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { MachineSectionsService } from './machine-sections.service';
 import {
-    MachineComponent,
+    MachinePart,
     MachineSection,
     MachineSectionUpsertInput,
 } from '../../../../common/dto/entities';
@@ -46,11 +46,11 @@ export class MachineSectionsResolver {
         return this.machineSectionsService.getMachineSections(machineId);
     }
 
-    @ResolveField(() => [MachineComponent])
-    async machine_components(
+    @ResolveField(() => [MachinePart])
+    async machine_parts(
         machineSection: MachineSection,
-    ): Promise<MachineComponent[]> {
-        return this.machineSectionsService.getMachineSectionComponents({
+    ): Promise<MachinePart[]> {
+        return this.machineSectionsService.getMachineSectionParts({
             machineSectionId: machineSection.id,
         });
     }

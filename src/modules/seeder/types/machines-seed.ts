@@ -1,6 +1,6 @@
 import {
     Machine,
-    MachineComponent,
+    MachinePart,
     MachineSection,
 } from '../../../common/dto/entities';
 
@@ -10,38 +10,38 @@ export interface MachinesSeed {
         sections: {
             seccion1: {
                 section: MachineSection;
-                components: {
-                    componente1: MachineComponent;
-                    componente2: MachineComponent;
-                    componente3: MachineComponent;
+                parts: {
+                    parte1: MachinePart;
+                    parte2: MachinePart;
+                    parte3: MachinePart;
                 };
             };
             seccion2: {
                 section: MachineSection;
-                components: {
-                    componente4: MachineComponent;
-                    componente5: MachineComponent;
+                parts: {
+                    parte4: MachinePart;
+                    parte5: MachinePart;
                 };
             };
             seccion3: {
                 section: MachineSection;
-                components: {
-                    componente6: MachineComponent;
-                    componente7: MachineComponent;
-                    componente8: MachineComponent;
-                    componente9: MachineComponent;
+                parts: {
+                    parte6: MachinePart;
+                    parte7: MachinePart;
+                    parte8: MachinePart;
+                    parte9: MachinePart;
                 };
             };
             seccion4: {
                 section: MachineSection;
-                components: {
-                    componente10: MachineComponent;
+                parts: {
+                    parte10: MachinePart;
                 };
             };
         };
-        unassigned_components: {
-            componente11: MachineComponent;
-            componente12: MachineComponent;
+        unassigned_parts: {
+            parte11: MachinePart;
+            parte12: MachinePart;
         };
     };
     camisetera1: Machine;

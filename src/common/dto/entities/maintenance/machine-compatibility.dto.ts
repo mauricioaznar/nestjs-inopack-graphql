@@ -16,5 +16,5 @@ export class MachineCompatibility extends MachineCompatibilityBase {
     id: number;
 
     @Field({ nullable: true })
-    machine_component_id?: number | null;
+    machine_part_id?: number | null;
 }

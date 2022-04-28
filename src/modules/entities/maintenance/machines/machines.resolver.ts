@@ -10,7 +10,7 @@ import { Injectable } from '@nestjs/common';
 import { MachinesService } from './machines.service';
 import {
     Machine,
-    MachineComponent,
+    MachinePart,
     MachineSection,
     MachineUpsertInput,
 } from '../../../../common/dto/entities';
@@ -35,9 +35,9 @@ export class MachinesResolver {
         return this.machinesService.getMachines();
     }
 
-    @ResolveField(() => [MachineComponent])
-    async machine_components(machine: Machine): Promise<MachineComponent[]> {
-        return this.machinesService.getMachineComponents({
+    @ResolveField(() => [MachinePart])
+    async machine_parts(machine: Machine): Promise<MachinePart[]> {
+        return this.machinesService.getMachineParts({
             machineId: machine.id,
         });
     }
@@ -56,9 +56,9 @@ export class MachinesResolver {
         });
     }
 
-    @ResolveField(() => [MachineComponent])
-    async unassigned_components(machine: Machine): Promise<MachineComponent[]> {
-        return this.machinesService.getMachineUnassignedComponents({
+    @ResolveField(() => [MachinePart])
+    async unassigned_parts(machine: Machine): Promise<MachinePart[]> {
+        return this.machinesService.getMachineUnassignedParts({
             machineId: machine.id,
         });
     }
