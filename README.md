@@ -10,6 +10,7 @@
 
 ## Todo
 
+* products & products testing
 * server validation ( date, numbers, emails  (static properties) )
 * maybe class inheritance with part operations (part_operations => part_transactions, part_costs)
 * adjustments
