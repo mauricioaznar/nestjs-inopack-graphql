@@ -11,4 +11,7 @@ export class ProductTypeBase {
 export class ProductType extends ProductTypeBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field({ nullable: true })
+    order_production_type_id: number | null;
 }
