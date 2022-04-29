@@ -9,7 +9,7 @@
     "pretty": "prettier --write \"src/**/*.ts\"",
     "start": "env-cmd -f .env nest start",
     "dev": "env-cmd -f .env nest start --watch",
-    "test": "env-cmd -f .env.test jest --watch",
+    "test": "env-cmd -f .env.test jest --watch --verbose",
     "test:coverage": "env-cmd -f .env.test jest --coverage",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "reset": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -84,7 +84,7 @@
     "typescript": "^4.4.3"
   },
   "jest": {
-    "globalSetup": "<rootDir>/modules/common/__tests__/setup-database.ts",
+    "globalSetup": "<rootDir>/common/__tests__/setup-database.ts",
     "moduleFileExtensions": [
       "js",
       "json",
