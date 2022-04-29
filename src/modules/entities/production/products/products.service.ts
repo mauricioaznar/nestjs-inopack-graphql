@@ -26,11 +26,7 @@ export class ProductsService {
     }
 
     async upsertInput(input: ProductUpsertInput): Promise<Product> {
-        const errors = await this.validateUpsertInput(input);
-
-        if (errors.length > 0) {
-            throw new BadRequestException(errors);
-        }
+        await this.validateAndCleanUpsertInput(input);
 
         return this.prisma.products.upsert({
             create: {
@@ -63,43 +59,54 @@ export class ProductsService {
         });
     }
 
-    private async validateUpsertInput(
+    private async validateAndCleanUpsertInput(
         input: ProductUpsertInput,
-    ): Promise<string[]> {
+    ): Promise<void> {
         const errors: string[] = [];
 
         // width
-        if (ProductsService.isWidthRequired(input) && isEmpty(input.width)) {
-            errors.push('Width is required');
+        if (ProductsService.isWidthRequired(input)) {
+            if (isEmpty(input.width)) {
+                errors.push('Width is required');
+            }
+        } else {
+            input.width = 0;
         }
 
         // length
-        if (ProductsService.isLengthRequired(input) && isEmpty(input.length)) {
-            errors.push('Length is required');
+        if (ProductsService.isLengthRequired(input)) {
+            if (isEmpty(input.length)) {
+                errors.push('Length is required');
+            }
+        } else {
+            input.length = null;
         }
 
         // current group weight
-        if (
-            ProductsService.isCurrentGroupWeightRequired(input) &&
-            isEmpty(input.current_group_weight)
-        ) {
-            errors.push('Current group weight is required');
+        if (ProductsService.isCurrentGroupWeightRequired(input)) {
+            if (isEmpty(input.current_group_weight)) {
+                errors.push('Current group weight is required');
+            }
+        } else {
+            input.current_group_weight = undefined;
         }
 
         // calibre
-        if (
-            ProductsService.isCalibreRequired(input) &&
-            isEmpty(input.calibre)
-        ) {
-            errors.push('Calibre is required');
+        if (ProductsService.isCalibreRequired(input)) {
+            if (isEmpty(input.calibre)) {
+                errors.push('Calibre is required');
+            }
+        } else {
+            input.calibre = 0;
         }
 
         // packing
-        if (
-            ProductsService.isPackingIdRequired(input) &&
-            isEmpty(input.packing_id)
-        ) {
-            errors.push('Packing is required');
+        if (ProductsService.isPackingIdRequired(input)) {
+            if (isEmpty(input.packing_id)) {
+                errors.push('Packing is required');
+            }
+        } else {
+            input.packing_id = null;
         }
 
         // product type
@@ -119,7 +126,9 @@ export class ProductsService {
             errors.push('Product type doesnt belong to order production type');
         }
 
-        return errors;
+        if (errors.length > 0) {
+            throw new BadRequestException(errors);
+        }
     }
 
     private static isBag(input: ProductUpsertInput) {
