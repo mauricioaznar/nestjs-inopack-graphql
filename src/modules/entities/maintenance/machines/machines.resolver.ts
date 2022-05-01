@@ -11,6 +11,7 @@ import { Injectable } from '@nestjs/common';
 import { MachinesService } from './machines.service';
 import {
     Machine,
+    MachineDailyProduction,
     MachinePart,
     MachineSection,
     MachineUpsertInput,
@@ -66,12 +67,12 @@ export class MachinesResolver {
         });
     }
 
-    @ResolveField(() => [Day])
+    @ResolveField(() => [MachineDailyProduction])
     async month_production(
         @Parent() machine: Machine,
         @Args() yearMonth: YearMonth,
-    ): Promise<Day[]> {
-        return this.service.getLastSevenDaysProduction({
+    ): Promise<MachineDailyProduction[]> {
+        return this.service.getMonthProduction({
             machineId: machine.id,
             year: yearMonth.year,
             month: yearMonth.month,

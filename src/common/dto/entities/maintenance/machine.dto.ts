@@ -1,4 +1,5 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, Float, InputType, ObjectType } from '@nestjs/graphql';
+import { Day } from '../dates/day/day';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -17,4 +18,13 @@ export class MachineUpsertInput extends MachineBase {
 export class Machine extends MachineBase {
     @Field({ nullable: false })
     id: number;
+}
+
+@ObjectType('MachineDailyProduction')
+export class MachineDailyProduction extends Day {
+    @Field(() => Float, { nullable: false })
+    public kilo_sum: number;
+
+    @Field(() => Float, { nullable: false })
+    public group_sum: number;
 }

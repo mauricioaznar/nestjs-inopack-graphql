@@ -2,15 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     Machine,
+    MachineDailyProduction,
     MachinePart,
     MachineSection,
     MachineUpsertInput,
 } from '../../../../common/dto/entities';
 import { SpareInventoryService } from '../../../../common/services/entities/spare-inventory.service';
-import { Day } from '../../../../common/dto/entities/dates/day/day';
 import dayjs from 'dayjs';
 import { YearMonth } from '../../../../common/dto/pagination';
-import { getRangesFromYearMonth } from '../../../../common/helpers';
 
 @Injectable()
 export class MachinesService {
@@ -131,15 +130,15 @@ export class MachinesService {
         });
     }
 
-    async getLastSevenDaysProduction({
+    async getMonthProduction({
         machineId,
         year,
         month,
     }: {
         machineId: number;
-    } & YearMonth): Promise<Day[]> {
-        const days: Day[] = [];
-        if (!year || !month) return days;
+    } & YearMonth): Promise<MachineDailyProduction[]> {
+        const days: MachineDailyProduction[] = [];
+        if (year === null || month === null) return days;
 
         let startDate = dayjs().utc().year(year).month(month).startOf('month');
 
@@ -152,10 +151,11 @@ export class MachinesService {
 
         while (endDate.diff(startDate, 'days') > 0) {
             const {
-                _sum: { kilos: kilosSum },
+                _sum: { kilos: kilosSum, groups: groupsSum },
             } = await this.prisma.order_production_products.aggregate({
                 _sum: {
                     kilos: true,
+                    groups: true,
                 },
                 where: {
                     AND: [
@@ -192,7 +192,8 @@ export class MachinesService {
                 day: startDate.date(),
                 month: startDate.month(),
                 year: startDate.year(),
-                value: kilosSum || 0,
+                kilo_sum: kilosSum || 0,
+                group_sum: groupsSum || 0,
             });
 
             startDate = startDate.add(1, 'days');

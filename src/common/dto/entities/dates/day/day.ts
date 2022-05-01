@@ -1,6 +1,6 @@
-import { Field, Float, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType } from '@nestjs/graphql';
 
-@ObjectType('Day')
+@ObjectType('Day', { isAbstract: true })
 export class Day {
     @Field({ description: 'Year' })
     public year: number;
@@ -10,7 +10,4 @@ export class Day {
 
     @Field({ description: 'Day' })
     public day: number;
-
-    @Field(() => Float, { nullable: false })
-    public value: number;
 }
