@@ -8,26 +8,14 @@ import { getRangesFromYearMonth } from '../../../../common/helpers';
 export class OrderProductionsService {
     constructor(private prisma: PrismaService) {}
 
-    async getOrderProductions(): Promise<OrderProduction[]> {
-        // low: 1
-        // very high: 7
-        const { startDate, endDate } = getRangesFromYearMonth({
-            year: 2021,
-            month: 1,
-            value: 1,
-            unit: 'month',
-        });
-
-        return this.prisma.order_productions.findMany({
+    async getOrderProduction({
+        order_production_id,
+    }: {
+        order_production_id: number;
+    }): Promise<OrderProduction> {
+        return this.prisma.order_productions.findUnique({
             where: {
-                AND: [
-                    {
-                        start_date: { gte: startDate },
-                    },
-                    {
-                        start_date: { lt: endDate },
-                    },
-                ],
+                id: order_production_id,
             },
         });
     }
@@ -39,7 +27,14 @@ export class OrderProductionsService {
     }): Promise<OrderProductionProduct[]> {
         return this.prisma.order_production_products.findMany({
             where: {
-                order_production_id: order_production_id,
+                AND: [
+                    {
+                        order_production_id: order_production_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
             },
         });
     }
