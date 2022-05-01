@@ -130,6 +130,7 @@ export class MachinesService {
             },
         });
     }
+
     async getLastSevenDaysProduction({
         machineId,
         year,
