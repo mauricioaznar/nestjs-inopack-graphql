@@ -1,7 +1,7 @@
-import { ArgsType, Field } from '@nestjs/graphql';
+import { ArgsType, Field, ObjectType } from '@nestjs/graphql';
 
 @ArgsType()
-export class DatePaginatorArgs {
+export class YearMonth {
     @Field({ nullable: true, description: 'Year' })
     public year?: number | null;
 

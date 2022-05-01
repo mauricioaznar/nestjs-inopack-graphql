@@ -5,16 +5,15 @@ import {
     SpareOperation,
     SpareTransaction,
 } from '../../../../common/dto/entities';
-import dayjs from 'dayjs';
-import { DatePaginatorArgs } from '../../../../common/dto/pagination';
 import { getRangesFromYearMonth } from '../../../../common/helpers';
+import { YearMonth } from '../../../../common/dto/pagination';
 
 @Injectable()
 export class SpareTransactionsService {
     constructor(private prisma: PrismaService) {}
 
     async getSpareTransactions(
-        datePaginator: DatePaginatorArgs,
+        datePaginator: YearMonth,
     ): Promise<SpareTransaction[]> {
         if (
             !datePaginator ||

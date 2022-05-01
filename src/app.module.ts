@@ -13,6 +13,7 @@ import { FilesModule } from './modules/files/files.module';
 import { MemoryTokenModule } from './common/services/memory-token/memory-token.module';
 import { MaintenanceModule } from './modules/entities/maintenance/maintenance.module';
 import { ProductionModule } from './modules/entities/production/production.module';
+import { DatesModule } from './modules/entities/dates/dates.module';
 
 @Module({
     imports: [
@@ -62,6 +63,7 @@ import { ProductionModule } from './modules/entities/production/production.modul
         ProductionModule,
         MaintenanceModule,
         MemoryTokenModule,
+        DatesModule,
         FilesModule,
     ],
     // providers: [
