@@ -7,6 +7,10 @@ import {
     MachineUpsertInput,
 } from '../../../../common/dto/entities';
 import { SpareInventoryService } from '../../../../common/services/entities/spare-inventory.service';
+import { Day } from '../../../../common/dto/entities/dates/day/day';
+import dayjs from 'dayjs';
+import { YearMonth } from '../../../../common/dto/pagination';
+import { getRangesFromYearMonth } from '../../../../common/helpers';
 
 @Injectable()
 export class MachinesService {
@@ -125,5 +129,74 @@ export class MachinesService {
                 ],
             },
         });
+    }
+    async getLastSevenDaysProduction({
+        machineId,
+        year,
+        month,
+    }: {
+        machineId: number;
+    } & YearMonth): Promise<Day[]> {
+        const days: Day[] = [];
+        if (!year || !month) return days;
+
+        let startDate = dayjs().utc().year(year).month(month).startOf('month');
+
+        const endDate = dayjs()
+            .utc()
+            .year(year)
+            .month(month)
+            .add(1, 'month')
+            .startOf('month');
+
+        while (endDate.diff(startDate, 'days') > 0) {
+            const {
+                _sum: { kilos: kilosSum },
+            } = await this.prisma.order_production_products.aggregate({
+                _sum: {
+                    kilos: true,
+                },
+                where: {
+                    AND: [
+                        {
+                            order_productions: {
+                                start_date: {
+                                    gte: startDate.toDate(),
+                                },
+                            },
+                        },
+                        {
+                            order_productions: {
+                                start_date: {
+                                    lt: startDate.add(1, 'days').toDate(),
+                                },
+                            },
+                        },
+                        {
+                            order_productions: {
+                                active: 1,
+                            },
+                        },
+                        {
+                            active: 1,
+                        },
+                        {
+                            machine_id: machineId,
+                        },
+                    ],
+                },
+            });
+
+            days.push({
+                day: startDate.date(),
+                month: startDate.month(),
+                year: startDate.year(),
+                value: kilosSum || 0,
+            });
+
+            startDate = startDate.add(1, 'days');
+        }
+
+        return days;
     }
 }

@@ -2,6 +2,7 @@ import {
     Args,
     Float,
     Mutation,
+    Parent,
     Query,
     ResolveField,
     Resolver,
@@ -14,52 +15,66 @@ import {
     MachineSection,
     MachineUpsertInput,
 } from '../../../../common/dto/entities';
+import { Day } from '../../../../common/dto/entities/dates/day/day';
+import { YearMonth } from '../../../../common/dto/pagination';
 
 @Resolver(() => Machine)
 @Injectable()
 export class MachinesResolver {
-    constructor(private machinesService: MachinesService) {}
+    constructor(private service: MachinesService) {}
 
     @Mutation(() => Machine)
     async upsertMachine(@Args('MachineUpsertInput') input: MachineUpsertInput) {
-        return this.machinesService.upsertMachine(input);
+        return this.service.upsertMachine(input);
     }
 
     @Query(() => Machine)
     async getMachine(@Args('MachineId') id: number) {
-        return this.machinesService.getMachine({ id });
+        return this.service.getMachine({ id });
     }
 
     @Query(() => [Machine])
     async getMachines() {
-        return this.machinesService.getMachines();
+        return this.service.getMachines();
     }
 
     @ResolveField(() => [MachinePart])
     async machine_parts(machine: Machine): Promise<MachinePart[]> {
-        return this.machinesService.getMachineParts({
+        return this.service.getMachineParts({
             machineId: machine.id,
         });
     }
 
     @ResolveField(() => Float, { nullable: false })
     async completion(machine: Machine): Promise<number> {
-        return this.machinesService.getCompletionPercentage({
+        return this.service.getCompletionPercentage({
             machineId: machine.id,
         });
     }
 
     @ResolveField(() => [MachineSection])
     async machine_sections(machine: Machine): Promise<MachineSection[]> {
-        return this.machinesService.getMachineSections({
+        return this.service.getMachineSections({
             machineId: machine.id,
         });
     }
 
     @ResolveField(() => [MachinePart])
     async unassigned_parts(machine: Machine): Promise<MachinePart[]> {
-        return this.machinesService.getMachineUnassignedParts({
+        return this.service.getMachineUnassignedParts({
             machineId: machine.id,
+        });
+    }
+
+    @ResolveField(() => [Day])
+    async month_production(
+        @Parent() machine: Machine,
+        @Args() yearMonth: YearMonth,
+    ): Promise<Day[]> {
+        return this.service.getLastSevenDaysProduction({
+            machineId: machine.id,
+            year: yearMonth.year,
+            month: yearMonth.month,
         });
     }
 }
