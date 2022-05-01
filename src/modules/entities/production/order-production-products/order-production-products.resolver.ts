@@ -1,8 +1,9 @@
-import { Query, Resolver } from '@nestjs/graphql';
+import { Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderProductionProductsService } from './order-production-products.service';
 import { Public } from '../../../auth/decorators/public.decorator';
 import { OrderProductionProduct } from '../../../../common/dto/entities/production/order-production-product.dto';
+import { OrderProduction } from '../../../../common/dto/entities/production/order-production.dto';
 
 @Resolver(() => OrderProductionProduct)
 @Public()
@@ -13,5 +14,14 @@ export class OrderProductionProductsResolver {
     @Query(() => [OrderProductionProduct])
     async getOrderProductionProducts(): Promise<OrderProductionProduct[]> {
         return this.service.getOrderProductionProducts();
+    }
+
+    @ResolveField(() => OrderProduction, { nullable: true })
+    order_production(
+        orderProductionProduct: OrderProductionProduct,
+    ): Promise<OrderProduction | null> {
+        return this.service.getOrderProduction({
+            order_production_id: orderProductionProduct.order_production_id,
+        });
     }
 }

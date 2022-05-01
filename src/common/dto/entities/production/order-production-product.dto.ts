@@ -16,9 +16,6 @@ export class OrderProductionProductBase {
     product_id: number;
 
     @Field({ nullable: false })
-    order_production_id: number;
-
-    @Field({ nullable: false })
     machine_id: number;
 }
 
@@ -32,4 +29,7 @@ export class OrderProductionProductInput extends OrderProductionProductBase {
 export class OrderProductionProduct extends OrderProductionProductBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field({ nullable: false })
+    order_production_id: number;
 }
