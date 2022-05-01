@@ -23,25 +23,6 @@ export class OrderProductionsService {
         });
     }
 
-    async getOrderProductionProducts({
-        order_production_id,
-    }: {
-        order_production_id: number;
-    }): Promise<OrderProductionProduct[]> {
-        return this.prisma.order_production_products.findMany({
-            where: {
-                AND: [
-                    {
-                        order_production_id: order_production_id,
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
-            },
-        });
-    }
-
     async upsertOrderProduction(
         input: OrderProductionInput,
     ): Promise<OrderProduction> {
@@ -88,11 +69,11 @@ export class OrderProductionsService {
         }
 
         for await (const createItem of createSpareTransactions) {
-            console.log(createItem);
             await this.prisma.order_production_products.create({
                 data: {
                     product_id: createItem.product_id,
                     machine_id: createItem.machine_id,
+                    order_production_id: orderProduction.id,
                     kilos: createItem.kilos,
                     active: 1,
                     group_weight: 0,
@@ -119,5 +100,24 @@ export class OrderProductionsService {
         }
 
         return orderProduction;
+    }
+
+    async getOrderProductionProducts({
+        order_production_id,
+    }: {
+        order_production_id: number;
+    }): Promise<OrderProductionProduct[]> {
+        return this.prisma.order_production_products.findMany({
+            where: {
+                AND: [
+                    {
+                        order_production_id: order_production_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
     }
 }
