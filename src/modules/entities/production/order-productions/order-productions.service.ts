@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     OrderProduction,
@@ -23,9 +23,30 @@ export class OrderProductionsService {
         });
     }
 
+    async getOrderProductionProducts({
+        order_production_id,
+    }: {
+        order_production_id: number;
+    }): Promise<OrderProductionProduct[]> {
+        return this.prisma.order_production_products.findMany({
+            where: {
+                AND: [
+                    {
+                        order_production_id: order_production_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
     async upsertOrderProduction(
         input: OrderProductionInput,
     ): Promise<OrderProduction> {
+        await this.validateOrderProduction(input);
+
         const orderProduction = await this.prisma.order_productions.upsert({
             create: {
                 start_date: input.start_date,
@@ -71,12 +92,12 @@ export class OrderProductionsService {
         for await (const createItem of createSpareTransactions) {
             await this.prisma.order_production_products.create({
                 data: {
+                    order_production_id: orderProduction.id,
                     product_id: createItem.product_id,
                     machine_id: createItem.machine_id,
-                    order_production_id: orderProduction.id,
                     kilos: createItem.kilos,
                     active: 1,
-                    group_weight: 0,
+                    group_weight: createItem.group_weight,
                     groups: createItem.groups,
                 },
             });
@@ -89,7 +110,7 @@ export class OrderProductionsService {
                     machine_id: updateItem.machine_id,
                     kilos: updateItem.kilos,
                     active: 1,
-                    group_weight: 0,
+                    group_weight: updateItem.group_weight,
                     groups: updateItem.groups,
                 },
                 where: {
@@ -102,22 +123,23 @@ export class OrderProductionsService {
         return orderProduction;
     }
 
-    async getOrderProductionProducts({
-        order_production_id,
-    }: {
-        order_production_id: number;
-    }): Promise<OrderProductionProduct[]> {
-        return this.prisma.order_production_products.findMany({
-            where: {
-                AND: [
-                    {
-                        order_production_id: order_production_id,
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
-            },
+    async validateOrderProduction(input: OrderProductionInput): Promise<void> {
+        const errors: string[] = [];
+
+        const orderProductionProducts = input.order_production_products;
+
+        orderProductionProducts.forEach((productionProduct) => {
+            const { kilos, groups, group_weight, product_id } =
+                productionProduct;
+            console.log(kilos);
+            console.log(groups * group_weight);
+            if (kilos !== groups * group_weight) {
+                errors.push(`${product_id} kilos incorrectly calculated`);
+            }
         });
+
+        if (errors.length > 0) {
+            throw new BadRequestException(errors);
+        }
     }
 }

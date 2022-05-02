@@ -3,14 +3,14 @@ import { Field, InputType, ObjectType } from '@nestjs/graphql';
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
 export class OrderProductionProductBase {
-    @Field({ nullable: false })
-    groups: number;
+    @Field({ nullable: true })
+    groups: number | null;
 
     @Field({ nullable: false })
     kilos: number;
 
-    @Field({ nullable: false })
-    group_weight: number;
+    @Field({ nullable: true })
+    group_weight: number | null;
 
     @Field({ nullable: false })
     product_id: number;
