@@ -131,8 +131,6 @@ export class OrderProductionsService {
         orderProductionProducts.forEach((productionProduct) => {
             const { kilos, groups, group_weight, product_id } =
                 productionProduct;
-            console.log(kilos);
-            console.log(groups * group_weight);
             if (kilos !== groups * group_weight) {
                 errors.push(`${product_id} kilos incorrectly calculated`);
             }
