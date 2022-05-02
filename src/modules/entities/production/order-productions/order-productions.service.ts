@@ -131,41 +131,61 @@ export class OrderProductionsService {
         const orderProductionProducts = input.order_production_products;
 
         // IsProductGroupCorrectlyCalculated
-        orderProductionProducts.forEach((productionProduct) => {
-            const { kilos, groups, group_weight, product_id } =
-                productionProduct;
-            if (kilos !== groups * group_weight) {
-                errors.push(
-                    `product_id:${product_id} kilos/groups incorrectly calculated`,
-                );
-            }
-        });
+        {
+            orderProductionProducts.forEach((productionProduct) => {
+                const { kilos, groups, group_weight, product_id } =
+                    productionProduct;
+                if (kilos !== groups * group_weight) {
+                    errors.push(
+                        `product_id:${product_id} kilos/groups incorrectly calculated`,
+                    );
+                }
+            });
+        }
 
         // AreProductsAndMachinesUnique
-        let isValid = true;
-        orderProductionProducts.forEach(
-            ({ machine_id: machine_id_1, product_id: product_id_1 }) => {
-                let count = 0;
-                orderProductionProducts.forEach(
-                    ({
-                        machine_id: machine_id_2,
-                        product_id: product_id_2,
-                    }) => {
-                        if (
-                            machine_id_1 === machine_id_2 &&
-                            product_id_1 === product_id_2
-                        ) {
-                            count = count + 1;
-                        }
+        {
+            let isValid = true;
+            orderProductionProducts.forEach(
+                ({ machine_id: machine_id_1, product_id: product_id_1 }) => {
+                    let count = 0;
+                    orderProductionProducts.forEach(
+                        ({
+                            machine_id: machine_id_2,
+                            product_id: product_id_2,
+                        }) => {
+                            if (
+                                machine_id_1 === machine_id_2 &&
+                                product_id_1 === product_id_2
+                            ) {
+                                count = count + 1;
+                            }
+                        },
+                    );
+                    if (count >= 2) {
+                        isValid = false;
+                    }
+                },
+            );
+            if (!isValid) {
+                errors.push(`machine_id and product_id are not unique`);
+            }
+        }
+
+        // DoesMachineBelongToBranch
+        {
+            for await (const { machine_id } of orderProductionProducts) {
+                const machine = await this.prisma.machines.findUnique({
+                    where: {
+                        id: machine_id,
                     },
-                );
-                if (count >= 2) {
-                    isValid = false;
+                });
+                if (machine.branch_id !== input.branch_id) {
+                    errors.push(
+                        `Machine: ${machine_id} does not belong to branch: ${input.branch_id}`,
+                    );
                 }
-            },
-        );
-        if (!isValid) {
-            errors.push(`machine_id and product_id are not unique`);
+            }
         }
 
         if (errors.length > 0) {
