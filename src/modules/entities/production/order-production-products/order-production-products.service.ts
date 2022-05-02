@@ -3,6 +3,7 @@ import { PrismaService } from '../../../../common/services/prisma/prisma.service
 import { getRangesFromYearMonth } from '../../../../common/helpers';
 import { OrderProductionProduct } from '../../../../common/dto/entities/production/order-production-product.dto';
 import { OrderProduction } from '../../../../common/dto/entities/production/order-production.dto';
+import { Machine } from '../../../../common/dto/entities';
 
 @Injectable()
 export class OrderProductionProductsService {
@@ -54,6 +55,20 @@ export class OrderProductionProductsService {
         return this.prisma.order_productions.findUnique({
             where: {
                 id: order_production_id,
+            },
+        });
+    }
+
+    async getMachine({
+        machine_id,
+    }: {
+        machine_id: number | null;
+    }): Promise<Machine | null> {
+        if (!machine_id) return null;
+
+        return this.prisma.machines.findUnique({
+            where: {
+                id: machine_id,
             },
         });
     }

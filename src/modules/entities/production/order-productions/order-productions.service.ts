@@ -50,10 +50,12 @@ export class OrderProductionsService {
         const orderProduction = await this.prisma.order_productions.upsert({
             create: {
                 start_date: input.start_date,
+                branch_id: input.branch_id,
                 waste: 0,
             },
             update: {
                 start_date: input.start_date,
+                branch_id: input.branch_id,
                 waste: 0,
             },
             where: {

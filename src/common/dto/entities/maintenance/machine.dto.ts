@@ -18,6 +18,9 @@ export class MachineUpsertInput extends MachineBase {
 export class Machine extends MachineBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field({ nullable: true })
+    branch_id: number | null;
 }
 
 @ObjectType('MachineDailyProduction')

@@ -4,6 +4,7 @@ import { OrderProductionProductsService } from './order-production-products.serv
 import { Public } from '../../../auth/decorators/public.decorator';
 import { OrderProductionProduct } from '../../../../common/dto/entities/production/order-production-product.dto';
 import { OrderProduction } from '../../../../common/dto/entities/production/order-production.dto';
+import { Machine } from '../../../../common/dto/entities';
 
 @Resolver(() => OrderProductionProduct)
 @Public()
@@ -22,6 +23,15 @@ export class OrderProductionProductsResolver {
     ): Promise<OrderProduction | null> {
         return this.service.getOrderProduction({
             order_production_id: orderProductionProduct.order_production_id,
+        });
+    }
+
+    @ResolveField(() => Machine, { nullable: true })
+    machine(
+        orderProductionProduct: OrderProductionProduct,
+    ): Promise<Machine | null> {
+        return this.service.getMachine({
+            machine_id: orderProductionProduct.machine_id,
         });
     }
 }

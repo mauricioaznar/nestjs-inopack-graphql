@@ -9,6 +9,9 @@ export class OrderProductionBase {
 
     @Field({ nullable: false })
     waste: number;
+
+    @Field({ nullable: true })
+    branch_id: number | null;
 }
 
 @InputType('OrderProductionInput')
