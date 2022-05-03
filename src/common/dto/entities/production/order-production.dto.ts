@@ -1,5 +1,6 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { OrderProductionProductInput } from './order-production-product.dto';
+import { OrderProductionEmployeeInput } from './order-production-employee.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -25,6 +26,12 @@ export class OrderProductionInput extends OrderProductionBase {
     @Field(() => [OrderProductionProductInput])
     order_production_products: Omit<
         OrderProductionProductInput,
+        'order_production_id' | 'id'
+    >[];
+
+    @Field(() => [OrderProductionEmployeeInput])
+    order_production_employees: Omit<
+        OrderProductionEmployeeInput,
         'order_production_id' | 'id'
     >[];
 }
