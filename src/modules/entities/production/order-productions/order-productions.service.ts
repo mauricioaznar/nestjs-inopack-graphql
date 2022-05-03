@@ -188,6 +188,44 @@ export class OrderProductionsService {
             }
         }
 
+        // DoMachinesBelongToOrderProductionType
+        {
+            for await (const { machine_id } of orderProductionProducts) {
+                const machine = await this.prisma.machines.findUnique({
+                    where: {
+                        id: machine_id,
+                    },
+                });
+                if (
+                    machine.order_production_type_id !==
+                    input.order_production_type_id
+                ) {
+                    errors.push(
+                        `Machine: ${machine_id} does not belong to order production id: ${input.order_production_type_id}`,
+                    );
+                }
+            }
+        }
+
+        // DoProductsBelongToOrderProductionType
+        {
+            for await (const { product_id } of orderProductionProducts) {
+                const product = await this.prisma.products.findUnique({
+                    where: {
+                        id: product_id,
+                    },
+                });
+                if (
+                    product.order_production_type_id !==
+                    input.order_production_type_id
+                ) {
+                    errors.push(
+                        `Product: ${product_id} does not belong to order production id: ${input.order_production_type_id}`,
+                    );
+                }
+            }
+        }
+
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }

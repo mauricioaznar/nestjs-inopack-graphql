@@ -12,6 +12,9 @@ export class OrderProductionBase {
 
     @Field({ nullable: true })
     branch_id: number;
+
+    @Field({ nullable: true })
+    order_production_type_id: number;
 }
 
 @InputType('OrderProductionInput')

@@ -21,6 +21,9 @@ export class Machine extends MachineBase {
 
     @Field({ nullable: true })
     branch_id: number | null;
+
+    @Field({ nullable: true })
+    order_production_type_id: number;
 }
 
 @ObjectType('MachineDailyProduction')
