@@ -6,6 +6,7 @@ import {
 } from '../../../../common/dto/entities/production/order-production.dto';
 import { OrderProductionProduct } from '../../../../common/dto/entities/production/order-production-product.dto';
 import { vennDiagram } from '../../../../common/helpers';
+import { OrderProductionEmployee } from '../../../../common/dto/entities/production/order-production-employee.dto';
 
 @Injectable()
 export class OrderProductionsService {
@@ -29,6 +30,25 @@ export class OrderProductionsService {
         order_production_id: number;
     }): Promise<OrderProductionProduct[]> {
         return this.prisma.order_production_products.findMany({
+            where: {
+                AND: [
+                    {
+                        order_production_id: order_production_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
+    async getOrderProductionEmployees({
+        order_production_id,
+    }: {
+        order_production_id: number;
+    }): Promise<OrderProductionEmployee[]> {
+        return this.prisma.order_production_employees.findMany({
             where: {
                 AND: [
                     {

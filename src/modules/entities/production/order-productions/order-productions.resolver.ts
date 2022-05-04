@@ -7,6 +7,7 @@ import {
 } from '../../../../common/dto/entities/production/order-production.dto';
 import { Public } from '../../../auth/decorators/public.decorator';
 import { OrderProductionProduct } from '../../../../common/dto/entities/production/order-production-product.dto';
+import { OrderProductionEmployee } from '../../../../common/dto/entities/production/order-production-employee.dto';
 
 @Resolver(() => OrderProduction)
 @Public()
@@ -31,8 +32,19 @@ export class OrderProductionsResolver {
     }
 
     @ResolveField(() => [OrderProductionProduct])
-    async order_production_products(orderProduction: OrderProduction) {
+    async order_production_products(
+        orderProduction: OrderProduction,
+    ): Promise<OrderProductionProduct[]> {
         return this.service.getOrderProductionProducts({
+            order_production_id: orderProduction.id,
+        });
+    }
+
+    @ResolveField(() => [OrderProductionEmployee])
+    async order_production_employees(
+        orderProduction: OrderProduction,
+    ): Promise<OrderProductionEmployee[]> {
+        return this.service.getOrderProductionEmployees({
             order_production_id: orderProduction.id,
         });
     }
