@@ -83,8 +83,8 @@ export class OrderProductionsService {
             },
         });
 
-        const newItems = input.order_production_products;
-        const oldItems = input.id
+        const newProductItems = input.order_production_products;
+        const oldProductItems = input.id
             ? await this.prisma.order_production_products.findMany({
                   where: {
                       order_production_id: input.id,
@@ -93,16 +93,16 @@ export class OrderProductionsService {
             : [];
 
         const {
-            aMinusB: deleteSpareTransactions,
-            bMinusA: createSpareTransactions,
-            intersection: updateSpareTransactions,
+            aMinusB: deleteProductItems,
+            bMinusA: createProductItems,
+            intersection: updateProductItems,
         } = vennDiagram({
-            a: oldItems,
-            b: newItems,
+            a: oldProductItems,
+            b: newProductItems,
             indexProperties: ['product_id', 'machine_id'],
         });
 
-        for await (const delItem of deleteSpareTransactions) {
+        for await (const delItem of deleteProductItems) {
             await this.prisma.order_production_products.deleteMany({
                 where: {
                     product_id: delItem.product_id,
@@ -111,7 +111,7 @@ export class OrderProductionsService {
             });
         }
 
-        for await (const createItem of createSpareTransactions) {
+        for await (const createItem of createProductItems) {
             await this.prisma.order_production_products.create({
                 data: {
                     order_production_id: orderProduction.id,
@@ -125,7 +125,7 @@ export class OrderProductionsService {
             });
         }
 
-        for await (const updateItem of updateSpareTransactions) {
+        for await (const updateItem of updateProductItems) {
             await this.prisma.order_production_products.updateMany({
                 data: {
                     product_id: updateItem.product_id,
@@ -138,6 +138,55 @@ export class OrderProductionsService {
                 where: {
                     product_id: updateItem.product_id,
                     machine_id: updateItem.machine_id,
+                },
+            });
+        }
+
+        const newEmployeeItems = input.order_production_employees;
+        const oldEmployeeItems = input.id
+            ? await this.prisma.order_production_employees.findMany({
+                  where: {
+                      order_production_id: input.id,
+                  },
+              })
+            : [];
+
+        const {
+            aMinusB: deleteEmployeeItems,
+            bMinusA: createEmployeeItems,
+            intersection: updateEmployeeItems,
+        } = vennDiagram({
+            a: oldEmployeeItems,
+            b: newEmployeeItems,
+            indexProperties: ['employee_id'],
+        });
+
+        for await (const delItem of deleteEmployeeItems) {
+            await this.prisma.order_production_employees.deleteMany({
+                where: {
+                    employee_id: delItem.employee_id,
+                },
+            });
+        }
+
+        for await (const createItem of createEmployeeItems) {
+            await this.prisma.order_production_employees.create({
+                data: {
+                    order_production_id: orderProduction.id,
+                    employee_id: createItem.employee_id,
+                    is_leader: createItem.is_leader,
+                },
+            });
+        }
+
+        for await (const updateItem of updateEmployeeItems) {
+            await this.prisma.order_production_employees.updateMany({
+                data: {
+                    employee_id: updateItem.employee_id,
+                    is_leader: updateItem.is_leader,
+                },
+                where: {
+                    employee_id: updateItem.employee_id,
                 },
             });
         }
@@ -165,7 +214,6 @@ export class OrderProductionsService {
 
         // AreProductsAndMachinesUnique
         {
-            let isValid = true;
             orderProductionProducts.forEach(
                 ({ machine_id: machine_id_1, product_id: product_id_1 }) => {
                     let count = 0;
@@ -183,13 +231,10 @@ export class OrderProductionsService {
                         },
                     );
                     if (count >= 2) {
-                        isValid = false;
+                        errors.push(`machine_id and product_id are not unique`);
                     }
                 },
             );
-            if (!isValid) {
-                errors.push(`machine_id and product_id are not unique`);
-            }
         }
 
         // DoesMachineBelongToBranch
@@ -242,6 +287,97 @@ export class OrderProductionsService {
                     errors.push(
                         `Product: ${product_id} does not belong to order production id: ${input.order_production_type_id}`,
                     );
+                }
+            }
+        }
+
+        const orderProductionEmployees = input.order_production_employees;
+
+        // AreEmployeesUnique
+        {
+            orderProductionEmployees.forEach(
+                ({ employee_id: employee_id_1 }) => {
+                    let count = 0;
+                    orderProductionEmployees.forEach(
+                        ({ employee_id: employee_id_2 }) => {
+                            if (employee_id_1 === employee_id_2) {
+                                count = count + 1;
+                            }
+                        },
+                    );
+                    if (count >= 2) {
+                        errors.push(
+                            `employee_id (${employee_id_1}) are not unique`,
+                        );
+                    }
+                },
+            );
+        }
+
+        // DoEmployeesBelongToBranch
+        {
+            for await (const { employee_id } of orderProductionEmployees) {
+                const employee = await this.prisma.employees.findUnique({
+                    where: {
+                        id: employee_id,
+                    },
+                });
+                if (employee.branch_id !== input.branch_id) {
+                    errors.push(
+                        `Employee (${employee_id}) does not belong to branch (${input.branch_id})`,
+                    );
+                }
+            }
+        }
+
+        // DoEmployeesBelongToOrderProductionType
+        {
+            for await (const { employee_id } of orderProductionEmployees) {
+                const employee = await this.prisma.employees.findUnique({
+                    where: {
+                        id: employee_id,
+                    },
+                });
+                if (
+                    employee.order_production_type_id !==
+                    input.order_production_type_id
+                ) {
+                    errors.push(
+                        `Employee (${employee_id}) does not belong to order production type (${input.order_production_type_id})`,
+                    );
+                }
+            }
+        }
+
+        // DoEmployeesHaveUpStatus
+        {
+            for await (const { employee_id } of orderProductionEmployees) {
+                const employee = await this.prisma.employees.findUnique({
+                    where: {
+                        id: employee_id,
+                    },
+                });
+                if (employee.employee_status_id !== 1) {
+                    errors.push(
+                        `Employee (${employee_id}) doesnt have up status (1)`,
+                    );
+                }
+            }
+        }
+
+        // IsThereOnlyOneEmployeeLeader
+        {
+            for (const { is_leader: is_leader_1 } of orderProductionEmployees) {
+                let count = 0;
+                for (const {
+                    is_leader: is_leader_2,
+                } of orderProductionEmployees) {
+                    if (is_leader_1 === 1 && is_leader_2 === 1) {
+                        count = count + 1;
+                    }
+                }
+                if (count >= 2) {
+                    errors.push(`Only one leader can be selected`);
                 }
             }
         }

@@ -5,6 +5,9 @@ import { Field, InputType, ObjectType } from '@nestjs/graphql';
 export class OrderProductionEmployeeBase {
     @Field({ nullable: false })
     employee_id: number;
+
+    @Field({ nullable: false })
+    is_leader: number;
 }
 
 @InputType('OrderProductionEmployeeInput')

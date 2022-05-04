@@ -5,6 +5,12 @@ import { Field, InputType, ObjectType } from '@nestjs/graphql';
 export class EmployeeBase {
     @Field()
     fullname: string;
+
+    @Field({ nullable: true })
+    employee_status_id: number | null;
+
+    @Field({ nullable: true })
+    order_production_type_id: number | null;
 }
 
 @ObjectType('Employee')
