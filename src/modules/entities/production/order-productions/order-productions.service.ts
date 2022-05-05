@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+    BadRequestException,
+    CACHE_MANAGER,
+    Inject,
+    Injectable,
+} from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     OrderProduction,
@@ -7,10 +12,14 @@ import {
 import { OrderProductionProduct } from '../../../../common/dto/entities/production/order-production-product.dto';
 import { vennDiagram } from '../../../../common/helpers';
 import { OrderProductionEmployee } from '../../../../common/dto/entities/production/order-production-employee.dto';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class OrderProductionsService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    ) {}
 
     async getOrderProduction({
         order_production_id,
@@ -109,6 +118,9 @@ export class OrderProductionsService {
                     machine_id: delItem.machine_id,
                 },
             });
+            await this.cacheManager.del(
+                `product_id_inventory_${delItem.product_id}`,
+            );
         }
 
         for await (const createItem of createProductItems) {
@@ -123,6 +135,9 @@ export class OrderProductionsService {
                     groups: createItem.groups,
                 },
             });
+            await this.cacheManager.del(
+                `product_id_inventory_${createItem.product_id}`,
+            );
         }
 
         for await (const updateItem of updateProductItems) {
@@ -140,6 +155,9 @@ export class OrderProductionsService {
                     machine_id: updateItem.machine_id,
                 },
             });
+            await this.cacheManager.del(
+                `product_id_inventory_${updateItem.product_id}`,
+            );
         }
 
         const newEmployeeItems = input.order_production_employees;

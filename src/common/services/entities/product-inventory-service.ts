@@ -1,16 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductInventory } from '../../dto/entities/production/product-inventory.dto';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class ProductInventoryService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    ) {}
 
     async getProductInventory({
         product_id,
     }: {
         product_id: number;
     }): Promise<ProductInventory | null> {
+        const currentQuantity = await this.cacheManager.get(
+            `product_id_inventory_${product_id}`,
+        );
+
+        console.log(typeof currentQuantity);
+
         const results = await this.prisma.$queryRaw<ProductInventory[]>`
             SELECT 
                 *,
@@ -99,18 +109,24 @@ export class ProductInventoryService {
             },
         });
 
-        return results.length > 0
-            ? {
-                  kilos:
-                      product.order_production_type_id === 1
-                          ? results[0].kilos
-                          : null,
-                  groups:
-                      product.order_production_type_id === 1
-                          ? results[0].groups
-                          : null,
-                  last_update: results[0].last_update,
-              }
-            : null;
+        if (results.length === 0) return null;
+
+        const productInventory: ProductInventory = {
+            kilos:
+                product.order_production_type_id === 1
+                    ? results[0].kilos
+                    : null,
+            groups:
+                product.order_production_type_id === 1
+                    ? results[0].groups
+                    : null,
+            last_update: results[0].last_update,
+        };
+
+        await this.cacheManager.set(
+            `product_id_inventory_${product_id}`,
+            productInventory,
+        );
+        return productInventory;
     }
 }
