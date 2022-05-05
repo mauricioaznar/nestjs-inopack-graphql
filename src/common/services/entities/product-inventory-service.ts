@@ -93,7 +93,24 @@ export class ProductInventoryService {
                 ORDER BY last_update DESC
             ) as cte;
         `;
+        const product = await this.prisma.products.findUnique({
+            where: {
+                id: product_id,
+            },
+        });
 
-        return results.length > 0 ? results[0] : null;
+        return results.length > 0
+            ? {
+                  kilos:
+                      product.order_production_type_id === 1
+                          ? results[0].kilos
+                          : null,
+                  groups:
+                      product.order_production_type_id === 1
+                          ? results[0].groups
+                          : null,
+                  last_update: results[0].last_update,
+              }
+            : null;
     }
 }
