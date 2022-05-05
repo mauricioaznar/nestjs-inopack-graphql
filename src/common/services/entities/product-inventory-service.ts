@@ -15,11 +15,10 @@ export class ProductInventoryService {
     }: {
         product_id: number;
     }): Promise<ProductInventory | null> {
-        const currentQuantity = await this.cacheManager.get(
-            `product_id_inventory_${product_id}`,
-        );
+        const cachedProductInventory: ProductInventory =
+            await this.cacheManager.get(`product_id_inventory_${product_id}`);
 
-        console.log(typeof currentQuantity);
+        if (!!cachedProductInventory) return cachedProductInventory;
 
         const results = await this.prisma.$queryRaw<ProductInventory[]>`
             SELECT 
