@@ -2,10 +2,15 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { Product, ProductUpsertInput } from '../../../../common/dto/entities';
 import { isEmpty } from 'class-validator';
+import { ProductInventoryService } from '../../../../common/services/entities/product-inventory-service';
+import { ProductInventory } from '../../../../common/dto/entities/production/product-inventory.dto';
 
 @Injectable()
 export class ProductsService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private productInventoryService: ProductInventoryService,
+    ) {}
 
     async getProduct({
         product_id,
@@ -22,7 +27,21 @@ export class ProductsService {
     }
 
     async getProducts(): Promise<Product[]> {
-        return this.prisma.products.findMany();
+        return this.prisma.products.findMany({
+            where: {
+                active: 1,
+            },
+        });
+    }
+
+    async getProductInventory({
+        product_id,
+    }: {
+        product_id: number;
+    }): Promise<ProductInventory> {
+        return this.productInventoryService.getProductInventory({
+            product_id: product_id,
+        });
     }
 
     async upsertInput(input: ProductUpsertInput): Promise<Product> {
