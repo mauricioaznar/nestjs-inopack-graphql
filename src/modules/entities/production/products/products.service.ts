@@ -30,6 +30,7 @@ export class ProductsService {
         return this.prisma.products.findMany({
             where: {
                 active: 1,
+                order_production_type_id: 2,
             },
         });
     }
