@@ -116,6 +116,7 @@ export class OrderProductionsService {
                 where: {
                     product_id: delItem.product_id,
                     machine_id: delItem.machine_id,
+                    order_production_id: orderProduction.id,
                 },
             });
             await this.cacheManager.del(
@@ -153,6 +154,7 @@ export class OrderProductionsService {
                 where: {
                     product_id: updateItem.product_id,
                     machine_id: updateItem.machine_id,
+                    order_production_id: orderProduction.id,
                 },
             });
             await this.cacheManager.del(
@@ -183,6 +185,7 @@ export class OrderProductionsService {
             await this.prisma.order_production_employees.deleteMany({
                 where: {
                     employee_id: delItem.employee_id,
+                    order_production_id: orderProduction.id,
                 },
             });
         }
@@ -205,6 +208,7 @@ export class OrderProductionsService {
                 },
                 where: {
                     employee_id: updateItem.employee_id,
+                    order_production_id: orderProduction.id,
                 },
             });
         }

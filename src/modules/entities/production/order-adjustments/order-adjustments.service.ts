@@ -107,9 +107,10 @@ export class OrderAdjustmentsService {
         });
 
         for await (const delItem of deleteProductItems) {
-            await this.prisma.order_production_products.deleteMany({
+            await this.prisma.order_adjustment_products.deleteMany({
                 where: {
                     product_id: delItem.product_id,
+                    order_adjustment_id: orderAdjustment.id,
                 },
             });
             await this.cacheManager.del(
@@ -144,6 +145,7 @@ export class OrderAdjustmentsService {
                 },
                 where: {
                     product_id: updateItem.product_id,
+                    order_adjustment_id: orderAdjustment.id,
                 },
             });
             await this.cacheManager.del(

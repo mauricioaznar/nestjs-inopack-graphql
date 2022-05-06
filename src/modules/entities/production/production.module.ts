@@ -9,6 +9,7 @@ import { EmployeesModule } from './employees/employees.module';
 import { OrderProductionEmployeesModule } from './order-production-employees/order-production-employees.module';
 import { OrderAdjustmentsModule } from './order-adjustments/order-adjustments.module';
 import { OrderAdjustmentTypesModule } from './order-adjustment-types/order-adjustment-types.module';
+import { OrderAdjustmentProductsModule } from './order-adjustment-products/order-adjustment-products.module';
 
 @Module({
     imports: [
@@ -18,6 +19,7 @@ import { OrderAdjustmentTypesModule } from './order-adjustment-types/order-adjus
         OrderProductionEmployeesModule,
         OrderProductionTypesModule,
         OrderAdjustmentsModule,
+        OrderAdjustmentProductsModule,
         OrderAdjustmentTypesModule,
         PackingsModule,
         ProductTypesModule,
