@@ -159,7 +159,24 @@ export class OrderAdjustmentsService {
     async validateOrderAdjustment(input: OrderAdjustmentInput): Promise<void> {
         const errors: string[] = [];
 
-        const OrderAdjustmentProducts = input.order_adjustment_products;
+        const orderAdjustmentProducts = input.order_adjustment_products;
+
+        // AreProductsUnique
+        {
+            orderAdjustmentProducts.forEach(({ product_id: product_id_1 }) => {
+                let count = 0;
+                orderAdjustmentProducts.forEach(
+                    ({ product_id: product_id_2 }) => {
+                        if (product_id_1 === product_id_2) {
+                            count = count + 1;
+                        }
+                    },
+                );
+                if (count >= 2) {
+                    errors.push(`product_id (${product_id_1}) are not unique`);
+                }
+            });
+        }
 
         if (errors.length > 0) {
             throw new BadRequestException(errors);

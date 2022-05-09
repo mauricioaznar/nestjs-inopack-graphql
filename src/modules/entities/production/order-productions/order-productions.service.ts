@@ -226,9 +226,11 @@ export class OrderProductionsService {
             orderProductionProducts.forEach((productionProduct) => {
                 const { kilos, groups, group_weight, product_id } =
                     productionProduct;
-                if (kilos !== groups * group_weight) {
+                if (group_weight > 0 && kilos !== groups * group_weight) {
                     errors.push(
-                        `product_id:${product_id} kilos/groups incorrectly calculated`,
+                        `product_id:${product_id} kilos/groups incorrectly calculated (${kilos} != ${
+                            group_weight * groups
+                        })`,
                     );
                 }
             });
