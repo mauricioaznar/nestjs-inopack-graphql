@@ -22,3 +22,7 @@ export * from './maintenance/spare-transactions.dto';
 export * from './production/product.dto';
 export * from './production/order-production-type.dto';
 export * from './production/packing.dto';
+
+// sales
+
+export * from './sales/clients.dto';
