@@ -10,6 +10,8 @@ import { OrderProductionEmployeesModule } from './order-production-employees/ord
 import { OrderAdjustmentsModule } from './order-adjustments/order-adjustments.module';
 import { OrderAdjustmentTypesModule } from './order-adjustment-types/order-adjustment-types.module';
 import { OrderAdjustmentProductsModule } from './order-adjustment-products/order-adjustment-products.module';
+import { EmployeeTypesModule } from './employee-types/employee-types.module';
+import { EmployeeStatusesModule } from './employee-status/employee-statuses.module';
 
 @Module({
     imports: [
@@ -24,6 +26,8 @@ import { OrderAdjustmentProductsModule } from './order-adjustment-products/order
         PackingsModule,
         ProductTypesModule,
         EmployeesModule,
+        EmployeeTypesModule,
+        EmployeeStatusesModule,
     ],
 })
 export class ProductionModule {}

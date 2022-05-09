@@ -1,7 +1,10 @@
-import { Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
-import { Employee } from '../../../../common/dto/entities/production/employee.dto';
+import {
+    Employee,
+    EmployeeUpsertInput,
+} from '../../../../common/dto/entities/production/employee.dto';
 
 @Resolver(() => Employee)
 // @Role('super')
@@ -12,5 +15,21 @@ export class EmployeesResolver {
     @Query(() => [Employee])
     async getEmployees(): Promise<Employee[]> {
         return this.service.getEmployees();
+    }
+
+    @Query(() => Employee, { nullable: true })
+    async getEmployee(
+        @Args('EmployeeId') employeeId: number,
+    ): Promise<Employee | null> {
+        return this.service.getEmployee({
+            employeeId: employeeId,
+        });
+    }
+
+    @Mutation(() => Employee)
+    async upsertEmployee(
+        @Args('EmployeeUpsertInput') input: EmployeeUpsertInput,
+    ): Promise<Employee> {
+        return this.service.upsertEmployee(input);
     }
 }

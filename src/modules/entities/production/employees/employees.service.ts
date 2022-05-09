@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
-import { Employee } from '../../../../common/dto/entities/production/employee.dto';
+import {
+    Employee,
+    EmployeeUpsertInput,
+} from '../../../../common/dto/entities/production/employee.dto';
 
 @Injectable()
 export class EmployeesService {
@@ -8,5 +11,43 @@ export class EmployeesService {
 
     async getEmployees(): Promise<Employee[]> {
         return this.prisma.employees.findMany();
+    }
+
+    async getEmployee({
+        employeeId,
+    }: {
+        employeeId: number;
+    }): Promise<Employee | null> {
+        if (!employeeId) return null;
+
+        return this.prisma.employees.findUnique({
+            where: {
+                id: employeeId,
+            },
+        });
+    }
+
+    async upsertEmployee(input: EmployeeUpsertInput): Promise<Employee> {
+        return this.prisma.employees.upsert({
+            create: {
+                first_name: input.first_name,
+                last_name: input.last_name,
+                fullname: `${input.first_name} ${input.last_name}`,
+                employee_status_id: input.employee_status_id,
+                branch_id: input.branch_id,
+                order_production_type_id: input.order_production_type_id,
+            },
+            update: {
+                first_name: input.first_name,
+                last_name: input.last_name,
+                fullname: `${input.first_name} ${input.last_name}`,
+                employee_status_id: input.employee_status_id,
+                branch_id: input.branch_id,
+                order_production_type_id: input.order_production_type_id,
+            },
+            where: {
+                id: input.id || 0,
+            },
+        });
     }
 }
