@@ -25,4 +25,5 @@ export * from './production/packing.dto';
 
 // sales
 
-export * from './sales/clients.dto';
+export * from './sales/client.dto';
+export * from './sales/client-contact.dto';
