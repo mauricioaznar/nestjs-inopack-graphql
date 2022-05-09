@@ -1,5 +1,4 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
-import { ProductBase } from './product.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })

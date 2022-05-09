@@ -1,5 +1,4 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
-import { IsDateString, IsString, Min, MinLength } from 'class-validator';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
