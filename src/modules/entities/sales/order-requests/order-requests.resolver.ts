@@ -1,9 +1,10 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderRequestsService } from './order-requests.service';
 import {
     OrderRequest,
     OrderRequestInput,
+    OrderRequestProduct,
 } from '../../../../common/dto/entities';
 
 @Resolver(() => OrderRequest)
@@ -45,5 +46,14 @@ export class OrderRequestsResolver {
         });
 
         return result;
+    }
+
+    @ResolveField(() => [OrderRequestProduct])
+    async order_request_products(
+        orderRequest: OrderRequest,
+    ): Promise<OrderRequestProduct[]> {
+        return this.service.getOrderRequestProducts({
+            order_request_id: orderRequest.id,
+        });
     }
 }

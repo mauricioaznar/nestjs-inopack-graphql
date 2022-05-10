@@ -29,3 +29,4 @@ export * from './sales/client.dto';
 export * from './sales/client-contact.dto';
 export * from './sales/order-request-status.dto';
 export * from './sales/order-request.dto';
+export * from './sales/order-request-product.dto';
