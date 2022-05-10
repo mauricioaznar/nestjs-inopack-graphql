@@ -309,7 +309,7 @@ model order_requests {
   client_id               Int?                     @db.UnsignedInt
   client_contact_id       Int?                     @db.UnsignedInt
   order_request_status_id Int?                     @db.UnsignedInt
-  estimated_delivery_date DateTime                 @db.Date
+  estimated_delivery_date DateTime?                @db.Date
   priority                Float
   client_contacts         client_contacts?         @relation(fields: [client_contact_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_client_contact_id_foreign")
   clients                 clients?                 @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_client_id_foreign")

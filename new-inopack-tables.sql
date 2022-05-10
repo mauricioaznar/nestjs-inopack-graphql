@@ -120,4 +120,8 @@ AUTO_INCREMENT = 1
 DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
+
+SET SQL_MODE='ALLOW_INVALID_DATES';
+ALTER TABLE order_requests MODIFY COLUMN estimated_delivery_date date NULL;
+update order_requests set order_requests.estimated_delivery_date = null where order_requests.estimated_delivery_date = '0000-00-00' and id > 0;
             

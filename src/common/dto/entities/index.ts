@@ -27,3 +27,5 @@ export * from './production/packing.dto';
 
 export * from './sales/client.dto';
 export * from './sales/client-contact.dto';
+export * from './sales/order-request-status.dto';
+export * from './sales/order-request.dto';
