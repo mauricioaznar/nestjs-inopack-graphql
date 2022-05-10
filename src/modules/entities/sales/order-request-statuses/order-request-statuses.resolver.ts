@@ -1,4 +1,4 @@
-import { Query, Resolver } from '@nestjs/graphql';
+import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderRequestStatusesService } from './order-request-statuses.service';
 import { OrderRequestStatus } from '../../../../common/dto/entities';

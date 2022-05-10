@@ -32,4 +32,18 @@ export class OrderRequestsResolver {
     ): Promise<OrderRequest> {
         return this.service.upsertOrderRequest(input);
     }
+
+    @Query(() => Boolean)
+    async isOrderRequestCodeOccupied(
+        @Args('OrderCode') orderCode: number,
+        @Args('OrderRequestId', { nullable: true })
+        orderRequestId: number | null,
+    ): Promise<boolean> {
+        const result = await this.service.isOrderRequestCodeOccupied({
+            order_request_id: orderRequestId,
+            order_code: orderCode,
+        });
+
+        return result;
+    }
 }

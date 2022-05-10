@@ -5,6 +5,18 @@ import { Field, InputType, ObjectType } from '@nestjs/graphql';
 export class OrderRequestBase {
     @Field({ nullable: true })
     date: Date | null;
+
+    @Field()
+    order_code: number;
+
+    @Field({ nullable: true })
+    estimated_delivery_date: Date | null;
+
+    @Field()
+    client_id: number;
+
+    @Field()
+    order_request_status_id: number;
 }
 
 @InputType('OrderRequestInput')
