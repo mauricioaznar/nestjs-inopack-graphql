@@ -6,46 +6,46 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
-    OrderRequest,
-    OrderRequestInput,
-    OrderRequestProduct,
+    OrderSale,
+    OrderSaleInput,
+    OrderSaleProduct,
 } from '../../../../common/dto/entities';
 import { vennDiagram } from '../../../../common/helpers';
 import { Cache } from 'cache-manager';
 
 @Injectable()
-export class OrderRequestsService {
+export class OrderSalesService {
     constructor(
         private prisma: PrismaService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) {}
 
-    async getOrderRequests(): Promise<OrderRequest[]> {
-        return this.prisma.order_requests.findMany();
+    async getOrderSales(): Promise<OrderSale[]> {
+        return this.prisma.order_sales.findMany();
     }
 
-    async getOrderRequest({
-        orderRequestId,
+    async getOrderSale({
+        orderSaleId,
     }: {
-        orderRequestId: number;
-    }): Promise<OrderRequest | null> {
-        if (!orderRequestId) return null;
+        orderSaleId: number;
+    }): Promise<OrderSale | null> {
+        if (!orderSaleId) return null;
 
-        return this.prisma.order_requests.findUnique({
+        return this.prisma.order_sales.findUnique({
             where: {
-                id: orderRequestId,
+                id: orderSaleId,
             },
         });
     }
 
-    async isOrderRequestCodeOccupied({
+    async isOrderSaleCodeOccupied({
         order_code,
-        order_request_id,
+        order_sale_id,
     }: {
-        order_request_id: number | null;
+        order_sale_id: number | null;
         order_code: number;
     }): Promise<boolean> {
-        const orderRequest = await this.prisma.order_requests.findFirst({
+        const orderSale = await this.prisma.order_sales.findFirst({
             where: {
                 AND: [
                     {
@@ -58,21 +58,21 @@ export class OrderRequestsService {
             },
         });
 
-        return order_request_id >= 0 && orderRequest
-            ? orderRequest.id !== order_request_id
-            : !!orderRequest;
+        return order_sale_id >= 0 && orderSale
+            ? orderSale.id !== order_sale_id
+            : !!orderSale;
     }
 
-    async getOrderRequestProducts({
-        order_request_id,
+    async getOrderSaleProducts({
+        order_sale_id,
     }: {
-        order_request_id: number;
-    }): Promise<OrderRequestProduct[]> {
-        return this.prisma.order_request_products.findMany({
+        order_sale_id: number;
+    }): Promise<OrderSaleProduct[]> {
+        return this.prisma.order_sale_products.findMany({
             where: {
                 AND: [
                     {
-                        order_request_id: order_request_id,
+                        order_sale_id: order_sale_id,
                     },
                     {
                         active: 1,
@@ -82,36 +82,30 @@ export class OrderRequestsService {
         });
     }
 
-    async upsertOrderRequest(input: OrderRequestInput): Promise<OrderRequest> {
-        await this.validateOrderRequest(input);
+    async upsertOrderSale(input: OrderSaleInput): Promise<OrderSale> {
+        await this.validateOrderSale(input);
 
-        const orderRequest = await this.prisma.order_requests.upsert({
+        const orderSale = await this.prisma.order_sales.upsert({
             create: {
                 date: input.date,
                 order_code: input.order_code,
-                estimated_delivery_date: input.estimated_delivery_date,
-                client_id: input.client_id,
-                order_request_status_id: input.order_request_status_id,
-                priority: 0,
+                order_sale_status_id: input.order_sale_status_id,
             },
             update: {
                 date: input.date,
                 order_code: input.order_code,
-                estimated_delivery_date: input.estimated_delivery_date,
-                client_id: input.client_id,
-                order_request_status_id: input.order_request_status_id,
-                priority: 0,
+                order_sale_status_id: input.order_sale_status_id,
             },
             where: {
                 id: input.id || 0,
             },
         });
 
-        const newProductItems = input.order_request_products;
+        const newProductItems = input.order_sale_products;
         const oldProductItems = input.id
-            ? await this.prisma.order_request_products.findMany({
+            ? await this.prisma.order_sale_products.findMany({
                   where: {
-                      order_request_id: input.id,
+                      order_sale_id: input.id,
                   },
               })
             : [];
@@ -127,7 +121,7 @@ export class OrderRequestsService {
         });
 
         for await (const delItem of deleteProductItems) {
-            await this.prisma.order_request_products.deleteMany({
+            await this.prisma.order_sale_products.deleteMany({
                 where: {
                     id: delItem.id,
                 },
@@ -138,10 +132,10 @@ export class OrderRequestsService {
         }
 
         for await (const createItem of createProductItems) {
-            await this.prisma.order_request_products.create({
+            await this.prisma.order_sale_products.create({
                 data: {
                     kilo_price: 0,
-                    order_request_id: orderRequest.id,
+                    order_sale_id: orderSale.id,
                     product_id: createItem.product_id,
                     kilos: createItem.kilos,
                     active: 1,
@@ -155,7 +149,7 @@ export class OrderRequestsService {
         }
 
         for await (const updateItem of updateProductItems) {
-            await this.prisma.order_request_products.updateMany({
+            await this.prisma.order_sale_products.updateMany({
                 data: {
                     product_id: updateItem.product_id,
                     kilos: updateItem.kilos,
@@ -172,19 +166,19 @@ export class OrderRequestsService {
             );
         }
 
-        return orderRequest;
+        return orderSale;
     }
 
-    async validateOrderRequest(input: OrderRequestInput): Promise<void> {
+    async validateOrderSale(input: OrderSaleInput): Promise<void> {
         const errors: string[] = [];
 
-        const orderRequestProducts = input.order_request_products;
+        const orderSaleProducts = input.order_sale_products;
 
         // AreProductsUnique
         {
-            orderRequestProducts.forEach(({ product_id: product_id_1 }) => {
+            orderSaleProducts.forEach(({ product_id: product_id_1 }) => {
                 let count = 0;
-                orderRequestProducts.forEach(({ product_id: product_id_2 }) => {
+                orderSaleProducts.forEach(({ product_id: product_id_2 }) => {
                     if (product_id_1 === product_id_2) {
                         count = count + 1;
                     }
