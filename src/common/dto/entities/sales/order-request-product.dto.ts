@@ -9,6 +9,9 @@ export class OrderRequestProductBase {
     @Field({ nullable: false })
     kilos: number;
 
+    @Field({ nullable: false })
+    kilo_price: number;
+
     @Field({ nullable: true })
     group_weight: number | null;
 

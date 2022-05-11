@@ -134,7 +134,7 @@ export class OrderSalesService {
         for await (const createItem of createProductItems) {
             await this.prisma.order_sale_products.create({
                 data: {
-                    kilo_price: 0,
+                    kilo_price: createItem.kilo_price,
                     order_sale_id: orderSale.id,
                     product_id: createItem.product_id,
                     kilos: createItem.kilos,
@@ -156,6 +156,7 @@ export class OrderSalesService {
                     active: 1,
                     group_weight: updateItem.group_weight,
                     groups: updateItem.groups,
+                    kilo_price: updateItem.kilo_price,
                 },
                 where: {
                     id: updateItem.id,
