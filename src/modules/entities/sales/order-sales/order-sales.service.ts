@@ -82,6 +82,29 @@ export class OrderSalesService {
         });
     }
 
+    async getOrderSaleTotal({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<number> {
+        const orderSaleTotals = await this.prisma.order_sale_products.findMany({
+            where: {
+                AND: [
+                    {
+                        order_sale_id: order_sale_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+
+        return orderSaleTotals.reduce((acc, orderSale) => {
+            return acc + orderSale.kilo_price * orderSale.kilos;
+        }, 0);
+    }
+
     async upsertOrderSale(input: OrderSaleInput): Promise<OrderSale> {
         await this.validateOrderSale(input);
 

@@ -82,6 +82,30 @@ export class OrderRequestsService {
         });
     }
 
+    async getOrderRequestTotal({
+        order_request_id,
+    }: {
+        order_request_id: number;
+    }): Promise<number> {
+        const orderRequestProducts =
+            await this.prisma.order_request_products.findMany({
+                where: {
+                    AND: [
+                        {
+                            order_request_id: order_request_id,
+                        },
+                        {
+                            active: 1,
+                        },
+                    ],
+                },
+            });
+
+        return orderRequestProducts.reduce((acc, orderRequest) => {
+            return acc + orderRequest.kilo_price * orderRequest.kilos;
+        }, 0);
+    }
+
     async upsertOrderRequest(input: OrderRequestInput): Promise<OrderRequest> {
         await this.validateOrderRequest(input);
 

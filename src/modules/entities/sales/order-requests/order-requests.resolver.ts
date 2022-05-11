@@ -1,10 +1,19 @@
-import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import {
+    Args,
+    Float,
+    Mutation,
+    Parent,
+    Query,
+    ResolveField,
+    Resolver,
+} from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderRequestsService } from './order-requests.service';
 import {
     OrderRequest,
     OrderRequestInput,
     OrderRequestProduct,
+    OrderSale,
 } from '../../../../common/dto/entities';
 
 @Resolver(() => OrderRequest)
@@ -53,6 +62,13 @@ export class OrderRequestsResolver {
         orderRequest: OrderRequest,
     ): Promise<OrderRequestProduct[]> {
         return this.service.getOrderRequestProducts({
+            order_request_id: orderRequest.id,
+        });
+    }
+
+    @ResolveField(() => Float)
+    async total(@Parent() orderRequest: OrderRequest): Promise<number> {
+        return this.service.getOrderRequestTotal({
             order_request_id: orderRequest.id,
         });
     }

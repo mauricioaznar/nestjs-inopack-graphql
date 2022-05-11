@@ -1,4 +1,12 @@
-import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import {
+    Args,
+    Float,
+    Mutation,
+    Parent,
+    Query,
+    ResolveField,
+    Resolver,
+} from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderSalesService } from './order-sales.service';
 import {
@@ -53,6 +61,13 @@ export class OrderSalesResolver {
         orderSale: OrderSale,
     ): Promise<OrderSaleProduct[]> {
         return this.service.getOrderSaleProducts({
+            order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => Float)
+    async total(@Parent() orderSale: OrderSale): Promise<number> {
+        return this.service.getOrderSaleTotal({
             order_sale_id: orderSale.id,
         });
     }
