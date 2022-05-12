@@ -67,8 +67,10 @@ export class OrderRequestsResolver {
     }
 
     @ResolveField(() => Float)
-    async total(@Parent() orderRequest: OrderRequest): Promise<number> {
-        return this.service.getOrderRequestTotal({
+    async products_total(
+        @Parent() orderRequest: OrderRequest,
+    ): Promise<number> {
+        return this.service.getOrderRequestProductsTotal({
             order_request_id: orderRequest.id,
         });
     }

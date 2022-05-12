@@ -82,7 +82,7 @@ export class OrderRequestsService {
         });
     }
 
-    async getOrderRequestTotal({
+    async getOrderRequestProductsTotal({
         order_request_id,
     }: {
         order_request_id: number;

@@ -102,26 +102,38 @@ export class OrderSaleService {
         });
     }
 
-    async getOrderSaleTotal({
+    async getOrderSaleProductsTotal({
         order_sale_id,
     }: {
         order_sale_id: number;
     }): Promise<number> {
-        const orderSaleTotals = await this.prisma.order_sale_products.findMany({
+        const orderSaleProducts =
+            await this.prisma.order_sale_products.findMany({
+                where: {
+                    AND: [
+                        {
+                            order_sale_id: order_sale_id,
+                        },
+                        {
+                            active: 1,
+                        },
+                    ],
+                },
+            });
+
+        const orderSale = await this.prisma.order_sales.findUnique({
             where: {
-                AND: [
-                    {
-                        order_sale_id: order_sale_id,
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
+                id: order_sale_id,
             },
         });
 
-        return orderSaleTotals.reduce((acc, orderSale) => {
-            return acc + orderSale.kilo_price * orderSale.kilos;
+        return orderSaleProducts.reduce((acc, product) => {
+            return (
+                acc +
+                product.kilo_price *
+                    product.kilos *
+                    (orderSale.order_sale_receipt_type_id === 2 ? 1.16 : 1)
+            );
         }, 0);
     }
 
