@@ -8,13 +8,14 @@ import { PrismaService } from '../../../../common/services/prisma/prisma.service
 import {
     OrderSale,
     OrderSaleInput,
+    OrderSalePayment,
     OrderSaleProduct,
 } from '../../../../common/dto/entities';
 import { vennDiagram } from '../../../../common/helpers';
 import { Cache } from 'cache-manager';
 
 @Injectable()
-export class OrderSalesService {
+export class OrderSaleService {
     constructor(
         private prisma: PrismaService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -69,6 +70,25 @@ export class OrderSalesService {
         order_sale_id: number;
     }): Promise<OrderSaleProduct[]> {
         return this.prisma.order_sale_products.findMany({
+            where: {
+                AND: [
+                    {
+                        order_sale_id: order_sale_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
+    async getOrderSalePayments({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<OrderSalePayment[]> {
+        return this.prisma.order_sale_payments.findMany({
             where: {
                 AND: [
                     {

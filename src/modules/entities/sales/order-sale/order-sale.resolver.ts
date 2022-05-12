@@ -8,18 +8,20 @@ import {
     Resolver,
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
-import { OrderSalesService } from './order-sales.service';
+import { OrderSaleService } from './order-sale.service';
 import {
     OrderSale,
+    OrderSaleCollectionStatus,
     OrderSaleInput,
+    OrderSalePayment,
     OrderSaleProduct,
 } from '../../../../common/dto/entities';
 
 @Resolver(() => OrderSale)
 // @Role('super')
 @Injectable()
-export class OrderSalesResolver {
-    constructor(private service: OrderSalesService) {}
+export class OrderSaleResolver {
+    constructor(private service: OrderSaleService) {}
 
     @Query(() => OrderSale, { nullable: true })
     async getOrderSale(
@@ -61,6 +63,15 @@ export class OrderSalesResolver {
         orderSale: OrderSale,
     ): Promise<OrderSaleProduct[]> {
         return this.service.getOrderSaleProducts({
+            order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => [OrderSalePayment])
+    async order_sale_payments(
+        orderSale: OrderSale,
+    ): Promise<OrderSalePayment[]> {
+        return this.service.getOrderSalePayments({
             order_sale_id: orderSale.id,
         });
     }

@@ -34,3 +34,5 @@ export * from './sales/order-sale.dto';
 export * from './sales/order-sale-receipt-type.dto';
 export * from './sales/order-sale-status.dto';
 export * from './sales/order-sale-product.dto';
+export * from './sales/order-sale-payment.dto';
+export * from './sales/order-sale-collection-status.dto';
