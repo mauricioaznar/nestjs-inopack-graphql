@@ -3,7 +3,7 @@ import { PrismaService } from '../../../../common/services/prisma/prisma.service
 import { OrderSaleReceiptType } from '../../../../common/dto/entities';
 
 @Injectable()
-export class OrderSaleReceiptTypesService {
+export class OrderSaleReceiptTypeService {
     constructor(private prisma: PrismaService) {}
 
     async getOrderSaleReceiptTypes(): Promise<OrderSaleReceiptType[]> {

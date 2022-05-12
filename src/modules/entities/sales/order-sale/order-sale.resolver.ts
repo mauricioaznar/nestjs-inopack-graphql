@@ -82,4 +82,18 @@ export class OrderSaleResolver {
             order_sale_id: orderSale.id,
         });
     }
+
+    @ResolveField(() => Float)
+    async tax_total(@Parent() orderSale: OrderSale): Promise<number> {
+        return this.service.getOrderSaleTaxTotal({
+            order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => Float)
+    async payments_total(@Parent() orderSale: OrderSale): Promise<number> {
+        return this.service.getOrderSalePaymentsTotal({
+            order_sale_id: orderSale.id,
+        });
+    }
 }

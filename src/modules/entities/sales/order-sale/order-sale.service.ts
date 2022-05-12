@@ -125,6 +125,64 @@ export class OrderSaleService {
         }, 0);
     }
 
+    async getOrderSaleTaxTotal({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<number> {
+        const orderSaleProducts =
+            await this.prisma.order_sale_products.findMany({
+                where: {
+                    AND: [
+                        {
+                            order_sale_id: order_sale_id,
+                        },
+                        {
+                            active: 1,
+                        },
+                    ],
+                },
+            });
+
+        const orderSale = await this.prisma.order_sales.findUnique({
+            where: {
+                id: order_sale_id,
+            },
+        });
+
+        return orderSaleProducts.reduce((acc, product) => {
+            return (
+                acc +
+                product.kilo_price *
+                    product.kilos *
+                    (orderSale.order_sale_receipt_type_id === 2 ? 0.16 : 0)
+            );
+        }, 0);
+    }
+
+    async getOrderSalePaymentsTotal({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<number> {
+        const orderSaleTotals = await this.prisma.order_sale_payments.findMany({
+            where: {
+                AND: [
+                    {
+                        order_sale_id: order_sale_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+
+        return orderSaleTotals.reduce((acc, orderSale) => {
+            return acc + orderSale.amount;
+        }, 0);
+    }
+
     async upsertOrderSale(input: OrderSaleInput): Promise<OrderSale> {
         await this.validateOrderSale(input);
 
@@ -208,6 +266,59 @@ export class OrderSaleService {
             await this.cacheManager.del(
                 `product_id_inventory_${updateItem.product_id}`,
             );
+        }
+
+        const newPaymentItems = input.order_sale_payments;
+        const oldPaymentItems = input.id
+            ? await this.prisma.order_sale_payments.findMany({
+                  where: {
+                      order_sale_id: input.id,
+                  },
+              })
+            : [];
+
+        const {
+            aMinusB: deletePaymentItems,
+            bMinusA: createPaymentItems,
+            intersection: updatePaymentItems,
+        } = vennDiagram({
+            a: oldPaymentItems,
+            b: newPaymentItems,
+            indexProperties: ['id'],
+        });
+
+        for await (const delItem of deletePaymentItems) {
+            await this.prisma.order_sale_payments.delete({
+                where: {
+                    id: delItem.id,
+                },
+            });
+        }
+
+        for await (const createItem of createPaymentItems) {
+            await this.prisma.order_sale_payments.create({
+                data: {
+                    amount: createItem.amount,
+                    order_sale_collection_status_id:
+                        orderSale.order_sale_collection_status_id,
+                    date_paid: createItem.date_paid,
+                    order_sale_id: orderSale.id,
+                },
+            });
+        }
+
+        for await (const updateItem of updatePaymentItems) {
+            await this.prisma.order_sale_payments.updateMany({
+                data: {
+                    amount: updateItem.amount,
+                    order_sale_collection_status_id:
+                        updateItem.order_sale_collection_status_id,
+                    date_paid: updateItem.date_paid,
+                },
+                where: {
+                    id: updateItem.id,
+                },
+            });
         }
 
         return orderSale;

@@ -1,5 +1,10 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { OrderSaleProductInput } from './order-sale-product.dto';
+import { OrderRequestProductInput } from './order-request-product.dto';
+import {
+    OrderSalePayment,
+    OrderSalePaymentInput,
+} from './order-sale-payment.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -24,6 +29,9 @@ export class OrderSaleInput extends OrderSaleBase {
 
     @Field(() => [OrderSaleProductInput])
     order_sale_products: OrderSaleProductInput[];
+
+    @Field(() => [OrderSalePaymentInput])
+    order_sale_payments: OrderSalePaymentInput[];
 }
 
 @ObjectType('OrderSale')
