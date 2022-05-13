@@ -6,12 +6,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
+    GetOrderRequestsArgs,
     OrderRequest,
     OrderRequestInput,
     OrderRequestProduct,
 } from '../../../../common/dto/entities';
 import { vennDiagram } from '../../../../common/helpers';
 import { Cache } from 'cache-manager';
+import { Args } from '@nestjs/graphql';
 
 @Injectable()
 export class OrderRequestsService {
@@ -20,8 +22,22 @@ export class OrderRequestsService {
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) {}
 
-    async getOrderRequests(): Promise<OrderRequest[]> {
-        return this.prisma.order_requests.findMany();
+    async getOrderRequests({
+        order_request_status_id,
+    }: GetOrderRequestsArgs): Promise<OrderRequest[]> {
+        return this.prisma.order_requests.findMany({
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        order_request_status_id:
+                            order_request_status_id || undefined,
+                    },
+                ],
+            },
+        });
     }
 
     async getOrderRequest({

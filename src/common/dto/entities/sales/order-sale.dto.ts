@@ -1,10 +1,6 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { OrderSaleProductInput } from './order-sale-product.dto';
-import { OrderRequestProductInput } from './order-request-product.dto';
-import {
-    OrderSalePayment,
-    OrderSalePaymentInput,
-} from './order-sale-payment.dto';
+import { OrderSalePaymentInput } from './order-sale-payment.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -20,6 +16,9 @@ export class OrderSaleBase {
 
     @Field()
     order_sale_receipt_type_id: number;
+
+    @Field()
+    order_request_id: number;
 }
 
 @InputType('OrderSaleInput')

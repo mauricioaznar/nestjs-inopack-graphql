@@ -10,10 +10,10 @@ import {
 import { Injectable } from '@nestjs/common';
 import { OrderRequestsService } from './order-requests.service';
 import {
+    GetOrderRequestsArgs,
     OrderRequest,
     OrderRequestInput,
     OrderRequestProduct,
-    OrderSale,
 } from '../../../../common/dto/entities';
 
 @Resolver(() => OrderRequest)
@@ -32,8 +32,10 @@ export class OrderRequestsResolver {
     }
 
     @Query(() => [OrderRequest])
-    async getOrderRequests(): Promise<OrderRequest[]> {
-        return this.service.getOrderRequests();
+    async getOrderRequests(
+        @Args() getOrderRequestArgs: GetOrderRequestsArgs,
+    ): Promise<OrderRequest[]> {
+        return this.service.getOrderRequests(getOrderRequestArgs);
     }
 
     @Mutation(() => OrderRequest)

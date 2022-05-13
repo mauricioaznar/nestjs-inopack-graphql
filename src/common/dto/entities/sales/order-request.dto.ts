@@ -1,5 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
-import { OrderProductionProductInput } from '../production/order-production-product.dto';
+import { ArgsType, Field, InputType, ObjectType } from '@nestjs/graphql';
 import { OrderRequestProductInput } from './order-request-product.dto';
 
 @ObjectType({ isAbstract: true })
@@ -34,4 +33,10 @@ export class OrderRequestInput extends OrderRequestBase {
 export class OrderRequest extends OrderRequestBase {
     @Field({ nullable: false })
     id: number;
+}
+
+@ArgsType()
+export class GetOrderRequestsArgs {
+    @Field({ nullable: true, description: 'Order request status' })
+    order_request_status_id?: number | null;
 }
