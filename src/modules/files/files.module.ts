@@ -7,7 +7,7 @@ import { jwtConstants } from '../../common/constants/jwt';
 @Module({
     imports: [
         JwtModule.register({
-            secret: jwtConstants.fileSecret,
+            secret: jwtConstants.authSecret,
             signOptions: { expiresIn: jwtConstants.fileExpiresIn },
         }),
     ],

@@ -12,6 +12,7 @@ import * as ejs from 'ejs';
 import * as pdf from 'html-pdf';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Response } from 'express';
 
 @Controller('files')
 export class FilesController {
@@ -20,9 +21,15 @@ export class FilesController {
         private jwtService: JwtService,
     ) {}
 
+    @Get(':token/test')
     @Public()
-    @Get('/test.pdf')
-    async getPdf(@Res() res) {
+    async getPdf(@Res() res: Response, @Param('token') token: string) {
+        try {
+            this.jwtService.verify(token);
+        } catch (e) {
+            throw new BadRequestException('Invalid token');
+        }
+
         const compiled = ejs.compile(
             fs.readFileSync(
                 path.join(
@@ -34,7 +41,7 @@ export class FilesController {
                 'utf8',
             ),
         );
-        const html = compiled({ title: 'EJS', text: 'Hello, World!' });
+        const html = compiled({ title: 'EJS', text: 'Hello, Worlasdfasdfd!' });
 
         const createPDF = (html, options) =>
             new Promise((resolve, reject) => {
@@ -47,9 +54,13 @@ export class FilesController {
                 });
             });
 
-        const PDF = await createPDF(html, {});
+        const pdfFile = (await createPDF(html, {})) as any;
 
-        return res.sendFile(PDF);
+        return res
+            .set({ 'Content-Length': pdfFile.size })
+            .set({ 'Content-Type': 'application/pdf' })
+            .set({ 'Content-Disposition': 'attachment; filename=quote.pdf' })
+            .send(pdfFile);
     }
 
     @Public()

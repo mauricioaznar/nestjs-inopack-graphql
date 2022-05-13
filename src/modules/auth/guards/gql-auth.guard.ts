@@ -11,6 +11,12 @@ export class GqlAuthGuard extends AuthGuard('jwt') {
     }
 
     getRequest(context) {
+        // IF HTTP
+
+        // if (context.contextType !== 'graphql') {
+        //     return context.switchToHttp().getRequest();
+        // }
+
         const ctx = GqlExecutionContext.create(context).getContext();
         return ctx.connectionParams
             ? { headers: ctx.connectionParams }
