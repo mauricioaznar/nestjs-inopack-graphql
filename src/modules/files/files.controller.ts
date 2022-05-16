@@ -13,17 +13,27 @@ import * as pdf from 'html-pdf';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from 'express';
+import { OrderSaleService } from '../entities/sales/order-sale/order-sale.service';
+import { PrismaService } from '../../common/services/prisma/prisma.service';
+import { formatDate } from '../../common/helpers';
+import { formatFloat } from '../../common/helpers';
 
 @Controller('files')
 export class FilesController {
     constructor(
         private readonly fileService: FilesService,
         private jwtService: JwtService,
+        private orderSaleService: OrderSaleService,
+        private prismaService: PrismaService,
     ) {}
 
-    @Get(':token/test')
+    @Get('orderSales/:token/:orderSaleId')
     @Public()
-    async getPdf(@Res() res: Response, @Param('token') token: string) {
+    async getPdf(
+        @Res() res: Response,
+        @Param('token') token: string,
+        @Param('orderSaleId') orderSaleId: string,
+    ) {
         try {
             this.jwtService.verify(token);
         } catch (e) {
@@ -36,16 +46,58 @@ export class FilesController {
                     path.resolve(process.cwd()),
                     'src',
                     'assets',
-                    'template.html',
+                    'order-sale-receipt.html',
                 ),
                 'utf8',
             ),
         );
-        const html = compiled({ title: 'EJS', text: 'Hello, Worlasdfasdfd!' });
+        const id = Number(orderSaleId);
 
-        const createPDF = (html, options) =>
+        const client = await this.orderSaleService.getClient({
+            order_sale_id: id,
+        });
+
+        const orderSaleProducts =
+            await this.prismaService.order_sale_products.findMany({
+                include: {
+                    products: true,
+                },
+                where: {
+                    order_sale_id: id,
+                },
+            });
+
+        const total = await this.orderSaleService.getOrderSaleProductsTotal({
+            order_sale_id: id,
+        });
+
+        const orderSale = await this.orderSaleService.getOrderSale({
+            orderSaleId: id,
+        });
+
+        const dateEmitted = formatDate(orderSale.date);
+
+        const html = compiled({
+            title: 'EJS',
+            clientName: client.name,
+            orderSaleProducts: orderSaleProducts.map((product) => {
+                return {
+                    ...product,
+                    kilos: formatFloat(product.kilos),
+                    kilo_price: formatFloat(product.kilo_price),
+                    groups: formatFloat(product.groups),
+                    total: formatFloat(product.kilos * product.kilo_price),
+                };
+            }),
+            total: formatFloat(total),
+            dateEmitted: dateEmitted,
+            orderCode: orderSale.order_code,
+            receiptType: orderSale.order_sale_receipt_type_id === 1 ? 'N' : 'F',
+        });
+
+        const createPDF = (html) =>
             new Promise((resolve, reject) => {
-                pdf.create(html, options).toBuffer((err, buffer) => {
+                pdf.create(html, {}).toBuffer((err, buffer) => {
                     if (err !== null) {
                         reject(err);
                     } else {
@@ -54,7 +106,7 @@ export class FilesController {
                 });
             });
 
-        const pdfFile = (await createPDF(html, {})) as any;
+        const pdfFile = (await createPDF(html)) as any;
 
         return res
             .set({ 'Content-Length': pdfFile.size })

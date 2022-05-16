@@ -10,8 +10,8 @@ import {
 import { Injectable } from '@nestjs/common';
 import { OrderSaleService } from './order-sale.service';
 import {
+    Client,
     OrderSale,
-    OrderSaleCollectionStatus,
     OrderSaleInput,
     OrderSalePayment,
     OrderSaleProduct,
@@ -72,6 +72,13 @@ export class OrderSaleResolver {
         orderSale: OrderSale,
     ): Promise<OrderSalePayment[]> {
         return this.service.getOrderSalePayments({
+            order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => Client)
+    async client(orderSale: OrderSale): Promise<Client> {
+        return this.service.getClient({
             order_sale_id: orderSale.id,
         });
     }

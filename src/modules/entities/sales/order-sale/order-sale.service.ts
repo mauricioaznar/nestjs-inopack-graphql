@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
+    Client,
     OrderSale,
     OrderSaleInput,
     OrderSalePayment,
@@ -98,6 +99,28 @@ export class OrderSaleService {
                         active: 1,
                     },
                 ],
+            },
+        });
+    }
+
+    async getClient({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<Client> {
+        const orderSale = await this.prisma.order_sales.findUnique({
+            where: {
+                id: order_sale_id,
+            },
+        });
+        const orderRequest = await this.prisma.order_requests.findFirst({
+            where: {
+                id: orderSale.order_request_id,
+            },
+        });
+        return this.prisma.clients.findFirst({
+            where: {
+                id: orderRequest.client_id,
             },
         });
     }
