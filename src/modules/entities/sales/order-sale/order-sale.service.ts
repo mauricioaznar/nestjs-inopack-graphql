@@ -15,11 +15,13 @@ import {
 } from '../../../../common/dto/entities';
 import { vennDiagram } from '../../../../common/helpers';
 import { Cache } from 'cache-manager';
+import { OrderRequestRemainingProductsService } from '../../../../common/services/entities/order-request-remaining-products-service';
 
 @Injectable()
 export class OrderSaleService {
     constructor(
         private prisma: PrismaService,
+        private orderRequestRemainingProductsService: OrderRequestRemainingProductsService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) {}
 
@@ -398,10 +400,9 @@ export class OrderSaleService {
     async validateOrderSale(input: OrderSaleInput): Promise<void> {
         const errors: string[] = [];
 
-        const orderSaleProducts = input.order_sale_products;
-
         // AreProductsUnique
         {
+            const orderSaleProducts = input.order_sale_products;
             orderSaleProducts.forEach(({ product_id: product_id_1 }) => {
                 let count = 0;
                 orderSaleProducts.forEach(({ product_id: product_id_2 }) => {
@@ -413,6 +414,60 @@ export class OrderSaleService {
                     errors.push(`product_id (${product_id_1}) are not unique`);
                 }
             });
+        }
+
+        // ProductsAvailability
+        {
+            const inputOrderSaleProducts = input.order_sale_products;
+            const orderRequestRemainingProducts =
+                await this.orderRequestRemainingProductsService.getOrderRequestRemainingProducts(
+                    {
+                        order_request_id: input.order_request_id,
+                    },
+                );
+            const orderSalePreviousProducts = !!input.id
+                ? await this.getOrderSaleProducts({ order_sale_id: input.id })
+                : null;
+            for await (const remainingProduct of orderRequestRemainingProducts) {
+                const previousProduct =
+                    orderSalePreviousProducts &&
+                    orderSalePreviousProducts.find((orderSaleProduct) => {
+                        return (
+                            orderSaleProduct.product_id ===
+                            remainingProduct.product_id
+                        );
+                    });
+                const inputProduct = inputOrderSaleProducts.find(
+                    (inputOrderSaleProduct) => {
+                        return (
+                            inputOrderSaleProduct.product_id ===
+                            remainingProduct.product_id
+                        );
+                    },
+                );
+
+                const remainingKilos =
+                    remainingProduct.kilos +
+                    (previousProduct ? previousProduct.kilos : 0) -
+                    (inputProduct ? inputProduct.kilos : 0);
+
+                if (remainingKilos < 0) {
+                    errors.push(
+                        `product_id (${remainingProduct.product_id}) kilos < 0 (${remainingKilos})`,
+                    );
+                }
+
+                const remainingGroups =
+                    remainingProduct.groups +
+                    (previousProduct ? previousProduct.groups : 0) -
+                    (inputProduct ? inputProduct.groups : 0);
+
+                if (remainingGroups < 0) {
+                    errors.push(
+                        `product_id (${remainingProduct.product_id}) groups < 0 (${remainingGroups})`,
+                    );
+                }
+            }
         }
 
         if (errors.length > 0) {
