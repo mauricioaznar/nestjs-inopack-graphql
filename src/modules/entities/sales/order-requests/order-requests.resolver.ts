@@ -68,6 +68,15 @@ export class OrderRequestsResolver {
         });
     }
 
+    @ResolveField(() => [OrderRequestProduct])
+    async order_request_remaining_products(
+        orderRequest: OrderRequest,
+    ): Promise<OrderRequestProduct[]> {
+        return this.service.getOrderRequestRemainingProducts({
+            order_request_id: orderRequest.id,
+        });
+    }
+
     @ResolveField(() => Float)
     async products_total(
         @Parent() orderRequest: OrderRequest,
