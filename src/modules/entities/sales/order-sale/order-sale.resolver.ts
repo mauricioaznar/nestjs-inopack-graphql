@@ -11,6 +11,7 @@ import { Injectable } from '@nestjs/common';
 import { OrderSaleService } from './order-sale.service';
 import {
     Client,
+    OrderRequest,
     OrderSale,
     OrderSaleInput,
     OrderSalePayment,
@@ -67,6 +68,13 @@ export class OrderSaleResolver {
         });
     }
 
+    @ResolveField(() => OrderRequest)
+    async order_request(orderSale: OrderSale): Promise<OrderRequest> {
+        return this.service.getOrderRequest({
+            order_sale_id: orderSale.id,
+        });
+    }
+
     @ResolveField(() => [OrderSalePayment])
     async order_sale_payments(
         orderSale: OrderSale,
@@ -79,6 +87,13 @@ export class OrderSaleResolver {
     @ResolveField(() => Client)
     async client(orderSale: OrderSale): Promise<Client> {
         return this.service.getClient({
+            order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => Float)
+    async client_id(orderSale: OrderSale): Promise<number> {
+        return this.service.getClientId({
             order_sale_id: orderSale.id,
         });
     }

@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     Client,
+    OrderRequest,
     OrderSale,
     OrderSaleInput,
     OrderSalePayment,
@@ -121,6 +122,41 @@ export class OrderSaleService {
         return this.prisma.clients.findFirst({
             where: {
                 id: orderRequest.client_id,
+            },
+        });
+    }
+
+    async getClientId({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<number> {
+        const orderSale = await this.prisma.order_sales.findUnique({
+            where: {
+                id: order_sale_id,
+            },
+        });
+        const orderRequest = await this.prisma.order_requests.findFirst({
+            where: {
+                id: orderSale.order_request_id,
+            },
+        });
+        return orderRequest.client_id;
+    }
+
+    async getOrderRequest({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<OrderRequest> {
+        const orderSale = await this.prisma.order_sales.findUnique({
+            where: {
+                id: order_sale_id,
+            },
+        });
+        return this.prisma.order_requests.findFirst({
+            where: {
+                id: orderSale.order_request_id,
             },
         });
     }
