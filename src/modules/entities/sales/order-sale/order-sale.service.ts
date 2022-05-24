@@ -47,8 +47,8 @@ export class OrderSaleService {
         order_code,
         order_sale_id,
     }: {
-        order_sale_id: number | null;
         order_code: number;
+        order_sale_id: number | null;
     }): Promise<boolean> {
         const orderSale = await this.prisma.order_sales.findFirst({
             where: {
@@ -465,6 +465,125 @@ export class OrderSaleService {
                 if (remainingGroups < 0) {
                     errors.push(
                         `product_id (${remainingProduct.product_id}) groups < 0 (${remainingGroups})`,
+                    );
+                }
+            }
+        }
+
+        // IsOrderRequestInProduction
+        {
+            const orderRequest = await this.prisma.order_requests.findUnique({
+                where: {
+                    id: input.order_request_id,
+                },
+            });
+            if (orderRequest.order_request_status_id !== 2) {
+                errors.push(
+                    `Order request is not in production (order_request_status_id === ${orderRequest.order_request_status_id})`,
+                );
+            }
+        }
+
+        // AreOrderSaleProductsInRequest
+        {
+            const inputOrderSaleProducts = input.order_sale_products;
+            const orderRequestRemainingProducts =
+                await this.orderRequestRemainingProductsService.getOrderRequestRemainingProducts(
+                    {
+                        order_request_id: input.order_request_id,
+                    },
+                );
+
+            for (const inputOrderSaleProduct of inputOrderSaleProducts) {
+                const foundProduct = orderRequestRemainingProducts.find(
+                    (orderRequestRemainingProduct) => {
+                        return (
+                            orderRequestRemainingProduct.product_id ===
+                            inputOrderSaleProduct.product_id
+                        );
+                    },
+                );
+                if (!foundProduct) {
+                    errors.push(
+                        `product_id (${inputOrderSaleProduct.product_id}) is not in the order request`,
+                    );
+                }
+            }
+        }
+
+        // DoPaymentsTotalMatchWithProductsTotal
+        {
+            let paymentsTotal = 0;
+            let productsTotal = 0;
+
+            for (const saleProduct of input.order_sale_products) {
+                productsTotal +=
+                    saleProduct.kilos *
+                    saleProduct.kilo_price *
+                    (input.order_sale_receipt_type_id === 2 ? 1.16 : 1);
+            }
+
+            for (const payment of input.order_sale_payments) {
+                paymentsTotal = paymentsTotal + payment.amount;
+            }
+
+            paymentsTotal = Math.round(paymentsTotal * 1000) / 1000;
+            productsTotal = Math.round(productsTotal * 1000) / 1000;
+
+            if (paymentsTotal !== productsTotal) {
+                errors.push(
+                    `payments total is different from products total (payments total: ${paymentsTotal}), products total: ${productsTotal}`,
+                );
+            }
+        }
+
+        // IsOrderCodeOccupied
+        {
+            const isOrderCodeOccupied = await this.isOrderSaleCodeOccupied({
+                order_code: input.order_code,
+                order_sale_id: input && input.id ? input.id : null,
+            });
+
+            if (isOrderCodeOccupied) {
+                errors.push(
+                    `order code is already occupied (${input.order_code})`,
+                );
+            }
+        }
+
+        // ProductsKiloPrice
+        {
+            const orderRequestProducts =
+                await this.prisma.order_request_products.findMany({
+                    where: {
+                        order_requests: {
+                            AND: [
+                                {
+                                    id: input.order_request_id,
+                                },
+                                {
+                                    active: 1,
+                                },
+                            ],
+                        },
+                    },
+                });
+            for (const orderSaleProduct of input.order_sale_products) {
+                const foundOrderRequestProduct = orderRequestProducts.find(
+                    (orderRequestProduct) => {
+                        return (
+                            orderRequestProduct.product_id ===
+                            orderSaleProduct.product_id
+                        );
+                    },
+                );
+                if (
+                    foundOrderRequestProduct &&
+                    foundOrderRequestProduct.kilo_price !==
+                        orderSaleProduct.kilo_price
+                ) {
+                    errors.push(
+                        `order sale product kilo price doesnt match with order request product kilo price (sale: ${orderSaleProduct.kilo_price}, request: ${foundOrderRequestProduct.kilo_price})`,
                     );
                 }
             }
