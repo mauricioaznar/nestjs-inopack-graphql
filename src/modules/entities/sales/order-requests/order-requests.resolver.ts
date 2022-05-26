@@ -38,6 +38,7 @@ export class OrderRequestsResolver {
         return this.service.getOrderRequests(getOrderRequestArgs);
     }
 
+    // insert + update === upsert
     @Mutation(() => OrderRequest)
     async upsertOrderRequest(
         @Args('OrderRequestInput') input: OrderRequestInput,

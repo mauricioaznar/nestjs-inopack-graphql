@@ -230,10 +230,9 @@ export class OrderRequestsService {
     async validateOrderRequest(input: OrderRequestInput): Promise<void> {
         const errors: string[] = [];
 
-        const orderRequestProducts = input.order_request_products;
-
         // AreProductsUnique
         {
+            const orderRequestProducts = input.order_request_products;
             orderRequestProducts.forEach(({ product_id: product_id_1 }) => {
                 let count = 0;
                 orderRequestProducts.forEach(({ product_id: product_id_2 }) => {
@@ -245,6 +244,116 @@ export class OrderRequestsService {
                     errors.push(`product_id (${product_id_1}) are not unique`);
                 }
             });
+        }
+
+        // IsProductGroupCorrectlyCalculated
+        {
+            for await (const {
+                product_id,
+                kilos,
+                kilo_price: kiloPrice,
+                group_weight: groupWeight,
+                groups,
+            } of input.order_request_products) {
+                const product = await this.prisma.products.findUnique({
+                    where: {
+                        id: product_id,
+                    },
+                });
+
+                const currentGroupWeight = product.current_group_weight;
+
+                if (
+                    groupWeight !== null &&
+                    Number(groupWeight) !== currentGroupWeight
+                ) {
+                    errors.push(
+                        `${product_id} current_group_weight doesnt match group_weight`,
+                    );
+                }
+
+                if (
+                    (currentGroupWeight === null || currentGroupWeight === 0) &&
+                    (groupWeight === null || groupWeight === 0 || !groupWeight)
+                ) {
+                    continue;
+                }
+
+                if (groups * currentGroupWeight !== kilos) {
+                    errors.push(
+                        `product_id (${product_id}) groups * currentGroupWeight !== kilos (${groups} * ${currentGroupWeight} !== ${kilos})`,
+                    );
+                }
+            }
+        }
+
+        // ProductsMinSize
+        {
+            if (input.order_request_products.length === 0) {
+                errors.push(
+                    `Products min size has to be greater or equal than 1`,
+                );
+            }
+        }
+
+        // AreProductsSoldStillInRequestProducts
+        {
+            if (input.id > 0) {
+                const orderSales = await this.prisma.order_sales.findMany({
+                    include: {
+                        order_sale_products: true,
+                    },
+                    where: {
+                        order_request_id: input.id,
+                    },
+                });
+
+                const orderSaleProducts = [];
+
+                orderSales.forEach((sale) => {
+                    orderSaleProducts.push(...sale.order_sale_products);
+                });
+
+                const orderRequest =
+                    await this.prisma.order_requests.findUnique({
+                        include: {
+                            order_request_products: true,
+                        },
+                        where: {
+                            id: input.id,
+                        },
+                    });
+
+                orderRequest.order_request_products.forEach(
+                    (orderRequestProduct) => {
+                        const foundInputOrderRequestProduct =
+                            input.order_request_products.find(
+                                (inputOrderRequestProduct) => {
+                                    return (
+                                        orderRequestProduct.product_id ===
+                                        inputOrderRequestProduct.product_id
+                                    );
+                                },
+                            );
+
+                        if (!foundInputOrderRequestProduct) {
+                            const foundOrderSaleProduct =
+                                orderSaleProducts.find((orderSaleProduct) => {
+                                    return (
+                                        orderSaleProduct.product_id ===
+                                        orderRequestProduct.product_id
+                                    );
+                                });
+
+                            if (foundOrderSaleProduct) {
+                                errors.push(
+                                    `product id (${orderRequestProduct.product_id}) cant be removed already sold`,
+                                );
+                            }
+                        }
+                    },
+                );
+            }
         }
 
         if (errors.length > 0) {
