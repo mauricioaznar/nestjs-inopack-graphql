@@ -42,14 +42,14 @@ export class OrderSaleResolver {
 
     @Query(() => PaginatedOrderSales)
     async paginatedOrderSales(
-        @Args() offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
     ): Promise<PaginatedOrderSales> {
         return this.service.paginateOrderSales({ offsetPaginatorArgs });
     }
 
     @Mutation(() => OrderSale)
     async upsertOrderSale(
-        @Args('OrderSaleInput', { nullable: false }) input: OrderSaleInput,
+        @Args('OrderSaleInput') input: OrderSaleInput,
     ): Promise<OrderSale> {
         return this.service.upsertOrderSale(input);
     }
