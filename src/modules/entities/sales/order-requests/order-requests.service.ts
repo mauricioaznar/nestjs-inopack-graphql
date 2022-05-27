@@ -241,6 +241,20 @@ export class OrderRequestsService {
     async validateOrderRequest(input: OrderRequestInput): Promise<void> {
         const errors: string[] = [];
 
+        // IsOrderCodeOccupied
+        {
+            const isOrderCodeOccupied = await this.isOrderRequestCodeOccupied({
+                order_code: input.order_code,
+                order_request_id: input && input.id ? input.id : null,
+            });
+
+            if (isOrderCodeOccupied) {
+                errors.push(
+                    `order code is already occupied (${input.order_code})`,
+                );
+            }
+        }
+
         // AreProductsUnique
         {
             const orderRequestProducts = input.order_request_products;
