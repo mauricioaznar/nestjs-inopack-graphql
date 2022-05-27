@@ -12,10 +12,12 @@ import {
     OrderSaleInput,
     OrderSalePayment,
     OrderSaleProduct,
+    PaginatedOrderSales,
 } from '../../../../common/dto/entities';
 import { vennDiagram } from '../../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderRequestRemainingProductsService } from '../../../../common/services/entities/order-request-remaining-products-service';
+import OffsetPaginatorArgs from '../../../../common/dto/pagination/offset-paginator-args/offset-paginator-args';
 
 @Injectable()
 export class OrderSaleService {
@@ -26,7 +28,33 @@ export class OrderSaleService {
     ) {}
 
     async getOrderSales(): Promise<OrderSale[]> {
-        return this.prisma.order_sales.findMany();
+        return this.prisma.order_sales.findMany({
+            take: 10,
+        });
+    }
+
+    async paginateOrderSales({
+        offsetPaginatorArgs,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+    }): Promise<PaginatedOrderSales> {
+        const orderSalesCount = await this.prisma.order_sales.count({
+            where: {
+                active: 1,
+            },
+        });
+        const orderSales = await this.prisma.order_sales.findMany({
+            where: {
+                active: 1,
+            },
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+        });
+
+        return {
+            count: orderSalesCount,
+            docs: orderSales,
+        };
     }
 
     async getOrderSale({

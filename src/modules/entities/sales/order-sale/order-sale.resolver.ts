@@ -16,7 +16,9 @@ import {
     OrderSaleInput,
     OrderSalePayment,
     OrderSaleProduct,
+    PaginatedOrderSales,
 } from '../../../../common/dto/entities';
+import OffsetPaginatorArgs from '../../../../common/dto/pagination/offset-paginator-args/offset-paginator-args';
 
 @Resolver(() => OrderSale)
 // @Role('super')
@@ -38,9 +40,16 @@ export class OrderSaleResolver {
         return this.service.getOrderSales();
     }
 
+    @Query(() => PaginatedOrderSales)
+    async paginatedOrderSales(
+        @Args() offsetPaginatorArgs: OffsetPaginatorArgs,
+    ): Promise<PaginatedOrderSales> {
+        return this.service.paginateOrderSales({ offsetPaginatorArgs });
+    }
+
     @Mutation(() => OrderSale)
     async upsertOrderSale(
-        @Args('OrderSaleInput') input: OrderSaleInput,
+        @Args('OrderSaleInput', { nullable: false }) input: OrderSaleInput,
     ): Promise<OrderSale> {
         return this.service.upsertOrderSale(input);
     }
