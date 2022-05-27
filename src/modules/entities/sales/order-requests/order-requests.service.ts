@@ -10,6 +10,7 @@ import {
     OrderRequest,
     OrderRequestInput,
     OrderRequestProduct,
+    OrderSaleProduct,
 } from '../../../../common/dto/entities';
 import { vennDiagram } from '../../../../common/helpers';
 import { Cache } from 'cache-manager';
@@ -105,6 +106,16 @@ export class OrderRequestsService {
         order_request_id: number;
     }): Promise<OrderRequestProduct[]> {
         return this.orderRequestRemainingProductsService.getOrderRequestRemainingProducts(
+            { order_request_id },
+        );
+    }
+
+    async getOrderSaleSoldProducts({
+        order_request_id,
+    }: {
+        order_request_id: number;
+    }): Promise<OrderSaleProduct[]> {
+        return this.orderRequestRemainingProductsService.getOrderRequestSoldProducts(
             { order_request_id },
         );
     }

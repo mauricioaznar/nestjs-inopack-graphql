@@ -14,6 +14,7 @@ import {
     OrderRequest,
     OrderRequestInput,
     OrderRequestProduct,
+    OrderSaleProduct,
 } from '../../../../common/dto/entities';
 
 @Resolver(() => OrderRequest)
@@ -74,6 +75,15 @@ export class OrderRequestsResolver {
         orderRequest: OrderRequest,
     ): Promise<OrderRequestProduct[]> {
         return this.service.getOrderRequestRemainingProducts({
+            order_request_id: orderRequest.id,
+        });
+    }
+
+    @ResolveField(() => [OrderSaleProduct])
+    async order_sale_sold_products(
+        orderRequest: OrderRequest,
+    ): Promise<OrderSaleProduct[]> {
+        return this.service.getOrderSaleSoldProducts({
             order_request_id: orderRequest.id,
         });
     }
