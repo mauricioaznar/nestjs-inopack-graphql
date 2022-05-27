@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OrderRequestProduct } from '../../dto/entities';
+import { OrderRequestProduct, OrderSaleProduct } from '../../dto/entities';
 
 @Injectable()
 export class OrderRequestRemainingProductsService {
@@ -76,5 +76,52 @@ export class OrderRequestRemainingProductsService {
                 groups: orderRequestProduct.groups - total.groups,
             };
         });
+    }
+
+    async getOrderRequestSoldProducts({
+        order_request_id,
+    }: {
+        order_request_id: number;
+    }): Promise<OrderSaleProduct[]> {
+        const orderSaleProducts =
+            await this.prisma.order_sale_products.findMany({
+                where: {
+                    AND: [
+                        {
+                            order_sales: {
+                                AND: [
+                                    {
+                                        order_request_id,
+                                    },
+                                    {
+                                        active: 1,
+                                    },
+                                ],
+                            },
+                        },
+                        {
+                            active: 1,
+                        },
+                    ],
+                },
+            });
+        const orderSoldProducts: OrderSaleProduct[] = [];
+
+        orderSaleProducts.forEach((orderSaleProduct) => {
+            const foundSoldProduct = orderSoldProducts.find((soldProduct) => {
+                return (
+                    soldProduct &&
+                    soldProduct.product_id === orderSaleProduct.product_id
+                );
+            });
+            if (!foundSoldProduct) {
+                orderSoldProducts.push(orderSaleProduct);
+            } else {
+                foundSoldProduct.kilos += orderSaleProduct.kilos;
+                foundSoldProduct.groups += orderSaleProduct.groups;
+            }
+        });
+
+        return orderSoldProducts;
     }
 }

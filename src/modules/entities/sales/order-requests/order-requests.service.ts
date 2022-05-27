@@ -251,7 +251,6 @@ export class OrderRequestsService {
             for await (const {
                 product_id,
                 kilos,
-                kilo_price: kiloPrice,
                 group_weight: groupWeight,
                 groups,
             } of input.order_request_products) {
@@ -299,20 +298,12 @@ export class OrderRequestsService {
         // AreProductsSoldStillInRequestProducts
         {
             if (input.id > 0) {
-                const orderSales = await this.prisma.order_sales.findMany({
-                    include: {
-                        order_sale_products: true,
-                    },
-                    where: {
-                        order_request_id: input.id,
-                    },
-                });
-
-                const orderSaleProducts = [];
-
-                orderSales.forEach((sale) => {
-                    orderSaleProducts.push(...sale.order_sale_products);
-                });
+                const orderSaleSoldProducts =
+                    await this.orderRequestRemainingProductsService.getOrderRequestSoldProducts(
+                        {
+                            order_request_id: input.id,
+                        },
+                    );
 
                 const orderRequest =
                     await this.prisma.order_requests.findUnique({
@@ -337,15 +328,17 @@ export class OrderRequestsService {
                             );
 
                         if (!foundInputOrderRequestProduct) {
-                            const foundOrderSaleProduct =
-                                orderSaleProducts.find((orderSaleProduct) => {
-                                    return (
-                                        orderSaleProduct.product_id ===
-                                        orderRequestProduct.product_id
-                                    );
-                                });
+                            const foundOrderSaleSoldProduct =
+                                orderSaleSoldProducts.find(
+                                    (orderSaleProduct) => {
+                                        return (
+                                            orderSaleProduct.product_id ===
+                                            orderRequestProduct.product_id
+                                        );
+                                    },
+                                );
 
-                            if (foundOrderSaleProduct) {
+                            if (foundOrderSaleSoldProduct) {
                                 errors.push(
                                     `product id (${orderRequestProduct.product_id}) cant be removed already sold`,
                                 );
@@ -353,6 +346,44 @@ export class OrderRequestsService {
                         }
                     },
                 );
+            }
+        }
+
+        // AreRequestProductsMoreThanProductsSold
+        {
+            if (input.id > 0) {
+                const orderSaleSoldProducts =
+                    await this.orderRequestRemainingProductsService.getOrderRequestSoldProducts(
+                        { order_request_id: input.id },
+                    );
+
+                input.order_request_products.forEach((orderRequestProduct) => {
+                    const foundSoldProduct = orderSaleSoldProducts.find(
+                        (orderSaleProduct) => {
+                            return (
+                                orderSaleProduct.product_id ===
+                                orderRequestProduct.product_id
+                            );
+                        },
+                    );
+                    if (foundSoldProduct) {
+                        if (
+                            orderRequestProduct.kilos < foundSoldProduct.kilos
+                        ) {
+                            errors.push(
+                                `product (${orderRequestProduct.product_id}) kilos cant be decreased`,
+                            );
+                        }
+
+                        if (
+                            orderRequestProduct.groups < foundSoldProduct.groups
+                        ) {
+                            errors.push(
+                                `product (${orderRequestProduct.product_id}) groups cant be decreased`,
+                            );
+                        }
+                    }
+                });
             }
         }
 
