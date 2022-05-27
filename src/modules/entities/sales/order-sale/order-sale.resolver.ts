@@ -44,7 +44,7 @@ export class OrderSaleResolver {
     async paginatedOrderSales(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
     ): Promise<PaginatedOrderSales> {
-        return this.service.paginateOrderSales({ offsetPaginatorArgs });
+        return this.service.paginatedOrderSales({ offsetPaginatorArgs });
     }
 
     @Mutation(() => OrderSale)

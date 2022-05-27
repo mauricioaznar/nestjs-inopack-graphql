@@ -33,7 +33,7 @@ export class OrderSaleService {
         });
     }
 
-    async paginateOrderSales({
+    async paginatedOrderSales({
         offsetPaginatorArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
