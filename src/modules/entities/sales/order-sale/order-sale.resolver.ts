@@ -19,6 +19,7 @@ import {
     PaginatedOrderSales,
 } from '../../../../common/dto/entities';
 import OffsetPaginatorArgs from '../../../../common/dto/pagination/offset-paginator-args/offset-paginator-args';
+import { YearMonth } from '../../../../common/dto/pagination';
 
 @Resolver(() => OrderSale)
 // @Role('super')
@@ -43,8 +44,12 @@ export class OrderSaleResolver {
     @Query(() => PaginatedOrderSales)
     async paginatedOrderSales(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false }) datePaginator: YearMonth,
     ): Promise<PaginatedOrderSales> {
-        return this.service.paginatedOrderSales({ offsetPaginatorArgs });
+        return this.service.paginatedOrderSales({
+            offsetPaginatorArgs,
+            datePaginator,
+        });
     }
 
     @Mutation(() => OrderSale)
