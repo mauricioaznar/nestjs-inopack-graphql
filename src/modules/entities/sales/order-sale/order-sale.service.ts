@@ -5,6 +5,7 @@ import {
     Injectable,
 } from '@nestjs/common';
 import { PrismaService } from '../../../../common/services/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import {
     Client,
     OrderRequest,
@@ -58,43 +59,29 @@ export class OrderSaleService {
             unit: 'month',
         });
 
+        const orderSalesWhere: Prisma.order_salesWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+                {
+                    date: {
+                        gte: startDate,
+                    },
+                },
+                {
+                    date: {
+                        lt: endDate,
+                    },
+                },
+            ],
+        };
+
         const orderSalesCount = await this.prisma.order_sales.count({
-            where: {
-                AND: [
-                    {
-                        active: 1,
-                    },
-                    {
-                        date: {
-                            gte: startDate,
-                        },
-                    },
-                    {
-                        date: {
-                            lt: endDate,
-                        },
-                    },
-                ],
-            },
+            where: orderSalesWhere,
         });
         const orderSales = await this.prisma.order_sales.findMany({
-            where: {
-                AND: [
-                    {
-                        active: 1,
-                    },
-                    {
-                        date: {
-                            gte: startDate,
-                        },
-                    },
-                    {
-                        date: {
-                            lt: endDate,
-                        },
-                    },
-                ],
-            },
+            where: orderSalesWhere,
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
         });
