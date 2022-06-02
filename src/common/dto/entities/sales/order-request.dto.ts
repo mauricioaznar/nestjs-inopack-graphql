@@ -1,5 +1,6 @@
 import { ArgsType, Field, InputType, ObjectType } from '@nestjs/graphql';
 import { OrderRequestProductInput } from './order-request-product.dto';
+import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -40,3 +41,8 @@ export class GetOrderRequestsArgs {
     @Field({ nullable: true, description: 'Order request status' })
     order_request_status_id?: number | null;
 }
+
+@ObjectType()
+export class PaginatedOrderRequests extends OffsetPaginatorResult(
+    OrderRequest,
+) {}

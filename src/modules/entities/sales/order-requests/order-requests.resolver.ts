@@ -15,7 +15,11 @@ import {
     OrderRequestInput,
     OrderRequestProduct,
     OrderSaleProduct,
+    PaginatedOrderRequests,
+    PaginatedOrderSales,
 } from '../../../../common/dto/entities';
+import OffsetPaginatorArgs from '../../../../common/dto/pagination/offset-paginator-args/offset-paginator-args';
+import { YearMonth } from '../../../../common/dto/pagination';
 
 @Resolver(() => OrderRequest)
 // @Role('super')
@@ -37,6 +41,17 @@ export class OrderRequestsResolver {
         @Args() getOrderRequestArgs: GetOrderRequestsArgs,
     ): Promise<OrderRequest[]> {
         return this.service.getOrderRequests(getOrderRequestArgs);
+    }
+
+    @Query(() => PaginatedOrderRequests)
+    async paginatedOrderRequests(
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false }) datePaginator: YearMonth,
+    ): Promise<PaginatedOrderSales> {
+        return this.service.paginatedOrderRequests({
+            offsetPaginatorArgs,
+            datePaginator,
+        });
     }
 
     // insert + update === upsert

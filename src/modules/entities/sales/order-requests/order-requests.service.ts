@@ -11,10 +11,18 @@ import {
     OrderRequestInput,
     OrderRequestProduct,
     OrderSaleProduct,
+    PaginatedOrderRequests,
+    PaginatedOrderSales,
 } from '../../../../common/dto/entities';
-import { vennDiagram } from '../../../../common/helpers';
+import {
+    getRangesFromYearMonth,
+    vennDiagram,
+} from '../../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderRequestRemainingProductsService } from '../../../../common/services/entities/order-request-remaining-products-service';
+import OffsetPaginatorArgs from '../../../../common/dto/pagination/offset-paginator-args/offset-paginator-args';
+import { YearMonth } from '../../../../common/dto/pagination';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrderRequestsService {
@@ -54,6 +62,60 @@ export class OrderRequestsService {
                 id: orderRequestId,
             },
         });
+    }
+
+    async paginatedOrderRequests({
+        offsetPaginatorArgs,
+        datePaginator,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+        datePaginator: YearMonth;
+    }): Promise<PaginatedOrderRequests> {
+        if (
+            !datePaginator ||
+            datePaginator?.year === null ||
+            datePaginator?.month === null
+        )
+            return [];
+
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+            value: 1,
+            unit: 'month',
+        });
+
+        const orderRequestsWhere: Prisma.order_requestsWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+                {
+                    date: {
+                        gte: startDate,
+                    },
+                },
+                {
+                    date: {
+                        lt: endDate,
+                    },
+                },
+            ],
+        };
+
+        const orderRequestsCount = await this.prisma.order_requests.count({
+            where: orderRequestsWhere,
+        });
+        const orderRequests = await this.prisma.order_requests.findMany({
+            where: orderRequestsWhere,
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+        });
+
+        return {
+            count: orderRequestsCount,
+            docs: orderRequests,
+        };
     }
 
     async isOrderRequestCodeOccupied({
