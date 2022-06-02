@@ -8,11 +8,20 @@ import { PrismaService } from '../../../../common/services/prisma/prisma.service
 import {
     OrderProduction,
     OrderProductionInput,
+    PaginatedOrderProductions,
 } from '../../../../common/dto/entities/production/order-production.dto';
 import { OrderProductionProduct } from '../../../../common/dto/entities/production/order-production-product.dto';
-import { vennDiagram } from '../../../../common/helpers';
+import {
+    getRangesFromYearMonth,
+    vennDiagram,
+} from '../../../../common/helpers';
 import { OrderProductionEmployee } from '../../../../common/dto/entities/production/order-production-employee.dto';
 import { Cache } from 'cache-manager';
+import {
+    OffsetPaginatorArgs,
+    YearMonth,
+} from '../../../../common/dto/pagination';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrderProductionsService {
@@ -50,6 +59,60 @@ export class OrderProductionsService {
                 ],
             },
         });
+    }
+
+    async paginatedOrderProductions({
+        offsetPaginatorArgs,
+        datePaginator,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+        datePaginator: YearMonth;
+    }): Promise<PaginatedOrderProductions> {
+        if (
+            !datePaginator ||
+            datePaginator?.year === null ||
+            datePaginator?.month === null
+        )
+            return [];
+
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+            value: 1,
+            unit: 'month',
+        });
+
+        const orderProductionsWhere: Prisma.order_productionsWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+                {
+                    start_date: {
+                        gte: startDate,
+                    },
+                },
+                {
+                    start_date: {
+                        lt: endDate,
+                    },
+                },
+            ],
+        };
+
+        const count = await this.prisma.order_productions.count({
+            where: orderProductionsWhere,
+        });
+        const orderProductions = await this.prisma.order_productions.findMany({
+            where: orderProductionsWhere,
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+        });
+
+        return {
+            count: count,
+            docs: orderProductions,
+        };
     }
 
     async getOrderProductionEmployees({

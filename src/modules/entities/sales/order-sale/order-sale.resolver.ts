@@ -18,8 +18,10 @@ import {
     OrderSaleProduct,
     PaginatedOrderSales,
 } from '../../../../common/dto/entities';
-import OffsetPaginatorArgs from '../../../../common/dto/pagination/offset-paginator-args/offset-paginator-args';
-import { YearMonth } from '../../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    YearMonth,
+} from '../../../../common/dto/pagination';
 
 @Resolver(() => OrderSale)
 // @Role('super')

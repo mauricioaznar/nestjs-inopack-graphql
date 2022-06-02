@@ -18,7 +18,7 @@ import {
     PaginatedOrderRequests,
     PaginatedOrderSales,
 } from '../../../../common/dto/entities';
-import OffsetPaginatorArgs from '../../../../common/dto/pagination/offset-paginator-args/offset-paginator-args';
+import { OffsetPaginatorArgs } from '../../../../common/dto/pagination';
 import { YearMonth } from '../../../../common/dto/pagination';
 
 @Resolver(() => OrderRequest)

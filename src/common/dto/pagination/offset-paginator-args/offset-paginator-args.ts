@@ -1,7 +1,7 @@
 import { ArgsType, Field } from '@nestjs/graphql';
 
 @ArgsType()
-export default class OffsetPaginatorArgs {
+export class OffsetPaginatorArgs {
     @Field({ nullable: true, description: 'Pagination offset' })
     public take: number;
 

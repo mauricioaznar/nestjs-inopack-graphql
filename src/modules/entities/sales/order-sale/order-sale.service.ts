@@ -21,8 +21,10 @@ import {
 } from '../../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderRequestRemainingProductsService } from '../../../../common/services/entities/order-request-remaining-products-service';
-import OffsetPaginatorArgs from '../../../../common/dto/pagination/offset-paginator-args/offset-paginator-args';
-import { YearMonth } from '../../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    YearMonth,
+} from '../../../../common/dto/pagination';
 
 @Injectable()
 export class OrderSaleService {
