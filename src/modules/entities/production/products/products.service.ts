@@ -21,7 +21,14 @@ export class ProductsService {
 
         return this.prisma.products.findFirst({
             where: {
-                id: product_id,
+                AND: [
+                    {
+                        id: product_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
             },
         });
     }
@@ -44,6 +51,29 @@ export class ProductsService {
         });
     }
 
+    async deleteProduct({ product_id }: { product_id: number }): Promise<void> {
+        const product = await this.prisma.products.findUnique({
+            where: {
+                id: product_id,
+            },
+            rejectOnNotFound: false,
+        });
+
+        if (!product) {
+            throw new BadRequestException(['Product not found']);
+        }
+
+        await this.prisma.products.update({
+            data: {
+                active: -1,
+            },
+            where: {
+                id: product.id,
+            },
+        });
+    }
+
+    // update or insert
     async upsertInput(input: ProductUpsertInput): Promise<Product> {
         await this.validateAndCleanUpsertInput(input);
 

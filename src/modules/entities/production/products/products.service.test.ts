@@ -4,10 +4,13 @@ import { ProductsService } from './products.service';
 import {
     orderProductionType1,
     orderProductionType2,
+    orderProductionType3,
     packing1,
     productType1,
     productType2,
+    productType3,
 } from '../../../../common/__tests__/objects';
+import { createProductForTesting } from '../../../../common/__tests__/helpers/products-for-testing-helper';
 
 let app: INestApplication;
 let productsService: ProductsService;
@@ -21,11 +24,26 @@ afterAll(async () => {
     await app.close();
 });
 
-describe('upsert', () => {
-    it('creates product type 1', async () => {
+describe('product list', () => {
+    it('returns list', async () => {
+        const products = await productsService.getProducts();
+        expect(Array.isArray(products)).toBe(true);
+    });
+});
+
+describe('product upsert', () => {
+    it('checks that create product for testing works', async () => {
+        const productForTesting = await createProductForTesting({
+            productsService,
+        });
+
+        expect(productForTesting).toBeDefined();
+    });
+
+    it('creates product type 1 (bag)', async () => {
         const product = await productsService.upsertInput({
             order_production_type_id: orderProductionType1.id,
-            product_type_id: orderProductionType1.id,
+            product_type_id: productType1.id,
             width: 10,
             packing_id: packing1.id,
             calibre: 1,
@@ -49,10 +67,10 @@ describe('upsert', () => {
         expect(product.current_kilo_price).toBe(1);
     });
 
-    it('creates product type 2', async () => {
+    it('creates product type 2 (roll)', async () => {
         const product = await productsService.upsertInput({
             order_production_type_id: orderProductionType2.id,
-            product_type_id: orderProductionType2.id,
+            product_type_id: productType2.id,
             width: 100,
             packing_id: packing1.id,
             calibre: 1,
@@ -76,6 +94,36 @@ describe('upsert', () => {
         expect(product.current_kilo_price).toBe(1);
     });
 
+    it('create product type 3 (pellet)', async () => {
+        const productCode = 'abcdsaec1234757575';
+        const productDescription = 'product descirpiton 2038383838';
+        const product = await productsService.upsertInput({
+            order_production_type_id: orderProductionType3.id,
+            product_type_id: productType3.id,
+            width: 100,
+            calibre: 30,
+            current_kilo_price: 10,
+            code: productCode,
+            description: productDescription,
+            length: 30,
+            packing_id: packing1.id,
+            current_group_weight: 80,
+        });
+
+        expect(product.id).toBeDefined();
+        expect(product.product_type_id).toBe(productType3.id);
+        expect(product.order_production_type_id).toBe(orderProductionType3.id);
+        expect(product.width).toBe(0);
+        expect(product.packing_id).toBe(null);
+        expect(product.calibre).toBe(0);
+        expect(product.length).toBe(null);
+        expect(product.current_group_weight).toBe(0);
+        expect(product.code).toMatch(productCode);
+        expect(product.description).toMatch(productDescription);
+        expect(product.current_kilo_price).toBe(10);
+    });
+
+    // fails when a product is created with no matching product type and order production type
     it('fails when product type doesnt match order production type', async () => {
         expect.hasAssertions();
 
@@ -97,6 +145,52 @@ describe('upsert', () => {
                 expect.arrayContaining([
                     expect.stringMatching(/doesnt belong/i),
                 ]),
+            );
+        }
+    });
+});
+
+describe('gets product', () => {
+    it('returns product if exists', async () => {
+        const createdProduct = await createProductForTesting({
+            productsService,
+        });
+
+        const product = await productsService.getProduct({
+            product_id: createdProduct.id,
+        });
+
+        expect(product.id).toBeDefined();
+    });
+});
+
+describe('deletes product', () => {
+    it('deletes product', async () => {
+        const createdProduct = await createProductForTesting({
+            productsService,
+        });
+
+        await productsService.deleteProduct({
+            product_id: createdProduct.id,
+        });
+
+        const product = await productsService.getProduct({
+            product_id: createdProduct.id,
+        });
+
+        expect(product).toBeFalsy();
+    });
+
+    it('fails if product is not found', async () => {
+        expect.hasAssertions();
+
+        try {
+            await productsService.deleteProduct({
+                product_id: 8988548543,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([expect.stringMatching(/not found/i)]),
             );
         }
     });
