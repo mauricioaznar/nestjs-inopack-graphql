@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     Employee,
     EmployeeUpsertInput,
 } from '../../../../common/dto/entities/production/employee.dto';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class EmployeesService {

@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     SpareAdjustmentUpsertInput,
     SpareOperation,
@@ -7,6 +6,7 @@ import {
 } from '../../../../common/dto/entities';
 import { vennDiagram } from '../../../../common/helpers';
 import { SpareInventoryService } from '../../../../common/services/entities/spare-inventory.service';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class SpareOperationsService {

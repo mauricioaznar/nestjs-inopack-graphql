@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { MachinesService } from '../../../entities/maintenance/machines/machines.service';
 import { MachinesSeed } from '../../types/machines-seed';
 import { MachineSectionsService } from '../../../entities/maintenance/machine-sections/machine-sections.service';
 import { MachinePartsService } from '../../../entities/maintenance/machine-parts/machine-parts.service';
 import { SparesSeed } from '../../types/spares-seed';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class MachineSeederService {

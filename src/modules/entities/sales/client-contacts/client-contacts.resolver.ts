@@ -1,4 +1,4 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { ClientContactsService } from './client-contacts.service';
 import { ClientContact } from '../../../../common/dto/entities';

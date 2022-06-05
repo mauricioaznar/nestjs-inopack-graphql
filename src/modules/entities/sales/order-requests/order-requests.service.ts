@@ -4,7 +4,6 @@ import {
     Inject,
     Injectable,
 } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     GetOrderRequestsArgs,
     OrderRequest,
@@ -24,6 +23,7 @@ import {
     YearMonth,
 } from '../../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class OrderRequestsService {

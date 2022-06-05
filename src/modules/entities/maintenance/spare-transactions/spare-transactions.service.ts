@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     Spare,
     SpareOperation,
@@ -7,6 +6,7 @@ import {
 } from '../../../../common/dto/entities';
 import { getRangesFromYearMonth } from '../../../../common/helpers';
 import { YearMonth } from '../../../../common/dto/pagination';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class SpareTransactionsService {

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { getRangesFromYearMonth } from '../../../../common/helpers';
-import { Machine, Product } from '../../../../common/dto/entities';
+import { Product } from '../../../../common/dto/entities';
 import { OrderAdjustmentProduct } from '../../../../common/dto/entities/production/order-adjustment-product.dto';
 import { OrderAdjustment } from '../../../../common/dto/entities/production/order-adjustment.dto';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class OrderAdjustmentProductsService {

@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
-    MachineDailyProduction,
     OrderProductionType,
     OrderProductionTypeDailyProduction,
 } from '../../../../common/dto/entities';
 import { YearMonth } from '../../../../common/dto/pagination';
 import dayjs from 'dayjs';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class OrderProductionTypesService {

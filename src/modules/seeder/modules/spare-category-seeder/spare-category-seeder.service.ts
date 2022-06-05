@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SpareCategoriesService } from '../../../entities/maintenance/spare-categories/spare-categories.service';
 import { SpareCategoriesSeed } from '../../types/spare-categories-seed';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class SpareCategorySeederService {

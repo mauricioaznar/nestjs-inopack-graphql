@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     Client,
     ClientContact,
     ClientUpsertInput,
 } from '../../../../common/dto/entities';
 import { vennDiagram } from '../../../../common/helpers';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class ClientsService {

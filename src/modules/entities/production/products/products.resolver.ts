@@ -1,6 +1,5 @@
 import {
     Args,
-    Float,
     Mutation,
     Parent,
     Query,

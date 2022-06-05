@@ -4,15 +4,17 @@ import { Product } from '../../dto/entities';
 
 export async function createProductForTesting({
     productsService,
+    orderProductionTypeId = orderProductionType1.id,
+    productTypeId = productType1.id,
 }: {
     productsService: ProductsService;
+    orderProductionTypeId?: number;
+    productTypeId?: number;
 }): Promise<Product> {
-    expect.hasAssertions();
-
     try {
-        const product = await productsService.upsertInput({
-            order_production_type_id: orderProductionType1.id,
-            product_type_id: productType1.id,
+        return await productsService.upsertInput({
+            order_production_type_id: orderProductionTypeId,
+            product_type_id: productTypeId,
             width: 10,
             packing_id: packing1.id,
             calibre: 1,
@@ -22,10 +24,6 @@ export async function createProductForTesting({
             description: 'asdfasdfjwe description',
             current_kilo_price: 1,
         });
-
-        expect(product.id).toBeDefined();
-
-        return product;
     } catch (e) {
         console.error(e);
     }

@@ -4,7 +4,6 @@ import { FilesController } from './files.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from '../../common/constants/jwt';
 import { OrderSaleService } from '../entities/sales/order-sale/order-sale.service';
-import { PrismaService } from '../../common/services/prisma/prisma.service';
 import { OrderRequestRemainingProductsService } from '../../common/services/entities/order-request-remaining-products-service';
 
 @Module({
@@ -18,7 +17,6 @@ import { OrderRequestRemainingProductsService } from '../../common/services/enti
     providers: [
         FilesService,
         OrderSaleService,
-        PrismaService,
         OrderRequestRemainingProductsService,
     ],
     exports: [FilesService],

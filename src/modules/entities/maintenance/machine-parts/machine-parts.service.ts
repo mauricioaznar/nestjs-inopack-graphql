@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import {
     Machine,
     MachineCompatibility,
@@ -9,6 +8,7 @@ import {
     Spare,
 } from '../../../../common/dto/entities';
 import { areUnique, vennDiagram } from '../../../../common/helpers';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class MachinePartsService {

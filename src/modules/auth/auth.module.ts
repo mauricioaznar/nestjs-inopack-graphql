@@ -8,7 +8,6 @@ import { jwtConstants } from '../../common/constants/jwt';
 import { AuthResolver } from './auth.resolver';
 import { FilesModule } from '../files/files.module';
 import { AuthController } from './auth.controller';
-import { PrismaService } from '../../common/services/prisma/prisma.service';
 import { UserService } from './user.service';
 
 @Module({
@@ -27,7 +26,6 @@ import { UserService } from './user.service';
         LocalStrategy,
         JwtStrategy,
         AuthResolver,
-        PrismaService,
     ],
     exports: [AuthService],
 })

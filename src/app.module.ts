@@ -17,9 +17,11 @@ import { SalesModule } from './modules/entities/sales/sales.module';
 import { APP_GUARD } from '@nestjs/core';
 import { GqlAuthGuard } from './modules/auth/guards/gql-auth.guard';
 import { GqlRolesGuard } from './modules/auth/guards/gql-roles.guard';
+import { PrismaModule } from './common/modules/prisma/prisma.module';
 
 @Module({
     imports: [
+        PrismaModule,
         GraphQLModule.forRoot({
             autoSchemaFile: 'schema.gql',
             installSubscriptionHandlers: true,

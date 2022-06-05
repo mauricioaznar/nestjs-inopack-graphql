@@ -1,7 +1,7 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { ProductInventory } from '../../dto/entities/production/product-inventory.dto';
 import { Cache } from 'cache-manager';
+import { PrismaService } from '../../modules/prisma/prisma.service';
 
 @Injectable()
 export class ProductInventoryService {

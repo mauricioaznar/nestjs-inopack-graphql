@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { Product, ProductUpsertInput } from '../../../../common/dto/entities';
 import { isEmpty } from 'class-validator';
 import { ProductInventoryService } from '../../../../common/services/entities/product-inventory-service';
 import { ProductInventory } from '../../../../common/dto/entities/production/product-inventory.dto';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class ProductsService {
@@ -173,6 +173,25 @@ export class ProductsService {
             input.order_production_type_id
         ) {
             errors.push('Product type doesnt belong to order production type');
+        }
+
+        const previousProduct = await this.prisma.products.findUnique({
+            where: {
+                id: input.id || 0,
+            },
+        });
+
+        if (!!previousProduct) {
+            if (previousProduct.product_type_id !== input.product_type_id) {
+                errors.push('Product type cant be changed');
+            }
+
+            if (
+                previousProduct.order_production_type_id !==
+                input.order_production_type_id
+            ) {
+                errors.push('Order production type cant be changed');
+            }
         }
 
         if (errors.length > 0) {

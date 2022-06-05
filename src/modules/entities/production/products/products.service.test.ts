@@ -32,14 +32,6 @@ describe('product list', () => {
 });
 
 describe('product upsert', () => {
-    it('checks that create product for testing works', async () => {
-        const productForTesting = await createProductForTesting({
-            productsService,
-        });
-
-        expect(productForTesting).toBeDefined();
-    });
-
     it('creates product type 1 (bag)', async () => {
         const product = await productsService.upsertInput({
             order_production_type_id: orderProductionType1.id,
@@ -144,6 +136,33 @@ describe('product upsert', () => {
             expect(e.response.message).toEqual(
                 expect.arrayContaining([
                     expect.stringMatching(/doesnt belong/i),
+                ]),
+            );
+        }
+    });
+
+    it('fails when a product is created and product type or order production type is changed', async () => {
+        expect.hasAssertions();
+
+        const productCreated = await createProductForTesting({
+            productsService,
+            productTypeId: productType1.id,
+            orderProductionTypeId: orderProductionType1.id,
+        });
+
+        try {
+            await productsService.upsertInput({
+                ...productCreated,
+                product_type_id: productType2.id,
+                order_production_type_id: orderProductionType2.id,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(/product type cant be changed/i),
+                    expect.stringMatching(
+                        /order production type cant be changed/i,
+                    ),
                 ]),
             );
         }

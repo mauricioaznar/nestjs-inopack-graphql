@@ -4,7 +4,6 @@ import {
     Inject,
     Injectable,
 } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { vennDiagram } from '../../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderAdjustmentProduct } from '../../../../common/dto/entities/production/order-adjustment-product.dto';
@@ -13,6 +12,7 @@ import {
     OrderAdjustmentInput,
 } from '../../../../common/dto/entities/production/order-adjustment.dto';
 import { OrderAdjustmentType } from '../../../../common/dto/entities/production/order-adjustment-type.dto';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class OrderAdjustmentsService {

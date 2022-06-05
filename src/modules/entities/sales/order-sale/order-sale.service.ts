@@ -4,7 +4,6 @@ import {
     Inject,
     Injectable,
 } from '@nestjs/common';
-import { PrismaService } from '../../../../common/services/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import {
     Client,
@@ -25,6 +24,7 @@ import {
     OffsetPaginatorArgs,
     YearMonth,
 } from '../../../../common/dto/pagination';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class OrderSaleService {

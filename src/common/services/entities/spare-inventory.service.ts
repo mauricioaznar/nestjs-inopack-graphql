@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { SpareTransactionInput } from '../../dto/entities';
+import { PrismaService } from '../../modules/prisma/prisma.service';
 
 @Injectable()
 export class SpareInventoryService {

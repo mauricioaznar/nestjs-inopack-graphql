@@ -14,9 +14,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from 'express';
 import { OrderSaleService } from '../entities/sales/order-sale/order-sale.service';
-import { PrismaService } from '../../common/services/prisma/prisma.service';
-import { formatDate } from '../../common/helpers';
-import { formatFloat } from '../../common/helpers';
+import { formatDate, formatFloat } from '../../common/helpers';
+import { PrismaService } from '../../common/modules/prisma/prisma.service';
 
 @Controller('files')
 export class FilesController {

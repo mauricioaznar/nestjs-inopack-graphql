@@ -19,7 +19,7 @@ export class ClientContactBase {
 @InputType('ClientContactInput')
 export class ClientContactInput extends ClientContactBase {
     @Field({ nullable: true })
-    id: number | null;
+    id?: number | null;
 }
 
 @ObjectType('ClientContact')

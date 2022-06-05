@@ -1,4 +1,3 @@
-import { PrismaService } from '../services/prisma/prisma.service';
 import { adminUser } from './objects/users';
 import { UserService } from '../../modules/auth/user.service';
 import { setupApp } from './helpers/setup-app';
@@ -8,6 +7,7 @@ import {
     productTypeCategories,
     productTypes,
 } from './objects';
+import { PrismaService } from '../modules/prisma/prisma.service';
 
 export default async function setupDatabase() {
     const app = await setupApp();
