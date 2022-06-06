@@ -14,10 +14,14 @@ import { PrismaService } from '../../../../common/modules/prisma/prisma.service'
 export class MachinePartsService {
     constructor(private prisma: PrismaService) {}
 
-    async getMachinePart(machinePartId: number): Promise<MachinePart> {
+    async getMachinePart({
+        machine_part_id,
+    }: {
+        machine_part_id: number;
+    }): Promise<MachinePart | null> {
         return this.prisma.machine_parts.findFirst({
             where: {
-                id: machinePartId,
+                id: machine_part_id,
             },
         });
     }
@@ -142,7 +146,7 @@ export class MachinePartsService {
     async getCurrentSpare({
         current_spare_id,
     }: {
-        current_spare_id: number | null;
+        current_spare_id?: number | null;
     }): Promise<Spare | null> {
         if (!current_spare_id) return null;
 
@@ -156,7 +160,7 @@ export class MachinePartsService {
     async getMachineSection({
         machine_section_id,
     }: {
-        machine_section_id: number | null | undefined;
+        machine_section_id?: number | null;
     }): Promise<MachineSection | null> {
         if (!machine_section_id) return null;
 

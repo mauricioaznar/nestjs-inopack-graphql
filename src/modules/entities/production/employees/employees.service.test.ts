@@ -106,8 +106,8 @@ describe('gets employee', () => {
             employeeId: createdEmployee.id,
         });
 
-        expect(employee.id).toBeDefined();
-        expect(employee.id).toEqual(createdEmployee.id);
+        expect(employee?.id).toBeDefined();
+        expect(employee?.id).toEqual(createdEmployee.id);
     });
 });
 

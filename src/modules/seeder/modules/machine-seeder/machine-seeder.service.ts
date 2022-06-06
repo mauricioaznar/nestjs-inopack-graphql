@@ -17,13 +17,13 @@ export class MachineSeederService {
 
     async getCmd(sparesSeed: SparesSeed): Promise<MachinesSeed['cmd']> {
         const cmd = await this.machinesService.getMachine({
-            id: 1,
+            machine_id: 1,
         });
 
         // seccion 1
         const cmdSection1 =
             await this.machineSectionsService.upsertMachineSection({
-                machine_id: cmd.id,
+                machine_id: cmd?.id,
                 name: 'Tablero',
             });
         const parte1 = await this.machinePartsService.upsertMachinePart({
@@ -77,7 +77,7 @@ export class MachineSeederService {
         // seccion 2
         const cmdSection2 =
             await this.machineSectionsService.upsertMachineSection({
-                machine_id: cmd.id,
+                machine_id: cmd?.id,
                 name: 'Cabezal',
             });
         const parte4 = await this.machinePartsService.upsertMachinePart({
@@ -112,7 +112,7 @@ export class MachineSeederService {
         // seccion 3
         const cmdSection3 =
             await this.machineSectionsService.upsertMachineSection({
-                machine_id: cmd.id,
+                machine_id: cmd?.id,
                 name: 'Seccion 3',
             });
 
@@ -180,7 +180,7 @@ export class MachineSeederService {
         // seccion 4
         const cmdSection4 =
             await this.machineSectionsService.upsertMachineSection({
-                machine_id: cmd.id,
+                machine_id: cmd?.id,
                 name: 'Seccion 4',
             });
 
@@ -272,56 +272,56 @@ export class MachineSeederService {
 
         // Camisetera 1
         const camisetera1 = await this.machinesService.getMachine({
-            id: 2,
+            machine_id: 2,
         });
 
         const camisetera2 = await this.machinesService.getMachine({
-            id: 3,
+            machine_id: 3,
         });
         const camisetera3 = await this.machinesService.getMachine({
-            id: 4,
+            machine_id: 4,
         });
         const selloLateral1 = await this.machinesService.getMachine({
-            id: 5,
+            machine_id: 5,
         });
         const extrusoraMinigrip = await this.machinesService.getMachine({
-            id: 6,
+            machine_id: 6,
         });
         const extrusora2 = await this.machinesService.getMachine({
-            id: 7,
+            machine_id: 7,
         });
         const extrusora3 = await this.machinesService.getMachine({
-            id: 8,
+            machine_id: 8,
         });
         const extrusora4 = await this.machinesService.getMachine({
-            id: 9,
+            machine_id: 9,
         });
         const extrusora5 = await this.machinesService.getMachine({
-            id: 10,
+            machine_id: 10,
         });
         const extrusora6 = await this.machinesService.getMachine({
-            id: 11,
+            machine_id: 11,
         });
         const extrusora7 = await this.machinesService.getMachine({
-            id: 12,
+            machine_id: 12,
         });
         const dobladora3 = await this.machinesService.getMachine({
-            id: 13,
+            machine_id: 13,
         });
         const selloDeFondo2 = await this.machinesService.getMachine({
-            id: 14,
+            machine_id: 14,
         });
         const coemter = await this.machinesService.getMachine({
-            id: 15,
+            machine_id: 15,
         });
         const shelda = await this.machinesService.getMachine({
-            id: 16,
+            machine_id: 16,
         });
         const dobladora4 = await this.machinesService.getMachine({
-            id: 17,
+            machine_id: 17,
         });
         const compactadora = await this.machinesService.getMachine({
-            id: 20,
+            machine_id: 20,
         });
 
         return {

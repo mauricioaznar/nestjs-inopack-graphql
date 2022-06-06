@@ -2,6 +2,7 @@ import {
     BadRequestException,
     Controller,
     Get,
+    NotFoundException,
     Param,
     Res,
 } from '@nestjs/common';
@@ -52,9 +53,21 @@ export class FilesController {
         );
         const id = Number(orderSaleId);
 
+        const orderSale = await this.orderSaleService.getOrderSale({
+            orderSaleId: id,
+        });
+
+        if (!orderSale) {
+            throw new NotFoundException();
+        }
+
         const client = await this.orderSaleService.getClient({
             order_sale_id: id,
         });
+
+        if (!client) {
+            throw new NotFoundException();
+        }
 
         const orderSaleProducts =
             await this.prismaService.order_sale_products.findMany({
@@ -68,10 +81,6 @@ export class FilesController {
 
         const total = await this.orderSaleService.getOrderSaleProductsTotal({
             order_sale_id: id,
-        });
-
-        const orderSale = await this.orderSaleService.getOrderSale({
-            orderSaleId: id,
         });
 
         const dateEmitted = formatDate(orderSale.date);

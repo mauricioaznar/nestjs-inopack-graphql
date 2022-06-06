@@ -19,7 +19,7 @@ export class OrderRequestProductsResolver {
         return this.service.getOrderRequestProducts();
     }
 
-    @ResolveField(() => OrderRequest, { nullable: false })
+    @ResolveField(() => OrderRequest, { nullable: true })
     async order_request(
         orderRequestProduct: OrderRequestProduct,
     ): Promise<OrderRequest | null> {

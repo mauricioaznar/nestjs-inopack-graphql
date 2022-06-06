@@ -18,10 +18,14 @@ export class MachinesService {
         private sparesInventoryService: SpareInventoryService,
     ) {}
 
-    async getMachine({ id }: { id: number }): Promise<Machine> {
+    async getMachine({
+        machine_id,
+    }: {
+        machine_id: number;
+    }): Promise<Machine | null> {
         return this.prisma.machines.findFirst({
             where: {
-                id: id,
+                id: machine_id,
             },
         });
     }
@@ -92,17 +96,19 @@ export class MachinesService {
         let sufficientTotalInventoryQuantity = 0;
 
         for await (const part of machineParts) {
-            const currentInventoryQuantity =
-                await this.sparesInventoryService.getCurrentQuantity(
-                    part.current_spare_id,
-                );
-            const requiredQuantity = part.current_spare_required_quantity;
-            if (requiredQuantity > 0) {
-                totalRequiredParts += requiredQuantity;
-                sufficientTotalInventoryQuantity +=
-                    currentInventoryQuantity > requiredQuantity
-                        ? requiredQuantity
-                        : currentInventoryQuantity;
+            if (part && part.current_spare_id) {
+                const currentInventoryQuantity =
+                    await this.sparesInventoryService.getCurrentQuantity(
+                        part.current_spare_id,
+                    );
+                const requiredQuantity = part.current_spare_required_quantity;
+                if (requiredQuantity && requiredQuantity > 0) {
+                    totalRequiredParts += requiredQuantity;
+                    sufficientTotalInventoryQuantity +=
+                        currentInventoryQuantity > requiredQuantity
+                            ? requiredQuantity
+                            : currentInventoryQuantity;
+                }
             }
         }
 
@@ -138,7 +144,7 @@ export class MachinesService {
         machineId: number;
     } & YearMonth): Promise<MachineDailyProduction[]> {
         const days: MachineDailyProduction[] = [];
-        if (year === null || month === null) return days;
+        if (!year || !month) return days;
 
         let startDate = dayjs().utc().year(year).month(month).startOf('month');
 

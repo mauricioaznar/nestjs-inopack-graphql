@@ -1,4 +1,11 @@
-import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import {
+    Args,
+    Int,
+    Parent,
+    Query,
+    ResolveField,
+    Resolver,
+} from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderProductionTypesService } from './order-production-types.service';
 import {
@@ -16,7 +23,7 @@ export class OrderProductionTypesResolver {
     @Query(() => OrderProductionType)
     async getOrderProductionType(
         @Args('OrderProductionTypeId') orderProductionTypeId: number,
-    ): Promise<OrderProductionType> {
+    ): Promise<OrderProductionType | null> {
         return this.service.getOrderProductionType({
             order_production_type_id: orderProductionTypeId,
         });
@@ -31,7 +38,8 @@ export class OrderProductionTypesResolver {
     async month_production(
         @Parent() orderProductionType: OrderProductionType,
         @Args() yearMonth: YearMonth,
-        @Args('BranchId', { nullable: true }) branchId?: number | null,
+        @Args('BranchId', { type: () => Int, nullable: true })
+        branchId?: number | null,
     ): Promise<OrderProductionTypeDailyProduction[]> {
         return this.service.getMonthProduction({
             orderProductionTypeId: orderProductionType.id,

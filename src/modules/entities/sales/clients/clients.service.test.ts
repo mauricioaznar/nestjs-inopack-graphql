@@ -97,8 +97,8 @@ describe('gets client', () => {
             client_id: createdClient.id,
         });
 
-        expect(client.abbreviation).toBe('Abbr');
-        expect(client.name).toBe('Name');
+        expect(client?.abbreviation).toBe('Abbr');
+        expect(client?.name).toBe('Name');
     });
 });
 

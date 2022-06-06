@@ -1,15 +1,15 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
 export class SpareTransactionBase {
-    @Field({ nullable: false })
-    spare_id: number;
+    @Field(() => Int, { nullable: true })
+    spare_id: number | null;
 
     @Field({ nullable: false })
     quantity: number;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     spare_operation_id?: number | null;
 }
 

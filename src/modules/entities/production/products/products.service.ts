@@ -45,7 +45,7 @@ export class ProductsService {
         product_id,
     }: {
         product_id: number;
-    }): Promise<ProductInventory> {
+    }): Promise<ProductInventory | null> {
         return this.productInventoryService.getProductInventory({
             product_id: product_id,
         });
@@ -137,7 +137,7 @@ export class ProductsService {
                 errors.push('Current group weight is required');
             }
         } else {
-            input.current_group_weight = undefined;
+            input.current_group_weight = 0;
         }
 
         // calibre
@@ -160,19 +160,24 @@ export class ProductsService {
 
         // product type
         // DoesProductTypeBelongToOrderProductionType
-        const productType = await this.prisma.product_type.findUnique({
-            where: {
-                id: input.product_type_id,
-            },
-        });
-        if (!productType) {
-            errors.push('Product type not found');
-        }
-        if (
-            productType.order_production_type_id !==
-            input.order_production_type_id
-        ) {
-            errors.push('Product type doesnt belong to order production type');
+        if (input.product_type_id) {
+            const productType = await this.prisma.product_type.findUnique({
+                where: {
+                    id: input.product_type_id,
+                },
+            });
+            if (!productType) {
+                errors.push('Product type not found');
+            }
+            if (
+                productType &&
+                productType.order_production_type_id !==
+                    input.order_production_type_id
+            ) {
+                errors.push(
+                    'Product type doesnt belong to order production type',
+                );
+            }
         }
 
         const previousProduct = await this.prisma.products.findUnique({

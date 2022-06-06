@@ -25,7 +25,7 @@ export class OrderAdjustmentsService {
         order_adjustment_id,
     }: {
         order_adjustment_id: number;
-    }): Promise<OrderAdjustment> {
+    }): Promise<OrderAdjustment | null> {
         return this.prisma.order_adjustments.findUnique({
             where: {
                 id: order_adjustment_id,
@@ -103,7 +103,7 @@ export class OrderAdjustmentsService {
         } = vennDiagram({
             a: oldProductItems,
             b: newProductItems,
-            indexProperties: ['product_id'],
+            indexProperties: ['id'],
         });
 
         for await (const delItem of deleteProductItems) {

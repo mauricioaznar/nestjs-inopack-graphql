@@ -34,7 +34,7 @@ export class OrderProductionsService {
         order_production_id,
     }: {
         order_production_id: number;
-    }): Promise<OrderProduction> {
+    }): Promise<OrderProduction | null> {
         return this.prisma.order_productions.findUnique({
             where: {
                 id: order_production_id,
@@ -68,11 +68,7 @@ export class OrderProductionsService {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
     }): Promise<PaginatedOrderProductions> {
-        if (
-            !datePaginator ||
-            datePaginator?.year === null ||
-            datePaginator?.month === null
-        )
+        if (!datePaginator || !datePaginator.year || !datePaginator.month)
             return [];
 
         const { startDate, endDate } = getRangesFromYearMonth({
@@ -327,15 +323,17 @@ export class OrderProductionsService {
         // DoesMachineBelongToBranch
         {
             for await (const { machine_id } of orderProductionProducts) {
-                const machine = await this.prisma.machines.findUnique({
-                    where: {
-                        id: machine_id,
-                    },
-                });
-                if (machine.branch_id !== input.branch_id) {
-                    errors.push(
-                        `Machine: ${machine_id} does not belong to branch: ${input.branch_id}`,
-                    );
+                if (machine_id) {
+                    const machine = await this.prisma.machines.findUnique({
+                        where: {
+                            id: machine_id,
+                        },
+                    });
+                    if (machine && machine.branch_id !== input.branch_id) {
+                        errors.push(
+                            `Machine: ${machine_id} does not belong to branch: ${input.branch_id}`,
+                        );
+                    }
                 }
             }
         }
@@ -343,18 +341,21 @@ export class OrderProductionsService {
         // DoMachinesBelongToOrderProductionType
         {
             for await (const { machine_id } of orderProductionProducts) {
-                const machine = await this.prisma.machines.findUnique({
-                    where: {
-                        id: machine_id,
-                    },
-                });
-                if (
-                    machine.order_production_type_id !==
-                    input.order_production_type_id
-                ) {
-                    errors.push(
-                        `Machine: ${machine_id} does not belong to order production id: ${input.order_production_type_id}`,
-                    );
+                if (machine_id) {
+                    const machine = await this.prisma.machines.findUnique({
+                        where: {
+                            id: machine_id,
+                        },
+                    });
+                    if (
+                        machine &&
+                        machine.order_production_type_id !==
+                            input.order_production_type_id
+                    ) {
+                        errors.push(
+                            `Machine: ${machine_id} does not belong to order production id: ${input.order_production_type_id}`,
+                        );
+                    }
                 }
             }
         }
@@ -362,18 +363,21 @@ export class OrderProductionsService {
         // DoProductsBelongToOrderProductionType
         {
             for await (const { product_id } of orderProductionProducts) {
-                const product = await this.prisma.products.findUnique({
-                    where: {
-                        id: product_id,
-                    },
-                });
-                if (
-                    product.order_production_type_id !==
-                    input.order_production_type_id
-                ) {
-                    errors.push(
-                        `Product: ${product_id} does not belong to order production id: ${input.order_production_type_id}`,
-                    );
+                if (product_id) {
+                    const product = await this.prisma.products.findUnique({
+                        where: {
+                            id: product_id,
+                        },
+                    });
+                    if (
+                        product &&
+                        product.order_production_type_id !==
+                            input.order_production_type_id
+                    ) {
+                        errors.push(
+                            `Product: ${product_id} does not belong to order production id: ${input.order_production_type_id}`,
+                        );
+                    }
                 }
             }
         }
@@ -404,15 +408,17 @@ export class OrderProductionsService {
         // DoEmployeesBelongToBranch
         {
             for await (const { employee_id } of orderProductionEmployees) {
-                const employee = await this.prisma.employees.findUnique({
-                    where: {
-                        id: employee_id,
-                    },
-                });
-                if (employee.branch_id !== input.branch_id) {
-                    errors.push(
-                        `Employee (${employee_id}) does not belong to branch (${input.branch_id})`,
-                    );
+                if (employee_id) {
+                    const employee = await this.prisma.employees.findUnique({
+                        where: {
+                            id: employee_id,
+                        },
+                    });
+                    if (employee && employee.branch_id !== input.branch_id) {
+                        errors.push(
+                            `Employee (${employee_id}) does not belong to branch (${input.branch_id})`,
+                        );
+                    }
                 }
             }
         }
@@ -420,18 +426,21 @@ export class OrderProductionsService {
         // DoEmployeesBelongToOrderProductionType
         {
             for await (const { employee_id } of orderProductionEmployees) {
-                const employee = await this.prisma.employees.findUnique({
-                    where: {
-                        id: employee_id,
-                    },
-                });
-                if (
-                    employee.order_production_type_id !==
-                    input.order_production_type_id
-                ) {
-                    errors.push(
-                        `Employee (${employee_id}) does not belong to order production type (${input.order_production_type_id})`,
-                    );
+                if (employee_id) {
+                    const employee = await this.prisma.employees.findUnique({
+                        where: {
+                            id: employee_id,
+                        },
+                    });
+                    if (
+                        employee &&
+                        employee.order_production_type_id !==
+                            input.order_production_type_id
+                    ) {
+                        errors.push(
+                            `Employee (${employee_id}) does not belong to order production type (${input.order_production_type_id})`,
+                        );
+                    }
                 }
             }
         }
@@ -439,15 +448,17 @@ export class OrderProductionsService {
         // DoEmployeesHaveUpStatus
         {
             for await (const { employee_id } of orderProductionEmployees) {
-                const employee = await this.prisma.employees.findUnique({
-                    where: {
-                        id: employee_id,
-                    },
-                });
-                if (employee.employee_status_id !== 1) {
-                    errors.push(
-                        `Employee (${employee_id}) doesnt have up status (1)`,
-                    );
+                if (employee_id) {
+                    const employee = await this.prisma.employees.findUnique({
+                        where: {
+                            id: employee_id,
+                        },
+                    });
+                    if (employee && employee.employee_status_id !== 1) {
+                        errors.push(
+                            `Employee (${employee_id}) doesnt have up status (1)`,
+                        );
+                    }
                 }
             }
         }

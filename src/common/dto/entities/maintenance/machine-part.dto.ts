@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { MachineCompatibilityUpsertInput } from './machine-compatibility.dto';
 
 @InputType('MachinePartUpsertInput')
@@ -9,16 +9,16 @@ export class MachinePartUpsertInput {
     @Field()
     name: string;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     machine_section_id?: number | null;
 
-    @Field({ nullable: false })
-    machine_id: number;
+    @Field(() => Int, { nullable: true })
+    machine_id?: number | null;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     current_spare_id?: number | null;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     current_spare_required_quantity?: number | null;
 
     @Field(() => [MachineCompatibilityUpsertInput])
@@ -33,15 +33,15 @@ export class MachinePart {
     @Field()
     name: string;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     machine_section_id?: number | null;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     machine_id?: number | null;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     current_spare_id?: number | null;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     current_spare_required_quantity?: number | null;
 }

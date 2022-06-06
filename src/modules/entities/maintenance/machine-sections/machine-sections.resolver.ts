@@ -35,8 +35,10 @@ export class MachineSectionsResolver {
     @Query(() => MachineSection)
     async getMachineSection(
         @Args('MachineSectionId') machineSectionId: number,
-    ): Promise<MachineSection> {
-        return this.machineSectionsService.getMachineSection(machineSectionId);
+    ): Promise<MachineSection | null> {
+        return this.machineSectionsService.getMachineSection({
+            machine_section_id: machineSectionId,
+        });
     }
 
     @Query(() => [MachineSection])
@@ -51,7 +53,7 @@ export class MachineSectionsResolver {
         machineSection: MachineSection,
     ): Promise<MachinePart[]> {
         return this.machineSectionsService.getMachineSectionParts({
-            machineSectionId: machineSection.id,
+            machine_section_id: machineSection.id,
         });
     }
 

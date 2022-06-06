@@ -9,10 +9,10 @@ import { OrderAdjustmentType } from '../../../../common/dto/entities/production/
 export class OrderAdjustmentTypesResolver {
     constructor(private service: OrderAdjustmentTypesService) {}
 
-    @Query(() => OrderAdjustmentType)
+    @Query(() => OrderAdjustmentType, { nullable: true })
     async getOrderAdjustmentType(
         @Args('OrderAdjustmentTypeId') orderAdjustmentTypeId: number,
-    ): Promise<OrderAdjustmentType> {
+    ): Promise<OrderAdjustmentType | null> {
         return this.service.getOrderAdjustmentType({
             order_adjustment_type_id: orderAdjustmentTypeId,
         });

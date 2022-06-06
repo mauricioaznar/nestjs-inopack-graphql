@@ -150,6 +150,10 @@ describe('product upsert', () => {
             orderProductionTypeId: orderProductionType1.id,
         });
 
+        if (!productCreated) {
+            throw new Error('createProductForTesting failed');
+        }
+
         try {
             await productsService.upsertInput({
                 ...productCreated,
@@ -175,11 +179,15 @@ describe('gets product', () => {
             productsService,
         });
 
+        if (!createdProduct) {
+            throw new Error('createProductForTesting failed');
+        }
+
         const product = await productsService.getProduct({
             product_id: createdProduct.id,
         });
 
-        expect(product.id).toBeDefined();
+        expect(product?.id).toBeDefined();
     });
 });
 
@@ -188,6 +196,10 @@ describe('deletes product', () => {
         const createdProduct = await createProductForTesting({
             productsService,
         });
+
+        if (!createdProduct) {
+            throw new Error('createProductForTesting failed');
+        }
 
         await productsService.deleteProduct({
             product_id: createdProduct.id,

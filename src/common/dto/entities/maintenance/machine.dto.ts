@@ -1,4 +1,4 @@
-import { Field, Float, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { Day } from '../dates/day/day';
 
 @ObjectType({ isAbstract: true })
@@ -10,7 +10,7 @@ export class MachineBase {
 
 @InputType('MachineUpsertInput')
 export class MachineUpsertInput extends MachineBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id?: number | null;
 }
 
@@ -19,11 +19,11 @@ export class Machine extends MachineBase {
     @Field({ nullable: false })
     id: number;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     branch_id: number | null;
 
-    @Field({ nullable: true })
-    order_production_type_id: number;
+    @Field(() => Int, { nullable: true })
+    order_production_type_id: number | null;
 }
 
 @ObjectType('MachineDailyProduction')

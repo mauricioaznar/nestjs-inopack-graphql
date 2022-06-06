@@ -38,8 +38,10 @@ export class AuthService {
         if (!isMatch) {
             return null;
         }
-        delete user.password;
-        return user;
+        return {
+            ...user,
+            password: undefined,
+        };
     }
 
     async login(userInput: LoginInput): Promise<AccessToken> {

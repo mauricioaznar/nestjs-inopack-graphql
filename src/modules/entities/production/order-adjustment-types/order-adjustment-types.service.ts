@@ -10,7 +10,7 @@ export class OrderAdjustmentTypesService {
         order_adjustment_type_id,
     }: {
         order_adjustment_type_id;
-    }): Promise<OrderAdjustmentType> {
+    }): Promise<OrderAdjustmentType | null> {
         return this.prisma.order_adjustment_type.findUnique({
             where: {
                 id: order_adjustment_type_id,

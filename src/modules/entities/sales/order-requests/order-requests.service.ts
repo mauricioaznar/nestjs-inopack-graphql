@@ -72,11 +72,7 @@ export class OrderRequestsService {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
     }): Promise<PaginatedOrderRequests> {
-        if (
-            !datePaginator ||
-            datePaginator?.year === null ||
-            datePaginator?.month === null
-        )
+        if (!datePaginator || !datePaginator.year || !datePaginator.month)
             return [];
 
         const { startDate, endDate } = getRangesFromYearMonth({
@@ -139,7 +135,7 @@ export class OrderRequestsService {
             },
         });
 
-        return order_request_id >= 0 && orderRequest
+        return order_request_id && order_request_id >= 0 && orderRequest
             ? orderRequest.id !== order_request_id
             : !!orderRequest;
     }
@@ -252,14 +248,16 @@ export class OrderRequestsService {
         });
 
         for await (const delItem of deleteProductItems) {
-            await this.prisma.order_request_products.deleteMany({
-                where: {
-                    id: delItem.id,
-                },
-            });
-            await this.cacheManager.del(
-                `product_id_inventory_${delItem.product_id}`,
-            );
+            if (delItem && delItem.id) {
+                await this.prisma.order_request_products.deleteMany({
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+                await this.cacheManager.del(
+                    `product_id_inventory_${delItem.product_id}`,
+                );
+            }
         }
 
         for await (const createItem of createProductItems) {
@@ -280,22 +278,24 @@ export class OrderRequestsService {
         }
 
         for await (const updateItem of updateProductItems) {
-            await this.prisma.order_request_products.updateMany({
-                data: {
-                    product_id: updateItem.product_id,
-                    kilos: updateItem.kilos,
-                    active: 1,
-                    group_weight: updateItem.group_weight,
-                    groups: updateItem.groups,
-                    kilo_price: updateItem.kilo_price,
-                },
-                where: {
-                    id: updateItem.id,
-                },
-            });
-            await this.cacheManager.del(
-                `product_id_inventory_${updateItem.product_id}`,
-            );
+            if (updateItem && updateItem.id) {
+                await this.prisma.order_request_products.updateMany({
+                    data: {
+                        product_id: updateItem.product_id,
+                        kilos: updateItem.kilos,
+                        active: 1,
+                        group_weight: updateItem.group_weight,
+                        groups: updateItem.groups,
+                        kilo_price: updateItem.kilo_price,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+                await this.cacheManager.del(
+                    `product_id_inventory_${updateItem.product_id}`,
+                );
+            }
         }
 
         return orderRequest;
@@ -342,34 +342,40 @@ export class OrderRequestsService {
                 group_weight: groupWeight,
                 groups,
             } of input.order_request_products) {
-                const product = await this.prisma.products.findUnique({
-                    where: {
-                        id: product_id,
-                    },
-                });
+                if (product_id) {
+                    const product = await this.prisma.products.findUnique({
+                        where: {
+                            id: product_id!,
+                        },
+                    });
 
-                const currentGroupWeight = product.current_group_weight;
+                    const currentGroupWeight =
+                        product?.current_group_weight || 0;
 
-                if (
-                    groupWeight !== null &&
-                    Number(groupWeight) !== currentGroupWeight
-                ) {
-                    errors.push(
-                        `${product_id} current_group_weight doesnt match group_weight`,
-                    );
-                }
+                    if (
+                        groupWeight !== null &&
+                        Number(groupWeight) !== currentGroupWeight
+                    ) {
+                        errors.push(
+                            `${product_id} current_group_weight doesnt match group_weight`,
+                        );
+                    }
 
-                if (
-                    (currentGroupWeight === null || currentGroupWeight === 0) &&
-                    (groupWeight === null || groupWeight === 0 || !groupWeight)
-                ) {
-                    continue;
-                }
+                    if (
+                        (currentGroupWeight === null ||
+                            currentGroupWeight === 0) &&
+                        (groupWeight === null ||
+                            groupWeight === 0 ||
+                            !groupWeight)
+                    ) {
+                        continue;
+                    }
 
-                if (groups * currentGroupWeight !== kilos) {
-                    errors.push(
-                        `product_id (${product_id}) groups * currentGroupWeight !== kilos (${groups} * ${currentGroupWeight} !== ${kilos})`,
-                    );
+                    if (groups * currentGroupWeight !== kilos) {
+                        errors.push(
+                            `product_id (${product_id}) groups * currentGroupWeight !== kilos (${groups} * ${currentGroupWeight} !== ${kilos})`,
+                        );
+                    }
                 }
             }
         }
@@ -385,7 +391,7 @@ export class OrderRequestsService {
 
         // AreProductsSoldStillInRequestProducts
         {
-            if (input.id > 0) {
+            if (input.id && input.id > 0) {
                 const orderSaleSoldProducts =
                     await this.orderRequestRemainingProductsService.getOrderRequestSoldProducts(
                         {
@@ -403,43 +409,45 @@ export class OrderRequestsService {
                         },
                     });
 
-                orderRequest.order_request_products.forEach(
-                    (orderRequestProduct) => {
-                        const foundInputOrderRequestProduct =
-                            input.order_request_products.find(
-                                (inputOrderRequestProduct) => {
-                                    return (
-                                        orderRequestProduct.product_id ===
-                                        inputOrderRequestProduct.product_id
-                                    );
-                                },
-                            );
-
-                        if (!foundInputOrderRequestProduct) {
-                            const foundOrderSaleSoldProduct =
-                                orderSaleSoldProducts.find(
-                                    (orderSaleProduct) => {
+                if (orderRequest) {
+                    orderRequest.order_request_products.forEach(
+                        (orderRequestProduct) => {
+                            const foundInputOrderRequestProduct =
+                                input.order_request_products.find(
+                                    (inputOrderRequestProduct) => {
                                         return (
-                                            orderSaleProduct.product_id ===
-                                            orderRequestProduct.product_id
+                                            orderRequestProduct.product_id ===
+                                            inputOrderRequestProduct.product_id
                                         );
                                     },
                                 );
 
-                            if (foundOrderSaleSoldProduct) {
-                                errors.push(
-                                    `product id (${orderRequestProduct.product_id}) cant be removed already sold`,
-                                );
+                            if (!foundInputOrderRequestProduct) {
+                                const foundOrderSaleSoldProduct =
+                                    orderSaleSoldProducts.find(
+                                        (orderSaleProduct) => {
+                                            return (
+                                                orderSaleProduct.product_id ===
+                                                orderRequestProduct.product_id
+                                            );
+                                        },
+                                    );
+
+                                if (foundOrderSaleSoldProduct) {
+                                    errors.push(
+                                        `product id (${orderRequestProduct.product_id}) cant be removed already sold`,
+                                    );
+                                }
                             }
-                        }
-                    },
-                );
+                        },
+                    );
+                }
             }
         }
 
         // AreRequestProductsMoreThanProductsSold
         {
-            if (input.id > 0) {
+            if (input.id && input.id > 0) {
                 const orderSaleSoldProducts =
                     await this.orderRequestRemainingProductsService.getOrderRequestSoldProducts(
                         { order_request_id: input.id },

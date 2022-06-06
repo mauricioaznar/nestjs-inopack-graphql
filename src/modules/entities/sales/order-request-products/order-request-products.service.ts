@@ -17,7 +17,7 @@ export class OrderRequestProductsService {
     async getOrderRequest({
         order_request_id,
     }: {
-        order_request_id: number | null;
+        order_request_id?: number | null;
     }): Promise<OrderRequest | null> {
         if (!order_request_id) return null;
 
@@ -31,7 +31,7 @@ export class OrderRequestProductsService {
     async getProduct({
         product_id,
     }: {
-        product_id: number | null;
+        product_id?: number | null;
     }): Promise<Product | null> {
         if (!product_id) return null;
 

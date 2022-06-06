@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -6,13 +6,13 @@ export class MachineSectionBase {
     @Field()
     name: string;
 
-    @Field()
-    machine_id: number;
+    @Field(() => Int, { nullable: true })
+    machine_id?: number | null;
 }
 
 @InputType('MachineSectionUpsertInput')
 export class MachineSectionUpsertInput extends MachineSectionBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id?: number | null;
 }
 

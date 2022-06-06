@@ -22,7 +22,9 @@ export class MachineCompatibilitiesResolver {
     @ResolveField(() => Spare, {
         nullable: true,
     })
-    async spare(machineCompatibility: MachineCompatibility) {
+    async spare(
+        machineCompatibility: MachineCompatibility,
+    ): Promise<MachineCompatibility | null> {
         return this.machineCompatibilitiesService.getSpare({
             spare_id: machineCompatibility.spare_id,
         });

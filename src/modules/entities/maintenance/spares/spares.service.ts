@@ -53,7 +53,7 @@ export class SparesService {
         spare_category_id,
     }: {
         spare_category_id: number | null;
-    }): Promise<SpareCategory> {
+    }): Promise<SpareCategory | null> {
         if (!spare_category_id) return null;
         return this.prisma.spare_categories.findFirst({
             where: {

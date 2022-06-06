@@ -1,29 +1,29 @@
-import { ArgsType, Field, InputType, ObjectType } from '@nestjs/graphql';
+import { ArgsType, Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { OrderRequestProductInput } from './order-request-product.dto';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
 export class OrderRequestBase {
-    @Field({ nullable: true })
-    date: Date | null;
+    @Field({ nullable: false })
+    date: Date;
 
     @Field()
     order_code: number;
 
-    @Field({ nullable: true })
+    @Field(() => Date, { nullable: true })
     estimated_delivery_date: Date | null;
 
-    @Field()
-    client_id: number;
+    @Field(() => Int, { nullable: true })
+    client_id?: number | null;
 
-    @Field()
-    order_request_status_id: number;
+    @Field(() => Int, { nullable: true })
+    order_request_status_id?: number | null;
 }
 
 @InputType('OrderRequestInput')
 export class OrderRequestInput extends OrderRequestBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id: number | null;
 
     @Field(() => [OrderRequestProductInput])
@@ -38,7 +38,7 @@ export class OrderRequest extends OrderRequestBase {
 
 @ArgsType()
 export class GetOrderRequestsArgs {
-    @Field({ nullable: true, description: 'Order request status' })
+    @Field(() => Int, { nullable: true })
     order_request_status_id?: number | null;
 }
 

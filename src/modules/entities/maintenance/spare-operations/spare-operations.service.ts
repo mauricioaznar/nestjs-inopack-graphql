@@ -155,7 +155,7 @@ export class SpareOperationsService {
         spare_operation_id,
     }: {
         spare_operation_id?: number | null;
-    }): Promise<SpareOperation> {
+    }): Promise<SpareOperation | null> {
         if (!spare_operation_id) return null;
         return this.prisma.spare_operations.findFirst({
             where: {

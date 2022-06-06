@@ -17,7 +17,9 @@ export class MachinePartsResolver {
 
     @Query(() => MachinePart)
     async getMachinePart(@Args('MachinePartId') machinePartId: number) {
-        return this.machinePartsService.getMachinePart(machinePartId);
+        return this.machinePartsService.getMachinePart({
+            machine_part_id: machinePartId,
+        });
     }
 
     @Query(() => [MachinePart])

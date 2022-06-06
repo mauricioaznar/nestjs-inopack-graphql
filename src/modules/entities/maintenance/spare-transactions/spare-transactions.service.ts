@@ -15,11 +15,7 @@ export class SpareTransactionsService {
     async getSpareTransactions(
         datePaginator: YearMonth,
     ): Promise<SpareTransaction[]> {
-        if (
-            !datePaginator ||
-            datePaginator?.year === null ||
-            datePaginator?.month === null
-        )
+        if (!datePaginator || !datePaginator.year || !datePaginator.month)
             return [];
 
         const { startDate, endDate } = getRangesFromYearMonth({
@@ -67,7 +63,7 @@ export class SpareTransactionsService {
     async getSpareOperation({
         spare_operation_id,
     }: {
-        spare_operation_id: number | null;
+        spare_operation_id?: number | null;
     }): Promise<SpareOperation | null> {
         if (!spare_operation_id) return null;
         return this.prisma.spare_operations.findFirst({

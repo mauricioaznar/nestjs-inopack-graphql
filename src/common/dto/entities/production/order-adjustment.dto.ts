@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { OrderAdjustmentProductInput } from './order-adjustment-product.dto';
 
 @ObjectType({ isAbstract: true })
@@ -7,17 +7,17 @@ export class OrderAdjustmentBase {
     @Field({ nullable: false })
     date: Date;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     order_adjustment_type_id: number | null;
 }
 
 @InputType('OrderAdjustmentInput')
 export class OrderAdjustmentInput extends OrderAdjustmentBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id: number | null;
 
     @Field(() => [OrderAdjustmentProductInput])
-    order_adjustment_products: Omit<OrderAdjustmentProductInput, 'id'>[];
+    order_adjustment_products: OrderAdjustmentProductInput[];
 }
 
 @ObjectType('OrderAdjustment')

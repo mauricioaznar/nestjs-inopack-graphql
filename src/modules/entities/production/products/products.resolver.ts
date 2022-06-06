@@ -39,7 +39,7 @@ export class ProductsResolver {
     @ResolveField(() => ProductInventory, { nullable: true })
     async product_inventory(
         @Parent() product: Product,
-    ): Promise<ProductInventory> {
+    ): Promise<ProductInventory | null> {
         return this.productsService.getProductInventory({
             product_id: product.id,
         });

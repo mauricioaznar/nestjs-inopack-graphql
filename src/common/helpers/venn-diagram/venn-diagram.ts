@@ -15,7 +15,7 @@ export function vennDiagram<T>(
 ): IVennDiagramResult<T> {
     const { a, b, indexProperties } = options;
 
-    const intersections = [];
+    const intersections: T[] = [];
 
     const aMinusB = a.filter((aItem) => {
         const foundBItem = b.find((bItem) =>

@@ -10,7 +10,7 @@ export async function createProductForTesting({
     productsService: ProductsService;
     orderProductionTypeId?: number;
     productTypeId?: number;
-}): Promise<Product> {
+}): Promise<Product | null | undefined> {
     try {
         return await productsService.upsertInput({
             order_production_type_id: orderProductionTypeId,

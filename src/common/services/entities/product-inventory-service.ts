@@ -15,7 +15,7 @@ export class ProductInventoryService {
     }: {
         product_id: number;
     }): Promise<ProductInventory | null> {
-        const cachedProductInventory: ProductInventory =
+        const cachedProductInventory: ProductInventory | undefined =
             await this.cacheManager.get(`product_id_inventory_${product_id}`);
 
         if (!!cachedProductInventory) return cachedProductInventory;
@@ -112,11 +112,11 @@ export class ProductInventoryService {
 
         const productInventory: ProductInventory = {
             kilos:
-                product.order_production_type_id === 1
+                product?.order_production_type_id === 1
                     ? results[0].kilos
                     : null,
             groups:
-                product.order_production_type_id === 1
+                product?.order_production_type_id === 1
                     ? results[0].groups
                     : null,
             last_update: results[0].last_update,

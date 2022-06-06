@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { SpareTransactionInput } from './spare-transactions.dto';
 
 @ObjectType({ isAbstract: true })
@@ -7,13 +7,13 @@ export class SpareOperationBase {
     @Field()
     description: string;
 
-    @Field({ nullable: true })
+    @Field(() => Date, { nullable: true })
     date?: Date | null;
 }
 
 @InputType('SpareAdjustmentUpsertInput')
 export class SpareAdjustmentUpsertInput extends SpareOperationBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id?: number | null;
 
     @Field(() => [SpareTransactionInput])
@@ -22,7 +22,7 @@ export class SpareAdjustmentUpsertInput extends SpareOperationBase {
 
 @InputType('SpareWithdrawalUpsertInput')
 export class SpareWithdrawalUpsertInput extends SpareOperationBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id?: number | null;
 
     @Field(() => [SpareTransactionInput])
@@ -34,9 +34,9 @@ export class SpareOperation extends SpareOperationBase {
     @Field({ nullable: false })
     id: number;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     is_adjustment: number;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     is_withdrawal: number;
 }

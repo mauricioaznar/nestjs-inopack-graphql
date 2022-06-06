@@ -56,6 +56,7 @@ import { PrismaModule } from './common/modules/prisma/prisma.module';
                         };
                     }
                 }
+                return error;
             },
             context: (ctx) => {
                 return ctx.connection

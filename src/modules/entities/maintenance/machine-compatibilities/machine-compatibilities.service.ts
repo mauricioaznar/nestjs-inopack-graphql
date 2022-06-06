@@ -17,7 +17,7 @@ export class MachineCompatibilitiesService {
     async getSpare({
         spare_id,
     }: {
-        spare_id: number | null;
+        spare_id?: number | null;
     }): Promise<Spare | null> {
         if (!spare_id) return null;
 
@@ -31,7 +31,7 @@ export class MachineCompatibilitiesService {
     async getMachinePart({
         machine_part_id,
     }: {
-        machine_part_id: number | null;
+        machine_part_id?: number | null;
     }): Promise<MachinePart | null> {
         if (!machine_part_id) return null;
 
@@ -46,10 +46,10 @@ export class MachineCompatibilitiesService {
         machine_part_id,
         spare_id,
     }: {
-        machine_part_id: number | null;
-        spare_id: number | null;
+        machine_part_id?: number | null;
+        spare_id?: number | null;
     }): Promise<boolean> {
-        if (!machine_part_id) return null;
+        if (!machine_part_id) return false;
 
         const machinePart = await this.prisma.machine_parts.findFirst({
             where: {
@@ -57,6 +57,6 @@ export class MachineCompatibilitiesService {
             },
         });
 
-        return machinePart.current_spare_id === spare_id;
+        return !!machinePart && machinePart.current_spare_id === spare_id;
     }
 }

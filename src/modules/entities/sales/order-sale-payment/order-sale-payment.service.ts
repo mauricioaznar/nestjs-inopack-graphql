@@ -13,7 +13,7 @@ export class OrderSalePaymentService {
     async getOrderSale({
         order_sale_id,
     }: {
-        order_sale_id: number | null;
+        order_sale_id?: number | null;
     }): Promise<OrderSale | null> {
         if (!order_sale_id) return null;
 

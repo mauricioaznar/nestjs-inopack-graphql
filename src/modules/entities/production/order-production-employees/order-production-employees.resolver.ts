@@ -14,7 +14,7 @@ export class OrderProductionEmployeesResolver {
     @Query(() => OrderProductionEmployee)
     async getOrderProductionEmployee(
         @Args('OrderProductionEmployeeId') orderProductionEmployeeId: number,
-    ): Promise<OrderProductionEmployee> {
+    ): Promise<OrderProductionEmployee | null> {
         return this.service.getOrderProductionEmployee({
             order_production_employee_id: orderProductionEmployeeId,
         });

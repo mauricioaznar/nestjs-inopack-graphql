@@ -11,7 +11,7 @@ export class OrderProductionEmployeesService {
         order_production_employee_id,
     }: {
         order_production_employee_id: number | null;
-    }): Promise<OrderProductionEmployee> {
+    }): Promise<OrderProductionEmployee | null> {
         if (!order_production_employee_id) return null;
 
         return this.prisma.order_production_employees.findUnique({

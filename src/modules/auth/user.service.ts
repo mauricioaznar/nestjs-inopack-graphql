@@ -7,7 +7,7 @@ import { PrismaService } from '../../common/modules/prisma/prisma.service';
 export class UserService {
     constructor(private prisma: PrismaService) {}
 
-    async findOneByEmail({ email }: { email: string }): Promise<User> {
+    async findOneByEmail({ email }: { email: string }): Promise<User | null> {
         return this.prisma.users.findFirst({
             where: {
                 email,

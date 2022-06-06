@@ -22,7 +22,7 @@ export class SpareCategoriesResolver {
     @Query(() => SpareCategory)
     async getSpareCategory(
         @Args('SpareCategoryId') id: number,
-    ): Promise<SpareCategory> {
+    ): Promise<SpareCategory | null> {
         return this.spareCategoriesService.getSpareCategory({
             spare_category_id: id,
         });

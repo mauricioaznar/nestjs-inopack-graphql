@@ -48,7 +48,7 @@ export class OrderAdjustmentProductsService {
     async getOrderAdjustment({
         order_adjustment_id,
     }: {
-        order_adjustment_id: number | null;
+        order_adjustment_id?: number | null;
     }): Promise<OrderAdjustment | null> {
         if (!order_adjustment_id) return null;
 
@@ -62,7 +62,7 @@ export class OrderAdjustmentProductsService {
     async getProduct({
         product_id,
     }: {
-        product_id: number | null;
+        product_id?: number | null;
     }): Promise<Product | null> {
         if (!product_id) return null;
 

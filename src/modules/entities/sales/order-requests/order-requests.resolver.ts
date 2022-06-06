@@ -1,6 +1,7 @@
 import {
     Args,
     Float,
+    Int,
     Mutation,
     Parent,
     Query,
@@ -20,6 +21,7 @@ import {
 } from '../../../../common/dto/entities';
 import { OffsetPaginatorArgs } from '../../../../common/dto/pagination';
 import { YearMonth } from '../../../../common/dto/pagination';
+import { GraphQLBoolean } from 'graphql';
 
 @Resolver(() => OrderRequest)
 // @Role('super')
@@ -65,7 +67,7 @@ export class OrderRequestsResolver {
     @Query(() => Boolean)
     async isOrderRequestCodeOccupied(
         @Args('OrderCode') orderCode: number,
-        @Args('OrderRequestId', { nullable: true })
+        @Args('OrderRequestId', { nullable: true, type: () => Int })
         orderRequestId: number | null,
     ): Promise<boolean> {
         const result = await this.service.isOrderRequestCodeOccupied({

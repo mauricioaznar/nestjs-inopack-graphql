@@ -129,3 +129,5 @@ update order_requests set order_requests.estimated_delivery_date = null where or
 alter table order_requests modify column date datetime not null;
 alter table order_requests modify column estimated_delivery_date datetime null;
 alter table order_sale_payments modify column date_paid datetime not null;
+
+alter table order_adjustment_products drop column name;

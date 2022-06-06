@@ -35,9 +35,11 @@ export class OrderSaleService {
     ) {}
 
     async getOrderSales(): Promise<OrderSale[]> {
-        return this.prisma.order_sales.findMany({
+        const orderSales = await this.prisma.order_sales.findMany({
             take: 10,
         });
+
+        return orderSales;
     }
 
     async paginatedOrderSales({
@@ -47,12 +49,9 @@ export class OrderSaleService {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
     }): Promise<PaginatedOrderSales> {
-        if (
-            !datePaginator ||
-            datePaginator?.year === null ||
-            datePaginator?.month === null
-        )
+        if (!datePaginator || !datePaginator.year || !datePaginator.month) {
             return [];
+        }
 
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
@@ -128,7 +127,7 @@ export class OrderSaleService {
             },
         });
 
-        return order_sale_id >= 0 && orderSale
+        return !!order_sale_id && order_sale_id >= 0 && orderSale
             ? orderSale.id !== order_sale_id
             : !!orderSale;
     }
@@ -175,17 +174,21 @@ export class OrderSaleService {
         order_sale_id,
     }: {
         order_sale_id: number;
-    }): Promise<Client> {
-        const orderSale = await this.prisma.order_sales.findUnique({
-            where: {
-                id: order_sale_id,
-            },
+    }): Promise<Client | null> {
+        const orderSale = await this.getOrderSale({
+            orderSaleId: order_sale_id,
         });
+
+        if (!orderSale || !orderSale.order_request_id) return null;
+
         const orderRequest = await this.prisma.order_requests.findFirst({
             where: {
                 id: orderSale.order_request_id,
             },
         });
+
+        if (!orderRequest || !orderRequest.client_id) return null;
+
         return this.prisma.clients.findFirst({
             where: {
                 id: orderRequest.client_id,
@@ -197,17 +200,23 @@ export class OrderSaleService {
         order_sale_id,
     }: {
         order_sale_id: number;
-    }): Promise<number> {
+    }): Promise<number | null> {
         const orderSale = await this.prisma.order_sales.findUnique({
             where: {
                 id: order_sale_id,
             },
         });
+
+        if (!orderSale || !orderSale.order_request_id) return null;
+
         const orderRequest = await this.prisma.order_requests.findFirst({
             where: {
                 id: orderSale.order_request_id,
             },
         });
+
+        if (!orderRequest) return null;
+
         return orderRequest.client_id;
     }
 
@@ -215,12 +224,15 @@ export class OrderSaleService {
         order_sale_id,
     }: {
         order_sale_id: number;
-    }): Promise<OrderRequest> {
+    }): Promise<OrderRequest | null> {
         const orderSale = await this.prisma.order_sales.findUnique({
             where: {
                 id: order_sale_id,
             },
         });
+
+        if (!orderSale || !orderSale.order_request_id) return null;
+
         return this.prisma.order_requests.findFirst({
             where: {
                 id: orderSale.order_request_id,
@@ -252,6 +264,8 @@ export class OrderSaleService {
                 id: order_sale_id,
             },
         });
+
+        if (!orderSale) return 0;
 
         return orderSaleProducts.reduce((acc, product) => {
             return (
@@ -287,6 +301,8 @@ export class OrderSaleService {
                 id: order_sale_id,
             },
         });
+
+        if (!orderSale) return 0;
 
         return orderSaleProducts.reduce((acc, product) => {
             return (
@@ -360,14 +376,16 @@ export class OrderSaleService {
         });
 
         for await (const delItem of deleteProductItems) {
-            await this.prisma.order_sale_products.deleteMany({
-                where: {
-                    id: delItem.id,
-                },
-            });
-            await this.cacheManager.del(
-                `product_id_inventory_${delItem.product_id}`,
-            );
+            if (delItem && delItem.id) {
+                await this.prisma.order_sale_products.deleteMany({
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+                await this.cacheManager.del(
+                    `product_id_inventory_${delItem.product_id}`,
+                );
+            }
         }
 
         for await (const createItem of createProductItems) {
@@ -388,22 +406,24 @@ export class OrderSaleService {
         }
 
         for await (const updateItem of updateProductItems) {
-            await this.prisma.order_sale_products.updateMany({
-                data: {
-                    product_id: updateItem.product_id,
-                    kilos: updateItem.kilos,
-                    active: 1,
-                    group_weight: updateItem.group_weight,
-                    groups: updateItem.groups,
-                    kilo_price: updateItem.kilo_price,
-                },
-                where: {
-                    id: updateItem.id,
-                },
-            });
-            await this.cacheManager.del(
-                `product_id_inventory_${updateItem.product_id}`,
-            );
+            if (updateItem && updateItem.id) {
+                await this.prisma.order_sale_products.updateMany({
+                    data: {
+                        product_id: updateItem.product_id,
+                        kilos: updateItem.kilos,
+                        active: 1,
+                        group_weight: updateItem.group_weight,
+                        groups: updateItem.groups,
+                        kilo_price: updateItem.kilo_price,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+                await this.cacheManager.del(
+                    `product_id_inventory_${updateItem.product_id}`,
+                );
+            }
         }
 
         const newPaymentItems = input.order_sale_payments;
@@ -426,11 +446,13 @@ export class OrderSaleService {
         });
 
         for await (const delItem of deletePaymentItems) {
-            await this.prisma.order_sale_payments.delete({
-                where: {
-                    id: delItem.id,
-                },
-            });
+            if (delItem && delItem.id) {
+                await this.prisma.order_sale_payments.delete({
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+            }
         }
 
         for await (const createItem of createPaymentItems) {
@@ -446,17 +468,19 @@ export class OrderSaleService {
         }
 
         for await (const updateItem of updatePaymentItems) {
-            await this.prisma.order_sale_payments.updateMany({
-                data: {
-                    amount: updateItem.amount,
-                    order_sale_collection_status_id:
-                        updateItem.order_sale_collection_status_id,
-                    date_paid: updateItem.date_paid,
-                },
-                where: {
-                    id: updateItem.id,
-                },
-            });
+            if (updateItem && updateItem.id) {
+                await this.prisma.order_sale_payments.updateMany({
+                    data: {
+                        amount: updateItem.amount,
+                        order_sale_collection_status_id:
+                            updateItem.order_sale_collection_status_id,
+                        date_paid: updateItem.date_paid,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
         }
 
         return orderSale;
@@ -542,7 +566,11 @@ export class OrderSaleService {
                     id: input.order_request_id,
                 },
             });
-            if (orderRequest.order_request_status_id !== 2) {
+            if (!orderRequest) {
+                errors.push('Order request doesnt exist');
+            }
+
+            if (orderRequest && orderRequest.order_request_status_id !== 2) {
                 errors.push(
                     `Order request is not in production (order_request_status_id === ${orderRequest.order_request_status_id})`,
                 );

@@ -6,6 +6,7 @@ import {
 import { YearMonth } from '../../../../common/dto/pagination';
 import dayjs from 'dayjs';
 import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
+import { getRangesFromYearMonth } from '../../../../common/helpers';
 
 @Injectable()
 export class OrderProductionTypesService {
@@ -15,7 +16,7 @@ export class OrderProductionTypesService {
         order_production_type_id,
     }: {
         order_production_type_id;
-    }): Promise<OrderProductionType> {
+    }): Promise<OrderProductionType | null> {
         return this.prisma.order_production_type.findUnique({
             where: {
                 id: order_production_type_id,
@@ -34,10 +35,11 @@ export class OrderProductionTypesService {
         branchId,
     }: {
         orderProductionTypeId: number;
-        branchId: number | null;
+        branchId?: number | null;
     } & YearMonth): Promise<OrderProductionTypeDailyProduction[]> {
         const days: OrderProductionTypeDailyProduction[] = [];
-        if (year === null || month === null) return days;
+
+        if (!year || !month) return days;
 
         let startDate = dayjs().utc().year(year).month(month).startOf('month');
 

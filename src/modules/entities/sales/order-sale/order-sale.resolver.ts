@@ -1,6 +1,7 @@
 import {
     Args,
     Float,
+    Int,
     Mutation,
     Parent,
     Query,
@@ -64,7 +65,7 @@ export class OrderSaleResolver {
     @Query(() => Boolean)
     async isOrderSaleCodeOccupied(
         @Args('OrderCode') orderCode: number,
-        @Args('OrderSaleId', { nullable: true })
+        @Args('OrderSaleId', { nullable: true, type: () => Int })
         orderSaleId: number | null,
     ): Promise<boolean> {
         const result = await this.service.isOrderSaleCodeOccupied({
@@ -84,8 +85,8 @@ export class OrderSaleResolver {
         });
     }
 
-    @ResolveField(() => OrderRequest)
-    async order_request(orderSale: OrderSale): Promise<OrderRequest> {
+    @ResolveField(() => OrderRequest, { nullable: true })
+    async order_request(orderSale: OrderSale): Promise<OrderRequest | null> {
         return this.service.getOrderRequest({
             order_sale_id: orderSale.id,
         });
@@ -100,15 +101,15 @@ export class OrderSaleResolver {
         });
     }
 
-    @ResolveField(() => Client)
-    async client(orderSale: OrderSale): Promise<Client> {
+    @ResolveField(() => Client, { nullable: true })
+    async client(orderSale: OrderSale): Promise<Client | null> {
         return this.service.getClient({
             order_sale_id: orderSale.id,
         });
     }
 
-    @ResolveField(() => Float)
-    async client_id(orderSale: OrderSale): Promise<number> {
+    @ResolveField(() => Float, { nullable: true })
+    async client_id(orderSale: OrderSale): Promise<number | null> {
         return this.service.getClientId({
             order_sale_id: orderSale.id,
         });

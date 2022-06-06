@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
     Client,
     ClientContact,
@@ -69,14 +69,16 @@ export class ClientsService {
         });
 
         for await (const delItem of deleteClientContactItems) {
-            await this.prisma.client_contacts.updateMany({
-                data: {
-                    active: -1,
-                },
-                where: {
-                    id: delItem.id,
-                },
-            });
+            if (delItem && delItem.id) {
+                await this.prisma.client_contacts.updateMany({
+                    data: {
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+            }
         }
 
         for await (const createItem of createClientContactItems) {
@@ -93,18 +95,20 @@ export class ClientsService {
         }
 
         for await (const updateItem of updateClientContactItems) {
-            await this.prisma.client_contacts.updateMany({
-                data: {
-                    first_name: updateItem.first_name,
-                    last_name: updateItem.last_name,
-                    fullname: `${updateItem.first_name} ${updateItem.last_name}`,
-                    email: updateItem.email,
-                    cellphone: updateItem.cellphone,
-                },
-                where: {
-                    id: updateItem.id,
-                },
-            });
+            if (updateItem && updateItem.id) {
+                await this.prisma.client_contacts.updateMany({
+                    data: {
+                        first_name: updateItem.first_name,
+                        last_name: updateItem.last_name,
+                        fullname: `${updateItem.first_name} ${updateItem.last_name}`,
+                        email: updateItem.email,
+                        cellphone: updateItem.cellphone,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
         }
 
         return client;
@@ -135,6 +139,10 @@ export class ClientsService {
         client_id: number;
     }): Promise<boolean> {
         const client = await this.getClient({ client_id });
+
+        if (!client) {
+            throw new NotFoundException();
+        }
 
         const clientContacts = await this.getClientContacts({ client_id });
 

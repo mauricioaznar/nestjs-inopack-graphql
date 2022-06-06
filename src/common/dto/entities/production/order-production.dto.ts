@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { OrderProductionProductInput } from './order-production-product.dto';
 import { OrderProductionEmployeeInput } from './order-production-employee.dto';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
@@ -12,16 +12,16 @@ export class OrderProductionBase {
     @Field({ nullable: false })
     waste: number;
 
-    @Field({ nullable: true })
-    branch_id: number;
+    @Field(() => Int, { nullable: true })
+    branch_id: number | null;
 
-    @Field({ nullable: true })
-    order_production_type_id: number;
+    @Field(() => Int, { nullable: true })
+    order_production_type_id: number | null;
 }
 
 @InputType('OrderProductionInput')
 export class OrderProductionInput extends OrderProductionBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id: number | null;
 
     @Field(() => [OrderProductionProductInput])

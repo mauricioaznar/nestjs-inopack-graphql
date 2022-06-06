@@ -10,10 +10,14 @@ import { PrismaService } from '../../../../common/modules/prisma/prisma.service'
 export class MachineSectionsService {
     constructor(private prisma: PrismaService) {}
 
-    async getMachineSection(machineSectionId: number): Promise<MachineSection> {
+    async getMachineSection({
+        machine_section_id,
+    }: {
+        machine_section_id: number;
+    }): Promise<MachineSection | null> {
         return this.prisma.machine_sections.findFirst({
             where: {
-                id: machineSectionId,
+                id: machine_section_id,
             },
         });
     }
@@ -45,13 +49,13 @@ export class MachineSectionsService {
     }
 
     async getMachineSectionParts({
-        machineSectionId,
+        machine_section_id,
     }: {
-        machineSectionId: number;
+        machine_section_id: number;
     }): Promise<MachinePart[]> {
         return this.prisma.machine_parts.findMany({
             where: {
-                machine_section_id: machineSectionId,
+                machine_section_id: machine_section_id,
             },
         });
     }

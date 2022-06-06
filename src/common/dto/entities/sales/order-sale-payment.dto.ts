@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
 export class OrderSalePaymentBase {
@@ -8,13 +8,13 @@ export class OrderSalePaymentBase {
     @Field()
     amount: number;
 
-    @Field()
-    order_sale_collection_status_id: number;
+    @Field(() => Int, { nullable: true })
+    order_sale_collection_status_id?: number | null;
 }
 
 @InputType('OrderSalePaymentInput')
 export class OrderSalePaymentInput extends OrderSalePaymentBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id: number | null;
 }
 
@@ -23,6 +23,6 @@ export class OrderSalePayment extends OrderSalePaymentBase {
     @Field({ nullable: false })
     id: number;
 
-    @Field({ nullable: false })
-    order_sale_id: number;
+    @Field(() => Int, { nullable: true })
+    order_sale_id?: number | null;
 }

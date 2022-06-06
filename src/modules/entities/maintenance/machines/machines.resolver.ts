@@ -16,7 +16,6 @@ import {
     MachineSection,
     MachineUpsertInput,
 } from '../../../../common/dto/entities';
-import { Day } from '../../../../common/dto/entities/dates/day/day';
 import { YearMonth } from '../../../../common/dto/pagination';
 
 @Resolver(() => Machine)
@@ -29,9 +28,11 @@ export class MachinesResolver {
         return this.service.upsertMachine(input);
     }
 
-    @Query(() => Machine)
-    async getMachine(@Args('MachineId') id: number) {
-        return this.service.getMachine({ id });
+    @Query(() => Machine, {
+        nullable: true,
+    })
+    async getMachine(@Args('MachineId') id: number): Promise<Machine | null> {
+        return this.service.getMachine({ machine_id: id });
     }
 
     @Query(() => [Machine])

@@ -6,7 +6,7 @@ import {
 
 export interface MachinesSeed {
     cmd: {
-        machine: Machine;
+        machine: Machine | null;
         sections: {
             seccion1: {
                 section: MachineSection;
@@ -44,21 +44,21 @@ export interface MachinesSeed {
             parte12: MachinePart;
         };
     };
-    camisetera1: Machine;
-    camisetera2: Machine;
-    camisetera3: Machine;
-    selloLateral1: Machine;
-    extrusoraMinigrip: Machine;
-    extrusora2: Machine;
-    extrusora3: Machine;
-    extrusora4: Machine;
-    extrusora5: Machine;
-    extrusora6: Machine;
-    extrusora7: Machine;
-    dobladora3: Machine;
-    selloDeFondo2: Machine;
-    coemter: Machine;
-    shelda: Machine;
-    dobladora4: Machine;
-    compactadora: Machine;
+    camisetera1: Machine | null;
+    camisetera2: Machine | null;
+    camisetera3: Machine | null;
+    selloLateral1: Machine | null;
+    extrusoraMinigrip: Machine | null;
+    extrusora2: Machine | null;
+    extrusora3: Machine | null;
+    extrusora4: Machine | null;
+    extrusora5: Machine | null;
+    extrusora6: Machine | null;
+    extrusora7: Machine | null;
+    dobladora3: Machine | null;
+    selloDeFondo2: Machine | null;
+    coemter: Machine | null;
+    shelda: Machine | null;
+    dobladora4: Machine | null;
+    compactadora: Machine | null;
 }

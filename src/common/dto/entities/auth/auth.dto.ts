@@ -35,8 +35,10 @@ export class User extends UserBase {
 export class UserWithRoles extends User {
     user_roles: {
         id: number;
-        role_id: number;
+        role_id?: number | null;
     }[];
+
+    password?: string;
 }
 
 @ObjectType('AccessToken')

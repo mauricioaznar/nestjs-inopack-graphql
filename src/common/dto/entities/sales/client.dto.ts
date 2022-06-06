@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { ClientContactInput } from './client-contact.dto';
 
 @ObjectType({ isAbstract: true })
@@ -13,7 +13,7 @@ export class ClientBase {
 
 @InputType('ClientUpsertInput')
 export class ClientUpsertInput extends ClientBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id?: number | null;
 
     @Field(() => [ClientContactInput])

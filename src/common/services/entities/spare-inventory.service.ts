@@ -21,7 +21,9 @@ export class SpareInventoryService {
     }
 
     async createTransaction(input: SpareTransactionInput): Promise<void> {
-        const doesSpareExist = await this.doesSpareExist(input.spare_id);
+        const doesSpareExist = await this.doesSpareExist({
+            spare_id: input.spare_id,
+        });
 
         if (!doesSpareExist) {
             throw new BadRequestException('Spare not found');
@@ -37,7 +39,9 @@ export class SpareInventoryService {
     }
 
     async updateTransaction(input: SpareTransactionInput): Promise<void> {
-        const doesSpareExist = await this.doesSpareExist(input.spare_id);
+        const doesSpareExist = await this.doesSpareExist({
+            spare_id: input.spare_id,
+        });
 
         if (!doesSpareExist) {
             throw new BadRequestException('Spare not found');
@@ -59,7 +63,9 @@ export class SpareInventoryService {
     async deleteTransaction(
         input: Omit<SpareTransactionInput, 'quantity'>,
     ): Promise<void> {
-        const doesSpareExist = await this.doesSpareExist(input.spare_id);
+        const doesSpareExist = await this.doesSpareExist({
+            spare_id: input.spare_id,
+        });
 
         if (!doesSpareExist) {
             throw new BadRequestException('Spare not found');
@@ -73,9 +79,15 @@ export class SpareInventoryService {
         });
     }
 
-    private async doesSpareExist(spareId: number): Promise<boolean> {
+    private async doesSpareExist({
+        spare_id,
+    }: {
+        spare_id?: number | null;
+    }): Promise<boolean> {
+        if (!spare_id) return false;
+
         return !!(await this.prisma.spares.findFirst({
-            where: { id: spareId },
+            where: { id: spare_id },
         }));
     }
 }
