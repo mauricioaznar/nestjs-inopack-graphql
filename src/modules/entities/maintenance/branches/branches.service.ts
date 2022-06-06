@@ -10,7 +10,6 @@ export class BranchesService {
         return this.prisma.branches.create({
             data: {
                 name: branchInput.name,
-                created_at: branchInput.created_at,
             },
         });
     }

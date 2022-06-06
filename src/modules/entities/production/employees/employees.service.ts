@@ -20,9 +20,10 @@ export class EmployeesService {
     }): Promise<Employee | null> {
         if (!employeeId) return null;
 
-        return this.prisma.employees.findUnique({
+        return this.prisma.employees.findFirst({
             where: {
                 id: employeeId,
+                active: 1,
             },
         });
     }
@@ -49,5 +50,22 @@ export class EmployeesService {
                 id: input.id || 0,
             },
         });
+    }
+
+    async deletesEmployee({
+        employee_id,
+    }: {
+        employee_id: number;
+    }): Promise<boolean> {
+        await this.prisma.employees.update({
+            data: {
+                active: -1,
+            },
+            where: {
+                id: employee_id,
+            },
+        });
+
+        return true;
     }
 }

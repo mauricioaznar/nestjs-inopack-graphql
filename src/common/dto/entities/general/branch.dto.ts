@@ -6,10 +6,6 @@ import { IsDate } from 'class-validator';
 export class BranchBase {
     @Field()
     name: string;
-
-    @Field({ nullable: true })
-    @IsDate()
-    created_at: Date | null;
 }
 
 @InputType('BranchInput')
