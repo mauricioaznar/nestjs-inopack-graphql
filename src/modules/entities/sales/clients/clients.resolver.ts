@@ -30,7 +30,7 @@ export class ClientsResolver {
         @Args('ClientId') clientId: number,
     ): Promise<Client | null> {
         return this.service.getClient({
-            clientId: clientId,
+            client_id: clientId,
         });
     }
 

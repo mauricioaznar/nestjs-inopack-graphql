@@ -20,15 +20,16 @@ export class ClientsService {
     }
 
     async getClient({
-        clientId,
+        client_id,
     }: {
-        clientId: number;
+        client_id: number;
     }): Promise<Client | null> {
-        if (!clientId) return null;
+        if (!client_id) return null;
 
-        return this.prisma.clients.findUnique({
+        return this.prisma.clients.findFirst({
             where: {
-                id: clientId,
+                id: client_id,
+                active: 1,
             },
         });
     }
@@ -126,5 +127,37 @@ export class ClientsService {
                 ],
             },
         });
+    }
+
+    async deletesClient({
+        client_id,
+    }: {
+        client_id: number;
+    }): Promise<boolean> {
+        const client = await this.getClient({ client_id });
+
+        const clientContacts = await this.getClientContacts({ client_id });
+
+        for await (const contact of clientContacts) {
+            await this.prisma.client_contacts.update({
+                data: {
+                    active: -1,
+                },
+                where: {
+                    id: contact.id,
+                },
+            });
+        }
+
+        await this.prisma.clients.update({
+            data: {
+                active: -1,
+            },
+            where: {
+                id: client.id,
+            },
+        });
+
+        return true;
     }
 }
