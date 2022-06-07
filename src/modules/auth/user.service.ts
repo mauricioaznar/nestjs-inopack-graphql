@@ -86,8 +86,6 @@ export class UserService {
 
         const foundUser = await this.findUser({ user_id: userInput.id });
 
-        console.log(foundUser?.email, userInput.email);
-
         if (foundUser && foundUser.email !== userInput.email) {
             const foundUserByEmail = await this.findOneByEmail({
                 email: userInput.email,
