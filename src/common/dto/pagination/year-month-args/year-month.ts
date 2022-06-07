@@ -1,10 +1,10 @@
-import { ArgsType, Field, ObjectType } from '@nestjs/graphql';
+import { ArgsType, Field, Int } from '@nestjs/graphql';
 
 @ArgsType()
 export class YearMonth {
-    @Field({ nullable: true, description: 'Year' })
+    @Field(() => Int, { nullable: true, description: 'Year' })
     public year?: number | null;
 
-    @Field({ nullable: true, description: 'Month' })
+    @Field(() => Int, { nullable: true, description: 'Month' })
     public month?: number | null;
 }

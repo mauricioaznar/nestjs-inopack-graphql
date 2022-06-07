@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -9,19 +9,19 @@ export class EmployeeBase {
     @Field()
     last_name: string;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     employee_status_id: number | null;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     order_production_type_id: number | null;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     branch_id: number | null;
 }
 
 @InputType('EmployeeUpsertInput')
 export class EmployeeUpsertInput extends EmployeeBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id?: number | null;
 }
 

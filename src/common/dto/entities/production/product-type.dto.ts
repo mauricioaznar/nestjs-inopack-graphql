@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -12,9 +12,9 @@ export class ProductType extends ProductTypeBase {
     @Field({ nullable: false })
     id: number;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     order_production_type_id: number | null;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     product_type_category_id: number | null;
 }

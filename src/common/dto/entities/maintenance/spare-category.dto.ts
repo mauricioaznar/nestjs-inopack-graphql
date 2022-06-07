@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -12,7 +12,7 @@ export class SpareCategoryInput extends SpareCategoriesBase {}
 
 @InputType('SpareCategoryUpsertInput')
 export class SpareCategoryUpsertInput extends SpareCategoriesBase {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     id?: number | null;
 }
 

@@ -1,13 +1,13 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType('ProductInventory')
 export class ProductInventory {
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     kilos: number | null;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     groups: number | null;
 
-    @Field({ nullable: true })
+    @Field(() => String, { nullable: true })
     last_update: string;
 }
