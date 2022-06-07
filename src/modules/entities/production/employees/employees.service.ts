@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
     Employee,
     EmployeeUpsertInput,
@@ -29,6 +29,8 @@ export class EmployeesService {
     }
 
     async upsertEmployee(input: EmployeeUpsertInput): Promise<Employee> {
+        await this.validateEmployeeUpsert(input);
+
         return this.prisma.employees.upsert({
             create: {
                 first_name: input.first_name,
@@ -50,6 +52,27 @@ export class EmployeesService {
                 id: input.id || 0,
             },
         });
+    }
+
+    async validateEmployeeUpsert(input: EmployeeUpsertInput): Promise<void> {
+        const errors: string[] = [];
+
+        if (input.id) {
+            const previousEmployee = await this.getEmployee({
+                employeeId: input.id,
+            });
+            if (previousEmployee) {
+                if (
+                    previousEmployee.order_production_type_id !==
+                    input.order_production_type_id
+                ) {
+                    errors.push('order_production_type cant change');
+                }
+            }
+        }
+        if (errors.length > 0) {
+            throw new BadRequestException(errors);
+        }
     }
 
     async deletesEmployee({

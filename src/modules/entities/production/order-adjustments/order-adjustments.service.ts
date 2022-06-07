@@ -78,9 +78,11 @@ export class OrderAdjustmentsService {
         const orderAdjustment = await this.prisma.order_adjustments.upsert({
             create: {
                 date: input.date,
+                order_adjustment_type_id: input.order_adjustment_type_id,
             },
             update: {
                 date: input.date,
+                order_adjustment_type_id: input.order_adjustment_type_id,
             },
             where: {
                 id: input.id || 0,

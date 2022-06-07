@@ -1,13 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import dayjs from 'dayjs';
-import utcPlugin from 'dayjs/plugin/utc';
 
-dayjs.extend(utcPlugin);
+import { appConfig } from './common/helpers/app/app-config';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     app.enableCors();
+    await appConfig({ app });
     await app.listen(3008);
 }
 

@@ -14,7 +14,7 @@ export class OrderAdjustmentBase {
 @InputType('OrderAdjustmentInput')
 export class OrderAdjustmentInput extends OrderAdjustmentBase {
     @Field(() => Int, { nullable: true })
-    id: number | null;
+    id?: number | null;
 
     @Field(() => [OrderAdjustmentProductInput])
     order_adjustment_products: OrderAdjustmentProductInput[];

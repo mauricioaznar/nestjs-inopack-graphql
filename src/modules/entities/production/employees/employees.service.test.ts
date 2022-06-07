@@ -67,7 +67,7 @@ describe('Upsert employee', () => {
         const updatedEmployee = await employeesService.upsertEmployee({
             id: createdEmployee.id,
             employee_status_id: employeeStatus2.id,
-            order_production_type_id: orderProductionType2.id,
+            order_production_type_id: orderProductionType1.id,
             branch_id: branch2.id,
             first_name: 'First name 2',
             last_name: 'Last name 2',
@@ -77,7 +77,7 @@ describe('Upsert employee', () => {
         expect(createdEmployee.id).toEqual(updatedEmployee.id);
         expect(updatedEmployee.employee_status_id).toBe(employeeStatus2.id);
         expect(updatedEmployee.order_production_type_id).toBe(
-            orderProductionType2.id,
+            orderProductionType1.id,
         );
         expect(updatedEmployee.branch_id).toBe(branch2.id);
         expect(updatedEmployee.first_name).toEqual(
@@ -89,6 +89,33 @@ describe('Upsert employee', () => {
         expect(updatedEmployee.fullname).toEqual(
             expect.stringMatching(/first name 2 last name/i),
         );
+    });
+
+    it('doesnt updaed if order_production_type_id changes', async () => {
+        const createdEmployee = await employeesService.upsertEmployee({
+            employee_status_id: employeeStatus1.id,
+            order_production_type_id: orderProductionType1.id,
+            branch_id: branch1.id,
+            first_name: 'First name',
+            last_name: 'Last name',
+        });
+
+        try {
+            const updatedEmployee = await employeesService.upsertEmployee({
+                id: createdEmployee.id,
+                employee_status_id: employeeStatus2.id,
+                order_production_type_id: orderProductionType2.id,
+                branch_id: branch2.id,
+                first_name: 'First name 2',
+                last_name: 'Last name 2',
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(/order_production_type cant change/i),
+                ]),
+            );
+        }
     });
 });
 

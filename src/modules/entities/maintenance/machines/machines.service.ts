@@ -81,7 +81,6 @@ export class MachinesService {
         }
 
         if (errors.length > 0) {
-            console.log('made it');
             throw new BadRequestException(errors);
         }
     }

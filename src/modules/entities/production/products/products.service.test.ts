@@ -10,7 +10,7 @@ import {
     productType2,
     productType3,
 } from '../../../../common/__tests__/objects';
-import { createProductForTesting } from '../../../../common/__tests__/helpers/products-for-testing-helper';
+import { createProductForTesting } from '../../../../common/__tests__/helpers/entities/products-for-testing-helper';
 
 let app: INestApplication;
 let productsService: ProductsService;
@@ -146,8 +146,8 @@ describe('product upsert', () => {
 
         const productCreated = await createProductForTesting({
             productsService,
-            productTypeId: productType1.id,
-            orderProductionTypeId: orderProductionType1.id,
+            product_type_id: productType1.id,
+            order_production_type_id: orderProductionType1.id,
         });
 
         if (!productCreated) {

@@ -19,7 +19,7 @@ export class OrderAdjustmentProductBase {
 @InputType('OrderAdjustmentProductInput')
 export class OrderAdjustmentProductInput extends OrderAdjustmentProductBase {
     @Field(() => Int, { nullable: true })
-    id: number | null;
+    id?: number | null;
 }
 
 @ObjectType('OrderAdjustmentProduct')

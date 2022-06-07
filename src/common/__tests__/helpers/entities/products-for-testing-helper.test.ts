@@ -1,6 +1,6 @@
-import { ProductsService } from '../../../modules/entities/production/products/products.service';
+import { ProductsService } from '../../../../modules/entities/production/products/products.service';
 import { createProductForTesting } from './products-for-testing-helper';
-import { setupApp } from './setup-app';
+import { setupApp } from '../setup-app';
 import { INestApplication } from '@nestjs/common';
 
 let app: INestApplication;
