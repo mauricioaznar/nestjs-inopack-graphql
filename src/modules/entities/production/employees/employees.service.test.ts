@@ -112,7 +112,7 @@ describe('gets employee', () => {
 });
 
 describe('deletes employee', () => {
-    it('deletes employee and returns get returns null', async () => {
+    it('deletes employee and get returns null', async () => {
         const createdEmployee = await employeesService.upsertEmployee({
             employee_status_id: employeeStatus1.id,
             order_production_type_id: orderProductionType1.id,

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
     Machine,
     MachineDailyProduction,
@@ -26,26 +26,81 @@ export class MachinesService {
         return this.prisma.machines.findFirst({
             where: {
                 id: machine_id,
+                active: 1,
             },
         });
     }
 
     async getMachines(): Promise<Machine[]> {
-        return this.prisma.machines.findMany();
+        return this.prisma.machines.findMany({
+            where: {
+                active: 1,
+            },
+        });
     }
 
     async upsertMachine(machineInput: MachineUpsertInput): Promise<Machine> {
+        await this.validateUpsertMachine(machineInput);
+
         return this.prisma.machines.upsert({
             create: {
                 name: machineInput.name,
+                branch_id: machineInput.branch_id,
+                order_production_type_id: machineInput.order_production_type_id,
             },
             update: {
                 name: machineInput.name,
+                branch_id: machineInput.branch_id,
+                order_production_type_id: machineInput.order_production_type_id,
             },
             where: {
                 id: machineInput.id || 0,
             },
         });
+    }
+
+    async validateUpsertMachine(
+        machineInput: MachineUpsertInput,
+    ): Promise<void> {
+        const errors: string[] = [];
+
+        // order production type cant change
+
+        if (machineInput.id) {
+            const previousMachine = await this.getMachine({
+                machine_id: machineInput.id,
+            });
+            if (previousMachine) {
+                if (
+                    machineInput.order_production_type_id !==
+                    previousMachine.order_production_type_id
+                ) {
+                    errors.push(`order_production_type cant change`);
+                }
+            }
+        }
+
+        if (errors.length > 0) {
+            console.log('made it');
+            throw new BadRequestException(errors);
+        }
+    }
+
+    async deleteMachine({
+        machine_id,
+    }: {
+        machine_id: number;
+    }): Promise<boolean> {
+        await this.prisma.machines.update({
+            data: {
+                active: -1,
+            },
+            where: {
+                id: machine_id,
+            },
+        });
+
+        return true;
     }
 
     async getMachineSections({

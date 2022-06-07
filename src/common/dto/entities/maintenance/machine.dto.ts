@@ -6,6 +6,12 @@ import { Day } from '../dates/day/day';
 export class MachineBase {
     @Field()
     name: string;
+
+    @Field(() => Int, { nullable: true })
+    branch_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    order_production_type_id: number | null;
 }
 
 @InputType('MachineUpsertInput')
@@ -18,12 +24,6 @@ export class MachineUpsertInput extends MachineBase {
 export class Machine extends MachineBase {
     @Field({ nullable: false })
     id: number;
-
-    @Field(() => Int, { nullable: true })
-    branch_id: number | null;
-
-    @Field(() => Int, { nullable: true })
-    order_production_type_id: number | null;
 }
 
 @ObjectType('MachineDailyProduction')
