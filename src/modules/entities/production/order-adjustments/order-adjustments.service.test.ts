@@ -23,7 +23,11 @@ afterAll(async () => {
 });
 
 describe('Returns order adjustments list', () => {
-    it.todo('returns list');
+    it('returns list', async () => {
+        const orderAdjustments =
+            await orderAdjustmentsService.getOrderAdjustments();
+        expect(Array.isArray(orderAdjustments)).toBe(true);
+    });
 });
 
 describe('Upsert order adjustment', () => {
@@ -208,10 +212,89 @@ describe('Upsert order adjustment', () => {
     });
 });
 
-describe('gets order adjustment', () => {
-    it.todo('returns item');
+describe('get order adjustment', () => {
+    it('returns get order adjustment', async () => {
+        const product = await createProductForTesting({
+            productsService: productsService,
+            current_group_weight: 10,
+        });
+
+        if (!product) {
+            throw new Error('createProductForTesting failed');
+        }
+
+        const createdOrderAdjustment =
+            await orderAdjustmentsService.upsertOrderAdjustment({
+                order_adjustment_type_id: orderAdjustmentType1.id,
+                order_adjustment_products: [
+                    {
+                        product_id: product.id,
+                        groups: 1,
+                        group_weight: product.current_group_weight,
+                        kilos: 10,
+                    },
+                ],
+                date: getUtcDate({
+                    year: 2022,
+                    month: 0,
+                    day: 1,
+                }),
+            });
+
+        const orderAdjustment =
+            await orderAdjustmentsService.getOrderAdjustment({
+                order_adjustment_id: createdOrderAdjustment.id,
+            });
+
+        expect(orderAdjustment).toBeTruthy();
+        expect(orderAdjustment?.id).toBe(createdOrderAdjustment.id);
+    });
 });
 
 describe('deletes order adjustment', () => {
-    //
+    it('deletes order adjustment and products', async () => {
+        const product = await createProductForTesting({
+            productsService: productsService,
+            current_group_weight: 10,
+        });
+
+        if (!product) {
+            throw new Error('createProductForTesting failed');
+        }
+
+        const createdOrderAdjustment =
+            await orderAdjustmentsService.upsertOrderAdjustment({
+                order_adjustment_type_id: orderAdjustmentType1.id,
+                order_adjustment_products: [
+                    {
+                        product_id: product.id,
+                        groups: 1,
+                        group_weight: product.current_group_weight,
+                        kilos: 10,
+                    },
+                ],
+                date: getUtcDate({
+                    year: 2022,
+                    month: 0,
+                    day: 1,
+                }),
+            });
+
+        await orderAdjustmentsService.deleteOrderAdjustment({
+            order_adjustment_id: createdOrderAdjustment.id,
+        });
+
+        const orderAdjustment =
+            await orderAdjustmentsService.getOrderAdjustment({
+                order_adjustment_id: createdOrderAdjustment.id,
+            });
+
+        const orderAdjustmentProducts =
+            await orderAdjustmentsService.getOrderAdjustmentProducts({
+                order_adjustment_id: createdOrderAdjustment.id,
+            });
+
+        expect(orderAdjustmentProducts.length).toBe(0);
+        expect(orderAdjustment).toBeFalsy();
+    });
 });

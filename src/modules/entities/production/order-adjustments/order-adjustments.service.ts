@@ -26,15 +26,20 @@ export class OrderAdjustmentsService {
     }: {
         order_adjustment_id: number;
     }): Promise<OrderAdjustment | null> {
-        return this.prisma.order_adjustments.findUnique({
+        return this.prisma.order_adjustments.findFirst({
             where: {
                 id: order_adjustment_id,
+                active: 1,
             },
         });
     }
 
     async getOrderAdjustments(): Promise<OrderAdjustment[]> {
-        return this.prisma.order_adjustments.findMany();
+        return this.prisma.order_adjustments.findMany({
+            where: {
+                active: 1,
+            },
+        });
     }
 
     async getOrderAdjustmentProducts({
@@ -183,5 +188,31 @@ export class OrderAdjustmentsService {
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
+    }
+
+    async deleteOrderAdjustment({
+        order_adjustment_id,
+    }: {
+        order_adjustment_id: number;
+    }): Promise<boolean> {
+        await this.prisma.order_adjustments.update({
+            data: {
+                active: -1,
+            },
+            where: {
+                id: order_adjustment_id,
+            },
+        });
+
+        await this.prisma.order_adjustment_products.updateMany({
+            data: {
+                active: -1,
+            },
+            where: {
+                order_adjustment_id,
+            },
+        });
+
+        return true;
     }
 }

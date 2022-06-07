@@ -6,6 +6,12 @@ import { IsString } from 'class-validator';
 export class UserBase {
     @Field()
     email: string;
+
+    @Field()
+    first_name: string;
+
+    @Field()
+    last_name: string;
 }
 
 @InputType('loginInput')
@@ -19,16 +25,28 @@ export class LoginInput {
     email: string;
 }
 
-@InputType('userInput')
-export class UserInput extends UserBase {
+@InputType('CreateUserInput')
+export class CreateUserInput extends UserBase {
     @Field()
     password: string;
+}
+
+@InputType('UpdateUserInput')
+export class UpdateUserInput extends UserBase {
+    @Field({ nullable: false })
+    id: number;
+
+    @Field(() => String, { nullable: true })
+    password?: string | null;
 }
 
 @ObjectType('User')
 export class User extends UserBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field()
+    fullname: string;
 }
 
 @ObjectType('UserWithRoles')
