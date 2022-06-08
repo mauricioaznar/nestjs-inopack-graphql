@@ -3,6 +3,7 @@ import {
     CACHE_MANAGER,
     Inject,
     Injectable,
+    NotFoundException,
 } from '@nestjs/common';
 import {
     OrderProduction,
@@ -35,9 +36,10 @@ export class OrderProductionsService {
     }: {
         order_production_id: number;
     }): Promise<OrderProduction | null> {
-        return this.prisma.order_productions.findUnique({
+        return this.prisma.order_productions.findFirst({
             where: {
                 id: order_production_id,
+                active: 1,
             },
         });
     }
@@ -169,7 +171,7 @@ export class OrderProductionsService {
         } = vennDiagram({
             a: oldProductItems,
             b: newProductItems,
-            indexProperties: ['product_id', 'machine_id'],
+            indexProperties: ['id'],
         });
 
         for await (const delItem of deleteProductItems) {
@@ -282,7 +284,7 @@ export class OrderProductionsService {
 
         const orderProductionProducts = input.order_production_products;
 
-        // CantChangeOrderProductionTypeOnUpdate
+        // IsOrderProductionTypeTheSameOnUpdate
         if (input.id) {
             const previousOrderProduction = await this.getOrderProduction({
                 order_production_id: input.id,
@@ -293,6 +295,17 @@ export class OrderProductionsService {
                 input.order_production_type_id
             ) {
                 errors.push(`cant change order production type`);
+            }
+        }
+
+        // IsOrderProductionTypeTheSameOnUpdate
+        if (input.id) {
+            const previousOrderProduction = await this.getOrderProduction({
+                order_production_id: input.id,
+            });
+
+            if (previousOrderProduction?.branch_id !== input.branch_id) {
+                errors.push(`cant change branch`);
             }
         }
 
@@ -391,7 +404,7 @@ export class OrderProductionsService {
                             input.order_production_type_id
                     ) {
                         errors.push(
-                            `Product: ${product_id} does not belong to order production id: ${input.order_production_type_id}`,
+                            `Product: ${product_id} does not belong to order production type: ${input.order_production_type_id}`,
                         );
                     }
                 }
@@ -414,7 +427,7 @@ export class OrderProductionsService {
                     );
                     if (count >= 2) {
                         errors.push(
-                            `employee_id (${employee_id_1}) are not unique`,
+                            `employee_id is not unique ((${employee_id_1}))`,
                         );
                     }
                 },
@@ -432,7 +445,7 @@ export class OrderProductionsService {
                     });
                     if (employee && employee.branch_id !== input.branch_id) {
                         errors.push(
-                            `Employee (${employee_id}) does not belong to branch (${input.branch_id})`,
+                            `employee_id does not belong to branch (employee_id: (${employee_id}), branch_id: ${input.branch_id})`,
                         );
                     }
                 }
@@ -454,7 +467,7 @@ export class OrderProductionsService {
                             input.order_production_type_id
                     ) {
                         errors.push(
-                            `Employee (${employee_id}) does not belong to order production type (${input.order_production_type_id})`,
+                            `employee_id does not belong to order production type (employee_id: ${employee_id}, order_production_type_id: ${input.order_production_type_id})`,
                         );
                     }
                 }
@@ -472,7 +485,7 @@ export class OrderProductionsService {
                     });
                     if (employee && employee.employee_status_id !== 1) {
                         errors.push(
-                            `Employee (${employee_id}) doesnt have up status (1)`,
+                            `employee_id does not have up status (1, employee_status_id: ${employee.employee_status_id})`,
                         );
                     }
                 }
@@ -499,5 +512,64 @@ export class OrderProductionsService {
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
+    }
+
+    async deleteOrderProduction({
+        order_production_id,
+    }: {
+        order_production_id: number;
+    }): Promise<boolean> {
+        const orderProduction = await this.getOrderProduction({
+            order_production_id,
+        });
+
+        if (!orderProduction) {
+            throw new NotFoundException();
+        }
+
+        await this.prisma.order_productions.update({
+            data: {
+                active: -1,
+            },
+            where: {
+                id: order_production_id,
+            },
+        });
+
+        const orderProductionProducts = await this.getOrderProductionProducts({
+            order_production_id,
+        });
+
+        for await (const orderProductionProduct of orderProductionProducts) {
+            await this.prisma.order_production_products.update({
+                data: {
+                    active: -1,
+                },
+
+                where: {
+                    id: orderProductionProduct.id,
+                },
+            });
+        }
+
+        const orderProductionEmployees = await this.getOrderProductionEmployees(
+            {
+                order_production_id,
+            },
+        );
+
+        for await (const orderProductionEmployee of orderProductionEmployees) {
+            await this.prisma.order_production_employees.update({
+                data: {
+                    active: -1,
+                },
+
+                where: {
+                    id: orderProductionEmployee.id,
+                },
+            });
+        }
+
+        return true;
     }
 }

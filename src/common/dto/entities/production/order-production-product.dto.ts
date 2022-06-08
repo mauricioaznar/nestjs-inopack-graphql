@@ -22,7 +22,7 @@ export class OrderProductionProductBase {
 @InputType('OrderProductionProductInput')
 export class OrderProductionProductInput extends OrderProductionProductBase {
     @Field(() => Int, { nullable: true })
-    id: number | null;
+    id?: number | null;
 }
 
 @ObjectType('OrderProductionProduct')

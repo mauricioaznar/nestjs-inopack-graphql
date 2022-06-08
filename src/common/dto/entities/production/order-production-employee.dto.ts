@@ -13,7 +13,7 @@ export class OrderProductionEmployeeBase {
 @InputType('OrderProductionEmployeeInput')
 export class OrderProductionEmployeeInput extends OrderProductionEmployeeBase {
     @Field(() => Int, { nullable: true })
-    id: number | null;
+    id?: number | null;
 }
 
 @ObjectType('OrderProductionEmployee')
