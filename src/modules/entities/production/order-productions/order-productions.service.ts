@@ -139,11 +139,13 @@ export class OrderProductionsService {
             create: {
                 start_date: input.start_date,
                 branch_id: input.branch_id,
+                order_production_type_id: input.order_production_type_id,
                 waste: 0,
             },
             update: {
                 start_date: input.start_date,
                 branch_id: input.branch_id,
+                order_production_type_id: input.order_production_type_id,
                 waste: 0,
             },
             where: {
@@ -280,6 +282,20 @@ export class OrderProductionsService {
 
         const orderProductionProducts = input.order_production_products;
 
+        // CantChangeOrderProductionTypeOnUpdate
+        if (input.id) {
+            const previousOrderProduction = await this.getOrderProduction({
+                order_production_id: input.id,
+            });
+
+            if (
+                previousOrderProduction?.order_production_type_id !==
+                input.order_production_type_id
+            ) {
+                errors.push(`cant change order production type`);
+            }
+        }
+
         // IsProductGroupCorrectlyCalculated
         {
             orderProductionProducts.forEach((productionProduct) => {
@@ -353,7 +369,7 @@ export class OrderProductionsService {
                             input.order_production_type_id
                     ) {
                         errors.push(
-                            `Machine: ${machine_id} does not belong to order production id: ${input.order_production_type_id}`,
+                            `Machine: ${machine_id} does not belong to order production type (${input.order_production_type_id})`,
                         );
                     }
                 }

@@ -1,16 +1,16 @@
-import { adminUser } from './objects/users';
-import { UserService } from '../../modules/auth/user.service';
-import { setupApp } from './helpers/setup-app';
+import { adminUser } from '../objects/users';
+import { UserService } from '../../../modules/auth/user.service';
+import { setupApp } from './setup-app';
 import {
     orderProductionTypes,
     packings,
     productTypeCategories,
     productTypes,
-} from './objects';
-import { PrismaService } from '../modules/prisma/prisma.service';
-import { employeeStatuses } from './objects/maintenance/employee-statuses';
-import { branches } from './objects/maintenance/branches';
-import { orderAdjustmentTypes } from './objects/production/order-adjustment-types';
+} from '../objects';
+import { PrismaService } from '../../modules/prisma/prisma.service';
+import { employeeStatuses } from '../objects/maintenance/employee-statuses';
+import { branches } from '../objects/maintenance/branches';
+import { orderAdjustmentTypes } from '../objects/production/order-adjustment-types';
 
 export default async function setupDatabase() {
     const app = await setupApp();
@@ -20,9 +20,12 @@ export default async function setupDatabase() {
 
     // level 6
     await prismaService.order_adjustment_products.deleteMany();
+    await prismaService.order_production_products.deleteMany();
+    await prismaService.order_production_employees.deleteMany();
 
     // level 5
     await prismaService.order_adjustments.deleteMany();
+    await prismaService.order_productions.deleteMany();
 
     // level 4
     await prismaService.products.deleteMany();

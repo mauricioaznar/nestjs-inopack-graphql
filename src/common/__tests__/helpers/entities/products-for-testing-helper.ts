@@ -12,7 +12,7 @@ export async function createProductForTesting({
     order_production_type_id?: number;
     product_type_id?: number;
     current_group_weight?: number;
-}): Promise<Product | null | undefined> {
+}): Promise<Product> {
     try {
         return await productsService.upsertInput({
             order_production_type_id: order_production_type_id,
@@ -29,4 +29,6 @@ export async function createProductForTesting({
     } catch (e) {
         console.error(e);
     }
+
+    throw new Error('createProductForTesting failed');
 }
