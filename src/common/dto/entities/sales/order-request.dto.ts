@@ -24,7 +24,7 @@ export class OrderRequestBase {
 @InputType('OrderRequestInput')
 export class OrderRequestInput extends OrderRequestBase {
     @Field(() => Int, { nullable: true })
-    id: number | null;
+    id?: number | null;
 
     @Field(() => [OrderRequestProductInput])
     order_request_products: OrderRequestProductInput[];

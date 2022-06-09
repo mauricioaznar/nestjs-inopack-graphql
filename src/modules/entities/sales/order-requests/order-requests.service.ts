@@ -72,7 +72,11 @@ export class OrderRequestsService {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
     }): Promise<PaginatedOrderRequests> {
-        if (!datePaginator || !datePaginator.year || !datePaginator.month)
+        if (
+            !datePaginator ||
+            !datePaginator.year ||
+            (!datePaginator.month && datePaginator.month !== 0)
+        )
             return [];
 
         const { startDate, endDate } = getRangesFromYearMonth({
@@ -329,12 +333,16 @@ export class OrderRequestsService {
                     }
                 });
                 if (count >= 2) {
-                    errors.push(`product_id (${product_id_1}) are not unique`);
+                    errors.push(
+                        `product is not unique (product_id: ${product_id_1})`,
+                    );
                 }
             });
         }
 
+        // DoesCurrentGroupWeightMatchGroupWeight
         // IsProductGroupCorrectlyCalculated
+
         {
             for await (const {
                 product_id,
@@ -345,7 +353,7 @@ export class OrderRequestsService {
                 if (product_id) {
                     const product = await this.prisma.products.findUnique({
                         where: {
-                            id: product_id!,
+                            id: product_id,
                         },
                     });
 
@@ -357,7 +365,7 @@ export class OrderRequestsService {
                         Number(groupWeight) !== currentGroupWeight
                     ) {
                         errors.push(
-                            `${product_id} current_group_weight doesnt match group_weight`,
+                            `current group weight doesnt match group weight (group_weight: ${groupWeight}, current_group_weight: ${currentGroupWeight})`,
                         );
                     }
 
@@ -371,9 +379,9 @@ export class OrderRequestsService {
                         continue;
                     }
 
-                    if (groups * currentGroupWeight !== kilos) {
+                    if (groups * groupWeight !== kilos) {
                         errors.push(
-                            `product_id (${product_id}) groups * currentGroupWeight !== kilos (${groups} * ${currentGroupWeight} !== ${kilos})`,
+                            `kilos incorrectly calculated (product_id (${product_id}) groups * currentGroupWeight !== kilos (${groups} * ${currentGroupWeight} !== ${kilos}))`,
                         );
                     }
                 }
