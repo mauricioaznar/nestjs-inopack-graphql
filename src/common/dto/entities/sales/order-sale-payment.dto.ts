@@ -15,7 +15,7 @@ export class OrderSalePaymentBase {
 @InputType('OrderSalePaymentInput')
 export class OrderSalePaymentInput extends OrderSalePaymentBase {
     @Field(() => Int, { nullable: true })
-    id: number | null;
+    id?: number | null;
 }
 
 @ObjectType('OrderSalePayment')
