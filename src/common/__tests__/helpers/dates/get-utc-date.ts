@@ -1,13 +1,13 @@
 import dayjs from 'dayjs';
 
 export function getUtcDate({
-    year,
-    day,
-    month,
+    year = 2022,
+    day = 1,
+    month = 1,
 }: {
-    year: number;
-    month: number;
-    day: number;
+    year?: number;
+    month?: number;
+    day?: number;
 }): Date {
     return dayjs()
         .utc()

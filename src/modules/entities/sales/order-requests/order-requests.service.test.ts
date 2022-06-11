@@ -4,27 +4,21 @@ import {
     setupApp,
 } from '../../../../common/__tests__/helpers';
 import { INestApplication } from '@nestjs/common';
-import { ClientsService } from '../clients/clients.service';
 import { OrderRequestsService } from './order-requests.service';
 import {
     orderRequestStatus1,
     orderRequestStatus2,
 } from '../../../../common/__tests__/objects/sales/order-request-statuses';
 import { createClientForTesting } from '../../../../common/__tests__/helpers/entities/clients-for-testing-helper';
-import { ProductsService } from '../../production/products/products.service';
 import { OrderRequestInput } from '../../../../common/dto/entities';
 
 let app: INestApplication;
-let clientsService: ClientsService;
 let orderRequestsService: OrderRequestsService;
-let productsService: ProductsService;
 let currentRequestOrderCode = 0;
 
 beforeAll(async () => {
     app = await setupApp();
-    clientsService = app.get(ClientsService);
     orderRequestsService = app.get(OrderRequestsService);
-    productsService = app.get(ProductsService);
 });
 
 afterAll(async () => {
@@ -56,10 +50,10 @@ describe('list', () => {
 describe('upsert', () => {
     it('creates', async () => {
         const client = await createClientForTesting({
-            clientsService,
+            app,
         });
         const product = await createProductForTesting({
-            productsService,
+            app,
         });
         const orderRequestCode = currentRequestOrderCode;
         const orderRequest = await orderRequestsService.upsertOrderRequest({
@@ -112,10 +106,10 @@ describe('upsert', () => {
 
     it('updates (allows to have a the same order code)', async () => {
         const client = await createClientForTesting({
-            clientsService,
+            app,
         });
         const product = await createProductForTesting({
-            productsService,
+            app,
         });
         const orderRequestCode = currentRequestOrderCode;
 
@@ -205,10 +199,10 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const client = await createClientForTesting({
-            clientsService,
+            app,
         });
         const product = await createProductForTesting({
-            productsService,
+            app,
         });
         const orderRequestCode = currentRequestOrderCode;
 
@@ -267,10 +261,10 @@ describe('upsert', () => {
 
     it('allows to change the order code when order code is not occupied', async () => {
         const client = await createClientForTesting({
-            clientsService,
+            app,
         });
         const product = await createProductForTesting({
-            productsService,
+            app,
         });
 
         const orderRequestInput: OrderRequestInput = {
@@ -325,10 +319,10 @@ describe('upsert', () => {
 
     it('fails when products are not unique', async () => {
         const client = await createClientForTesting({
-            clientsService,
+            app,
         });
         const product = await createProductForTesting({
-            productsService,
+            app,
         });
         try {
             await orderRequestsService.upsertOrderRequest({
@@ -369,7 +363,7 @@ describe('upsert', () => {
 
     it('fails when products array is empty', async () => {
         const client = await createClientForTesting({
-            clientsService,
+            app,
         });
         try {
             await orderRequestsService.upsertOrderRequest({
@@ -397,10 +391,10 @@ describe('upsert', () => {
 
     it('fails when product is incorrectly calculated', async () => {
         const client = await createClientForTesting({
-            clientsService,
+            app,
         });
         const product = await createProductForTesting({
-            productsService,
+            app,
         });
         try {
             await orderRequestsService.upsertOrderRequest({
@@ -434,12 +428,12 @@ describe('upsert', () => {
 
     it('fails when current group weight doesnt match group weight', async () => {
         const client = await createClientForTesting({
-            clientsService,
+            app,
         });
 
         const currentGroupWeight = 30;
         const product = await createProductForTesting({
-            productsService,
+            app,
             current_group_weight: currentGroupWeight,
         });
         const groupWeight = 40;

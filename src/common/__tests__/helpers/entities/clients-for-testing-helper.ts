@@ -1,11 +1,13 @@
 import { ClientsService } from '../../../../modules/entities/sales/clients/clients.service';
 import { Client } from '../../../dto/entities';
+import { INestApplication } from '@nestjs/common';
 
 export async function createClientForTesting({
-    clientsService,
+    app,
 }: {
-    clientsService: ClientsService;
+    app: INestApplication;
 }): Promise<Client> {
+    const clientsService = app.get(ClientsService);
     try {
         return await clientsService.upsertClient({
             name: 'Name',

@@ -1,18 +1,21 @@
 import { orderProductionType1, packing1, productType1 } from '../../objects';
 import { ProductsService } from '../../../../modules/entities/production/products/products.service';
 import { Product } from '../../../dto/entities';
+import { INestApplication } from '@nestjs/common';
 
 export async function createProductForTesting({
-    productsService,
+    app,
     order_production_type_id = orderProductionType1.id,
     product_type_id = productType1.id,
     current_group_weight = 10,
 }: {
-    productsService: ProductsService;
+    app: INestApplication;
     order_production_type_id?: number;
     product_type_id?: number;
     current_group_weight?: number;
 }): Promise<Product> {
+    const productsService = app.get(ProductsService);
+
     try {
         return await productsService.upsertInput({
             order_production_type_id: order_production_type_id,

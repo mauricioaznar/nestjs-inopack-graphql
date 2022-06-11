@@ -500,7 +500,9 @@ export class OrderSaleService {
                     }
                 });
                 if (count >= 2) {
-                    errors.push(`product_id (${product_id_1}) are not unique`);
+                    errors.push(
+                        `product is not unique (product_id: ${product_id_1}`,
+                    );
                 }
             });
         }
@@ -542,7 +544,7 @@ export class OrderSaleService {
 
                 if (remainingKilos < 0) {
                     errors.push(
-                        `product_id (${remainingProduct.product_id}) kilos < 0 (${remainingKilos})`,
+                        `product desired kilos not available (remaining kilos: ${remainingKilos})`,
                     );
                 }
 
@@ -553,7 +555,7 @@ export class OrderSaleService {
 
                 if (remainingGroups < 0) {
                     errors.push(
-                        `product_id (${remainingProduct.product_id}) groups < 0 (${remainingGroups})`,
+                        `product desired groups not available (remaining groups: ${remainingGroups})`,
                     );
                 }
             }
@@ -598,7 +600,7 @@ export class OrderSaleService {
                 );
                 if (!foundProduct) {
                     errors.push(
-                        `product_id (${inputOrderSaleProduct.product_id}) is not in the order request`,
+                        `product is not in order request (product_id: ${inputOrderSaleProduct.product_id}) )`,
                     );
                 }
             }

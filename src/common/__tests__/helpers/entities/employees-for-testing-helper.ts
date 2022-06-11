@@ -1,20 +1,23 @@
 import { Employee } from '../../../dto/entities/production/employee.dto';
-import { EmployeesService } from '../../../../modules/entities/production/employees/employees.service';
 import { branch1 } from '../../objects/maintenance/branches';
 import { orderProductionType1 } from '../../objects';
 import { employeeStatus1 } from '../../objects/maintenance/employee-statuses';
+import { INestApplication } from '@nestjs/common';
+import { EmployeesService } from '../../../../modules/entities/production/employees/employees.service';
 
 export async function createEmployeeForTesting({
-    employeesService,
+    app,
     branch_id = branch1.id,
     order_production_type_id = orderProductionType1.id,
     employee_status_id = employeeStatus1.id,
 }: {
-    employeesService: EmployeesService;
+    app: INestApplication;
     branch_id?: number;
     order_production_type_id?: number;
     employee_status_id?: number;
 }): Promise<Employee> {
+    const employeesService = app.get(EmployeesService);
+
     try {
         return await employeesService.upsertEmployee({
             branch_id,

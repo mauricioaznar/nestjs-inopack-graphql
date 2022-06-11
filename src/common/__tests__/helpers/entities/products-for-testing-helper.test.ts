@@ -1,4 +1,3 @@
-import { ProductsService } from '../../../../modules/entities/production/products/products.service';
 import { createProductForTesting } from './products-for-testing-helper';
 import { setupApp } from '../setup-app';
 import { INestApplication } from '@nestjs/common';
@@ -10,11 +9,9 @@ import {
 } from '../../objects';
 
 let app: INestApplication;
-let productsService: ProductsService;
 
 beforeAll(async () => {
     app = await setupApp();
-    productsService = app.get(ProductsService);
 });
 
 afterAll(async () => {
@@ -23,7 +20,7 @@ afterAll(async () => {
 
 it('create product for testing with its default values', async () => {
     const product = await createProductForTesting({
-        productsService,
+        app,
     });
 
     expect(product).toBeDefined();
@@ -33,7 +30,7 @@ it('create product for testing with its default values', async () => {
 
 it('create product for testing with its default values changed (bag)', async () => {
     const product = await createProductForTesting({
-        productsService,
+        app,
         order_production_type_id: orderProductionType1.id,
         product_type_id: productType1.id,
         current_group_weight: 71,
@@ -47,7 +44,7 @@ it('create product for testing with its default values changed (bag)', async () 
 
 it('create product for testing with its default values changed (roll)', async () => {
     const product = await createProductForTesting({
-        productsService,
+        app,
         order_production_type_id: orderProductionType2.id,
         product_type_id: productType2.id,
         current_group_weight: 71,

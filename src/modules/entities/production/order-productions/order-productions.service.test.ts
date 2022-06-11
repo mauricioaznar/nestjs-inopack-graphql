@@ -1,5 +1,4 @@
 import { INestApplication } from '@nestjs/common';
-import { ClientsService } from '../../sales/clients/clients.service';
 import {
     createEmployeeForTesting,
     createMachineForTesting,
@@ -7,9 +6,7 @@ import {
     getUtcDate,
     setupApp,
 } from '../../../../common/__tests__/helpers';
-import { ProductsService } from '../products/products.service';
 import { OrderProductionsService } from './order-productions.service';
-import { EmployeesService } from '../employees/employees.service';
 import {
     branch1,
     branch2,
@@ -19,22 +16,15 @@ import {
     orderProductionType2,
     productType2,
 } from '../../../../common/__tests__/objects';
-import { MachinesService } from '../../maintenance/machines/machines.service';
 import { OrderProductionInput } from '../../../../common/dto/entities/production/order-production.dto';
 import { employeeStatus2 } from '../../../../common/__tests__/objects/maintenance/employee-statuses';
 
-let app: INestApplication;
-let productsService: ProductsService;
 let orderProductionsService: OrderProductionsService;
-let employeesService: EmployeesService;
-let machinesService: MachinesService;
+let app: INestApplication;
 
 beforeAll(async () => {
     app = await setupApp();
-    productsService = app.get(ProductsService);
     orderProductionsService = app.get(OrderProductionsService);
-    employeesService = app.get(EmployeesService);
-    machinesService = app.get(MachinesService);
 });
 
 afterAll(async () => {
@@ -62,13 +52,13 @@ describe('pagination', () => {
 describe('upsert', () => {
     it('creates order production (bag)', async () => {
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProduction =
@@ -133,13 +123,13 @@ describe('upsert', () => {
 
     it('updates order production (bag)', async () => {
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -251,16 +241,16 @@ describe('upsert', () => {
 
     it('creates order production (roll)', async () => {
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
             product_type_id: productType2.id,
             order_production_type_id: orderProductionType2.id,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
             order_production_type_id: orderProductionType2.id,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
             order_production_type_id: orderProductionType2.id,
         });
 
@@ -328,13 +318,13 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -383,13 +373,13 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -438,13 +428,13 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -484,13 +474,13 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -541,13 +531,13 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -589,13 +579,13 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
             order_production_type_id: orderProductionType2.id,
         });
 
@@ -640,15 +630,15 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
             order_production_type_id: orderProductionType2.id,
             product_type_id: productType2.id,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -692,13 +682,13 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -744,14 +734,14 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
             branch_id: branch2.id,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -795,14 +785,14 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
             order_production_type_id: orderProductionType2.id,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -846,14 +836,14 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
             employee_status_id: employeeStatus2.id,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -897,17 +887,17 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting1 = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
 
         const employeeForTesting2 = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const orderProductionInput: OrderProductionInput = {
@@ -953,13 +943,13 @@ describe('upsert', () => {
 describe('gets', () => {
     it('gets order production', async () => {
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const createdOrderProduction =
@@ -1005,13 +995,13 @@ describe('gets', () => {
 describe('deletes', () => {
     it('deletes order production and its related entities (order_production_products and order_production_employees)', async () => {
         const productForTesting = await createProductForTesting({
-            productsService,
+            app,
         });
         const employeeForTesting = await createEmployeeForTesting({
-            employeesService,
+            app,
         });
         const machineForTesting = await createMachineForTesting({
-            machinesService,
+            app,
         });
 
         const createdOrderProduction =

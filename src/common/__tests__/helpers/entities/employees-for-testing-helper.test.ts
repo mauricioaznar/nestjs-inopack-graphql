@@ -10,11 +10,9 @@ import {
 import { branch1, branch2 } from '../../objects/maintenance/branches';
 
 let app: INestApplication;
-let employeesService: EmployeesService;
 
 beforeAll(async () => {
     app = await setupApp();
-    employeesService = app.get(EmployeesService);
 });
 
 afterAll(async () => {
@@ -23,7 +21,7 @@ afterAll(async () => {
 
 it('create employee for testing works and its default values', async () => {
     const employee = await createEmployeeForTesting({
-        employeesService,
+        app,
     });
 
     expect(employee).toBeDefined();
@@ -34,7 +32,7 @@ it('create employee for testing works and its default values', async () => {
 
 it('create employee for testing works and its default values changed', async () => {
     const employee = await createEmployeeForTesting({
-        employeesService,
+        app,
         order_production_type_id: orderProductionType2.id,
         employee_status_id: employeeStatus2.id,
         branch_id: branch2.id,

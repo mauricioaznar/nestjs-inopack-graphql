@@ -10,7 +10,7 @@ import {
     productType2,
     productType3,
 } from '../../../../common/__tests__/objects';
-import { createProductForTesting } from '../../../../common/__tests__/helpers/entities/products-for-testing-helper';
+import { createProductForTesting } from '../../../../common/__tests__/helpers';
 
 let app: INestApplication;
 let productsService: ProductsService;
@@ -145,7 +145,7 @@ describe('product upsert', () => {
         expect.hasAssertions();
 
         const productCreated = await createProductForTesting({
-            productsService,
+            app,
             product_type_id: productType1.id,
             order_production_type_id: orderProductionType1.id,
         });
@@ -176,7 +176,7 @@ describe('product upsert', () => {
 describe('gets product', () => {
     it('returns product if exists', async () => {
         const createdProduct = await createProductForTesting({
-            productsService,
+            app,
         });
 
         if (!createdProduct) {
@@ -194,7 +194,7 @@ describe('gets product', () => {
 describe('deletes product', () => {
     it('deletes product', async () => {
         const createdProduct = await createProductForTesting({
-            productsService,
+            app,
         });
 
         if (!createdProduct) {

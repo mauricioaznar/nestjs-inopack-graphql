@@ -2,11 +2,9 @@ import { INestApplication } from '@nestjs/common';
 import { setupApp } from '../../../../common/__tests__/helpers/setup-app';
 import { OrderAdjustmentsService } from './order-adjustments.service';
 import { orderAdjustmentType1 } from '../../../../common/__tests__/objects/production/order-adjustment-types';
-import dayjs from 'dayjs';
 import { getUtcDate } from '../../../../common/__tests__/helpers/dates/get-utc-date';
 import { createProductForTesting } from '../../../../common/__tests__/helpers/entities/products-for-testing-helper';
 import { ProductsService } from '../products/products.service';
-import { productType1 } from '../../../../common/__tests__/objects';
 
 let app: INestApplication;
 let orderAdjustmentsService: OrderAdjustmentsService;
@@ -33,7 +31,7 @@ describe('Returns order adjustments list', () => {
 describe('Upsert order adjustment', () => {
     it('creates', async () => {
         const product = await createProductForTesting({
-            productsService: productsService,
+            app,
             current_group_weight: 10,
         });
 
@@ -86,12 +84,12 @@ describe('Upsert order adjustment', () => {
 
     it('updates', async () => {
         const product1 = await createProductForTesting({
-            productsService: productsService,
+            app,
             current_group_weight: 10,
         });
 
         const product2 = await createProductForTesting({
-            productsService: productsService,
+            app,
             current_group_weight: 10,
         });
 
@@ -171,7 +169,7 @@ describe('Upsert order adjustment', () => {
         expect.hasAssertions();
 
         const product = await createProductForTesting({
-            productsService: productsService,
+            app,
             current_group_weight: 10,
         });
 
@@ -215,7 +213,7 @@ describe('Upsert order adjustment', () => {
 describe('get order adjustment', () => {
     it('returns get order adjustment', async () => {
         const product = await createProductForTesting({
-            productsService: productsService,
+            app,
             current_group_weight: 10,
         });
 
@@ -254,7 +252,7 @@ describe('get order adjustment', () => {
 describe('deletes order adjustment', () => {
     it('deletes order adjustment and products', async () => {
         const product = await createProductForTesting({
-            productsService: productsService,
+            app,
             current_group_weight: 10,
         });
 
