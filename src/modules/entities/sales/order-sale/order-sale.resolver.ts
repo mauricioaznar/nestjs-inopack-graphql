@@ -39,11 +39,6 @@ export class OrderSaleResolver {
         });
     }
 
-    @Query(() => [OrderSale])
-    async getOrderSales(): Promise<OrderSale[]> {
-        return this.service.getOrderSales();
-    }
-
     @Query(() => PaginatedOrderSales)
     async paginatedOrderSales(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,

@@ -34,14 +34,6 @@ export class OrderSaleService {
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) {}
 
-    async getOrderSales(): Promise<OrderSale[]> {
-        const orderSales = await this.prisma.order_sales.findMany({
-            take: 10,
-        });
-
-        return orderSales;
-    }
-
     async paginatedOrderSales({
         offsetPaginatorArgs,
         datePaginator,
@@ -50,7 +42,10 @@ export class OrderSaleService {
         datePaginator: YearMonth;
     }): Promise<PaginatedOrderSales> {
         if (!datePaginator || !datePaginator.year || !datePaginator.month) {
-            return [];
+            return {
+                count: 0,
+                docs: [],
+            };
         }
 
         const { startDate, endDate } = getRangesFromYearMonth({
@@ -85,6 +80,9 @@ export class OrderSaleService {
             where: orderSalesWhere,
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
+            orderBy: {
+                id: 'desc',
+            },
         });
 
         return {
