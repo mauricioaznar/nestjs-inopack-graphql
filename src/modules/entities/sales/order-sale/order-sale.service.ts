@@ -343,11 +343,13 @@ export class OrderSaleService {
                 date: input.date,
                 order_code: input.order_code,
                 order_sale_status_id: input.order_sale_status_id,
+                order_sale_receipt_type_id: input.order_sale_receipt_type_id,
             },
             update: {
                 date: input.date,
                 order_code: input.order_code,
                 order_sale_status_id: input.order_sale_status_id,
+                order_sale_receipt_type_id: input.order_sale_receipt_type_id,
             },
             where: {
                 id: input.id || 0,

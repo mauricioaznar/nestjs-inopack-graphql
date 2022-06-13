@@ -113,6 +113,9 @@ describe('upsert', () => {
 
         expect(orderSale).toBeDefined();
         expect(orderSale.id).toBeDefined();
+        expect(orderSale.order_sale_receipt_type_id).toBe(
+            orderSaleReceiptType1.id,
+        );
     });
 
     it('fails when order sale has repeated product and its in order request', async () => {
@@ -481,6 +484,10 @@ it('fails when order sale products total doesnt match with order sale payments t
         );
     }
 });
+
+it.todo(
+    'matches payments total and prodcuts total when order sale receipt type is 2',
+);
 
 it('fails when order code is alrady occupied', async () => {
     expect.hasAssertions();
