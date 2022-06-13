@@ -428,6 +428,8 @@ it('fails when order sale product is not in request', async () => {
     }
 });
 
+it.todo('gets max order code after a big one');
+
 it('fails when order sale products total doesnt match with order sale payments total', async () => {
     expect.hasAssertions();
 

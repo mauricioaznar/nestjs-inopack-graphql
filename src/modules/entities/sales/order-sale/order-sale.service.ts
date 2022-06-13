@@ -105,6 +105,17 @@ export class OrderSaleService {
         });
     }
 
+    async getOrderSaleMaxOrderCode(): Promise<number> {
+        const {
+            _max: { order_code },
+        } = await this.prisma.order_sales.aggregate({
+            _max: {
+                order_code: true,
+            },
+        });
+        return order_code ? order_code : 0;
+    }
+
     async isOrderSaleCodeOccupied({
         order_code,
         order_sale_id,

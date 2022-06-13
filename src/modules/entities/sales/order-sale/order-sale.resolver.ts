@@ -57,6 +57,11 @@ export class OrderSaleResolver {
         return this.service.upsertOrderSale(input);
     }
 
+    @Query(() => Float)
+    async getOrderSaleMaxOrderCode(): Promise<number> {
+        return this.service.getOrderSaleMaxOrderCode();
+    }
+
     @Query(() => Boolean)
     async isOrderSaleCodeOccupied(
         @Args('OrderCode') orderCode: number,
