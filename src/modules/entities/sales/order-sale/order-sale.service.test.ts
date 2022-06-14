@@ -21,7 +21,6 @@ import {
 import {
     OrderSaleInput,
     OrderSaleProductInput,
-    OrderSaleReceiptType,
 } from '../../../../common/dto/entities';
 
 let app: INestApplication;
@@ -45,334 +44,323 @@ beforeEach(() => {
     currentSaleOrderCode = currentSaleOrderCode + 1;
 });
 
-describe('upsert', () => {
-    it('creates order sale', async () => {
-        const product = await createProductForTesting({
-            app,
-        });
-        const client = await createClientForTesting({
-            app,
-        });
-        const orderRequest = await orderRequestsService.upsertOrderRequest({
-            order_code: currentRequestOrderCode,
-            order_request_status_id: orderRequestStatus2.id,
-            estimated_delivery_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-            date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-            order_request_products: [
-                {
-                    group_weight: product.current_group_weight,
-                    groups: 2,
-                    kilos: 2 * product.current_group_weight,
-                    kilo_price: 20,
-                    product_id: product.id,
-                },
-            ],
-            client_id: client.id,
-        });
-
-        const orderSale = await orderSalesService.upsertOrderSale({
-            order_code: currentSaleOrderCode,
-            order_request_id: orderRequest.id,
-            date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-            order_sale_products: [
-                {
-                    group_weight: product.current_group_weight,
-                    groups: 2,
-                    kilos: 2 * product.current_group_weight,
-                    kilo_price: 20,
-                    product_id: product.id,
-                },
-            ],
-            order_sale_payments: [
-                {
-                    amount: 20 * 2 * product.current_group_weight,
-                    date_paid: getUtcDate({
-                        year: 2022,
-                        day: 1,
-                        month: 2,
-                    }),
-                    order_sale_collection_status_id:
-                        orderSaleCollectionStatus1.id,
-                },
-            ],
-            order_sale_receipt_type_id: orderSaleReceiptType1.id,
-            order_sale_status_id: orderSaleStatus1.id,
-        });
-
-        expect(orderSale).toBeDefined();
-        expect(orderSale.id).toBeDefined();
-        expect(orderSale.order_sale_receipt_type_id).toBe(
-            orderSaleReceiptType1.id,
-        );
+it('creates order sale', async () => {
+    const product = await createProductForTesting({
+        app,
+    });
+    const client = await createClientForTesting({
+        app,
+    });
+    const orderRequest = await orderRequestsService.upsertOrderRequest({
+        order_code: currentRequestOrderCode,
+        order_request_status_id: orderRequestStatus2.id,
+        estimated_delivery_date: getUtcDate({
+            year: 2022,
+            day: 1,
+            month: 2,
+        }),
+        date: getUtcDate({
+            year: 2022,
+            day: 1,
+            month: 2,
+        }),
+        order_request_products: [
+            {
+                group_weight: product.current_group_weight,
+                groups: 2,
+                kilos: 2 * product.current_group_weight,
+                kilo_price: 20,
+                product_id: product.id,
+            },
+        ],
+        client_id: client.id,
     });
 
-    it('fails when order sale has repeated product and its in order request', async () => {
-        expect.hasAssertions();
-
-        const product1 = await createProductForTesting({ app });
-        const product2 = await createProductForTesting({ app });
-
-        const { orderRequest, orderRequestProduct1 } =
-            await createOrderRequestWithTwoProducts({
-                app,
-                orderRequestCode: currentRequestOrderCode,
-                orderRequestProduct1: {
-                    product_id: product1.id,
-                    kilos: 2 * product1.current_group_weight,
-                    groups: 2,
-                    group_weight: product1.current_group_weight,
-                    kilo_price: 20,
-                },
-                orderRequestProduct2: {
-                    product_id: product2.id,
-                    kilos: 2 * product2.current_group_weight,
-                    groups: 2,
-                    group_weight: product2.current_group_weight,
-                    kilo_price: 20,
-                },
-            });
-
-        const orderSaleProduct1: OrderSaleProductInput = {
-            product_id: orderRequestProduct1.id,
-            kilos: 2 * orderRequestProduct1.group_weight,
-            groups: 2,
-            group_weight: orderRequestProduct1.group_weight,
-            kilo_price: 20,
-        };
-
-        try {
-            await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                date: getUtcDate({
+    const orderSale = await orderSalesService.upsertOrderSale({
+        order_code: currentSaleOrderCode,
+        order_request_id: orderRequest.id,
+        date: getUtcDate({
+            year: 2022,
+            day: 1,
+            month: 2,
+        }),
+        order_sale_products: [
+            {
+                group_weight: product.current_group_weight,
+                groups: 2,
+                kilos: 2 * product.current_group_weight,
+                kilo_price: 20,
+                product_id: product.id,
+            },
+        ],
+        order_sale_payments: [
+            {
+                amount: 20 * 2 * product.current_group_weight,
+                date_paid: getUtcDate({
                     year: 2022,
                     day: 1,
-                    month: 1,
+                    month: 2,
                 }),
-                order_sale_products: [orderSaleProduct1, orderSaleProduct1],
-                order_sale_payments: [
-                    {
-                        amount:
-                            orderSaleProduct1.kilos *
-                            orderSaleProduct1.kilo_price,
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        date_paid: getUtcDate({
-                            year: 2022,
-                            day: 1,
-                            month: 1,
-                        }),
-                    },
-                ],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderSaleStatus1.id,
-            });
-        } catch (e) {
-            expect(e.response.message).toEqual(
-                expect.arrayContaining([
-                    expect.stringMatching(/product is not unique/i),
-                ]),
-            );
-        }
+                order_sale_collection_status_id: orderSaleCollectionStatus1.id,
+            },
+        ],
+        order_sale_receipt_type_id: orderSaleReceiptType1.id,
+        order_sale_status_id: orderSaleStatus1.id,
     });
 
-    it('fails when order sale requires more kilos/groups than available', async () => {
-        expect.hasAssertions();
+    expect(orderSale).toBeDefined();
+    expect(orderSale.id).toBeDefined();
+    expect(orderSale.order_sale_receipt_type_id).toBe(orderSaleReceiptType1.id);
+});
 
-        const product1 = await createProductForTesting({ app });
-        const product2 = await createProductForTesting({ app });
+it.todo('updates order sale');
 
-        const { orderRequest, orderRequestProduct1 } =
-            await createOrderRequestWithTwoProducts({
-                app,
-                orderRequestCode: currentRequestOrderCode,
-                orderRequestProduct1: {
-                    product_id: product1.id,
-                    kilos: 2 * product1.current_group_weight,
-                    groups: 2,
-                    group_weight: product1.current_group_weight,
-                    kilo_price: 20,
-                },
-                orderRequestProduct2: {
-                    product_id: product2.id,
-                    kilos: 2 * product2.current_group_weight,
-                    groups: 2,
-                    group_weight: product2.current_group_weight,
-                    kilo_price: 20,
-                },
-            });
+it('fails when order sale has repeated product and its in order request', async () => {
+    expect.hasAssertions();
 
-        const orderSaleProduct1: OrderSaleProductInput = {
-            product_id: orderRequestProduct1.product_id,
-            kilos: 4 * orderRequestProduct1.group_weight,
-            groups: 4,
-            group_weight: orderRequestProduct1.group_weight,
-            kilo_price: 20,
-        };
+    const product1 = await createProductForTesting({ app });
+    const product2 = await createProductForTesting({ app });
 
-        try {
-            await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                date: getUtcDate({}),
-                order_sale_products: [orderSaleProduct1],
-                order_sale_payments: [
-                    {
-                        amount:
-                            orderRequestProduct1.kilos *
-                            orderRequestProduct1.kilo_price,
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        date_paid: getUtcDate({}),
-                    },
-                ],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderSaleStatus1.id,
-            });
-        } catch (e) {
-            expect(e.response.message).toEqual(
-                expect.arrayContaining([
-                    expect.stringMatching(
-                        /product desired kilos not available/i,
-                    ),
-                    expect.stringMatching(
-                        /product desired groups not available/i,
-                    ),
-                ]),
-            );
-        }
-    });
-
-    it('fails when order request status is not 2', async () => {
-        expect.hasAssertions();
-
-        const product1 = await createProductForTesting({ app });
-        const product2 = await createProductForTesting({ app });
-
-        const { orderRequest, orderRequestProduct1 } =
-            await createOrderRequestWithTwoProducts({
-                app,
-                orderRequestCode: currentRequestOrderCode,
-                orderRequestStatusId: orderRequestStatus1.id,
-                orderRequestProduct1: {
-                    product_id: product1.id,
-                    kilos: 2 * product1.current_group_weight,
-                    groups: 2,
-                    group_weight: product1.current_group_weight,
-                    kilo_price: 20,
-                },
-                orderRequestProduct2: {
-                    product_id: product2.id,
-                    kilos: 2 * product2.current_group_weight,
-                    groups: 2,
-                    group_weight: product2.current_group_weight,
-                    kilo_price: 20,
-                },
-            });
-
-        const orderSaleProduct1: OrderSaleProductInput = {
-            product_id: orderRequestProduct1.product_id,
-            kilos: 2 * orderRequestProduct1.group_weight,
-            groups: 2,
-            group_weight: orderRequestProduct1.group_weight,
-            kilo_price: 20,
-        };
-
-        try {
-            await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                date: getUtcDate({}),
-                order_sale_products: [orderSaleProduct1],
-                order_sale_payments: [
-                    {
-                        amount:
-                            orderRequestProduct1.kilos *
-                            orderRequestProduct1.kilo_price,
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        date_paid: getUtcDate({}),
-                    },
-                ],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderSaleStatus1.id,
-            });
-        } catch (e) {
-            expect(e.response.message).toEqual(
-                expect.arrayContaining([
-                    expect.stringMatching(
-                        /order request is not in production/i,
-                    ),
-                ]),
-            );
-        }
-    });
-
-    it('fails when order sale product is not in request', async () => {
-        expect.hasAssertions();
-
-        const product1 = await createProductForTesting({ app });
-        const product2 = await createProductForTesting({ app });
-
-        const { orderRequest } = await createOrderRequestWithOneProduct({
+    const { orderRequest, orderRequestProduct1 } =
+        await createOrderRequestWithTwoProducts({
             app,
             orderRequestCode: currentRequestOrderCode,
-            orderRequestProduct: {
+            orderRequestProduct1: {
                 product_id: product1.id,
                 kilos: 2 * product1.current_group_weight,
                 groups: 2,
                 group_weight: product1.current_group_weight,
                 kilo_price: 20,
             },
+            orderRequestProduct2: {
+                product_id: product2.id,
+                kilos: 2 * product2.current_group_weight,
+                groups: 2,
+                group_weight: product2.current_group_weight,
+                kilo_price: 20,
+            },
         });
 
-        const orderSaleProduct1: OrderSaleProductInput = {
-            product_id: product2.id,
-            kilos: 2 * product2.current_group_weight,
-            groups: 2,
-            group_weight: product2.current_group_weight,
-            kilo_price: 20,
-        };
+    const orderSaleProduct1: OrderSaleProductInput = {
+        product_id: orderRequestProduct1.id,
+        kilos: 2 * orderRequestProduct1.group_weight,
+        groups: 2,
+        group_weight: orderRequestProduct1.group_weight,
+        kilo_price: 20,
+    };
 
-        try {
-            await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                date: getUtcDate({}),
-                order_sale_products: [orderSaleProduct1],
-                order_sale_payments: [
-                    {
-                        amount:
-                            orderSaleProduct1.kilos *
-                            orderSaleProduct1.kilo_price,
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        date_paid: getUtcDate({}),
-                    },
-                ],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderSaleStatus1.id,
-            });
-        } catch (e) {
-            expect(e.response.message).toEqual(
-                expect.arrayContaining([
-                    expect.stringMatching(/product is not in order request/i),
-                ]),
-            );
-        }
+    try {
+        await orderSalesService.upsertOrderSale({
+            order_code: currentSaleOrderCode,
+            order_request_id: orderRequest.id,
+            date: getUtcDate({
+                year: 2022,
+                day: 1,
+                month: 1,
+            }),
+            order_sale_products: [orderSaleProduct1, orderSaleProduct1],
+            order_sale_payments: [
+                {
+                    amount:
+                        orderSaleProduct1.kilos * orderSaleProduct1.kilo_price,
+                    order_sale_collection_status_id:
+                        orderSaleCollectionStatus1.id,
+                    date_paid: getUtcDate({
+                        year: 2022,
+                        day: 1,
+                        month: 1,
+                    }),
+                },
+            ],
+            order_sale_receipt_type_id: orderSaleReceiptType1.id,
+            order_sale_status_id: orderSaleStatus1.id,
+        });
+    } catch (e) {
+        expect(e.response.message).toEqual(
+            expect.arrayContaining([
+                expect.stringMatching(/product is not unique/i),
+            ]),
+        );
+    }
+});
+
+it('fails when order sale requires more kilos/groups than available', async () => {
+    expect.hasAssertions();
+
+    const product1 = await createProductForTesting({ app });
+    const product2 = await createProductForTesting({ app });
+
+    const { orderRequest, orderRequestProduct1 } =
+        await createOrderRequestWithTwoProducts({
+            app,
+            orderRequestCode: currentRequestOrderCode,
+            orderRequestProduct1: {
+                product_id: product1.id,
+                kilos: 2 * product1.current_group_weight,
+                groups: 2,
+                group_weight: product1.current_group_weight,
+                kilo_price: 20,
+            },
+            orderRequestProduct2: {
+                product_id: product2.id,
+                kilos: 2 * product2.current_group_weight,
+                groups: 2,
+                group_weight: product2.current_group_weight,
+                kilo_price: 20,
+            },
+        });
+
+    const orderSaleProduct1: OrderSaleProductInput = {
+        product_id: orderRequestProduct1.product_id,
+        kilos: 4 * orderRequestProduct1.group_weight,
+        groups: 4,
+        group_weight: orderRequestProduct1.group_weight,
+        kilo_price: 20,
+    };
+
+    try {
+        await orderSalesService.upsertOrderSale({
+            order_code: currentSaleOrderCode,
+            order_request_id: orderRequest.id,
+            date: getUtcDate({}),
+            order_sale_products: [orderSaleProduct1],
+            order_sale_payments: [
+                {
+                    amount:
+                        orderRequestProduct1.kilos *
+                        orderRequestProduct1.kilo_price,
+                    order_sale_collection_status_id:
+                        orderSaleCollectionStatus1.id,
+                    date_paid: getUtcDate({}),
+                },
+            ],
+            order_sale_receipt_type_id: orderSaleReceiptType1.id,
+            order_sale_status_id: orderSaleStatus1.id,
+        });
+    } catch (e) {
+        expect(e.response.message).toEqual(
+            expect.arrayContaining([
+                expect.stringMatching(/product desired kilos not available/i),
+                expect.stringMatching(/product desired groups not available/i),
+            ]),
+        );
+    }
+});
+
+it('fails when order request status is not 2', async () => {
+    expect.hasAssertions();
+
+    const product1 = await createProductForTesting({ app });
+    const product2 = await createProductForTesting({ app });
+
+    const { orderRequest, orderRequestProduct1 } =
+        await createOrderRequestWithTwoProducts({
+            app,
+            orderRequestCode: currentRequestOrderCode,
+            orderRequestStatusId: orderRequestStatus1.id,
+            orderRequestProduct1: {
+                product_id: product1.id,
+                kilos: 2 * product1.current_group_weight,
+                groups: 2,
+                group_weight: product1.current_group_weight,
+                kilo_price: 20,
+            },
+            orderRequestProduct2: {
+                product_id: product2.id,
+                kilos: 2 * product2.current_group_weight,
+                groups: 2,
+                group_weight: product2.current_group_weight,
+                kilo_price: 20,
+            },
+        });
+
+    const orderSaleProduct1: OrderSaleProductInput = {
+        product_id: orderRequestProduct1.product_id,
+        kilos: 2 * orderRequestProduct1.group_weight,
+        groups: 2,
+        group_weight: orderRequestProduct1.group_weight,
+        kilo_price: 20,
+    };
+
+    try {
+        await orderSalesService.upsertOrderSale({
+            order_code: currentSaleOrderCode,
+            order_request_id: orderRequest.id,
+            date: getUtcDate({}),
+            order_sale_products: [orderSaleProduct1],
+            order_sale_payments: [
+                {
+                    amount:
+                        orderRequestProduct1.kilos *
+                        orderRequestProduct1.kilo_price,
+                    order_sale_collection_status_id:
+                        orderSaleCollectionStatus1.id,
+                    date_paid: getUtcDate({}),
+                },
+            ],
+            order_sale_receipt_type_id: orderSaleReceiptType1.id,
+            order_sale_status_id: orderSaleStatus1.id,
+        });
+    } catch (e) {
+        expect(e.response.message).toEqual(
+            expect.arrayContaining([
+                expect.stringMatching(/order request is not in production/i),
+            ]),
+        );
+    }
+});
+
+it('fails when order sale product is not in request', async () => {
+    expect.hasAssertions();
+
+    const product1 = await createProductForTesting({ app });
+    const product2 = await createProductForTesting({ app });
+
+    const { orderRequest } = await createOrderRequestWithOneProduct({
+        app,
+        orderRequestCode: currentRequestOrderCode,
+        orderRequestProduct: {
+            product_id: product1.id,
+            kilos: 2 * product1.current_group_weight,
+            groups: 2,
+            group_weight: product1.current_group_weight,
+            kilo_price: 20,
+        },
     });
+
+    const orderSaleProduct1: OrderSaleProductInput = {
+        product_id: product2.id,
+        kilos: 2 * product2.current_group_weight,
+        groups: 2,
+        group_weight: product2.current_group_weight,
+        kilo_price: 20,
+    };
+
+    try {
+        await orderSalesService.upsertOrderSale({
+            order_code: currentSaleOrderCode,
+            order_request_id: orderRequest.id,
+            date: getUtcDate({}),
+            order_sale_products: [orderSaleProduct1],
+            order_sale_payments: [
+                {
+                    amount:
+                        orderSaleProduct1.kilos * orderSaleProduct1.kilo_price,
+                    order_sale_collection_status_id:
+                        orderSaleCollectionStatus1.id,
+                    date_paid: getUtcDate({}),
+                },
+            ],
+            order_sale_receipt_type_id: orderSaleReceiptType1.id,
+            order_sale_status_id: orderSaleStatus1.id,
+        });
+    } catch (e) {
+        expect(e.response.message).toEqual(
+            expect.arrayContaining([
+                expect.stringMatching(/product is not in order request/i),
+            ]),
+        );
+    }
 });
 
 it('fails when order sale product is not in request', async () => {

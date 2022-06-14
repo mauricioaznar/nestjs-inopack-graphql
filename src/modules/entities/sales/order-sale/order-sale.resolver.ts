@@ -68,12 +68,10 @@ export class OrderSaleResolver {
         @Args('OrderSaleId', { nullable: true, type: () => Int })
         orderSaleId: number | null,
     ): Promise<boolean> {
-        const result = await this.service.isOrderSaleCodeOccupied({
+        return await this.service.isOrderSaleCodeOccupied({
             order_sale_id: orderSaleId,
             order_code: orderCode,
         });
-
-        return result;
     }
 
     @ResolveField(() => [OrderSaleProduct])

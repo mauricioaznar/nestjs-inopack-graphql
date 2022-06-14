@@ -45,6 +45,11 @@ export class OrderRequestsResolver {
         return this.service.getOrderRequests(getOrderRequestArgs);
     }
 
+    @Query(() => Float)
+    async getOrderRequestMaxOrderCode(): Promise<number> {
+        return this.service.getOrderRequestMaxOrderCode();
+    }
+
     @Query(() => PaginatedOrderRequests)
     async paginatedOrderRequests(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,

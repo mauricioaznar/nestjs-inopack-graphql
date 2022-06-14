@@ -65,6 +65,18 @@ export class OrderRequestsService {
         });
     }
 
+    async getOrderRequestMaxOrderCode(): Promise<number> {
+        const {
+            _max: { order_code },
+        } = await this.prisma.order_sales.aggregate({
+            _max: {
+                order_code: true,
+            },
+        });
+
+        return !!order_code ? order_code : 0;
+    }
+
     async paginatedOrderRequests({
         offsetPaginatorArgs,
         datePaginator,
