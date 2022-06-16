@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SparesService } from '../../../entities/maintenance/spares/spares.service';
+import { SparesService } from '../../../maintenance/spares/spares.service';
 import { SpareCategoriesSeed } from '../../types/spare-categories-seed';
 import { SparesSeed } from '../../types/spares-seed';
 import { PrismaService } from '../../../../common/modules/prisma/prisma.service';

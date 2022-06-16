@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { MachinesService } from '../../../entities/maintenance/machines/machines.service';
+import { MachinesService } from '../../../maintenance/machines/machines.service';
 import { MachinesSeed } from '../../types/machines-seed';
-import { MachineSectionsService } from '../../../entities/maintenance/machine-sections/machine-sections.service';
-import { MachinePartsService } from '../../../entities/maintenance/machine-parts/machine-parts.service';
+import { MachineSectionsService } from '../../../maintenance/machine-sections/machine-sections.service';
+import { MachinePartsService } from '../../../maintenance/machine-parts/machine-parts.service';
 import { SparesSeed } from '../../types/spares-seed';
 import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 

@@ -1,5 +1,5 @@
 import { orderProductionType1, packing1, productType1 } from '../../objects';
-import { ProductsService } from '../../../../modules/entities/production/products/products.service';
+import { ProductsService } from '../../../../modules/production/products/products.service';
 import { Product } from '../../../dto/entities';
 import { INestApplication } from '@nestjs/common';
 

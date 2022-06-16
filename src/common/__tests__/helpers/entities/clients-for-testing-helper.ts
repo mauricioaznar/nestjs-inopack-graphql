@@ -1,4 +1,4 @@
-import { ClientsService } from '../../../../modules/entities/sales/clients/clients.service';
+import { ClientsService } from '../../../../modules/sales/clients/clients.service';
 import { Client } from '../../../dto/entities';
 import { INestApplication } from '@nestjs/common';
 

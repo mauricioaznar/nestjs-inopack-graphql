@@ -3,7 +3,7 @@ import { branch1 } from '../../objects/maintenance/branches';
 import { orderProductionType1 } from '../../objects';
 import { employeeStatus1 } from '../../objects/maintenance/employee-statuses';
 import { INestApplication } from '@nestjs/common';
-import { EmployeesService } from '../../../../modules/entities/production/employees/employees.service';
+import { EmployeesService } from '../../../../modules/production/employees/employees.service';
 
 export async function createEmployeeForTesting({
     app,

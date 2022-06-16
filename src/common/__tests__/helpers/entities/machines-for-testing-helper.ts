@@ -1,5 +1,5 @@
 import { Machine } from '../../../dto/entities';
-import { MachinesService } from '../../../../modules/entities/maintenance/machines/machines.service';
+import { MachinesService } from '../../../../modules/maintenance/machines/machines.service';
 import { branch1 } from '../../objects/maintenance/branches';
 import { orderProductionType1 } from '../../objects';
 import { INestApplication } from '@nestjs/common';

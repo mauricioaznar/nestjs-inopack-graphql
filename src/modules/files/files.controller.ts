@@ -14,7 +14,7 @@ import * as pdf from 'html-pdf';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from 'express';
-import { OrderSaleService } from '../entities/sales/order-sale/order-sale.service';
+import { OrderSaleService } from '../sales/order-sale/order-sale.service';
 import { formatDate, formatFloat } from '../../common/helpers';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 

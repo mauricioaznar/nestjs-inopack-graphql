@@ -3,7 +3,7 @@ import {
     OrderRequestProduct,
     OrderRequestProductInput,
 } from '../../../dto/entities';
-import { OrderRequestsService } from '../../../../modules/entities/sales/order-requests/order-requests.service';
+import { OrderRequestsService } from '../../../../modules/sales/order-requests/order-requests.service';
 import {
     orderRequestStatus1,
     orderRequestStatus2,
