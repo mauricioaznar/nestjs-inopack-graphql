@@ -17,6 +17,7 @@ import {
     OrderSaleInput,
     OrderSalePayment,
     OrderSaleProduct,
+    OrderSaleReceiptType,
     PaginatedOrderSales,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -107,6 +108,15 @@ export class OrderSaleResolver {
     async client_id(orderSale: OrderSale): Promise<number | null> {
         return this.service.getClientId({
             order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => OrderSaleReceiptType, { nullable: true })
+    async order_sale_receipt_type(
+        @Parent() orderSale: OrderSale,
+    ): Promise<OrderSaleReceiptType | null> {
+        return this.service.getOrderSaleReceiptType({
+            order_sale_receipt_type_id: orderSale.order_sale_receipt_type_id,
         });
     }
 

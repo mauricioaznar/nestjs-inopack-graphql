@@ -15,6 +15,9 @@ export class OrderSaleBase {
     @Field()
     order_code: number;
 
+    @Field()
+    invoice_code: number;
+
     @Field(() => Int, { nullable: true })
     order_sale_receipt_type_id?: number | null;
 

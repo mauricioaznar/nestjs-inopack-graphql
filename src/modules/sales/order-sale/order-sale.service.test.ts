@@ -12,7 +12,10 @@ import {
 } from '../../../common/__tests__/objects/sales/order-request-statuses';
 import { createClientForTesting } from '../../../common/__tests__/helpers/entities/clients-for-testing-helper';
 import { orderSaleCollectionStatus1 } from '../../../common/__tests__/objects/sales/order-sale-collection-statuses';
-import { orderSaleReceiptType1 } from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
+import {
+    orderSaleReceiptType1,
+    orderSaleReceiptType2,
+} from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
 import { orderSaleStatus1 } from '../../../common/__tests__/objects/sales/order-sale-statuses';
 import {
     createOrderRequestWithOneProduct,
@@ -28,6 +31,7 @@ let orderRequestsService: OrderRequestsService;
 let orderSalesService: OrderSaleService;
 let currentRequestOrderCode = 10000;
 let currentSaleOrderCode = 0;
+let currentSaleInvoiceCode = 0;
 
 beforeAll(async () => {
     app = await setupApp();
@@ -42,6 +46,7 @@ afterAll(async () => {
 beforeEach(() => {
     currentRequestOrderCode = currentRequestOrderCode + 1;
     currentSaleOrderCode = currentSaleOrderCode + 1;
+    currentSaleInvoiceCode = currentSaleInvoiceCode + 1;
 });
 
 it('creates order sale', async () => {
@@ -76,9 +81,12 @@ it('creates order sale', async () => {
         client_id: client.id,
     });
 
+    const orderCode = currentSaleOrderCode;
+
     const orderSale = await orderSalesService.upsertOrderSale({
-        order_code: currentSaleOrderCode,
+        order_code: orderCode,
         order_request_id: orderRequest.id,
+        invoice_code: 0,
         date: getUtcDate({
             year: 2022,
             day: 1,
@@ -111,6 +119,11 @@ it('creates order sale', async () => {
     expect(orderSale).toBeDefined();
     expect(orderSale.id).toBeDefined();
     expect(orderSale.order_sale_receipt_type_id).toBe(orderSaleReceiptType1.id);
+    expect(orderSale.order_sale_status_id).toBe(orderSaleStatus1.id);
+    expect(orderSale.invoice_code).toBe(0);
+    expect(orderSale.date.toISOString()).toMatch(/2022-03-01/i);
+    expect(orderSale.order_code).toBe(orderCode);
+    expect(orderSale.order_request_id).toBe(orderRequest.id);
 });
 
 it.todo('updates order sale');
@@ -153,6 +166,7 @@ it('fails when order sale has repeated product and its in order request', async 
         await orderSalesService.upsertOrderSale({
             order_code: currentSaleOrderCode,
             order_request_id: orderRequest.id,
+            invoice_code: 0,
             date: getUtcDate({
                 year: 2022,
                 day: 1,
@@ -222,6 +236,7 @@ it('fails when order sale requires more kilos/groups than available', async () =
         await orderSalesService.upsertOrderSale({
             order_code: currentSaleOrderCode,
             order_request_id: orderRequest.id,
+            invoice_code: 0,
             date: getUtcDate({}),
             order_sale_products: [orderSaleProduct1],
             order_sale_payments: [
@@ -286,6 +301,7 @@ it('fails when order request status is not 2', async () => {
         await orderSalesService.upsertOrderSale({
             order_code: currentSaleOrderCode,
             order_request_id: orderRequest.id,
+            invoice_code: 0,
             date: getUtcDate({}),
             order_sale_products: [orderSaleProduct1],
             order_sale_payments: [
@@ -340,6 +356,7 @@ it('fails when order sale product is not in request', async () => {
         await orderSalesService.upsertOrderSale({
             order_code: currentSaleOrderCode,
             order_request_id: orderRequest.id,
+            invoice_code: 0,
             date: getUtcDate({}),
             order_sale_products: [orderSaleProduct1],
             order_sale_payments: [
@@ -393,6 +410,7 @@ it('fails when order sale product is not in request', async () => {
         await orderSalesService.upsertOrderSale({
             order_code: currentSaleOrderCode,
             order_request_id: orderRequest.id,
+            invoice_code: 0,
             date: getUtcDate({}),
             order_sale_products: [orderSaleProduct1],
             order_sale_payments: [
@@ -448,6 +466,7 @@ it('fails when order sale products total doesnt match with order sale payments t
         await orderSalesService.upsertOrderSale({
             order_code: currentSaleOrderCode,
             order_request_id: orderRequest.id,
+            invoice_code: 0,
             date: getUtcDate({}),
             order_sale_products: [orderSaleProduct1],
             order_sale_payments: [
@@ -476,10 +495,10 @@ it('fails when order sale products total doesnt match with order sale payments t
 });
 
 it.todo(
-    'matches payments total and prodcuts total when order sale receipt type is 2',
+    'matches payments total and products total when order sale receipt type is 2',
 );
 
-it('fails when order code is alrady occupied', async () => {
+it('fails when order code is already occupied', async () => {
     expect.hasAssertions();
 
     const product1 = await createProductForTesting({ app });
@@ -508,6 +527,7 @@ it('fails when order code is alrady occupied', async () => {
     const orderSaleInput: OrderSaleInput = {
         order_code: currentSaleOrderCode,
         order_request_id: orderRequest.id,
+        invoice_code: 0,
         date: getUtcDate({}),
         order_sale_products: [orderSaleProductInput],
         order_sale_payments: [
@@ -531,6 +551,195 @@ it('fails when order code is alrady occupied', async () => {
         expect(e.response.message).toEqual(
             expect.arrayContaining([
                 expect.stringMatching(/order code is already occupied/i),
+            ]),
+        );
+    }
+});
+
+it('fails when invoice code is already occupied', async () => {
+    expect.hasAssertions();
+
+    const product1 = await createProductForTesting({ app });
+
+    const { orderRequest, orderRequestProduct } =
+        await createOrderRequestWithOneProduct({
+            app,
+            orderRequestCode: currentRequestOrderCode,
+            orderRequestProduct: {
+                product_id: product1.id,
+                kilos: 4 * product1.current_group_weight,
+                groups: 4,
+                group_weight: product1.current_group_weight,
+                kilo_price: 20,
+            },
+        });
+
+    const orderSaleProductInput: OrderSaleProductInput = {
+        product_id: orderRequestProduct.product_id,
+        kilos: 2 * orderRequestProduct.group_weight,
+        groups: 2,
+        group_weight: orderRequestProduct.group_weight,
+        kilo_price: 20,
+    };
+
+    const orderSaleInput: OrderSaleInput = {
+        order_code: currentSaleOrderCode,
+        order_request_id: orderRequest.id,
+        invoice_code: currentSaleInvoiceCode,
+        date: getUtcDate({}),
+        order_sale_products: [orderSaleProductInput],
+        order_sale_payments: [
+            {
+                amount:
+                    orderSaleProductInput.kilos *
+                    orderSaleProductInput.kilo_price *
+                    1.16,
+                order_sale_collection_status_id: orderSaleCollectionStatus1.id,
+                date_paid: getUtcDate({}),
+            },
+        ],
+        order_sale_receipt_type_id: orderSaleReceiptType2.id,
+        order_sale_status_id: orderSaleStatus1.id,
+    };
+
+    await orderSalesService.upsertOrderSale(orderSaleInput);
+
+    try {
+        await orderSalesService.upsertOrderSale(orderSaleInput);
+    } catch (e) {
+        expect(e.response.message).toEqual(
+            expect.arrayContaining([
+                expect.stringMatching(/invoice code is already occupied/i),
+            ]),
+        );
+    }
+});
+
+it('fails when order request is changed', async () => {
+    expect.hasAssertions();
+
+    const product1 = await createProductForTesting({ app });
+
+    const { orderRequest: orderRequest1, orderRequestProduct } =
+        await createOrderRequestWithOneProduct({
+            app,
+            orderRequestCode: currentRequestOrderCode,
+            orderRequestProduct: {
+                product_id: product1.id,
+                kilos: 4 * product1.current_group_weight,
+                groups: 4,
+                group_weight: product1.current_group_weight,
+                kilo_price: 20,
+            },
+        });
+
+    const orderSaleProductInput: OrderSaleProductInput = {
+        product_id: orderRequestProduct.product_id,
+        kilos: 2 * orderRequestProduct.group_weight,
+        groups: 2,
+        group_weight: orderRequestProduct.group_weight,
+        kilo_price: 20,
+    };
+
+    const orderSaleInput: OrderSaleInput = {
+        order_code: currentSaleOrderCode,
+        order_request_id: orderRequest1.id,
+        invoice_code: currentSaleInvoiceCode,
+        date: getUtcDate({}),
+        order_sale_products: [orderSaleProductInput],
+        order_sale_payments: [
+            {
+                amount:
+                    orderSaleProductInput.kilos *
+                    orderSaleProductInput.kilo_price *
+                    1.16,
+                order_sale_collection_status_id: orderSaleCollectionStatus1.id,
+                date_paid: getUtcDate({}),
+            },
+        ],
+        order_sale_receipt_type_id: orderSaleReceiptType2.id,
+        order_sale_status_id: orderSaleStatus1.id,
+    };
+
+    const orderSale = await orderSalesService.upsertOrderSale(orderSaleInput);
+
+    try {
+        await orderSalesService.upsertOrderSale({
+            ...orderSaleInput,
+            id: orderSale.id,
+            order_request_id: orderRequest1.id + 1,
+        });
+    } catch (e) {
+        expect(e.response.message).toEqual(
+            expect.arrayContaining([
+                expect.stringMatching(/order request cant be changed/i),
+            ]),
+        );
+    }
+});
+
+it('fails when order sale receipt type is changed', async () => {
+    expect.hasAssertions();
+
+    const product1 = await createProductForTesting({ app });
+
+    const { orderRequest: orderRequest1, orderRequestProduct } =
+        await createOrderRequestWithOneProduct({
+            app,
+            orderRequestCode: currentRequestOrderCode,
+            orderRequestProduct: {
+                product_id: product1.id,
+                kilos: 4 * product1.current_group_weight,
+                groups: 4,
+                group_weight: product1.current_group_weight,
+                kilo_price: 20,
+            },
+        });
+
+    const orderSaleProductInput: OrderSaleProductInput = {
+        product_id: orderRequestProduct.product_id,
+        kilos: 2 * orderRequestProduct.group_weight,
+        groups: 2,
+        group_weight: orderRequestProduct.group_weight,
+        kilo_price: 20,
+    };
+
+    const orderSaleInput: OrderSaleInput = {
+        order_code: currentSaleOrderCode,
+        order_request_id: orderRequest1.id,
+        invoice_code: currentSaleInvoiceCode,
+        date: getUtcDate({}),
+        order_sale_products: [orderSaleProductInput],
+        order_sale_payments: [
+            {
+                amount:
+                    orderSaleProductInput.kilos *
+                    orderSaleProductInput.kilo_price,
+                order_sale_collection_status_id: orderSaleCollectionStatus1.id,
+                date_paid: getUtcDate({}),
+            },
+        ],
+        order_sale_receipt_type_id: orderSaleReceiptType1.id,
+        order_sale_status_id: orderSaleStatus1.id,
+    };
+
+    const orderSale = await orderSalesService.upsertOrderSale({
+        ...orderSaleInput,
+        order_sale_receipt_type_id: orderSaleReceiptType1.id,
+    });
+
+    try {
+        await orderSalesService.upsertOrderSale({
+            ...orderSaleInput,
+            id: orderSale.id,
+            order_sale_receipt_type_id: orderSaleReceiptType2.id,
+        });
+    } catch (e) {
+        expect(e.response.message).toEqual(
+            expect.arrayContaining([
+                expect.stringMatching(
+                    /order sale receipt type cant be changed/i,
+                ),
             ]),
         );
     }

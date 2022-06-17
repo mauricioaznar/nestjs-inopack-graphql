@@ -12,6 +12,7 @@ import {
     OrderSaleInput,
     OrderSalePayment,
     OrderSaleProduct,
+    OrderSaleReceiptType,
     PaginatedOrderSales,
 } from '../../../common/dto/entities';
 import { getRangesFromYearMonth, vennDiagram } from '../../../common/helpers';
@@ -135,6 +136,33 @@ export class OrderSaleService {
             : !!orderSale;
     }
 
+    async isInvoiceCodeOccupied({
+        invoice_code,
+        order_sale_id,
+    }: {
+        invoice_code: number;
+        order_sale_id: number | null;
+    }): Promise<boolean> {
+        if (invoice_code <= 0) return false;
+
+        const orderSale = await this.prisma.order_sales.findFirst({
+            where: {
+                AND: [
+                    {
+                        invoice_code: invoice_code,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+
+        return !!order_sale_id && order_sale_id >= 0 && orderSale
+            ? orderSale.id !== order_sale_id
+            : !!orderSale;
+    }
+
     async getOrderSaleProducts({
         order_sale_id,
     }: {
@@ -223,6 +251,18 @@ export class OrderSaleService {
         return orderRequest.client_id;
     }
 
+    async getOrderSaleReceiptType({
+        order_sale_receipt_type_id,
+    }: {
+        order_sale_receipt_type_id?: number | null;
+    }): Promise<OrderSaleReceiptType | null> {
+        return this.prisma.order_sale_receipt_type.findFirst({
+            where: {
+                id: order_sale_receipt_type_id || 0,
+            },
+        });
+    }
+
     async getOrderRequest({
         order_sale_id,
     }: {
@@ -282,9 +322,7 @@ export class OrderSaleService {
             0,
         );
 
-        const rounded = Math.round(orderSaleProductsTotal * 1000) / 1000;
-        console.log(rounded);
-        return rounded;
+        return Math.round(orderSaleProductsTotal * 1000) / 1000;
     }
 
     async getOrderSaleTaxTotal({
@@ -361,14 +399,22 @@ export class OrderSaleService {
             create: {
                 date: input.date,
                 order_code: input.order_code,
+                invoice_code:
+                    input.order_sale_receipt_type_id === 2
+                        ? input.invoice_code
+                        : 0,
                 order_sale_status_id: input.order_sale_status_id,
                 order_sale_receipt_type_id: input.order_sale_receipt_type_id,
+                order_request_id: input.order_request_id,
             },
             update: {
                 date: input.date,
                 order_code: input.order_code,
+                invoice_code:
+                    input.order_sale_receipt_type_id === 2
+                        ? input.invoice_code
+                        : 0,
                 order_sale_status_id: input.order_sale_status_id,
-                order_sale_receipt_type_id: input.order_sale_receipt_type_id,
             },
             where: {
                 id: input.id || 0,
@@ -665,6 +711,21 @@ export class OrderSaleService {
             }
         }
 
+        // IsInvoiceCodeValid
+        {
+            if (input.order_sale_receipt_type_id === 2) {
+                const isInvoiceCodeOccupied = await this.isInvoiceCodeOccupied({
+                    invoice_code: input.invoice_code,
+                    order_sale_id: input.id ? input.id : null,
+                });
+                if (isInvoiceCodeOccupied) {
+                    errors.push(
+                        `invoice code is already occupied (${input.invoice_code})`,
+                    );
+                }
+            }
+        }
+
         // ProductsKiloPrice
         {
             const orderRequestProducts =
@@ -699,6 +760,37 @@ export class OrderSaleService {
                     errors.push(
                         `order sale product kilo price doesnt match with order request product kilo price (sale: ${orderSaleProduct.kilo_price}, request: ${foundOrderRequestProduct.kilo_price})`,
                     );
+                }
+            }
+        }
+
+        // IsOrderRequestTheSame
+        {
+            if (input.id) {
+                const orderSale = await this.getOrderSale({
+                    orderSaleId: input.id,
+                });
+                if (
+                    !!orderSale &&
+                    orderSale.order_request_id !== input.order_request_id
+                ) {
+                    errors.push(`Order request cant be changed`);
+                }
+            }
+        }
+
+        //IsOrderSaleReceiptTypeTheSame
+        {
+            if (input.id) {
+                const orderSale = await this.getOrderSale({
+                    orderSaleId: input.id,
+                });
+                if (
+                    !!orderSale &&
+                    orderSale.order_sale_receipt_type_id !==
+                        input.order_sale_receipt_type_id
+                ) {
+                    errors.push(`Order sale receipt type cant be changed`);
                 }
             }
         }

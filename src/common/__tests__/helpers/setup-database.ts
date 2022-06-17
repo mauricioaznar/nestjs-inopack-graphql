@@ -33,10 +33,10 @@ export default async function setupDatabase() {
     // level 5
     await prismaService.order_adjustments.deleteMany();
     await prismaService.order_productions.deleteMany();
-    await prismaService.order_requests.deleteMany();
+    await prismaService.order_sales.deleteMany();
 
     // level 4
-    await prismaService.order_sales.deleteMany();
+    await prismaService.order_requests.deleteMany();
     await prismaService.products.deleteMany();
 
     // level 3
