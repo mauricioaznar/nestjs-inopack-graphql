@@ -523,9 +523,9 @@ export class OrderSaleService {
         for await (const createItem of createPaymentItems) {
             await this.prisma.order_sale_payments.create({
                 data: {
-                    amount: createItem.amount,
+                    amount: Math.round(createItem.amount * 100) / 100,
                     order_sale_collection_status_id:
-                        orderSale.order_sale_collection_status_id,
+                        createItem.order_sale_collection_status_id,
                     date_paid: createItem.date_paid,
                     order_sale_id: orderSale.id,
                 },
@@ -536,7 +536,7 @@ export class OrderSaleService {
             if (updateItem && updateItem.id) {
                 await this.prisma.order_sale_payments.updateMany({
                     data: {
-                        amount: updateItem.amount,
+                        amount: Math.round(updateItem.amount * 100) / 100,
                         order_sale_collection_status_id:
                             updateItem.order_sale_collection_status_id,
                         date_paid: updateItem.date_paid,
@@ -711,7 +711,7 @@ export class OrderSaleService {
             }
         }
 
-        // IsInvoiceCodeValid
+        // IsInvoiceCodeOccupied
         {
             if (input.order_sale_receipt_type_id === 2) {
                 const isInvoiceCodeOccupied = await this.isInvoiceCodeOccupied({
@@ -723,6 +723,18 @@ export class OrderSaleService {
                         `invoice code is already occupied (${input.invoice_code})`,
                     );
                 }
+            }
+        }
+
+        // IsInvoiceCodeValid
+        {
+            if (
+                input.order_sale_receipt_type_id === 2 &&
+                input.invoice_code === 0
+            ) {
+                errors.push(
+                    `invoice code is invalid (Invoice code has to be different than 0)`,
+                );
             }
         }
 

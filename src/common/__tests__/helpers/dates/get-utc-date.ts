@@ -14,5 +14,8 @@ export function getUtcDate({
         .set('year', year)
         .set('month', month)
         .set('date', day)
+        .set('hour', 0)
+        .set('minutes', 0)
+        .set('seconds', 0)
         .toDate();
 }
