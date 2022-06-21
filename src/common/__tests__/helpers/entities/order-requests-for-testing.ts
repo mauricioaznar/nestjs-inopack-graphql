@@ -1,13 +1,11 @@
 import {
+    Client,
     OrderRequest,
     OrderRequestProduct,
     OrderRequestProductInput,
 } from '../../../dto/entities';
 import { OrderRequestsService } from '../../../../modules/sales/order-requests/order-requests.service';
-import {
-    orderRequestStatus1,
-    orderRequestStatus2,
-} from '../../objects/sales/order-request-statuses';
+import { orderRequestStatus2 } from '../../objects/sales/order-request-statuses';
 import { getUtcDate } from '../dates';
 import { createClientForTesting } from './clients-for-testing-helper';
 import { INestApplication } from '@nestjs/common';
@@ -15,6 +13,7 @@ import { INestApplication } from '@nestjs/common';
 type OrderRequestWithOneProduct = {
     orderRequest: OrderRequest;
     orderRequestProduct: OrderRequestProduct;
+    client: Client;
 };
 
 export async function createOrderRequestWithOneProduct({
@@ -51,6 +50,7 @@ export async function createOrderRequestWithOneProduct({
         return {
             orderRequest,
             orderRequestProduct: orderRequestProducts[0],
+            client,
         };
     } catch (e) {
         console.error(e);
@@ -63,6 +63,7 @@ type OrderRequestWithTwoProducts = {
     orderRequest: OrderRequest;
     orderRequestProduct1: OrderRequestProduct;
     orderRequestProduct2: OrderRequestProduct;
+    client: Client;
 };
 
 export async function createOrderRequestWithTwoProducts({
@@ -107,6 +108,7 @@ export async function createOrderRequestWithTwoProducts({
             orderRequest,
             orderRequestProduct1: orderRequestProducts[0],
             orderRequestProduct2: orderRequestProducts[1],
+            client,
         };
     } catch (e) {
         console.error(e);

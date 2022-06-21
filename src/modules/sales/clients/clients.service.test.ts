@@ -1,13 +1,19 @@
-import { setupApp } from '../../../common/__tests__/helpers/setup-app';
+import {
+    createProductForTesting,
+    setupApp,
+} from '../../../common/__tests__/helpers';
 import { INestApplication } from '@nestjs/common';
 import { ClientsService } from './clients.service';
+import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 
 let app: INestApplication;
 let clientsService: ClientsService;
+let currentOrderRequestCode = 30000;
 
 beforeAll(async () => {
     app = await setupApp();
     clientsService = app.get(ClientsService);
+    currentOrderRequestCode = currentOrderRequestCode + 1;
 });
 
 afterAll(async () => {
@@ -133,7 +139,30 @@ describe('deletes client', () => {
         expect(clientContacts.length).toBe(0);
     });
 
-    it.todo(
-        'forbids to delete client when there is are related order requests',
-    );
+    it('forbids to delete client when there is are related order requests', async () => {
+        expect.hasAssertions();
+
+        const product = await createProductForTesting({ app });
+        const { client } = await createOrderRequestWithOneProduct({
+            app,
+            orderRequestCode: currentOrderRequestCode,
+            orderRequestProduct: {
+                product_id: product.id,
+                groups: 1,
+                group_weight: product.current_group_weight,
+                kilo_price: product.current_kilo_price,
+                kilos: product.current_group_weight,
+            },
+        });
+
+        try {
+            await clientsService.deletesClient({
+                client_id: client.id,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual([
+                expect.stringMatching(/order requests count/i),
+            ]);
+        }
+    });
 });

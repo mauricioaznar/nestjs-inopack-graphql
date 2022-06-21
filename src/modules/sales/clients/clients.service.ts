@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import {
     Client,
     ClientContact,
@@ -144,6 +148,22 @@ export class ClientsService {
             throw new NotFoundException();
         }
 
+        const isDeletable = await this.isDeletable({ client_id });
+
+        if (!isDeletable) {
+            const { order_requests_count } = await this.getDependenciesCount({
+                client_id,
+            });
+
+            const errors: string[] = [];
+
+            if (order_requests_count > 0) {
+                errors.push(`order requests count ${order_requests_count}`);
+            }
+
+            throw new BadRequestException(errors);
+        }
+
         const clientContacts = await this.getClientContacts({ client_id });
 
         for await (const contact of clientContacts) {
@@ -167,5 +187,35 @@ export class ClientsService {
         });
 
         return true;
+    }
+
+    async getDependenciesCount({
+        client_id,
+    }: {
+        client_id: number;
+    }): Promise<{ order_requests_count: number }> {
+        const {
+            _count: { id: orderRequestsCount },
+        } = await this.prisma.order_requests.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                client_id: client_id,
+                active: 1,
+            },
+        });
+
+        return {
+            order_requests_count: orderRequestsCount,
+        };
+    }
+
+    async isDeletable({ client_id }: { client_id: number }): Promise<boolean> {
+        const { order_requests_count } = await this.getDependenciesCount({
+            client_id,
+        });
+
+        return order_requests_count === 0;
     }
 }

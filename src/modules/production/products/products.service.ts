@@ -51,28 +51,6 @@ export class ProductsService {
         });
     }
 
-    async deleteProduct({ product_id }: { product_id: number }): Promise<void> {
-        const product = await this.prisma.products.findUnique({
-            where: {
-                id: product_id,
-            },
-            rejectOnNotFound: false,
-        });
-
-        if (!product) {
-            throw new BadRequestException(['Product not found']);
-        }
-
-        await this.prisma.products.update({
-            data: {
-                active: -1,
-            },
-            where: {
-                id: product.id,
-            },
-        });
-    }
-
     // update or insert
     async upsertInput(input: ProductUpsertInput): Promise<Product> {
         await this.validateAndCleanUpsertInput(input);
@@ -246,5 +224,184 @@ export class ProductsService {
 
     private static isPackingIdRequired(input: ProductUpsertInput) {
         return ProductsService.isBag(input) || ProductsService.isRoll(input);
+    }
+
+    async deleteProduct({ product_id }: { product_id: number }): Promise<void> {
+        const product = await this.prisma.products.findUnique({
+            where: {
+                id: product_id,
+            },
+            rejectOnNotFound: false,
+        });
+
+        if (!product) {
+            throw new BadRequestException(['Product not found']);
+        }
+
+        const isDeletable = await this.isDeletable({
+            product_id,
+        });
+
+        if (!isDeletable) {
+            const errors: string[] = [];
+
+            const {
+                order_requests_count,
+                order_productions_count,
+                order_adjustments_count,
+            } = await this.getDependenciesCount({
+                product_id,
+            });
+
+            if (order_requests_count > 0) {
+                errors.push(`order requests count ${order_requests_count}`);
+            }
+
+            if (order_adjustments_count > 0) {
+                errors.push(
+                    `order adjustments count ${order_adjustments_count}`,
+                );
+            }
+
+            if (order_productions_count > 0) {
+                errors.push(
+                    `order productions count ${order_productions_count}`,
+                );
+            }
+
+            throw new BadRequestException(errors);
+        }
+
+        await this.prisma.products.update({
+            data: {
+                active: -1,
+            },
+            where: {
+                id: product.id,
+            },
+        });
+    }
+
+    async getDependenciesCount({
+        product_id,
+    }: {
+        product_id: number;
+    }): Promise<{
+        order_requests_count: number;
+        order_adjustments_count: number;
+        order_productions_count: number;
+    }> {
+        const {
+            _count: { id: orderRequestsCount },
+        } = await this.prisma.order_requests.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        order_request_products: {
+                            some: {
+                                AND: [
+                                    {
+                                        product_id: product_id,
+                                    },
+                                    {
+                                        active: 1,
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+
+        const {
+            _count: { id: orderAdjustmentsCount },
+        } = await this.prisma.order_adjustments.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        order_adjustment_products: {
+                            some: {
+                                AND: [
+                                    {
+                                        product_id: product_id,
+                                    },
+                                    {
+                                        active: 1,
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+
+        const {
+            _count: { id: orderProductionsCount },
+        } = await this.prisma.order_productions.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        order_production_products: {
+                            some: {
+                                AND: [
+                                    {
+                                        product_id: product_id,
+                                    },
+                                    {
+                                        active: 1,
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+
+        return {
+            order_requests_count: orderRequestsCount,
+            order_adjustments_count: orderAdjustmentsCount,
+            order_productions_count: orderProductionsCount,
+        };
+    }
+
+    async isDeletable({
+        product_id,
+    }: {
+        product_id: number;
+    }): Promise<boolean> {
+        const {
+            order_requests_count,
+            order_productions_count,
+            order_adjustments_count,
+        } = await this.getDependenciesCount({
+            product_id,
+        });
+
+        return (
+            order_requests_count === 0 &&
+            order_productions_count === 0 &&
+            order_adjustments_count === 0
+        );
     }
 }
