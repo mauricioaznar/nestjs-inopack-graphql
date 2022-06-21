@@ -1094,6 +1094,68 @@ describe('upsert', () => {
             );
         }
     });
+
+    it('fails when order sale product group weight doesnt match order request product group weight', async () => {
+        expect.hasAssertions();
+
+        const product = await createProductForTesting({
+            app,
+        });
+
+        const { orderRequest, orderRequestProduct } =
+            await createOrderRequestWithOneProduct({
+                app,
+                orderRequestCode: currentRequestOrderCode,
+                orderRequestProduct: {
+                    product_id: product.id,
+                    kilos: 3 * product.current_group_weight,
+                    groups: 3,
+                    group_weight: product.current_group_weight,
+                    kilo_price: 20,
+                },
+            });
+
+        const differentGroupWeight = product.current_group_weight + 1;
+
+        try {
+            await orderSalesService.upsertOrderSale({
+                order_code: currentSaleOrderCode,
+                invoice_code: 0,
+                order_request_id: orderRequest.id,
+                date: getUtcDate(),
+                order_sale_status_id: orderSaleStatus1.id,
+                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                order_sale_products: [
+                    {
+                        product_id: product.id,
+                        kilos: 3 * differentGroupWeight,
+                        groups: 3,
+                        group_weight: differentGroupWeight,
+                        kilo_price: orderRequestProduct.kilo_price,
+                    },
+                ],
+                order_sale_payments: [
+                    {
+                        amount:
+                            3 *
+                            differentGroupWeight *
+                            orderRequestProduct.kilo_price,
+                        date_paid: getUtcDate(),
+                        order_sale_collection_status_id:
+                            orderSaleCollectionStatus2.id,
+                    },
+                ],
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(
+                        /group weight doesnt match with order request product group weight/i,
+                    ),
+                ]),
+            );
+        }
+    });
 });
 
 describe('delete', () => {

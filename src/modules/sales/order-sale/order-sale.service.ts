@@ -740,7 +740,7 @@ export class OrderSaleService {
             }
         }
 
-        // ProductsKiloPrice
+        // ProductsKiloPrice && ProductGroupWeight
         {
             const orderRequestProducts =
                 await this.prisma.order_request_products.findMany({
@@ -773,6 +773,16 @@ export class OrderSaleService {
                 ) {
                     errors.push(
                         `order sale product kilo price doesnt match with order request product kilo price (sale: ${orderSaleProduct.kilo_price}, request: ${foundOrderRequestProduct.kilo_price})`,
+                    );
+                }
+
+                if (
+                    foundOrderRequestProduct &&
+                    foundOrderRequestProduct.group_weight !==
+                        orderSaleProduct.group_weight
+                ) {
+                    errors.push(
+                        `order sale product group weight doesnt match with order request product group weight (sale: ${orderSaleProduct.kilo_price}, request: ${foundOrderRequestProduct.kilo_price})`,
                     );
                 }
             }
