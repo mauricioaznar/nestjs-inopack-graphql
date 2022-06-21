@@ -29,6 +29,7 @@ import {
     createOrderRequestWithTwoProducts,
 } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 import {
+    OrderSale,
     OrderSaleInput,
     OrderSalePaymentInput,
     OrderSaleProductInput,
@@ -69,16 +70,8 @@ describe('upsert', () => {
         const orderRequest = await orderRequestsService.upsertOrderRequest({
             order_code: currentRequestOrderCode,
             order_request_status_id: orderRequestStatus2.id,
-            estimated_delivery_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-            date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
+            estimated_delivery_date: getUtcDate(),
+            date: getUtcDate(),
             order_request_products: [
                 {
                     group_weight: product.current_group_weight,
@@ -1041,7 +1034,223 @@ describe('upsert', () => {
         }
     });
 
-    it.todo(
-        'fails when order sale product kilo price doesnt match order request product kilo price',
-    );
+    it('fails when order sale product kilo price doesnt match order request product kilo price', async () => {
+        expect.hasAssertions();
+
+        const product = await createProductForTesting({
+            app,
+        });
+
+        const { orderRequest, orderRequestProduct } =
+            await createOrderRequestWithOneProduct({
+                app,
+                orderRequestCode: currentRequestOrderCode,
+                orderRequestProduct: {
+                    product_id: product.id,
+                    kilos: 3 * product.current_group_weight,
+                    groups: 3,
+                    group_weight: product.current_group_weight,
+                    kilo_price: 20,
+                },
+            });
+
+        const differntPriceFromOrderRequest = 300065;
+
+        try {
+            await orderSalesService.upsertOrderSale({
+                order_code: currentSaleOrderCode,
+                invoice_code: 0,
+                order_request_id: orderRequest.id,
+                date: getUtcDate(),
+                order_sale_status_id: orderSaleStatus1.id,
+                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                order_sale_products: [
+                    {
+                        product_id: product.id,
+                        kilos: 3 * orderRequestProduct.group_weight,
+                        groups: 3,
+                        group_weight: orderRequestProduct.group_weight,
+                        kilo_price: differntPriceFromOrderRequest,
+                    },
+                ],
+                order_sale_payments: [
+                    {
+                        amount:
+                            3 *
+                            product.current_group_weight *
+                            differntPriceFromOrderRequest,
+                        date_paid: getUtcDate(),
+                        order_sale_collection_status_id:
+                            orderSaleCollectionStatus2.id,
+                    },
+                ],
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(
+                        /kilo price doesnt match with order request product kilo price/i,
+                    ),
+                ]),
+            );
+        }
+    });
+});
+
+describe('delete', () => {
+    it('deletes order sale, order sale payments and order sale products', async () => {
+        const product = await createProductForTesting({
+            app,
+        });
+
+        const { orderRequest, orderRequestProduct } =
+            await createOrderRequestWithOneProduct({
+                app,
+                orderRequestCode: currentRequestOrderCode,
+                orderRequestProduct: {
+                    group_weight: product.current_group_weight,
+                    groups: 2,
+                    kilos: 2 * product.current_group_weight,
+                    kilo_price: 20,
+                    product_id: product.id,
+                },
+            });
+
+        const orderCode = currentSaleOrderCode;
+
+        const orderSaleProductInput: OrderSaleProductInput = {
+            group_weight: orderRequestProduct.group_weight,
+            groups: 2,
+            kilos: 2 * orderRequestProduct.group_weight,
+            kilo_price: orderRequestProduct.kilo_price,
+            product_id: product.id,
+        };
+
+        const orderSalePaymentInput: OrderSalePaymentInput = {
+            amount: 20 * 2 * product.current_group_weight,
+            date_paid: getUtcDate({
+                year: 2022,
+                day: 1,
+                month: 2,
+            }),
+            order_sale_collection_status_id: orderSaleCollectionStatus1.id,
+        };
+
+        const createdOrderSale = await orderSalesService.upsertOrderSale({
+            order_code: orderCode,
+            order_request_id: orderRequest.id,
+            invoice_code: 0,
+            order_sale_receipt_type_id: orderSaleReceiptType1.id,
+            date: getUtcDate({
+                year: 2022,
+                day: 1,
+                month: 2,
+            }),
+            order_sale_status_id: orderSaleStatus1.id,
+            order_sale_products: [orderSaleProductInput],
+            order_sale_payments: [orderSalePaymentInput],
+        });
+
+        try {
+            await orderSalesService.deleteOrderSale({
+                order_sale_id: createdOrderSale.id,
+            });
+        } catch (e) {
+            console.log(e);
+        }
+
+        const orderSale = await orderSalesService.getOrderSale({
+            orderSaleId: createdOrderSale.id,
+        });
+
+        const orderSalePayments = await orderSalesService.getOrderSalePayments({
+            order_sale_id: createdOrderSale.id,
+        });
+        const orderSaleProducts = await orderSalesService.getOrderSaleProducts({
+            order_sale_id: createdOrderSale.id,
+        });
+
+        expect(orderSale).toBe(null);
+        expect(orderSalePayments.length).toBe(0);
+        expect(orderSaleProducts.length).toBe(0);
+    });
+
+    it('allows to reuse order sale code and invoice code after initial order sale has been deleted', async () => {
+        const product = await createProductForTesting({
+            app,
+        });
+
+        const { orderRequest, orderRequestProduct } =
+            await createOrderRequestWithOneProduct({
+                app,
+                orderRequestCode: currentRequestOrderCode,
+                orderRequestProduct: {
+                    group_weight: product.current_group_weight,
+                    groups: 2,
+                    kilos: 2 * product.current_group_weight,
+                    kilo_price: 20,
+                    product_id: product.id,
+                },
+            });
+
+        const orderCode = currentSaleOrderCode;
+
+        const orderSaleProductInput: OrderSaleProductInput = {
+            group_weight: orderRequestProduct.group_weight,
+            groups: 2,
+            kilos: 2 * orderRequestProduct.group_weight,
+            kilo_price: orderRequestProduct.kilo_price,
+            product_id: product.id,
+        };
+
+        const orderSalePaymentInput: OrderSalePaymentInput = {
+            amount: 20 * 2 * product.current_group_weight * 1.16,
+            date_paid: getUtcDate(),
+            order_sale_collection_status_id: orderSaleCollectionStatus1.id,
+        };
+
+        let createdOrderSale: OrderSale | undefined;
+
+        try {
+            createdOrderSale = await orderSalesService.upsertOrderSale({
+                order_code: orderCode,
+                order_request_id: orderRequest.id,
+                invoice_code: currentSaleInvoiceCode,
+                order_sale_receipt_type_id: orderSaleReceiptType2.id,
+                date: getUtcDate(),
+                order_sale_status_id: orderSaleStatus1.id,
+                order_sale_products: [orderSaleProductInput],
+                order_sale_payments: [orderSalePaymentInput],
+            });
+        } catch (e) {
+            console.error(e);
+        }
+
+        try {
+            await orderSalesService.deleteOrderSale({
+                order_sale_id: createdOrderSale?.id || 0,
+            });
+        } catch (e) {
+            console.error(e);
+        }
+
+        let newOrderSale: OrderSale | undefined;
+
+        try {
+            newOrderSale = await orderSalesService.upsertOrderSale({
+                order_code: orderCode,
+                invoice_code: currentSaleInvoiceCode,
+                order_request_id: orderRequest.id,
+                order_sale_receipt_type_id: orderSaleReceiptType2.id,
+                date: getUtcDate(),
+                order_sale_status_id: orderSaleStatus1.id,
+                order_sale_products: [orderSaleProductInput],
+                order_sale_payments: [orderSalePaymentInput],
+            });
+        } catch (e) {
+            console.error(e);
+        }
+
+        expect(newOrderSale?.id).toBeDefined();
+    });
 });

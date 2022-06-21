@@ -1,14 +1,26 @@
 import dayjs from 'dayjs';
 
-export function getUtcDate({
-    year = 2022,
-    day = 1,
-    month = 1,
-}: {
+const DEFAULT_YEAR = 2022;
+const DEFAULT_MONTH = 1;
+const DEFAULT_DAY = 1;
+
+export function getUtcDate(dates?: {
     year?: number;
     month?: number;
     day?: number;
 }): Date {
+    const {
+        year = DEFAULT_YEAR,
+        month = DEFAULT_MONTH,
+        day = DEFAULT_DAY,
+    } = dates
+        ? dates
+        : {
+              year: DEFAULT_YEAR,
+              month: DEFAULT_MONTH,
+              day: DEFAULT_DAY,
+          };
+
     return dayjs()
         .utc()
         .set('year', year)

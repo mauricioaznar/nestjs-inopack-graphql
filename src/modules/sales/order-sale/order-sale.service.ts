@@ -3,6 +3,7 @@ import {
     CACHE_MANAGER,
     Inject,
     Injectable,
+    NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
@@ -93,9 +94,10 @@ export class OrderSaleService {
     }): Promise<OrderSale | null> {
         if (!orderSaleId) return null;
 
-        return this.prisma.order_sales.findUnique({
+        return this.prisma.order_sales.findFirst({
             where: {
                 id: orderSaleId,
+                active: 1,
             },
         });
     }
@@ -810,5 +812,59 @@ export class OrderSaleService {
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
+    }
+
+    async deleteOrderSale({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<boolean> {
+        const orderSale = await this.getOrderSale({
+            orderSaleId: order_sale_id,
+        });
+
+        if (!orderSale) {
+            throw new NotFoundException();
+        }
+
+        const orderSalePayments = await this.getOrderSalePayments({
+            order_sale_id,
+        });
+        const orderSaleProducts = await this.getOrderSaleProducts({
+            order_sale_id,
+        });
+
+        for await (const orderSalePayment of orderSalePayments) {
+            await this.prisma.order_sale_payments.update({
+                data: {
+                    active: -1,
+                },
+                where: {
+                    id: orderSalePayment.id,
+                },
+            });
+        }
+
+        for await (const orderSaleProduct of orderSaleProducts) {
+            await this.prisma.order_sale_products.update({
+                data: {
+                    active: -1,
+                },
+                where: {
+                    id: orderSaleProduct.id,
+                },
+            });
+        }
+
+        await this.prisma.order_sales.update({
+            data: {
+                active: -1,
+            },
+            where: {
+                id: orderSale.id,
+            },
+        });
+
+        return true;
     }
 }
