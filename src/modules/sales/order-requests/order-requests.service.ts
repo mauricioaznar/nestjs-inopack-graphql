@@ -3,6 +3,7 @@ import {
     CACHE_MANAGER,
     Inject,
     Injectable,
+    NotFoundException,
 } from '@nestjs/common';
 import {
     GetOrderRequestsArgs,
@@ -52,9 +53,10 @@ export class OrderRequestsService {
     }): Promise<OrderRequest | null> {
         if (!orderRequestId) return null;
 
-        return this.prisma.order_requests.findUnique({
+        return this.prisma.order_requests.findFirst({
             where: {
                 id: orderRequestId,
+                active: 1,
             },
         });
     }
@@ -62,7 +64,7 @@ export class OrderRequestsService {
     async getOrderRequestMaxOrderCode(): Promise<number> {
         const {
             _max: { order_code },
-        } = await this.prisma.order_sales.aggregate({
+        } = await this.prisma.order_requests.aggregate({
             _max: {
                 order_code: true,
             },
@@ -500,5 +502,94 @@ export class OrderRequestsService {
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
+    }
+
+    async deleteOrderRequest({
+        order_request_id,
+    }: {
+        order_request_id: number;
+    }): Promise<boolean> {
+        const orderRequest = await this.prisma.order_requests.findFirst({
+            where: {
+                id: order_request_id,
+                active: 1,
+            },
+        });
+
+        if (!orderRequest) {
+            throw new NotFoundException();
+        }
+
+        const isDeletable = await this.isDeletable({ order_request_id });
+
+        if (!isDeletable) {
+            const { order_sales_count } = await this.getDependenciesCount({
+                order_request_id,
+            });
+
+            const errors: string[] = [];
+
+            if (order_sales_count > 0) {
+                errors.push(`order sale count is ${order_sales_count}`);
+            }
+
+            throw new BadRequestException(errors);
+        }
+
+        await this.prisma.order_request_products.updateMany({
+            data: {
+                active: -1,
+            },
+            where: {
+                order_request_id: order_request_id,
+            },
+        });
+
+        await this.prisma.order_requests.updateMany({
+            data: {
+                active: -1,
+            },
+            where: {
+                id: order_request_id,
+            },
+        });
+
+        return true;
+    }
+
+    async getDependenciesCount({
+        order_request_id,
+    }: {
+        order_request_id: number;
+    }): Promise<{
+        order_sales_count: number;
+    }> {
+        const {
+            _count: { id: orderSaleCount },
+        } = await this.prisma.order_sales.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                order_request_id: order_request_id,
+                active: 1,
+            },
+        });
+
+        return {
+            order_sales_count: orderSaleCount,
+        };
+    }
+
+    async isDeletable({
+        order_request_id,
+    }: {
+        order_request_id: number;
+    }): Promise<boolean> {
+        const { order_sales_count } = await this.getDependenciesCount({
+            order_request_id,
+        });
+
+        return order_sales_count === 0;
     }
 }

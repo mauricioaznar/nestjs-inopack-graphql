@@ -34,7 +34,6 @@ import {
     OrderSalePaymentInput,
     OrderSaleProductInput,
 } from '../../../common/dto/entities';
-import { create } from 'domain';
 
 let app: INestApplication;
 let orderRequestsService: OrderRequestsService;
