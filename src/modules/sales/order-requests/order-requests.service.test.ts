@@ -15,12 +15,16 @@ import { createOrderRequestWithOneProduct } from '../../../common/__tests__/help
 import { OrderSaleService } from '../order-sale/order-sale.service';
 import { orderSaleReceiptType1 } from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
 import { orderSaleCollectionStatus1 } from '../../../common/__tests__/objects/sales/order-sale-collection-statuses';
+import {
+    orderRequestsTestsOrderRequestsOrderCode,
+    orderRequestsTestsOrderSalesOrderCode,
+} from '../../../common/__tests__/constants/unique-codes-initial-values';
 
 let app: INestApplication;
 let orderRequestsService: OrderRequestsService;
 let orderSaleService: OrderSaleService;
-let currentRequestOrderCode = 0;
-let currentSaleOrderCode = 10000;
+let currentRequestOrderCode = orderRequestsTestsOrderRequestsOrderCode;
+let currentSaleOrderCode = orderRequestsTestsOrderSalesOrderCode;
 
 beforeAll(async () => {
     app = await setupApp();

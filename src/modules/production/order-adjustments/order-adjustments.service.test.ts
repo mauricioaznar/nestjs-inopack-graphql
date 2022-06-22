@@ -1,19 +1,18 @@
 import { INestApplication } from '@nestjs/common';
-import { setupApp } from '../../../common/__tests__/helpers/setup-app';
+import {
+    createProductForTesting,
+    getUtcDate,
+    setupApp,
+} from '../../../common/__tests__/helpers';
 import { OrderAdjustmentsService } from './order-adjustments.service';
 import { orderAdjustmentType1 } from '../../../common/__tests__/objects/production/order-adjustment-types';
-import { getUtcDate } from '../../../common/__tests__/helpers/dates/get-utc-date';
-import { createProductForTesting } from '../../../common/__tests__/helpers/entities/products-for-testing';
-import { ProductsService } from '../products/products.service';
 
 let app: INestApplication;
 let orderAdjustmentsService: OrderAdjustmentsService;
-let productsService: ProductsService;
 
 beforeAll(async () => {
     app = await setupApp();
     orderAdjustmentsService = app.get(OrderAdjustmentsService);
-    productsService = app.get(ProductsService);
 });
 
 afterAll(async () => {

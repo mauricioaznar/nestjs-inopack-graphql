@@ -34,13 +34,18 @@ import {
     OrderSalePaymentInput,
     OrderSaleProductInput,
 } from '../../../common/dto/entities';
+import {
+    orderSalesTestsOrderRequestsOrderCode,
+    orderSalesTestsOrderSalesInvoiceCode,
+    orderSalesTestsOrderSalesOrderCode,
+} from '../../../common/__tests__/constants/unique-codes-initial-values';
 
 let app: INestApplication;
 let orderRequestsService: OrderRequestsService;
 let orderSalesService: OrderSaleService;
-let currentRequestOrderCode = 10000;
-let currentSaleOrderCode = 0;
-let currentSaleInvoiceCode = 0;
+let currentRequestOrderCode = orderSalesTestsOrderRequestsOrderCode;
+let currentSaleOrderCode = orderSalesTestsOrderSalesOrderCode;
+let currentSaleInvoiceCode = orderSalesTestsOrderSalesInvoiceCode;
 
 beforeAll(async () => {
     app = await setupApp();

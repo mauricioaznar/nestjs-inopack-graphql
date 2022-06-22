@@ -25,14 +25,18 @@ import { OrderSaleService } from '../../sales/order-sale/order-sale.service';
 import { orderSaleStatus1 } from '../../../common/__tests__/objects/sales/order-sale-statuses';
 import { orderSaleCollectionStatus2 } from '../../../common/__tests__/objects/sales/order-sale-collection-statuses';
 import { orderSaleReceiptType1 } from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
+import {
+    productsTestsOrderRequestsOrderCode,
+    productsTestsOrderSalesOrderCode,
+} from '../../../common/__tests__/constants/unique-codes-initial-values';
 
 let app: INestApplication;
 let productsService: ProductsService;
 let orderProductionsService: OrderProductionsService;
 let orderAdjustmentsService: OrderAdjustmentsService;
 let orderSaleService: OrderSaleService;
-let currentOrderRequestCode = 40000;
-let currentOrderSaleCode = 40000;
+let currentOrderRequestCode = productsTestsOrderRequestsOrderCode;
+let currentOrderSaleCode = productsTestsOrderSalesOrderCode;
 
 beforeAll(async () => {
     app = await setupApp();

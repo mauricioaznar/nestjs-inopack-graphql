@@ -3,10 +3,14 @@ import { setupApp } from '../setup-app';
 import { INestApplication } from '@nestjs/common';
 import { createOrderRequestWithOneProduct } from './order-requests-for-testing';
 import { createOrderSaleWithOneProductTypeOne } from './order-sales-for-testing';
+import {
+    orderSalesForTestingOrderRequestsOrderCode,
+    orderSalesForTestingOrderSalesOrderCode,
+} from '../../constants/unique-codes-initial-values';
 
 let app: INestApplication;
-let currentRequestOrderCode = 120000;
-let currentSaleOrderCode = 120000;
+let currentRequestOrderCode = orderSalesForTestingOrderRequestsOrderCode;
+let currentSaleOrderCode = orderSalesForTestingOrderSalesOrderCode;
 
 beforeAll(async () => {
     app = await setupApp();

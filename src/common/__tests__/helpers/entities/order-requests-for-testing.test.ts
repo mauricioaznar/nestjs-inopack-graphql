@@ -5,9 +5,10 @@ import {
     createOrderRequestWithOneProduct,
     createOrderRequestWithTwoProducts,
 } from './order-requests-for-testing';
+import { orderRequestsForTestingOrderRequestsOrderCode } from '../../constants/unique-codes-initial-values';
 
 let app: INestApplication;
-let currentRequestOrderCode = 110000;
+let currentRequestOrderCode = orderRequestsForTestingOrderRequestsOrderCode;
 
 beforeAll(async () => {
     app = await setupApp();
