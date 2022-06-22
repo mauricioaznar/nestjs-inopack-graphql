@@ -8,18 +8,28 @@ import {
 import {
     orderProductionType1,
     orderProductionType2,
+    productType1,
 } from '../../../common/__tests__/objects';
 import {
     branch1,
     branch2,
 } from '../../../common/__tests__/objects/maintenance/branches';
+import {
+    createEmployeeForTesting,
+    createMachineForTesting,
+    createProductForTesting,
+    getUtcDate,
+} from '../../../common/__tests__/helpers';
+import { OrderProductionsService } from '../order-productions/order-productions.service';
 
 let app: INestApplication;
 let employeesService: EmployeesService;
+let orderProductionsService: OrderProductionsService;
 
 beforeAll(async () => {
     app = await setupApp();
     employeesService = app.get(EmployeesService);
+    orderProductionsService = app.get(OrderProductionsService);
 });
 
 afterAll(async () => {
@@ -157,5 +167,57 @@ describe('deletes employee', () => {
         });
 
         expect(employee).toBeFalsy();
+    });
+
+    it('fails when order productions have been created with that employee', async () => {
+        expect.hasAssertions();
+
+        const employee = await createEmployeeForTesting({
+            app,
+        });
+
+        const product = await createProductForTesting({
+            app,
+            order_production_type_id: orderProductionType1.id,
+            product_type_id: productType1.id,
+        });
+
+        const machine = await createMachineForTesting({
+            app,
+        });
+
+        await orderProductionsService.upsertOrderProduction({
+            start_date: getUtcDate(),
+            waste: 0,
+            order_production_products: [
+                {
+                    product_id: product.id,
+                    groups: 1,
+                    group_weight: product.current_group_weight,
+                    kilos: product.current_group_weight,
+                    machine_id: machine.id,
+                },
+            ],
+            order_production_type_id: orderProductionType1.id,
+            order_production_employees: [
+                {
+                    employee_id: employee.id,
+                    is_leader: 1,
+                },
+            ],
+            branch_id: branch1.id,
+        });
+
+        try {
+            await employeesService.deletesEmployee({
+                employee_id: employee.id,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(`order productions`),
+                ]),
+            );
+        }
     });
 });

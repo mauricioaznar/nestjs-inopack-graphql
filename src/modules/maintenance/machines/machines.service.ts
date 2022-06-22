@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import {
     Machine,
     MachineDailyProduction,
@@ -83,23 +87,6 @@ export class MachinesService {
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
-    }
-
-    async deleteMachine({
-        machine_id,
-    }: {
-        machine_id: number;
-    }): Promise<boolean> {
-        await this.prisma.machines.update({
-            data: {
-                active: -1,
-            },
-            where: {
-                id: machine_id,
-            },
-        });
-
-        return true;
     }
 
     async getMachineSections({
@@ -260,5 +247,99 @@ export class MachinesService {
         }
 
         return days;
+    }
+
+    async deleteMachine({
+        machine_id,
+    }: {
+        machine_id: number;
+    }): Promise<boolean> {
+        const machine = await this.getMachine({ machine_id: machine_id });
+
+        if (!machine) {
+            throw new NotFoundException();
+        }
+
+        const isDeletable = await this.isDeletable({
+            machine_id,
+        });
+
+        if (!isDeletable) {
+            const { order_productions_count } = await this.getDependenciesCount(
+                { machine_id },
+            );
+
+            const errors: string[] = [];
+
+            if (order_productions_count > 0) {
+                errors.push(
+                    `order productions count ${order_productions_count}`,
+                );
+            }
+
+            throw new BadRequestException(errors);
+        }
+
+        await this.prisma.machines.update({
+            data: {
+                active: -1,
+            },
+            where: {
+                id: machine_id,
+            },
+        });
+
+        return true;
+    }
+
+    async getDependenciesCount({
+        machine_id,
+    }: {
+        machine_id: number;
+    }): Promise<{ order_productions_count: number }> {
+        const {
+            _count: { id: orderProductionsCount },
+        } = await this.prisma.order_productions.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        order_production_products: {
+                            some: {
+                                AND: [
+                                    {
+                                        active: 1,
+                                    },
+                                    {
+                                        machine_id,
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+
+        return {
+            order_productions_count: orderProductionsCount,
+        };
+    }
+
+    async isDeletable({
+        machine_id,
+    }: {
+        machine_id: number;
+    }): Promise<boolean> {
+        const { order_productions_count } = await this.getDependenciesCount({
+            machine_id,
+        });
+
+        return order_productions_count === 0;
     }
 }

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import {
     Employee,
     EmployeeUpsertInput,
@@ -80,6 +84,32 @@ export class EmployeesService {
     }: {
         employee_id: number;
     }): Promise<boolean> {
+        const employee = await this.getEmployee({ employeeId: employee_id });
+
+        if (!employee) {
+            throw new NotFoundException();
+        }
+
+        const isDeletable = await this.isDeletable({
+            employee_id,
+        });
+
+        if (!isDeletable) {
+            const { order_productions_count } = await this.getDependenciesCount(
+                { employee_id },
+            );
+
+            const errors: string[] = [];
+
+            if (order_productions_count > 0) {
+                errors.push(
+                    `order productions count ${order_productions_count}`,
+                );
+            }
+
+            throw new BadRequestException(errors);
+        }
+
         await this.prisma.employees.update({
             data: {
                 active: -1,
@@ -90,5 +120,65 @@ export class EmployeesService {
         });
 
         return true;
+    }
+
+    async getDependenciesCount({
+        employee_id,
+    }: {
+        employee_id: number;
+    }): Promise<{
+        order_productions_count: number;
+    }> {
+        const {
+            _count: { id: orderProductionsCount },
+        } = await this.prisma.order_productions.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        OR: [
+                            {
+                                employee_id,
+                            },
+                            {
+                                order_production_employees: {
+                                    some: {
+                                        AND: [
+                                            {
+                                                employee_id,
+                                            },
+                                            {
+                                                active: 1,
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+
+        return {
+            order_productions_count: orderProductionsCount,
+        };
+    }
+
+    async isDeletable({
+        employee_id,
+    }: {
+        employee_id: number;
+    }): Promise<boolean> {
+        const { order_productions_count } = await this.getDependenciesCount({
+            employee_id,
+        });
+
+        return order_productions_count === 0;
     }
 }
