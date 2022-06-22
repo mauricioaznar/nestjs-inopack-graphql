@@ -9,7 +9,7 @@ import {
     orderRequestStatus1,
     orderRequestStatus2,
 } from '../../../common/__tests__/objects/sales/order-request-statuses';
-import { createClientForTesting } from '../../../common/__tests__/helpers/entities/clients-for-testing-helper';
+import { createClientForTesting } from '../../../common/__tests__/helpers/entities/clients-for-testing';
 import { OrderRequestInput } from '../../../common/dto/entities';
 import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 import { OrderSaleService } from '../order-sale/order-sale.service';

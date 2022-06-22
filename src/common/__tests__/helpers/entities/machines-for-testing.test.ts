@@ -1,7 +1,7 @@
 import { setupApp } from '../setup-app';
 import { INestApplication } from '@nestjs/common';
 import { orderProductionType1, orderProductionType2 } from '../../objects';
-import { createMachineForTesting } from './machines-for-testing-helper';
+import { createMachineForTesting } from './machines-for-testing';
 import { branch1, branch2 } from '../../objects/maintenance/branches';
 
 let app: INestApplication;

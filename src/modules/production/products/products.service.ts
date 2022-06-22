@@ -249,6 +249,7 @@ export class ProductsService {
                 order_requests_count,
                 order_productions_count,
                 order_adjustments_count,
+                order_sales_count,
             } = await this.getDependenciesCount({
                 product_id,
             });
@@ -267,6 +268,10 @@ export class ProductsService {
                 errors.push(
                     `order productions count ${order_productions_count}`,
                 );
+            }
+
+            if (order_sales_count > 0) {
+                errors.push(`order sales count ${order_sales_count}`);
             }
 
             throw new BadRequestException(errors);
@@ -290,6 +295,7 @@ export class ProductsService {
         order_requests_count: number;
         order_adjustments_count: number;
         order_productions_count: number;
+        order_sales_count: number;
     }> {
         const {
             _count: { id: orderRequestsCount },
@@ -378,10 +384,40 @@ export class ProductsService {
             },
         });
 
+        const {
+            _count: { id: orderSalesCount },
+        } = await this.prisma.order_sales.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        order_sale_products: {
+                            some: {
+                                AND: [
+                                    {
+                                        product_id: product_id,
+                                    },
+                                    {
+                                        active: 1,
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+
         return {
             order_requests_count: orderRequestsCount,
             order_adjustments_count: orderAdjustmentsCount,
             order_productions_count: orderProductionsCount,
+            order_sales_count: orderSalesCount,
         };
     }
 
@@ -394,6 +430,7 @@ export class ProductsService {
             order_requests_count,
             order_productions_count,
             order_adjustments_count,
+            order_sales_count,
         } = await this.getDependenciesCount({
             product_id,
         });
@@ -401,7 +438,8 @@ export class ProductsService {
         return (
             order_requests_count === 0 &&
             order_productions_count === 0 &&
-            order_adjustments_count === 0
+            order_adjustments_count === 0 &&
+            order_sales_count === 0
         );
     }
 }

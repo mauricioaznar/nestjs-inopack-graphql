@@ -1,6 +1,6 @@
 import { setupApp } from '../setup-app';
 import { INestApplication } from '@nestjs/common';
-import { createClientForTesting } from './clients-for-testing-helper';
+import { createClientForTesting } from './clients-for-testing';
 
 let app: INestApplication;
 

@@ -16,25 +16,35 @@ import {
     createProductForTesting,
     getUtcDate,
 } from '../../../common/__tests__/helpers';
-import { create } from 'domain';
 import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 import { OrderProductionsService } from '../order-productions/order-productions.service';
 import { OrderAdjustmentsService } from '../order-adjustments/order-adjustments.service';
 import { branch1 } from '../../../common/__tests__/objects/maintenance/branches';
 import { orderAdjustmentType1 } from '../../../common/__tests__/objects/production/order-adjustment-types';
+import { OrderSaleService } from '../../sales/order-sale/order-sale.service';
+import { orderSaleStatus1 } from '../../../common/__tests__/objects/sales/order-sale-statuses';
+import { orderSaleCollectionStatus2 } from '../../../common/__tests__/objects/sales/order-sale-collection-statuses';
+import { orderSaleReceiptType1 } from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
 
 let app: INestApplication;
 let productsService: ProductsService;
 let orderProductionsService: OrderProductionsService;
 let orderAdjustmentsService: OrderAdjustmentsService;
+let orderSaleService: OrderSaleService;
 let currentOrderRequestCode = 40000;
+let currentOrderSaleCode = 40000;
 
 beforeAll(async () => {
     app = await setupApp();
     productsService = app.get(ProductsService);
     orderAdjustmentsService = app.get(OrderAdjustmentsService);
     orderProductionsService = app.get(OrderProductionsService);
+    orderSaleService = app.get(OrderSaleService);
+});
+
+beforeEach(() => {
     currentOrderRequestCode = currentOrderRequestCode + 1;
+    currentOrderSaleCode = currentOrderSaleCode + 1;
 });
 
 afterAll(async () => {
@@ -268,6 +278,67 @@ describe('delete', () => {
             expect(e.response.message).toEqual([
                 expect.stringMatching(/order requests count/i),
             ]);
+        }
+    });
+
+    it('fails if product is in order sale', async () => {
+        expect.hasAssertions();
+
+        const product = await createProductForTesting({
+            app,
+        });
+
+        const { orderRequest } = await createOrderRequestWithOneProduct({
+            orderRequestCode: currentOrderRequestCode,
+            app,
+            orderRequestProduct: {
+                product_id: product.id,
+                groups: 1,
+                group_weight: product.current_group_weight,
+                kilo_price: product.current_kilo_price,
+                kilos: product.current_group_weight,
+            },
+        });
+
+        await orderSaleService.upsertOrderSale({
+            order_code: currentOrderSaleCode,
+            date: getUtcDate(),
+            order_sale_status_id: orderSaleStatus1.id,
+            order_sale_products: [
+                {
+                    product_id: product.id,
+                    groups: 1,
+                    group_weight: product.current_group_weight,
+                    kilo_price: product.current_kilo_price,
+                    kilos: product.current_group_weight,
+                },
+            ],
+            order_sale_payments: [
+                {
+                    amount:
+                        product.current_kilo_price *
+                        product.current_group_weight,
+                    date_paid: getUtcDate(),
+                    order_sale_collection_status_id:
+                        orderSaleCollectionStatus2.id,
+                },
+            ],
+            order_sale_receipt_type_id: orderSaleReceiptType1.id,
+            invoice_code: 0,
+            order_request_id: orderRequest.id,
+        });
+
+        try {
+            await productsService.deleteProduct({
+                product_id: product.id,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(/order sales count/i),
+                    expect.stringMatching(/order requests count/i),
+                ]),
+            );
         }
     });
 

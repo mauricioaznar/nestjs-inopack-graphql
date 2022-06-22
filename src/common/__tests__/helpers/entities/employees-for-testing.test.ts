@@ -1,7 +1,7 @@
 import { setupApp } from '../setup-app';
 import { INestApplication } from '@nestjs/common';
 import { EmployeesService } from '../../../../modules/production/employees/employees.service';
-import { createEmployeeForTesting } from './employees-for-testing-helper';
+import { createEmployeeForTesting } from './employees-for-testing';
 import { orderProductionType1, orderProductionType2 } from '../../objects';
 import {
     employeeStatus1,

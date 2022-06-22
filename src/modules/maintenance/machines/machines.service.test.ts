@@ -22,14 +22,14 @@ afterAll(async () => {
     await app.close();
 });
 
-describe('Machine list', () => {
+describe('list', () => {
     it('gets list', async () => {
         const machines = await machinesService.getMachines();
         expect(Array.isArray(machines)).toBe(true);
     });
 });
 
-describe('Upsert machine', () => {
+describe('upsert', () => {
     it('creates', async () => {
         const machine = await machinesService.upsertMachine({
             name: 'Machine 1',
@@ -107,8 +107,8 @@ describe('gets machine', () => {
     });
 });
 
-describe('deletes employee', () => {
-    it('deletes employee and get returns null', async () => {
+describe('deletes', () => {
+    it('deletes machine', async () => {
         const createdMachine = await machinesService.upsertMachine({
             name: 'Machine 1',
             branch_id: branch1.id,

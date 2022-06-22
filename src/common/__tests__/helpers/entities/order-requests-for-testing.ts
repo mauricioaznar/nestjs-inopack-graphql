@@ -7,7 +7,7 @@ import {
 import { OrderRequestsService } from '../../../../modules/sales/order-requests/order-requests.service';
 import { orderRequestStatus2 } from '../../objects/sales/order-request-statuses';
 import { getUtcDate } from '../dates';
-import { createClientForTesting } from './clients-for-testing-helper';
+import { createClientForTesting } from './clients-for-testing';
 import { INestApplication } from '@nestjs/common';
 
 type OrderRequestWithOneProduct = {

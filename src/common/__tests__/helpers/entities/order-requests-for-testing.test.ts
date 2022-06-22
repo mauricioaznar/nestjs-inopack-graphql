@@ -1,4 +1,4 @@
-import { createProductForTesting } from './products-for-testing-helper';
+import { createProductForTesting } from './products-for-testing';
 import { setupApp } from '../setup-app';
 import { INestApplication } from '@nestjs/common';
 import {

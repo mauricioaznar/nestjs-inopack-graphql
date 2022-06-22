@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { AuthService } from '../../../modules/auth/auth.service';
-import { setupApp } from '../helpers/setup-app';
+import { setupApp } from '../helpers';
 import { adminUser } from './users';
 
 let app: INestApplication;

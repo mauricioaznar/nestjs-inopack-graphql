@@ -10,7 +10,7 @@ import {
     orderRequestStatus1,
     orderRequestStatus2,
 } from '../../../common/__tests__/objects/sales/order-request-statuses';
-import { createClientForTesting } from '../../../common/__tests__/helpers/entities/clients-for-testing-helper';
+import { createClientForTesting } from '../../../common/__tests__/helpers/entities/clients-for-testing';
 import {
     orderSaleCollectionStatus1,
     orderSaleCollectionStatus2,
