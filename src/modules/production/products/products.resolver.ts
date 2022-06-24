@@ -1,15 +1,7 @@
-import {
-    Args,
-    Mutation,
-    Parent,
-    Query,
-    ResolveField,
-    Resolver,
-} from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { Product, ProductUpsertInput } from '../../../common/dto/entities';
-import { ProductInventory } from '../../../common/dto/entities/production/product-inventory.dto';
 
 @Resolver(() => Product)
 // @Role('super')
@@ -34,14 +26,5 @@ export class ProductsResolver {
         @Args('ProductUpsertInput') input: ProductUpsertInput,
     ): Promise<Product> {
         return this.productsService.upsertInput(input);
-    }
-
-    @ResolveField(() => ProductInventory, { nullable: true })
-    async product_inventory(
-        @Parent() product: Product,
-    ): Promise<ProductInventory | null> {
-        return this.productsService.getProductInventory({
-            product_id: product.id,
-        });
     }
 }

@@ -176,9 +176,7 @@ export class OrderProductionsService {
                     order_production_id: orderProduction.id,
                 },
             });
-            await this.cacheManager.del(
-                `product_id_inventory_${delItem.product_id}`,
-            );
+            await this.cacheManager.del(`product_inventory`);
         }
 
         for await (const createItem of createProductItems) {
@@ -193,9 +191,7 @@ export class OrderProductionsService {
                     groups: createItem.groups,
                 },
             });
-            await this.cacheManager.del(
-                `product_id_inventory_${createItem.product_id}`,
-            );
+            await this.cacheManager.del(`product_inventory`);
         }
 
         for await (const updateItem of updateProductItems) {
@@ -214,9 +210,7 @@ export class OrderProductionsService {
                     order_production_id: orderProduction.id,
                 },
             });
-            await this.cacheManager.del(
-                `product_id_inventory_${updateItem.product_id}`,
-            );
+            await this.cacheManager.del(`product_inventory`);
         }
 
         const newEmployeeItems = input.order_production_employees;

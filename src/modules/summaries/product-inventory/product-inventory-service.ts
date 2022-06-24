@@ -1,7 +1,8 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
-import { ProductInventory } from '../../dto/entities/production/product-inventory.dto';
+import { ProductInventory } from '../../../common/dto/entities/production/product-inventory.dto';
 import { Cache } from 'cache-manager';
-import { PrismaService } from '../../modules/prisma/prisma.service';
+import { PrismaService } from '../../../common/modules/prisma/prisma.service';
+import { Product } from '../../../common/dto/entities';
 
 @Injectable()
 export class ProductInventoryService {
@@ -10,13 +11,9 @@ export class ProductInventoryService {
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) {}
 
-    async getProductInventory({
-        product_id,
-    }: {
-        product_id: number;
-    }): Promise<ProductInventory | null> {
-        const cachedProductInventory: ProductInventory | undefined =
-            await this.cacheManager.get(`product_id_inventory_${product_id}`);
+    async getProductsInventory(): Promise<ProductInventory[]> {
+        const cachedProductInventory: ProductInventory[] | undefined =
+            await this.cacheManager.get(`product_inventory`);
 
         if (!!cachedProductInventory) return cachedProductInventory;
 
@@ -29,7 +26,9 @@ export class ProductInventoryService {
                    null
                 ) as last_update
             FROM (
-                SELECT  sale_products.kilos             as kilos_sold_given,
+                SELECT
+                        products.id as product_id,
+                        sale_products.kilos             as kilos_sold_given,
                         adjustment_products.kilos       as kilos_adjusted,
                         production_products.kilos       as kilos_produced,
                             (
@@ -98,34 +97,23 @@ export class ProductInventoryService {
                 JOIN product_type 
                 ON product_type.id = products.product_type_id
                 WHERE products.active = 1
-                    AND products.id = ${product_id}
                 ORDER BY last_update DESC
             ) as cte;
         `;
-        const product = await this.prisma.products.findUnique({
+
+        await this.cacheManager.set(`product_inventory`, results);
+        return results;
+    }
+
+    async getProduct({
+        product_id,
+    }: {
+        product_id: number;
+    }): Promise<Product | null> {
+        return this.prisma.products.findFirst({
             where: {
                 id: product_id,
             },
         });
-
-        if (results.length === 0) return null;
-
-        const productInventory: ProductInventory = {
-            kilos:
-                product?.order_production_type_id === 1
-                    ? results[0].kilos
-                    : null,
-            groups:
-                product?.order_production_type_id === 1
-                    ? results[0].groups
-                    : null,
-            last_update: results[0].last_update,
-        };
-
-        await this.cacheManager.set(
-            `product_id_inventory_${product_id}`,
-            productInventory,
-        );
-        return productInventory;
     }
 }

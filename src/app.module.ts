@@ -18,6 +18,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { GqlAuthGuard } from './modules/auth/guards/gql-auth.guard';
 import { GqlRolesGuard } from './modules/auth/guards/gql-roles.guard';
 import { PrismaModule } from './common/modules/prisma/prisma.module';
+import { SummariesModule } from './modules/summaries/summaries.module';
 
 @Module({
     imports: [
@@ -69,6 +70,7 @@ import { PrismaModule } from './common/modules/prisma/prisma.module';
         ProductionModule,
         MaintenanceModule,
         SalesModule,
+        SummariesModule,
         MemoryTokenModule,
         FilesModule,
     ],
