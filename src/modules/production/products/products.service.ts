@@ -4,6 +4,7 @@ import { isEmpty } from 'class-validator';
 import { ProductInventoryService } from '../../summaries/product-inventory/product-inventory-service';
 import { ProductInventory } from '../../../common/dto/entities/production/product-inventory.dto';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
+import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
 
 @Injectable()
 export class ProductsService {
@@ -34,6 +35,20 @@ export class ProductsService {
         return this.prisma.products.findMany({
             where: {
                 active: 1,
+            },
+        });
+    }
+
+    async getProductType({
+        product_type_id,
+    }: {
+        product_type_id: number | null;
+    }): Promise<ProductType | null> {
+        if (!product_type_id) return null;
+
+        return this.prisma.product_type.findFirst({
+            where: {
+                id: product_type_id,
             },
         });
     }
