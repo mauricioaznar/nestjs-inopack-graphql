@@ -29,8 +29,10 @@ export class OrderRequestsService {
     ) {}
 
     async getOrderRequests({
-        order_request_status_id,
+        order_request_status_ids,
     }: GetOrderRequestsArgs): Promise<OrderRequest[]> {
+        if (!order_request_status_ids) return [];
+
         return this.prisma.order_requests.findMany({
             where: {
                 AND: [
@@ -38,8 +40,11 @@ export class OrderRequestsService {
                         active: 1,
                     },
                     {
-                        order_request_status_id:
-                            order_request_status_id || undefined,
+                        OR: order_request_status_ids.map((id) => {
+                            return {
+                                order_request_status_id: id,
+                            };
+                        }),
                     },
                 ],
             },

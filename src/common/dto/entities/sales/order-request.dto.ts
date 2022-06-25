@@ -38,8 +38,8 @@ export class OrderRequest extends OrderRequestBase {
 
 @ArgsType()
 export class GetOrderRequestsArgs {
-    @Field(() => Int, { nullable: true })
-    order_request_status_id?: number | null;
+    @Field(() => [Int], { nullable: true })
+    order_request_status_ids?: number[] | null;
 }
 
 @ObjectType()
