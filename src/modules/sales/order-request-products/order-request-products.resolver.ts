@@ -7,6 +7,7 @@ import {
     OrderRequestProduct,
     Product,
 } from '../../../common/dto/entities';
+import { OptimizedRequestProduct } from '../../../common/dto/entities/sales/optimized-request-product.dto';
 
 @Resolver(() => OrderRequestProduct)
 @Public()
@@ -17,6 +18,13 @@ export class OrderRequestProductsResolver {
     @Query(() => [OrderRequestProduct])
     async getOrderRequestProducts(): Promise<OrderRequestProduct[]> {
         return this.service.getOrderRequestProducts();
+    }
+
+    @Query(() => [OptimizedRequestProduct])
+    async getOptimizedRequestProducts(): Promise<OptimizedRequestProduct[]> {
+        const res = await this.service.getOptimizedRequestProducts();
+        console.log(res);
+        return this.service.getOptimizedRequestProducts();
     }
 
     @ResolveField(() => OrderRequest, { nullable: true })
