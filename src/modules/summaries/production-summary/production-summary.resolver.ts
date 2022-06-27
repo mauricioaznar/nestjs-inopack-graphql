@@ -1,8 +1,8 @@
-import { Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { ProductInventory } from '../../../common/dto/entities/production/product-inventory.dto';
 import { ProductionSummaryService } from './production-summary.service';
-import { Product } from '../../../common/dto/entities';
+import { ProductionSummaryArgs } from '../../../common/dto/entities/summaries/production-summary.dto';
 
 @Resolver(() => ProductInventory)
 // @Role('super')
@@ -10,17 +10,13 @@ import { Product } from '../../../common/dto/entities';
 export class ProductionSummaryResolver {
     constructor(private service: ProductionSummaryService) {}
 
-    @Query(() => [ProductInventory], { nullable: false })
-    async getProductsInventory(): Promise<ProductInventory[]> {
-        return this.service.getProductsInventory();
-    }
+    @Query(() => Boolean, { nullable: false })
+    async getProductionSummary(
+        @Args('ProductionSummaryArgs')
+        productionSummaryArgs: ProductionSummaryArgs,
+    ): Promise<boolean> {
+        console.log(productionSummaryArgs);
 
-    @ResolveField(() => Product, { nullable: true })
-    async product(
-        @Parent() productInventory: ProductInventory,
-    ): Promise<Product | null> {
-        return this.service.getProduct({
-            product_id: productInventory.product_id,
-        });
+        return this.service.getProductionSummary();
     }
 }

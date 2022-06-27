@@ -1,5 +1,5 @@
 // dates
-export * from './dates/year/year';
+export * from '../dates/dates';
 
 // auth
 export * from './auth/auth.dto';

@@ -1,5 +1,5 @@
 import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
-import { Day } from '../dates/day/day';
+import { Day } from '../../dates/dates';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
