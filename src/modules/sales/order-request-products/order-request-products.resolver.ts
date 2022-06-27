@@ -22,9 +22,7 @@ export class OrderRequestProductsResolver {
 
     @Query(() => [OptimizedRequestProduct])
     async getOptimizedRequestProducts(): Promise<OptimizedRequestProduct[]> {
-        const res = await this.service.getOptimizedRequestProducts();
-        console.log(res);
-        return this.service.getOptimizedRequestProducts();
+        return await this.service.getOptimizedRequestProducts();
     }
 
     @ResolveField(() => OrderRequest, { nullable: true })
