@@ -1,7 +1,10 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { ProductionSummaryArgs } from '../../../common/dto/entities/summaries/production-summary.dto';
+import {
+    ProductionSummary,
+    ProductionSummaryArgs,
+} from '../../../common/dto/entities/summaries/production-summary.dto';
 import { getRangesFromYearMonth } from '../../../common/helpers';
 import dayjs from 'dayjs';
 
@@ -18,13 +21,16 @@ export class ProductionSummaryService {
         order_production_type_id,
         entity_group,
         branch_id,
-    }: ProductionSummaryArgs): Promise<boolean> {
+    }: ProductionSummaryArgs): Promise<ProductionSummary> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: year,
             month: month,
             value: 1,
             unit: month ? 'month' : 'year',
         });
+
+        const formattedStartDate = dayjs(startDate).utc().format('YYYY-MM-DD');
+        const formattedEndDate = dayjs(endDate).utc().format('YYYY-MM-DD');
 
         const { groupByDateGroup, orderByDateGroup, selectDateGroup } =
             await ProductionSummaryService.getDatesInjections({
@@ -54,12 +60,9 @@ export class ProductionSummaryService {
                 break;
         }
 
-        const formattedStartDate = dayjs(startDate).format('YYYY-MM-DD');
-        const formattedEndDate = dayjs(endDate).format('YYYY-MM-DD');
-
-        console.log(formattedEndDate);
-
-        const productions = await this.prisma.$queryRawUnsafe(`
+        const production = await this.prisma.$queryRawUnsafe<
+            ProductionSummary['production']
+        >(`
             select ctc.order_production_type_id,
                    ctc.order_production_type_name,
                    sum(ctc.kilos) as kilos,
@@ -106,7 +109,9 @@ export class ProductionSummaryService {
             group by ctc.order_production_type_id, ctc.order_production_type_name, ${groupByEntityGroup}, ${groupByDateGroup}
         `);
 
-        const wastes = await this.prisma.$queryRawUnsafe(`
+        const waste = await this.prisma.$queryRawUnsafe<
+            ProductionSummary['waste']
+        >(`
             select ctc.order_production_type_id,
                    sum(ctc.waste) waste,
                    ${selectDateGroup}
@@ -136,10 +141,10 @@ export class ProductionSummaryService {
             order by ${orderByDateGroup}
         `);
 
-        console.log(productions);
-        console.log(wastes);
-
-        return true;
+        return {
+            production: production,
+            waste: waste,
+        };
     }
 
     private static async getDatesInjections({
@@ -150,19 +155,22 @@ export class ProductionSummaryService {
         orderByDateGroup: string;
         selectDateGroup: string;
     }> {
-        if (year && !month) {
+        if (year && month !== undefined && month !== null) {
+            return {
+                selectDateGroup:
+                    'day(ctc.start_date) day, month(ctc.start_date) month, year(ctc.start_date) year',
+                groupByDateGroup:
+                    'day(ctc.start_date), month(ctc.start_date), year(ctc.start_date)',
+                orderByDateGroup:
+                    'year(ctc.start_date) desc, month(ctc.start_date) desc, day(ctc.start_date) desc',
+            };
+        } else {
             return {
                 selectDateGroup:
                     'month(ctc.start_date) month, year(ctc.start_date) year',
                 groupByDateGroup: 'month(ctc.start_date), year(ctc.start_date)',
                 orderByDateGroup:
                     'year(ctc.start_date) desc, month(ctc.start_date) desc',
-            };
-        } else {
-            return {
-                selectDateGroup: 'year(ctc.start_date) year',
-                groupByDateGroup: 'year(ctc.start_date)',
-                orderByDateGroup: 'year(ctc.start_date) desc',
             };
         }
     }
