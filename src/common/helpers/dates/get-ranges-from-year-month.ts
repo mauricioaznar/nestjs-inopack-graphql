@@ -7,7 +7,7 @@ export function getRangesFromYearMonth({
     unit,
 }: {
     year: number;
-    month: number;
+    month?: number | null;
     value: number;
     unit: ManipulateType;
 }): {
@@ -17,14 +17,14 @@ export function getRangesFromYearMonth({
     const startDate: Date = dayjs()
         .utc()
         .set('year', year)
-        .set('month', month)
+        .set('month', month || 0)
         .startOf('month')
         .toDate();
 
     const endDate: Date = dayjs()
         .utc()
         .set('year', year)
-        .set('month', month)
+        .set('month', month || 0)
         .add(value, unit)
         .startOf('month')
         .toDate();

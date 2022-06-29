@@ -15,8 +15,6 @@ export class ProductionSummaryResolver {
         @Args('ProductionSummaryArgs')
         productionSummaryArgs: ProductionSummaryArgs,
     ): Promise<boolean> {
-        console.log(productionSummaryArgs);
-
-        return this.service.getProductionSummary();
+        return this.service.getProductionSummary(productionSummaryArgs);
     }
 }
