@@ -5,11 +5,15 @@ import {
     Query,
     ResolveField,
     Resolver,
+    Subscription,
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { Product, ProductUpsertInput } from '../../../common/dto/entities';
 import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
+import { PubSub } from 'graphql-subscriptions';
+
+const pubSub = new PubSub();
 
 @Resolver(() => Product)
 // @Role('super')
@@ -33,7 +37,9 @@ export class ProductsResolver {
     async upsertProduct(
         @Args('ProductUpsertInput') input: ProductUpsertInput,
     ): Promise<Product> {
-        return this.productsService.upsertInput(input);
+        const product = this.productsService.upsertInput(input);
+        await pubSub.publish('product', { product: product });
+        return product;
     }
 
     @ResolveField(() => ProductType, { nullable: true })
@@ -43,5 +49,10 @@ export class ProductsResolver {
         return this.productsService.getProductType({
             product_type_id: product.product_type_id,
         });
+    }
+
+    @Subscription(() => Product)
+    async product() {
+        return pubSub.asyncIterator('product');
     }
 }
