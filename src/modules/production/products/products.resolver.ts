@@ -7,11 +7,12 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { Product, ProductUpsertInput } from '../../../common/dto/entities';
 import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
 import { PubSub } from 'graphql-subscriptions';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 
 const pubSub = new PubSub();
 
@@ -52,6 +53,7 @@ export class ProductsResolver {
     }
 
     @Subscription(() => Product)
+    @UseGuards(GqlAuthGuard)
     async product() {
         return pubSub.asyncIterator('product');
     }
