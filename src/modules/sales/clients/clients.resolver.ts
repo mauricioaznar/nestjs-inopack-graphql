@@ -5,6 +5,7 @@ import {
     Query,
     ResolveField,
     Resolver,
+    Subscription,
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { ClientsService } from './clients.service';
@@ -13,6 +14,9 @@ import {
     ClientContact,
     ClientUpsertInput,
 } from '../../../common/dto/entities';
+import { PubSub } from 'graphql-subscriptions';
+
+const pubSub = new PubSub();
 
 @Resolver(() => Client)
 // @Role('super')
@@ -38,7 +42,9 @@ export class ClientsResolver {
     async upsertClient(
         @Args('ClientUpsertInput') input: ClientUpsertInput,
     ): Promise<Client> {
-        return this.service.upsertClient(input);
+        const client = await this.service.upsertClient(input);
+        await pubSub.publish('client', { client });
+        return client;
     }
 
     @ResolveField(() => [ClientContact])
@@ -46,5 +52,10 @@ export class ClientsResolver {
         return this.service.getClientContacts({
             client_id: client.id,
         });
+    }
+
+    @Subscription(() => Client)
+    async client() {
+        return pubSub.asyncIterator('client');
     }
 }

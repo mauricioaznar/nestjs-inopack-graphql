@@ -7,6 +7,7 @@ import {
     Query,
     ResolveField,
     Resolver,
+    Subscription,
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderSaleService } from './order-sale.service';
@@ -21,6 +22,9 @@ import {
     PaginatedOrderSales,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { PubSub } from 'graphql-subscriptions';
+
+const pubSub = new PubSub();
 
 @Resolver(() => OrderSale)
 // @Role('super')
@@ -52,7 +56,9 @@ export class OrderSaleResolver {
     async upsertOrderSale(
         @Args('OrderSaleInput') input: OrderSaleInput,
     ): Promise<OrderSale> {
-        return this.service.upsertOrderSale(input);
+        const orderSale = await this.service.upsertOrderSale(input);
+        await pubSub.publish('order_sale', { order_sale: orderSale });
+        return orderSale;
     }
 
     @Query(() => Float)
@@ -139,5 +145,10 @@ export class OrderSaleResolver {
         return this.service.getOrderSalePaymentsTotal({
             order_sale_id: orderSale.id,
         });
+    }
+
+    @Subscription(() => OrderSale)
+    async order_sale() {
+        return pubSub.asyncIterator('order_sale');
     }
 }

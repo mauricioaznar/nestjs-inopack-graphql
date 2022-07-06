@@ -7,6 +7,7 @@ import {
     Query,
     ResolveField,
     Resolver,
+    Subscription,
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderRequestsService } from './order-requests.service';
@@ -19,9 +20,10 @@ import {
     PaginatedOrderRequests,
     PaginatedOrderSales,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
-import { YearMonth } from '../../../common/dto/pagination';
-import { GraphQLBoolean } from 'graphql';
+import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { PubSub } from 'graphql-subscriptions';
+
+const pubSub = new PubSub();
 
 @Resolver(() => OrderRequest)
 // @Role('super')
@@ -66,7 +68,9 @@ export class OrderRequestsResolver {
     async upsertOrderRequest(
         @Args('OrderRequestInput') input: OrderRequestInput,
     ): Promise<OrderRequest> {
-        return this.service.upsertOrderRequest(input);
+        const orderRequest = await this.service.upsertOrderRequest(input);
+        await pubSub.publish('order_request', { order_request: orderRequest });
+        return orderRequest;
     }
 
     @Query(() => Boolean)
@@ -75,12 +79,10 @@ export class OrderRequestsResolver {
         @Args('OrderRequestId', { nullable: true, type: () => Int })
         orderRequestId: number | null,
     ): Promise<boolean> {
-        const result = await this.service.isOrderRequestCodeOccupied({
+        return await this.service.isOrderRequestCodeOccupied({
             order_request_id: orderRequestId,
             order_code: orderCode,
         });
-
-        return result;
     }
 
     @ResolveField(() => [OrderRequestProduct])
@@ -117,5 +119,10 @@ export class OrderRequestsResolver {
         return this.service.getOrderRequestProductsTotal({
             order_request_id: orderRequest.id,
         });
+    }
+
+    @Subscription(() => OrderRequest)
+    order_request() {
+        return pubSub.asyncIterator('order_request');
     }
 }
