@@ -29,7 +29,10 @@ import { SummariesModule } from './modules/summaries/summaries.module';
             subscriptions: {
                 'subscriptions-transport-ws': {
                     onConnect: (connectionParams) => {
-                        if (!connectionParams.authorization) {
+                        if (
+                            !connectionParams ||
+                            !connectionParams.authorization
+                        ) {
                             throw new ApolloError(
                                 `Send 'authorization' property with an appropriate token in connection with websockets`,
                             );
