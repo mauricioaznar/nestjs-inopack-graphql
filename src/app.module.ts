@@ -27,16 +27,15 @@ import { SummariesModule } from './modules/summaries/summaries.module';
             autoSchemaFile: 'schema.gql',
             installSubscriptionHandlers: true,
             subscriptions: {
-                'subscriptions-transport-ws': {
-                    onConnect: (connectionParams) => {
-                        if (
-                            !connectionParams ||
-                            !connectionParams.authorization
-                        ) {
+                'graphql-ws': {
+                    onConnect: (ctx) => {
+                        if (!ctx || !ctx.connectionParams) {
                             throw new ApolloError(
-                                `Send 'authorization' property with an appropriate token in connection with websockets`,
+                                `'Connection params' must be included with the 'authorization' header included`,
                             );
                         }
+
+                        const connectionParams = ctx.connectionParams;
                         return { connectionParams };
                     },
                 },
