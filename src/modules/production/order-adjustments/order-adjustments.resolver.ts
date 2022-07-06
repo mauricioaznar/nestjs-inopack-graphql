@@ -5,6 +5,7 @@ import {
     Query,
     ResolveField,
     Resolver,
+    Subscription,
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderAdjustmentsService } from './order-adjustments.service';
@@ -15,6 +16,9 @@ import {
 } from '../../../common/dto/entities/production/order-adjustment.dto';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 import { OrderAdjustmentType } from '../../../common/dto/entities/production/order-adjustment-type.dto';
+import { PubSub } from 'graphql-subscriptions';
+
+const pubSub = new PubSub();
 
 @Resolver(() => OrderAdjustment)
 @Public()
@@ -40,7 +44,11 @@ export class OrderAdjustmentsResolver {
     async upsertOrderAdjustment(
         @Args('OrderAdjustmentInput') input: OrderAdjustmentInput,
     ): Promise<OrderAdjustment> {
-        return this.service.upsertOrderAdjustment(input);
+        const orderAdjustment = await this.service.upsertOrderAdjustment(input);
+        await pubSub.publish('order_adjustment', {
+            order_adjustment: orderAdjustment,
+        });
+        return orderAdjustment;
     }
 
     @ResolveField(() => [OrderAdjustmentProduct])
@@ -59,5 +67,10 @@ export class OrderAdjustmentsResolver {
         return this.service.getOrderAdjustmentType({
             order_adjustment_id: orderAdjustment.order_adjustment_type_id,
         });
+    }
+
+    @Subscription(() => OrderAdjustment)
+    async order_adjustment() {
+        return pubSub.asyncIterator('order_adjustment');
     }
 }

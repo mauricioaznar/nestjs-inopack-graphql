@@ -1,10 +1,13 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import {
     Employee,
     EmployeeUpsertInput,
 } from '../../../common/dto/entities/production/employee.dto';
+import { PubSub } from 'graphql-subscriptions';
+
+const pubSub = new PubSub();
 
 @Resolver(() => Employee)
 // @Role('super')
@@ -30,6 +33,13 @@ export class EmployeesResolver {
     async upsertEmployee(
         @Args('EmployeeUpsertInput') input: EmployeeUpsertInput,
     ): Promise<Employee> {
-        return this.service.upsertEmployee(input);
+        const employee = await this.service.upsertEmployee(input);
+        await pubSub.publish('employee', { employee });
+        return employee;
+    }
+
+    @Subscription(() => Employee)
+    async employee() {
+        return pubSub.asyncIterator('employee');
     }
 }
