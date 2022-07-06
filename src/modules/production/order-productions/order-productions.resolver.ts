@@ -1,4 +1,11 @@
-import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import {
+    Args,
+    Mutation,
+    Query,
+    ResolveField,
+    Resolver,
+    Subscription,
+} from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderProductionsService } from './order-productions.service';
 import {
@@ -9,8 +16,11 @@ import {
 import { Public } from '../../auth/decorators/public.decorator';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 import { OrderProductionEmployee } from '../../../common/dto/entities/production/order-production-employee.dto';
-import { PaginatedOrderSales } from '../../../common/dto/entities';
+import { PaginatedOrderSales, Product } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { PubSub } from 'graphql-subscriptions';
+
+const pubSub = new PubSub();
 
 @Resolver(() => OrderProduction)
 @Public()
@@ -42,7 +52,11 @@ export class OrderProductionsResolver {
     async upsertOrderProduction(
         @Args('OrderProductionInput') input: OrderProductionInput,
     ): Promise<OrderProduction> {
-        return this.service.upsertOrderProduction(input);
+        const orderProduction = await this.service.upsertOrderProduction(input);
+        await pubSub.publish('order_production', {
+            order_production: orderProduction,
+        });
+        return orderProduction;
     }
 
     @ResolveField(() => [OrderProductionProduct])
@@ -61,5 +75,10 @@ export class OrderProductionsResolver {
         return this.service.getOrderProductionEmployees({
             order_production_id: orderProduction.id,
         });
+    }
+
+    @Subscription(() => OrderProduction)
+    async order_production() {
+        return pubSub.asyncIterator('order_production');
     }
 }
