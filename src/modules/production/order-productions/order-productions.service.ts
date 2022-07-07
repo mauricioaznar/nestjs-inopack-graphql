@@ -67,8 +67,17 @@ export class OrderProductionsService {
         datePaginator: YearMonth;
         orderProductionQueryArgs: OrderProductionQueryArgs;
     }): Promise<PaginatedOrderProductions> {
-        if (!datePaginator || !datePaginator.year || !datePaginator.month)
-            return [];
+        if (
+            !datePaginator ||
+            !datePaginator.year ||
+            datePaginator.month === null ||
+            datePaginator.month === undefined
+        ) {
+            return {
+                count: 0,
+                docs: [],
+            };
+        }
 
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,

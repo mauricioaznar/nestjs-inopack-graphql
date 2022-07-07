@@ -13,10 +13,12 @@ import { Public } from '../../auth/decorators/public.decorator';
 import {
     OrderAdjustment,
     OrderAdjustmentInput,
+    PaginatedOrderAdjustments,
 } from '../../../common/dto/entities/production/order-adjustment.dto';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 import { OrderAdjustmentType } from '../../../common/dto/entities/production/order-adjustment-type.dto';
 import { PubSub } from 'graphql-subscriptions';
+import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 
 const pubSub = new PubSub();
 
@@ -38,6 +40,17 @@ export class OrderAdjustmentsResolver {
     @Query(() => [OrderAdjustment])
     async getOrderAdjustments(): Promise<OrderAdjustment[]> {
         return this.service.getOrderAdjustments();
+    }
+
+    @Query(() => PaginatedOrderAdjustments)
+    async paginatedOrderAdjustments(
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false }) datePaginator: YearMonth,
+    ): Promise<PaginatedOrderAdjustments> {
+        return this.service.paginatedOrderAdjustments({
+            offsetPaginatorArgs,
+            datePaginator,
+        });
     }
 
     @Mutation(() => OrderAdjustment)

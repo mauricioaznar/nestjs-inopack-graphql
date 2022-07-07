@@ -4,15 +4,22 @@ import {
     Inject,
     Injectable,
 } from '@nestjs/common';
-import { vennDiagram } from '../../../common/helpers';
+import { getRangesFromYearMonth, vennDiagram } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 import {
     OrderAdjustment,
     OrderAdjustmentInput,
+    PaginatedOrderAdjustments,
 } from '../../../common/dto/entities/production/order-adjustment.dto';
 import { OrderAdjustmentType } from '../../../common/dto/entities/production/order-adjustment-type.dto';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
+import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import {
+    OrderProductionQueryArgs,
+    PaginatedOrderProductions,
+} from '../../../common/dto/entities/production/order-production.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrderAdjustmentsService {
@@ -32,6 +39,65 @@ export class OrderAdjustmentsService {
                 active: 1,
             },
         });
+    }
+
+    async paginatedOrderAdjustments({
+        offsetPaginatorArgs,
+        datePaginator,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+        datePaginator: YearMonth;
+    }): Promise<PaginatedOrderAdjustments> {
+        if (
+            !datePaginator ||
+            !datePaginator.year ||
+            datePaginator.month === undefined ||
+            datePaginator.month === null
+        ) {
+            return {
+                docs: [],
+                count: 0,
+            };
+        }
+
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+            value: 1,
+            unit: 'month',
+        });
+
+        const whereInput: Prisma.order_adjustmentsWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+                {
+                    date: {
+                        gte: startDate,
+                    },
+                },
+                {
+                    date: {
+                        lt: endDate,
+                    },
+                },
+            ],
+        };
+
+        const count = await this.prisma.order_adjustments.count({
+            where: whereInput,
+        });
+        const docs = await this.prisma.order_adjustments.findMany({
+            where: whereInput,
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+        });
+
+        return {
+            count: count || 0,
+            docs: docs || [],
+        };
     }
 
     async getOrderAdjustments(): Promise<OrderAdjustment[]> {
