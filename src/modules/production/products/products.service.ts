@@ -1,8 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Product, ProductUpsertInput } from '../../../common/dto/entities';
 import { isEmpty } from 'class-validator';
-import { ProductInventoryService } from '../../summaries/product-inventory/product-inventory-service';
-import { ProductInventory } from '../../../common/dto/entities/production/product-inventory.dto';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
 
@@ -35,6 +33,9 @@ export class ProductsService {
         return this.prisma.products.findMany({
             where: {
                 active: 1,
+            },
+            orderBy: {
+                description: 'asc',
             },
         });
     }

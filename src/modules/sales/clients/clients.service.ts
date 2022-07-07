@@ -20,6 +20,9 @@ export class ClientsService {
             where: {
                 active: 1,
             },
+            orderBy: {
+                name: 'asc',
+            },
         });
     }
 

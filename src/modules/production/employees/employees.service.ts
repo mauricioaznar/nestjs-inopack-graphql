@@ -14,7 +14,14 @@ export class EmployeesService {
     constructor(private prisma: PrismaService) {}
 
     async getEmployees(): Promise<Employee[]> {
-        return this.prisma.employees.findMany();
+        return this.prisma.employees.findMany({
+            where: {
+                active: 1,
+            },
+            orderBy: {
+                fullname: 'asc',
+            },
+        });
     }
 
     async getEmployee({
