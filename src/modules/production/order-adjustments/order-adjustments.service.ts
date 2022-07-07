@@ -15,10 +15,6 @@ import {
 import { OrderAdjustmentType } from '../../../common/dto/entities/production/order-adjustment-type.dto';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
-import {
-    OrderProductionQueryArgs,
-    PaginatedOrderProductions,
-} from '../../../common/dto/entities/production/order-production.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
