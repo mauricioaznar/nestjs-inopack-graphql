@@ -11,6 +11,7 @@ import { OrderProductionsService } from './order-productions.service';
 import {
     OrderProduction,
     OrderProductionInput,
+    OrderProductionQueryArgs,
     PaginatedOrderProductions,
 } from '../../../common/dto/entities/production/order-production.dto';
 import { Public } from '../../auth/decorators/public.decorator';
@@ -41,10 +42,13 @@ export class OrderProductionsResolver {
     async paginatedOrderProductions(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false })
+        orderProductionQueryArgs: OrderProductionQueryArgs,
     ): Promise<PaginatedOrderSales> {
         return this.service.paginatedOrderProductions({
             offsetPaginatorArgs,
             datePaginator,
+            orderProductionQueryArgs,
         });
     }
 

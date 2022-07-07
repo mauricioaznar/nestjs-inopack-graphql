@@ -43,6 +43,10 @@ describe('pagination', () => {
                     take: 10,
                     skip: 0,
                 },
+                orderProductionQueryArgs: {
+                    order_production_type_id: orderProductionType1.id,
+                    branch_id: branch1.id,
+                },
             });
 
         expect(Array.isArray(paginatedResults.docs)).toBe(true);

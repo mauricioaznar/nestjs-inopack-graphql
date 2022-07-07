@@ -8,6 +8,7 @@ import {
 import {
     OrderProduction,
     OrderProductionInput,
+    OrderProductionQueryArgs,
     PaginatedOrderProductions,
 } from '../../../common/dto/entities/production/order-production.dto';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
@@ -60,9 +61,11 @@ export class OrderProductionsService {
     async paginatedOrderProductions({
         offsetPaginatorArgs,
         datePaginator,
+        orderProductionQueryArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
+        orderProductionQueryArgs: OrderProductionQueryArgs;
     }): Promise<PaginatedOrderProductions> {
         if (!datePaginator || !datePaginator.year || !datePaginator.month)
             return [];
@@ -89,6 +92,13 @@ export class OrderProductionsService {
                         lt: endDate,
                     },
                 },
+                {
+                    branch_id: orderProductionQueryArgs.branch_id,
+                },
+                {
+                    order_production_type_id:
+                        orderProductionQueryArgs.order_production_type_id,
+                },
             ],
         };
 
@@ -102,8 +112,8 @@ export class OrderProductionsService {
         });
 
         return {
-            count: count,
-            docs: orderProductions,
+            count: count || 0,
+            docs: orderProductions || [],
         };
     }
 
