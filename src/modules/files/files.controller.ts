@@ -32,12 +32,18 @@ export class FilesController {
     async getPdf(
         @Res() res: Response,
         @Param('token') token: string,
-        @Param('orderSaleId') orderSaleId: string,
+        @Param('orderSaleId') orderSaleFileName: string,
     ) {
         try {
             this.jwtService.verify(token);
         } catch (e) {
             throw new BadRequestException('Invalid token');
+        }
+
+        if (!orderSaleFileName.includes('.')) {
+            throw new BadRequestException(
+                'Invalid file (expected `23223.pdf`)',
+            );
         }
 
         const compiled = ejs.compile(
@@ -51,10 +57,10 @@ export class FilesController {
                 'utf8',
             ),
         );
-        const id = Number(orderSaleId);
+        const orderSaleId = Number(orderSaleFileName.split('.')[0]);
 
         const orderSale = await this.orderSaleService.getOrderSale({
-            orderSaleId: id,
+            orderSaleId: orderSaleId,
         });
 
         if (!orderSale) {
@@ -62,7 +68,7 @@ export class FilesController {
         }
 
         const client = await this.orderSaleService.getClient({
-            order_sale_id: id,
+            order_sale_id: orderSaleId,
         });
 
         if (!client) {
@@ -75,12 +81,12 @@ export class FilesController {
                     products: true,
                 },
                 where: {
-                    order_sale_id: id,
+                    order_sale_id: orderSaleId,
                 },
             });
 
         const total = await this.orderSaleService.getOrderSaleProductsTotal({
-            order_sale_id: id,
+            order_sale_id: orderSaleId,
         });
 
         const dateEmitted = formatDate(orderSale.date);
@@ -119,7 +125,9 @@ export class FilesController {
         return res
             .set({ 'Content-Length': pdfFile.size })
             .set({ 'Content-Type': 'application/pdf' })
-            .set({ 'Content-Disposition': 'attachment; filename=quote.pdf' })
+            .set({
+                'Content-Disposition': `inline; filename=${orderSale.order_code}.pdf`,
+            })
             .send(pdfFile);
     }
 
