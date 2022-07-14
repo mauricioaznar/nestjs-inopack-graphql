@@ -36,3 +36,6 @@ export * from './sales/order-sale-status.dto';
 export * from './sales/order-sale-product.dto';
 export * from './sales/order-sale-payment.dto';
 export * from './sales/order-sale-collection-status.dto';
+
+// activities
+export * from './activities/activity.dto';

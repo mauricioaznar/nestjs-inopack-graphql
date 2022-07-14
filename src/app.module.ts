@@ -19,6 +19,7 @@ import { GqlAuthGuard } from './modules/auth/guards/gql-auth.guard';
 import { GqlRolesGuard } from './modules/auth/guards/gql-roles.guard';
 import { PrismaModule } from './common/modules/prisma/prisma.module';
 import { SummariesModule } from './modules/summaries/summaries.module';
+import { ActivitiesModule } from './modules/activities/activities.module';
 
 @Module({
     imports: [
@@ -74,6 +75,7 @@ import { SummariesModule } from './modules/summaries/summaries.module';
         SalesModule,
         SummariesModule,
         MemoryTokenModule,
+        ActivitiesModule,
         FilesModule,
     ],
     providers: [
