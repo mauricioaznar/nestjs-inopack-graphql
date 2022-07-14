@@ -3,17 +3,19 @@ import { PubSub } from 'graphql-subscriptions';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class ActivitiesPubSubService extends PubSub {
+export class ActivitiesPubSubService {
+    private pubSub: PubSub;
+
     constructor(private prisma: PrismaService) {
-        super();
+        this.pubSub = new PubSub();
     }
 
     async publishActivity() {
         const lastActivity = await this.prisma.activities.findFirst();
-        await this.publish('activity', { activity: lastActivity });
+        await this.pubSub.publish('activity', { activity: lastActivity });
     }
 
     async listenForActivity() {
-        return this.asyncIterator('activity');
+        return this.pubSub.asyncIterator('activity');
     }
 }
