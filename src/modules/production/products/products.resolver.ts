@@ -12,6 +12,7 @@ import { ProductsService } from './products.service';
 import { Product, ProductUpsertInput } from '../../../common/dto/entities';
 import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
 import { PubSub } from 'graphql-subscriptions';
+import { ActivitiesPubSubService } from '../../../common/modules/activities-pub-sub/activities-pub-sub.service';
 
 const pubSub = new PubSub();
 
@@ -19,7 +20,10 @@ const pubSub = new PubSub();
 // @Role('super')
 @Injectable()
 export class ProductsResolver {
-    constructor(private productsService: ProductsService) {}
+    constructor(
+        private productsService: ProductsService,
+        private activitiesPubSubService: ActivitiesPubSubService,
+    ) {}
 
     @Query(() => [Product])
     async getProducts(): Promise<Product[]> {
@@ -38,7 +42,10 @@ export class ProductsResolver {
         @Args('ProductUpsertInput') input: ProductUpsertInput,
     ): Promise<Product> {
         const product = this.productsService.upsertInput(input);
-        await pubSub.publish('product', { product: product });
+        await pubSub.publish('product', {
+            product: product,
+        });
+        await this.activitiesPubSubService.publishActivity();
         return product;
     }
 

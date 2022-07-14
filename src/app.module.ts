@@ -20,10 +20,12 @@ import { GqlRolesGuard } from './modules/auth/guards/gql-roles.guard';
 import { PrismaModule } from './common/modules/prisma/prisma.module';
 import { SummariesModule } from './modules/summaries/summaries.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
+import { ActivitiesPubSubModule } from './common/modules/activities-pub-sub/activities-pub-sub.module';
 
 @Module({
     imports: [
         PrismaModule,
+        ActivitiesPubSubModule,
         GraphQLModule.forRoot({
             autoSchemaFile: 'schema.gql',
             installSubscriptionHandlers: true,
