@@ -7,6 +7,11 @@ export class ActivitiesService {
     constructor(private prisma: PrismaService) {}
 
     async getActivities(): Promise<Activity[]> {
-        return this.prisma.activities.findMany();
+        return this.prisma.activities.findMany({
+            orderBy: {
+                id: 'desc',
+            },
+            take: 15,
+        });
     }
 }

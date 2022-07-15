@@ -41,6 +41,12 @@ export class ActivityBase {
 
     @Field(() => ActivityTypeName, { nullable: false })
     type: string | ActivityTypeName;
+
+    @Field(() => Int, { nullable: false })
+    entity_id: number;
+
+    @Field({ nullable: false })
+    description: string;
 }
 
 @ObjectType('ActivityInput')
