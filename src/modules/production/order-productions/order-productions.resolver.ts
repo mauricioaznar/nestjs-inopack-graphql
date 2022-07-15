@@ -6,7 +6,7 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { OrderProductionsService } from './order-productions.service';
 import {
     OrderProduction,
@@ -17,12 +17,14 @@ import {
 import { Public } from '../../auth/decorators/public.decorator';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 import { OrderProductionEmployee } from '../../../common/dto/entities/production/order-production-employee.dto';
-import { PaginatedOrderSales } from '../../../common/dto/entities';
+import { PaginatedOrderSales, User } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Resolver(() => OrderProduction)
-@Public()
+@UseGuards(GqlAuthGuard)
 @Injectable()
 export class OrderProductionsResolver {
     constructor(
@@ -56,11 +58,13 @@ export class OrderProductionsResolver {
     @Mutation(() => OrderProduction)
     async upsertOrderProduction(
         @Args('OrderProductionInput') input: OrderProductionInput,
+        @CurrentUser() currentUser: User,
     ): Promise<OrderProduction> {
         const orderProduction = await this.service.upsertOrderProduction(input);
         await this.pubSubService.publishOrderProduction({
             orderProduction: orderProduction,
             create: !input.id,
+            userId: currentUser.id,
         });
         return orderProduction;
     }

@@ -7,16 +7,20 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import {
     Client,
     ClientContact,
     ClientUpsertInput,
+    User,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Resolver(() => Client)
+@UseGuards(GqlAuthGuard)
 // @Role('super')
 @Injectable()
 export class ClientsResolver {
@@ -42,9 +46,14 @@ export class ClientsResolver {
     @Mutation(() => Client)
     async upsertClient(
         @Args('ClientUpsertInput') input: ClientUpsertInput,
+        @CurrentUser() currentUser: User,
     ): Promise<Client> {
         const client = await this.service.upsertClient(input);
-        await this.pubSubService.publishClient({ client, create: !input.id });
+        await this.pubSubService.publishClient({
+            client,
+            create: !input.id,
+            userId: currentUser.id,
+        });
         return client;
     }
 

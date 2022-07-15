@@ -9,7 +9,7 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { OrderRequestsService } from './order-requests.service';
 import {
     GetOrderRequestsArgs,
@@ -19,12 +19,15 @@ import {
     OrderSaleProduct,
     PaginatedOrderRequests,
     PaginatedOrderSales,
+    User,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Resolver(() => OrderRequest)
-// @Role('super')
+@UseGuards(GqlAuthGuard)
 @Injectable()
 export class OrderRequestsResolver {
     constructor(
@@ -68,11 +71,13 @@ export class OrderRequestsResolver {
     @Mutation(() => OrderRequest)
     async upsertOrderRequest(
         @Args('OrderRequestInput') input: OrderRequestInput,
+        @CurrentUser() currentUser: User,
     ): Promise<OrderRequest> {
         const orderRequest = await this.service.upsertOrderRequest(input);
         await this.pubSubService.publishOrderRequest({
             orderRequest,
             create: !input.id,
+            userId: currentUser.id,
         });
         return orderRequest;
     }

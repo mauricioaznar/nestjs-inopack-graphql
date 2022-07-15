@@ -7,9 +7,8 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { OrderAdjustmentsService } from './order-adjustments.service';
-import { Public } from '../../auth/decorators/public.decorator';
 import {
     OrderAdjustment,
     OrderAdjustmentInput,
@@ -19,9 +18,12 @@ import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/
 import { OrderAdjustmentType } from '../../../common/dto/entities/production/order-adjustment-type.dto';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { User } from '../../../common/dto/entities';
 
 @Resolver(() => OrderAdjustment)
-@Public()
+@UseGuards(GqlAuthGuard)
 @Injectable()
 export class OrderAdjustmentsResolver {
     constructor(
@@ -57,11 +59,13 @@ export class OrderAdjustmentsResolver {
     @Mutation(() => OrderAdjustment)
     async upsertOrderAdjustment(
         @Args('OrderAdjustmentInput') input: OrderAdjustmentInput,
+        @CurrentUser() currentUser: User,
     ): Promise<OrderAdjustment> {
         const orderAdjustment = await this.service.upsertOrderAdjustment(input);
         await this.pubSubService.publishOrderAdjustment({
             orderAdjustment,
             create: !input.id,
+            userId: currentUser.id,
         });
         return orderAdjustment;
     }

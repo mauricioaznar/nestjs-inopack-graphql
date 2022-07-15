@@ -7,17 +7,20 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import {
-    ActivityTypeName,
     Product,
     ProductUpsertInput,
+    User,
 } from '../../../common/dto/entities';
 import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Resolver(() => Product)
+@UseGuards(GqlAuthGuard)
 // @Role('super')
 @Injectable()
 export class ProductsResolver {
@@ -41,9 +44,14 @@ export class ProductsResolver {
     @Mutation(() => Product)
     async upsertProduct(
         @Args('ProductUpsertInput') input: ProductUpsertInput,
+        @CurrentUser() currentUser: User,
     ): Promise<Product> {
         const product = await this.productsService.upsertInput(input);
-        await this.pubSubService.publishProduct({ product, create: !input.id });
+        await this.pubSubService.publishProduct({
+            product,
+            create: !input.id,
+            userId: currentUser.id,
+        });
         return product;
     }
 
