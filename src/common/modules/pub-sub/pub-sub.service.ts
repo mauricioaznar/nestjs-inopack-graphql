@@ -36,6 +36,7 @@ export class PubSubService {
             type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             entity_id: product.id,
             userId,
+            description: `Producto: ${product.description} (${product.code})`,
         });
     }
 
@@ -56,6 +57,7 @@ export class PubSubService {
             type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             entity_id: orderProduction.id,
             userId,
+            description: `Producción: ${orderProduction.start_date}`,
         });
     }
 
@@ -76,6 +78,7 @@ export class PubSubService {
             type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             entity_id: orderAdjustment.id,
             userId,
+            description: `Ajuste: ${orderAdjustment.date}`,
         });
     }
 
@@ -96,6 +99,7 @@ export class PubSubService {
             type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             entity_id: employee.id,
             userId,
+            description: `Empleado: ${employee.fullname}`,
         });
     }
 
@@ -116,13 +120,13 @@ export class PubSubService {
             type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             entity_id: client.id,
             userId,
+            description: `Cliente: ${client.abbreviation} (${client.name})`,
         });
     }
 
     async publishOrderRequest({
         orderRequest,
         create,
-
         userId,
     }: {
         orderRequest: OrderRequest;
@@ -137,6 +141,7 @@ export class PubSubService {
             type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             entity_id: orderRequest.id,
             userId,
+            description: `Pedido: ${orderRequest.order_code}`,
         });
     }
 
@@ -157,6 +162,7 @@ export class PubSubService {
             type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             entity_id: orderSale.id,
             userId,
+            description: `Venta: ${orderSale.order_code}`,
         });
     }
 
@@ -165,16 +171,18 @@ export class PubSubService {
         entity_name,
         type,
         userId,
+        description,
     }: {
         entity_id: number;
         entity_name: ActivityEntityName;
         type: ActivityTypeName;
         userId: number;
+        description: string;
     }) {
         const activity = await this.prisma.activities.create({
             data: {
                 entity_name: entity_name,
-                description: '',
+                description: description,
                 created_at: new Date(),
                 updated_at: new Date(),
                 entity_id: entity_id,
@@ -182,8 +190,6 @@ export class PubSubService {
                 user_id: userId,
             },
         });
-
-        console.log(activity);
 
         await this.pubSub.publish('activity', { activity: activity });
     }
