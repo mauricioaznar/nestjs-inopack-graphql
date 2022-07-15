@@ -17,17 +17,18 @@ import {
 import { Public } from '../../auth/decorators/public.decorator';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 import { OrderProductionEmployee } from '../../../common/dto/entities/production/order-production-employee.dto';
-import { PaginatedOrderSales, Product } from '../../../common/dto/entities';
+import { PaginatedOrderSales } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
-import { PubSub } from 'graphql-subscriptions';
-
-const pubSub = new PubSub();
+import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 
 @Resolver(() => OrderProduction)
 @Public()
 @Injectable()
 export class OrderProductionsResolver {
-    constructor(private service: OrderProductionsService) {}
+    constructor(
+        private service: OrderProductionsService,
+        private pubSubService: PubSubService,
+    ) {}
 
     @Query(() => OrderProduction)
     async getOrderProduction(
@@ -57,8 +58,9 @@ export class OrderProductionsResolver {
         @Args('OrderProductionInput') input: OrderProductionInput,
     ): Promise<OrderProduction> {
         const orderProduction = await this.service.upsertOrderProduction(input);
-        await pubSub.publish('order_production', {
-            order_production: orderProduction,
+        await this.pubSubService.publishOrderProduction({
+            orderProduction: orderProduction,
+            create: !input.id,
         });
         return orderProduction;
     }
@@ -83,6 +85,6 @@ export class OrderProductionsResolver {
 
     @Subscription(() => OrderProduction)
     async order_production() {
-        return pubSub.asyncIterator('order_production');
+        return this.pubSubService.listenForOrderProduction();
     }
 }

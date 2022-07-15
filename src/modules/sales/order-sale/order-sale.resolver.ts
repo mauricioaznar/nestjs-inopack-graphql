@@ -22,15 +22,16 @@ import {
     PaginatedOrderSales,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
-import { PubSub } from 'graphql-subscriptions';
-
-const pubSub = new PubSub();
+import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 
 @Resolver(() => OrderSale)
 // @Role('super')
 @Injectable()
 export class OrderSaleResolver {
-    constructor(private service: OrderSaleService) {}
+    constructor(
+        private service: OrderSaleService,
+        private pubSubService: PubSubService,
+    ) {}
 
     @Query(() => OrderSale, { nullable: true })
     async getOrderSale(
@@ -57,7 +58,10 @@ export class OrderSaleResolver {
         @Args('OrderSaleInput') input: OrderSaleInput,
     ): Promise<OrderSale> {
         const orderSale = await this.service.upsertOrderSale(input);
-        await pubSub.publish('order_sale', { order_sale: orderSale });
+        await this.pubSubService.publishOrderSale({
+            orderSale,
+            create: !input.id,
+        });
         return orderSale;
     }
 
@@ -149,6 +153,6 @@ export class OrderSaleResolver {
 
     @Subscription(() => OrderSale)
     async order_sale() {
-        return pubSub.asyncIterator('order_sale');
+        return this.pubSubService.listenForOrderSale();
     }
 }

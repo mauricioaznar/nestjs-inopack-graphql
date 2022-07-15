@@ -5,15 +5,16 @@ import {
     Employee,
     EmployeeUpsertInput,
 } from '../../../common/dto/entities/production/employee.dto';
-import { PubSub } from 'graphql-subscriptions';
-
-const pubSub = new PubSub();
+import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 
 @Resolver(() => Employee)
 // @Role('super')
 @Injectable()
 export class EmployeesResolver {
-    constructor(private service: EmployeesService) {}
+    constructor(
+        private service: EmployeesService,
+        private pubSubService: PubSubService,
+    ) {}
 
     @Query(() => [Employee])
     async getEmployees(): Promise<Employee[]> {
@@ -34,12 +35,15 @@ export class EmployeesResolver {
         @Args('EmployeeUpsertInput') input: EmployeeUpsertInput,
     ): Promise<Employee> {
         const employee = await this.service.upsertEmployee(input);
-        await pubSub.publish('employee', { employee });
+        await this.pubSubService.publishEmployee({
+            employee,
+            create: !input.id,
+        });
         return employee;
     }
 
     @Subscription(() => Employee)
     async employee() {
-        return pubSub.asyncIterator('employee');
+        return this.pubSubService.listenForEmployee();
     }
 }

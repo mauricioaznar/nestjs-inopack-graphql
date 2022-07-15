@@ -17,16 +17,17 @@ import {
 } from '../../../common/dto/entities/production/order-adjustment.dto';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 import { OrderAdjustmentType } from '../../../common/dto/entities/production/order-adjustment-type.dto';
-import { PubSub } from 'graphql-subscriptions';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
-
-const pubSub = new PubSub();
+import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 
 @Resolver(() => OrderAdjustment)
 @Public()
 @Injectable()
 export class OrderAdjustmentsResolver {
-    constructor(private service: OrderAdjustmentsService) {}
+    constructor(
+        private service: OrderAdjustmentsService,
+        private pubSubService: PubSubService,
+    ) {}
 
     @Query(() => OrderAdjustment, { nullable: true })
     async getOrderAdjustment(
@@ -58,8 +59,9 @@ export class OrderAdjustmentsResolver {
         @Args('OrderAdjustmentInput') input: OrderAdjustmentInput,
     ): Promise<OrderAdjustment> {
         const orderAdjustment = await this.service.upsertOrderAdjustment(input);
-        await pubSub.publish('order_adjustment', {
-            order_adjustment: orderAdjustment,
+        await this.pubSubService.publishOrderAdjustment({
+            orderAdjustment,
+            create: !input.id,
         });
         return orderAdjustment;
     }
@@ -84,6 +86,6 @@ export class OrderAdjustmentsResolver {
 
     @Subscription(() => OrderAdjustment)
     async order_adjustment() {
-        return pubSub.asyncIterator('order_adjustment');
+        return this.pubSubService.listenForOrderAdjustment();
     }
 }

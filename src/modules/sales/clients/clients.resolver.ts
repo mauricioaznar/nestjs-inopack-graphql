@@ -14,15 +14,16 @@ import {
     ClientContact,
     ClientUpsertInput,
 } from '../../../common/dto/entities';
-import { PubSub } from 'graphql-subscriptions';
-
-const pubSub = new PubSub();
+import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 
 @Resolver(() => Client)
 // @Role('super')
 @Injectable()
 export class ClientsResolver {
-    constructor(private service: ClientsService) {}
+    constructor(
+        private service: ClientsService,
+        private pubSubService: PubSubService,
+    ) {}
 
     @Query(() => [Client])
     async getClients(): Promise<Client[]> {
@@ -43,7 +44,7 @@ export class ClientsResolver {
         @Args('ClientUpsertInput') input: ClientUpsertInput,
     ): Promise<Client> {
         const client = await this.service.upsertClient(input);
-        await pubSub.publish('client', { client });
+        await this.pubSubService.publishClient({ client, create: !input.id });
         return client;
     }
 
@@ -56,6 +57,6 @@ export class ClientsResolver {
 
     @Subscription(() => Client)
     async client() {
-        return pubSub.asyncIterator('client');
+        return this.pubSubService.listenForClient();
     }
 }

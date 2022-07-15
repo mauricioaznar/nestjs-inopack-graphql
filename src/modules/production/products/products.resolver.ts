@@ -9,12 +9,13 @@ import {
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { ProductsService } from './products.service';
-import { Product, ProductUpsertInput } from '../../../common/dto/entities';
+import {
+    ActivityTypeName,
+    Product,
+    ProductUpsertInput,
+} from '../../../common/dto/entities';
 import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
-import { PubSub } from 'graphql-subscriptions';
-import { ActivitiesPubSubService } from '../../../common/modules/activities-pub-sub/activities-pub-sub.service';
-
-const pubSub = new PubSub();
+import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 
 @Resolver(() => Product)
 // @Role('super')
@@ -22,7 +23,7 @@ const pubSub = new PubSub();
 export class ProductsResolver {
     constructor(
         private productsService: ProductsService,
-        private activitiesPubSubService: ActivitiesPubSubService,
+        private pubSubService: PubSubService,
     ) {}
 
     @Query(() => [Product])
@@ -41,11 +42,8 @@ export class ProductsResolver {
     async upsertProduct(
         @Args('ProductUpsertInput') input: ProductUpsertInput,
     ): Promise<Product> {
-        const product = this.productsService.upsertInput(input);
-        await pubSub.publish('product', {
-            product: product,
-        });
-        await this.activitiesPubSubService.publishActivity();
+        const product = await this.productsService.upsertInput(input);
+        await this.pubSubService.publishProduct({ product, create: !input.id });
         return product;
     }
 
@@ -60,6 +58,6 @@ export class ProductsResolver {
 
     @Subscription(() => Product)
     async product() {
-        return pubSub.asyncIterator('product');
+        return this.pubSubService.listenForProduct();
     }
 }
