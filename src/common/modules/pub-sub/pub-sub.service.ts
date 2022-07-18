@@ -21,19 +21,19 @@ export class PubSubService {
         this.pubSub = new PubSub();
     }
 
-    async publishProduct({
+    async product({
         product,
-        create,
+        type,
         userId,
     }: {
         product: Product;
-        create: boolean;
+        type: ActivityTypeName;
         userId: number;
     }) {
         await this.pubSub.publish('product', { product: product });
         await this.publishActivity({
             entity_name: ActivityEntityName.PRODUCT,
-            type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type: type,
             entity_id: product.id,
             userId,
             description: `Producto: ${product.description} (${product.code})`,

@@ -7,9 +7,10 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import {
+    ActivityTypeName,
     Product,
     ProductUpsertInput,
     User,
@@ -47,12 +48,30 @@ export class ProductsResolver {
         @CurrentUser() currentUser: User,
     ): Promise<Product> {
         const product = await this.productsService.upsertInput(input);
-        await this.pubSubService.publishProduct({
+        await this.pubSubService.product({
             product,
-            create: !input.id,
+            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
         });
         return product;
+    }
+
+    @Mutation(() => Boolean)
+    async deleteProduct(
+        @Args('ProductId') productId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<boolean> {
+        const product = await this.getProduct(productId);
+        if (!product) {
+            throw new NotFoundException();
+        }
+        await this.productsService.deleteProduct({ product_id: productId });
+        await this.pubSubService.product({
+            product,
+            type: ActivityTypeName.DELETE,
+            userId: currentUser.id,
+        });
+        return true;
     }
 
     @ResolveField(() => ProductType, { nullable: true })
@@ -62,6 +81,11 @@ export class ProductsResolver {
         return this.productsService.getProductType({
             product_type_id: product.product_type_id,
         });
+    }
+
+    @ResolveField(() => Boolean, { nullable: false })
+    async is_deletable(@Parent() product: Product): Promise<boolean> {
+        return this.productsService.isDeletable({ product_id: product.id });
     }
 
     @Subscription(() => Product)
