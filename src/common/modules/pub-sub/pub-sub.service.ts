@@ -40,13 +40,13 @@ export class PubSubService {
         });
     }
 
-    async publishOrderProduction({
+    async orderProduction({
         orderProduction,
-        create,
+        type,
         userId,
     }: {
         orderProduction: OrderProduction;
-        create: boolean;
+        type: ActivityTypeName;
         userId: number;
     }) {
         await this.pubSub.publish('order_production', {
@@ -54,7 +54,7 @@ export class PubSubService {
         });
         await this.publishActivity({
             entity_name: ActivityEntityName.ORDER_PRODUCTION,
-            type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type: type,
             entity_id: orderProduction.id,
             userId,
             description: `Producción: ${orderProduction.start_date}`,
@@ -82,13 +82,13 @@ export class PubSubService {
         });
     }
 
-    async publishEmployee({
+    async employee({
         employee,
-        create,
+        type,
         userId,
     }: {
         employee: Employee;
-        create: boolean;
+        type: ActivityTypeName;
         userId: number;
     }) {
         await this.pubSub.publish('employee', {
@@ -96,7 +96,7 @@ export class PubSubService {
         });
         await this.publishActivity({
             entity_name: ActivityEntityName.EMPLOYEE,
-            type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type: type,
             entity_id: employee.id,
             userId,
             description: `Empleado: ${employee.fullname}`,

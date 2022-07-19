@@ -1,12 +1,13 @@
 import {
     Args,
     Mutation,
+    Parent,
     Query,
     ResolveField,
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { OrderProductionsService } from './order-productions.service';
 import {
     OrderProduction,
@@ -14,14 +15,18 @@ import {
     OrderProductionQueryArgs,
     PaginatedOrderProductions,
 } from '../../../common/dto/entities/production/order-production.dto';
-import { Public } from '../../auth/decorators/public.decorator';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 import { OrderProductionEmployee } from '../../../common/dto/entities/production/order-production-employee.dto';
-import { PaginatedOrderSales, User } from '../../../common/dto/entities';
+import {
+    ActivityTypeName,
+    PaginatedOrderSales,
+    User,
+} from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { OrderAdjustment } from '../../../common/dto/entities/production/order-adjustment.dto';
 
 @Resolver(() => OrderProduction)
 @UseGuards(GqlAuthGuard)
@@ -61,12 +66,32 @@ export class OrderProductionsResolver {
         @CurrentUser() currentUser: User,
     ): Promise<OrderProduction> {
         const orderProduction = await this.service.upsertOrderProduction(input);
-        await this.pubSubService.publishOrderProduction({
+        await this.pubSubService.orderProduction({
             orderProduction: orderProduction,
-            create: !input.id,
+            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
         });
         return orderProduction;
+    }
+
+    @Mutation(() => Boolean)
+    async deleteOrderProduction(
+        @Args('OrderProductionId') orderProductionId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<boolean> {
+        const orderProduction = await this.service.getOrderProduction({
+            order_production_id: orderProductionId,
+        });
+        if (!orderProduction) throw new NotFoundException();
+        await this.service.deleteOrderProduction({
+            order_production_id: orderProductionId,
+        });
+        await this.pubSubService.orderProduction({
+            orderProduction,
+            type: ActivityTypeName.DELETE,
+            userId: currentUser.id,
+        });
+        return true;
     }
 
     @ResolveField(() => [OrderProductionProduct])
@@ -85,6 +110,13 @@ export class OrderProductionsResolver {
         return this.service.getOrderProductionEmployees({
             order_production_id: orderProduction.id,
         });
+    }
+
+    @ResolveField(() => Boolean)
+    async is_deletable(
+        @Parent() orderAdjustment: OrderAdjustment,
+    ): Promise<boolean> {
+        return true;
     }
 
     @Subscription(() => OrderProduction)
