@@ -7,9 +7,10 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import {
+    ActivityTypeName,
     Client,
     ClientContact,
     ClientUpsertInput,
@@ -49,12 +50,30 @@ export class ClientsResolver {
         @CurrentUser() currentUser: User,
     ): Promise<Client> {
         const client = await this.service.upsertClient(input);
-        await this.pubSubService.publishClient({
+        await this.pubSubService.client({
             client,
-            create: !input.id,
+            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
         });
         return client;
+    }
+
+    @Mutation(() => Boolean)
+    async deleteClient(
+        @Args('ClientId') clientId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<boolean> {
+        const client = await this.getClient(clientId);
+        if (!client) {
+            throw new NotFoundException();
+        }
+        await this.service.deletesClient({ client_id: clientId });
+        await this.pubSubService.client({
+            client,
+            type: ActivityTypeName.DELETE,
+            userId: currentUser.id,
+        });
+        return true;
     }
 
     @ResolveField(() => [ClientContact])
@@ -62,6 +81,11 @@ export class ClientsResolver {
         return this.service.getClientContacts({
             client_id: client.id,
         });
+    }
+
+    @ResolveField(() => Boolean, { nullable: false })
+    async is_deletable(@Parent() client: Client) {
+        return this.service.isDeletable({ client_id: client.id });
     }
 
     @Subscription(() => Client)

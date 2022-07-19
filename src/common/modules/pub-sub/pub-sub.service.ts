@@ -103,13 +103,13 @@ export class PubSubService {
         });
     }
 
-    async publishClient({
+    async client({
         client,
-        create,
+        type,
         userId,
     }: {
         client: Client;
-        create: boolean;
+        type: ActivityTypeName;
         userId: number;
     }) {
         await this.pubSub.publish('client', {
@@ -117,7 +117,7 @@ export class PubSubService {
         });
         await this.publishActivity({
             entity_name: ActivityEntityName.CLIENT,
-            type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type: type,
             entity_id: client.id,
             userId,
             description: `Cliente: ${client.abbreviation} (${client.name})`,
