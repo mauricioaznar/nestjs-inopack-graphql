@@ -831,6 +831,18 @@ export class OrderSaleService {
             throw new NotFoundException();
         }
 
+        const isDeletable = await this.isDeletable({ order_sale_id });
+
+        if (!isDeletable) {
+            const errors: string[] = [];
+
+            if (orderSale.order_sale_status_id === 2) {
+                errors.push(`sale is already delivered`);
+            }
+
+            throw new BadRequestException(errors);
+        }
+
         const orderSalePayments = await this.getOrderSalePayments({
             order_sale_id,
         });
@@ -870,5 +882,17 @@ export class OrderSaleService {
         });
 
         return true;
+    }
+
+    async isDeletable({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<boolean> {
+        const orderSale = await this.getOrderSale({
+            orderSaleId: order_sale_id,
+        });
+
+        return !!orderSale && orderSale.order_sale_status_id !== 2;
     }
 }

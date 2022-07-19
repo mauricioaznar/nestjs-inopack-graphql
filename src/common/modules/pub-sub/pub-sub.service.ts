@@ -145,13 +145,13 @@ export class PubSubService {
         });
     }
 
-    async publishOrderSale({
+    async orderSale({
         orderSale,
-        create,
+        type,
         userId,
     }: {
         orderSale: OrderSale;
-        create: boolean;
+        type: ActivityTypeName;
         userId: number;
     }) {
         await this.pubSub.publish('order_sale', {
@@ -159,7 +159,7 @@ export class PubSubService {
         });
         await this.publishActivity({
             entity_name: ActivityEntityName.ORDER_SALE,
-            type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type: type,
             entity_id: orderSale.id,
             userId,
             description: `Venta: ${orderSale.order_code}`,

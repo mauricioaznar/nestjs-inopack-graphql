@@ -9,9 +9,10 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { OrderSaleService } from './order-sale.service';
 import {
+    ActivityTypeName,
     Client,
     OrderRequest,
     OrderSale,
@@ -29,7 +30,6 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Resolver(() => OrderSale)
 @UseGuards(GqlAuthGuard)
-// @Role('super')
 @Injectable()
 export class OrderSaleResolver {
     constructor(
@@ -63,12 +63,28 @@ export class OrderSaleResolver {
         @CurrentUser() currentUser: User,
     ): Promise<OrderSale> {
         const orderSale = await this.service.upsertOrderSale(input);
-        await this.pubSubService.publishOrderSale({
+        await this.pubSubService.orderSale({
             orderSale,
-            create: !input.id,
+            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
         });
         return orderSale;
+    }
+
+    @Mutation(() => Boolean)
+    async deleteOrderSale(
+        @Args('OrderSaleId') orderSaleId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<boolean> {
+        const orderSale = await this.getOrderSale(orderSaleId);
+        if (!orderSale) throw new NotFoundException();
+        await this.service.deleteOrderSale({ order_sale_id: orderSale.id });
+        await this.pubSubService.orderSale({
+            orderSale,
+            type: ActivityTypeName.DELETE,
+            userId: currentUser.id,
+        });
+        return true;
     }
 
     @Query(() => Float)
@@ -155,6 +171,11 @@ export class OrderSaleResolver {
         return this.service.getOrderSalePaymentsTotal({
             order_sale_id: orderSale.id,
         });
+    }
+
+    @ResolveField(() => Boolean)
+    async is_deletable(@Parent() orderSale: OrderSale): Promise<boolean> {
+        return this.service.isDeletable({ order_sale_id: orderSale.id });
     }
 
     @Subscription(() => OrderSale)
