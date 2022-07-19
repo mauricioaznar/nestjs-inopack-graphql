@@ -9,9 +9,10 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { OrderRequestsService } from './order-requests.service';
 import {
+    ActivityTypeName,
     GetOrderRequestsArgs,
     OrderRequest,
     OrderRequestInput,
@@ -74,12 +75,34 @@ export class OrderRequestsResolver {
         @CurrentUser() currentUser: User,
     ): Promise<OrderRequest> {
         const orderRequest = await this.service.upsertOrderRequest(input);
-        await this.pubSubService.publishOrderRequest({
+        await this.pubSubService.orderRequest({
             orderRequest,
-            create: !input.id,
+            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
         });
         return orderRequest;
+    }
+
+    @Mutation(() => Boolean)
+    async deleteOrderRequest(
+        @Args('OrderRequestId') orderRequestId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<boolean> {
+        const orderRequest = await this.service.getOrderRequest({
+            orderRequestId: orderRequestId,
+        });
+        if (!orderRequest) {
+            throw new NotFoundException();
+        }
+        await this.service.deleteOrderRequest({
+            order_request_id: orderRequestId,
+        });
+        await this.pubSubService.orderRequest({
+            orderRequest,
+            type: ActivityTypeName.DELETE,
+            userId: currentUser.id,
+        });
+        return true;
     }
 
     @Query(() => Boolean)
@@ -128,6 +151,11 @@ export class OrderRequestsResolver {
         return this.service.getOrderRequestProductsTotal({
             order_request_id: orderRequest.id,
         });
+    }
+
+    @ResolveField(() => Boolean)
+    async is_deletable(@Parent() orderRequest: OrderRequest): Promise<boolean> {
+        return this.service.isDeletable({ order_request_id: orderRequest.id });
     }
 
     @Subscription(() => OrderRequest)

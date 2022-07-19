@@ -124,13 +124,13 @@ export class PubSubService {
         });
     }
 
-    async publishOrderRequest({
+    async orderRequest({
         orderRequest,
-        create,
+        type,
         userId,
     }: {
         orderRequest: OrderRequest;
-        create: boolean;
+        type: ActivityTypeName;
         userId: number;
     }) {
         await this.pubSub.publish('order_request', {
@@ -138,7 +138,7 @@ export class PubSubService {
         });
         await this.publishActivity({
             entity_name: ActivityEntityName.ORDER_REQUEST,
-            type: create ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type: type,
             entity_id: orderRequest.id,
             userId,
             description: `Pedido: ${orderRequest.order_code}`,
