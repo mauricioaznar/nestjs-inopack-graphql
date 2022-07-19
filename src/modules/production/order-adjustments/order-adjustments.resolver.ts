@@ -7,7 +7,7 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { OrderAdjustmentsService } from './order-adjustments.service';
 import {
     OrderAdjustment,
@@ -20,7 +20,7 @@ import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { User } from '../../../common/dto/entities';
+import { ActivityTypeName, User } from '../../../common/dto/entities';
 
 @Resolver(() => OrderAdjustment)
 @UseGuards(GqlAuthGuard)
@@ -62,12 +62,34 @@ export class OrderAdjustmentsResolver {
         @CurrentUser() currentUser: User,
     ): Promise<OrderAdjustment> {
         const orderAdjustment = await this.service.upsertOrderAdjustment(input);
-        await this.pubSubService.publishOrderAdjustment({
+        await this.pubSubService.orderAdjustment({
             orderAdjustment,
-            create: !input.id,
+            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
         });
         return orderAdjustment;
+    }
+
+    @Mutation(() => Boolean)
+    async deleteOrderAdjustment(
+        @Args('OrderAdjustmentId') orderAdjustmentId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<boolean> {
+        const orderAdjustment = await this.service.getOrderAdjustment({
+            order_adjustment_id: orderAdjustmentId,
+        });
+        if (!orderAdjustment) {
+            throw new NotFoundException();
+        }
+        await this.service.deleteOrderAdjustment({
+            order_adjustment_id: orderAdjustment.id,
+        });
+        await this.pubSubService.orderAdjustment({
+            orderAdjustment,
+            type: ActivityTypeName.DELETE,
+            userId: currentUser.id,
+        });
+        return true;
     }
 
     @ResolveField(() => [OrderAdjustmentProduct])
@@ -86,6 +108,13 @@ export class OrderAdjustmentsResolver {
         return this.service.getOrderAdjustmentType({
             order_adjustment_id: orderAdjustment.order_adjustment_type_id,
         });
+    }
+
+    @ResolveField(() => Boolean)
+    async is_deletable(
+        @Parent() orderAdjustment: OrderAdjustment,
+    ): Promise<boolean> {
+        return true;
     }
 
     @Subscription(() => OrderAdjustment)
