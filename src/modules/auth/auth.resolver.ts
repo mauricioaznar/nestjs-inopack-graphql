@@ -35,12 +35,21 @@ export class AuthResolver {
         });
     }
 
+    @Query(() => User, { nullable: true })
+    async getUser(@Args('UserId') userId: number): Promise<User | null> {
+        return this.userService.findUser({
+            user_id: userId,
+        });
+    }
+
     @Query(() => String, { nullable: true })
+    @UseGuards(GqlAuthGuard)
     async getServerVersion() {
         return process.env.npm_package_version;
     }
 
     @Query(() => Boolean)
+    @UseGuards(GqlAuthGuard)
     async isUserOccupied(@Args('email') email: string) {
         const user = await this.userService.findOneByEmail({
             email,
@@ -49,16 +58,19 @@ export class AuthResolver {
     }
 
     @Mutation(() => User)
+    @UseGuards(GqlAuthGuard)
     async createUser(@Args('CreateUserInput') input: CreateUserInput) {
         return this.userService.create(input);
     }
 
     @Mutation(() => User)
+    @UseGuards(GqlAuthGuard)
     async updateUser(@Args('UpdateUserInput') input: UpdateUserInput) {
         return this.userService.update(input);
     }
 
     @Query(() => [User])
+    @UseGuards(GqlAuthGuard)
     async users() {
         return this.userService.findAll();
     }
