@@ -15,6 +15,7 @@ export class UserService {
         return this.prisma.users.findFirst({
             where: {
                 email,
+                active: 1,
             },
         });
     }
@@ -84,19 +85,31 @@ export class UserService {
     async validateUpdateUser(userInput: UpdateUserInput): Promise<void> {
         const errors: string[] = [];
 
-        const foundUser = await this.findUser({ user_id: userInput.id });
-
-        if (foundUser && foundUser.email !== userInput.email) {
-            const foundUserByEmail = await this.findOneByEmail({
+        // is email occupied
+        {
+            const isEmailOccupied = await this.isEmailOccupied({
                 email: userInput.email,
+                user_id: userInput.id,
             });
-            if (!!foundUserByEmail) {
+
+            if (isEmailOccupied) {
                 errors.push(`email is already occupied`);
             }
-
-            if (errors.length > 0) {
-                throw new BadRequestException(errors);
-            }
         }
+
+        if (errors.length > 0) {
+            throw new BadRequestException(errors);
+        }
+    }
+
+    async isEmailOccupied({
+        email,
+        user_id,
+    }: {
+        email: string;
+        user_id: number | null;
+    }): Promise<boolean> {
+        const user = await this.findOneByEmail({ email });
+        return !!user_id && user_id >= 0 && user ? user.id !== user_id : !!user;
     }
 }

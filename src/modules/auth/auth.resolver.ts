@@ -50,11 +50,11 @@ export class AuthResolver {
 
     @Query(() => Boolean)
     @UseGuards(GqlAuthGuard)
-    async isUserOccupied(@Args('email') email: string) {
-        const user = await this.userService.findOneByEmail({
-            email,
-        });
-        return !!user;
+    async isEmailOccupied(
+        @Args('Email') email: string,
+        @Args('UserId', { nullable: true }) userId: number,
+    ): Promise<boolean> {
+        return this.userService.isEmailOccupied({ email, user_id: userId });
     }
 
     @Mutation(() => User)
