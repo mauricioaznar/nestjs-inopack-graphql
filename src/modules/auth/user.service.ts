@@ -7,6 +7,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { Role } from '../../common/dto/entities/auth/role.dto';
+import { vennDiagram } from '../../common/helpers';
 
 @Injectable()
 export class UserService {
@@ -38,7 +39,7 @@ export class UserService {
 
         const saltOrRounds = 10;
         const password = await bcrypt.hash(userInput.password, saltOrRounds);
-        return this.prisma.users.create({
+        const user = await this.prisma.users.create({
             data: {
                 email: userInput.email,
                 first_name: userInput.first_name,
@@ -47,6 +48,17 @@ export class UserService {
                 password,
             },
         });
+
+        for await (const role of userInput.roles) {
+            await this.prisma.user_roles.create({
+                data: {
+                    user_id: user.id,
+                    role_id: role.id,
+                },
+            });
+        }
+
+        return user;
     }
 
     async validateCreateUser(userInput: CreateUserInput): Promise<void> {
@@ -69,7 +81,12 @@ export class UserService {
         const password = userInput.password
             ? await bcrypt.hash(userInput.password, saltOrRounds)
             : undefined;
-        return this.prisma.users.update({
+
+        const previousRoles = await this.getUserRoles({
+            user_id: userInput.id,
+        });
+
+        const user = await this.prisma.users.update({
             data: {
                 email: userInput.email,
                 first_name: userInput.first_name,
@@ -81,6 +98,32 @@ export class UserService {
                 id: userInput.id,
             },
         });
+
+        const { aMinusB: deletedRoles, bMinusA: createdRoles } = vennDiagram({
+            a: previousRoles,
+            b: userInput.roles,
+            indexProperties: ['id'],
+        });
+
+        for await (const role of deletedRoles) {
+            await this.prisma.user_roles.deleteMany({
+                where: {
+                    role_id: role.id,
+                    user_id: userInput.id,
+                },
+            });
+        }
+
+        for await (const role of createdRoles) {
+            await this.prisma.user_roles.create({
+                data: {
+                    user_id: userInput.id,
+                    role_id: role.id,
+                },
+            });
+        }
+
+        return user;
     }
 
     async validateUpdateUser(userInput: UpdateUserInput): Promise<void> {

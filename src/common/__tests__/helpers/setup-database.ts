@@ -1,4 +1,4 @@
-import { adminUser } from '../objects/users';
+import { adminUser } from '../objects/auth/users';
 import { UserService } from '../../../modules/auth/user.service';
 import { setupApp } from './setup-app';
 import {
@@ -15,6 +15,7 @@ import { orderRequestStatuses } from '../objects/sales/order-request-statuses';
 import { orderSaleStatuses } from '../objects/sales/order-sale-statuses';
 import { orderSaleReceiptTypes } from '../objects/sales/order-sale-receipt-types';
 import { orderSaleCollectionStatuses } from '../objects/sales/order-sale-collection-statuses';
+import { roles } from '../objects/auth/roles';
 
 export default async function setupDatabase() {
     const app = await setupApp();
@@ -38,6 +39,7 @@ export default async function setupDatabase() {
     // level 4
     await prismaService.order_requests.deleteMany();
     await prismaService.products.deleteMany();
+    await prismaService.user_roles.deleteMany();
 
     // level 3
     await prismaService.machines.deleteMany();
@@ -60,9 +62,13 @@ export default async function setupDatabase() {
     // level 1
     await prismaService.users.deleteMany();
     await prismaService.branches.deleteMany();
+    await prismaService.roles.deleteMany();
 
     /* CREATION */
     const userService = app.get(UserService);
+    await prismaService.roles.createMany({
+        data: roles,
+    });
     await userService.create({ ...adminUser });
     await prismaService.order_production_type.createMany({
         data: orderProductionTypes,

@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { setupApp } from '../../common/__tests__/helpers/setup-app';
 import request from 'supertest';
-import { adminUser } from '../../common/__tests__/objects/users';
+import { adminUser } from '../../common/__tests__/objects/auth/users';
 
 describe('Users', () => {
     let app: INestApplication;

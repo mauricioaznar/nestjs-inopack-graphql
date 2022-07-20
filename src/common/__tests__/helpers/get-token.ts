@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { adminUser } from '../objects/users';
+import { adminUser } from '../objects/auth/users';
 import { INestApplication } from '@nestjs/common';
 
 export async function getAdminToken(app: INestApplication) {

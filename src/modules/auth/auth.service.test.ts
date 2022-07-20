@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { UserService } from './user.service';
 import { setupApp } from '../../common/__tests__/helpers/setup-app';
 import { AuthService } from './auth.service';
+import { roles } from '../../common/__tests__/objects/auth/roles';
 
 let app: INestApplication;
 let userService: UserService;
@@ -24,6 +25,7 @@ describe('validates user', () => {
             first_name: 'first name 1',
             last_name: 'last name 2',
             password: 'password123',
+            roles: roles,
         });
 
         const userWithRoles = await authService.validateUser({
@@ -53,6 +55,7 @@ describe('logins user', () => {
             first_name: 'first name 1',
             last_name: 'last name 2',
             password: 'password123',
+            roles: roles,
         });
 
         const { accessToken } = await authService.login({

@@ -1,5 +1,6 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { IsString } from 'class-validator';
+import { Role, RoleInput } from './role.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -29,6 +30,9 @@ export class LoginInput {
 export class CreateUserInput extends UserBase {
     @Field()
     password: string;
+
+    @Field(() => [RoleInput])
+    roles: RoleInput[];
 }
 
 @InputType('UpdateUserInput')
@@ -38,6 +42,9 @@ export class UpdateUserInput extends UserBase {
 
     @Field(() => String, { nullable: true })
     password?: string | null;
+
+    @Field(() => [RoleInput])
+    roles: RoleInput[];
 }
 
 @ObjectType('User')
