@@ -8,6 +8,7 @@ import {
     OrderRequest,
     OrderSale,
     Product,
+    User,
 } from '../../dto/entities';
 import { OrderProduction } from '../../dto/entities/production/order-production.dto';
 import { OrderAdjustment } from '../../dto/entities/production/order-adjustment.dto';
@@ -124,6 +125,27 @@ export class PubSubService {
         });
     }
 
+    async user({
+        user,
+        type,
+        userId,
+    }: {
+        user: User;
+        type: ActivityTypeName;
+        userId: number;
+    }) {
+        await this.pubSub.publish('user', {
+            user: user,
+        });
+        await this.publishActivity({
+            entity_name: ActivityEntityName.USER,
+            type: type,
+            entity_id: user.id,
+            userId,
+            description: `Usuario: ${user.fullname} (${user.email})`,
+        });
+    }
+
     async orderRequest({
         orderRequest,
         type,
@@ -224,5 +246,9 @@ export class PubSubService {
 
     async listenForOrderSale() {
         return this.pubSub.asyncIterator('order_sale');
+    }
+
+    async listenForUser() {
+        return this.pubSub.asyncIterator('user');
     }
 }

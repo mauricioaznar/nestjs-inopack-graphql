@@ -5,10 +5,12 @@ import {
     Query,
     ResolveField,
     Resolver,
+    Subscription,
 } from '@nestjs/graphql';
 import { AuthService } from './auth.service';
 import {
     AccessToken,
+    ActivityTypeName,
     CreateUserInput,
     LoginInput,
     UpdateUserInput,
@@ -20,6 +22,7 @@ import { UserService } from './user.service';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { Public } from './decorators/public.decorator';
 import { Role } from '../../common/dto/entities/auth/role.dto';
+import { PubSubService } from '../../common/modules/pub-sub/pub-sub.service';
 
 @Resolver(() => User)
 @Injectable()
@@ -27,6 +30,7 @@ export class AuthResolver {
     constructor(
         private authService: AuthService,
         private userService: UserService,
+        private pubSubService: PubSubService,
     ) {}
 
     @Mutation(() => AccessToken)
@@ -67,14 +71,36 @@ export class AuthResolver {
 
     @Mutation(() => User)
     @UseGuards(GqlAuthGuard)
-    async createUser(@Args('CreateUserInput') input: CreateUserInput) {
-        return this.userService.create(input);
+    async createUser(
+        @Args('CreateUserInput') input: CreateUserInput,
+        @CurrentUser() currentUser: User,
+    ) {
+        const user = await this.userService.create(input);
+
+        await this.pubSubService.user({
+            user,
+            userId: currentUser.id,
+            type: ActivityTypeName.CREATE,
+        });
+
+        return user;
     }
 
     @Mutation(() => User)
     @UseGuards(GqlAuthGuard)
-    async updateUser(@Args('UpdateUserInput') input: UpdateUserInput) {
-        return this.userService.update(input);
+    async updateUser(
+        @Args('UpdateUserInput') input: UpdateUserInput,
+        @CurrentUser() currentUser: User,
+    ) {
+        const user = await this.userService.update(input);
+
+        await this.pubSubService.user({
+            user,
+            userId: currentUser.id,
+            type: ActivityTypeName.CREATE,
+        });
+
+        return user;
     }
 
     @Query(() => [User])
@@ -87,5 +113,11 @@ export class AuthResolver {
     @UseGuards(GqlAuthGuard)
     async roles(@Parent() user: User): Promise<Role[]> {
         return this.userService.getUserRoles({ user_id: user.id });
+    }
+
+    @Subscription(() => User)
+    @UseGuards(GqlAuthGuard)
+    async user() {
+        return this.pubSubService.listenForUser();
     }
 }
