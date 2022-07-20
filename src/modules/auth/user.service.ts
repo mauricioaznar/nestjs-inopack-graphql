@@ -120,6 +120,7 @@ export class UserService {
                 user_roles: {
                     some: {
                         user_id: user_id,
+                        active: 1,
                     },
                 },
             },
