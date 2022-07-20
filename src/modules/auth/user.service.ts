@@ -6,6 +6,7 @@ import {
 } from '../../common/dto/entities';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
+import { Role } from '../../common/dto/entities/auth/role.dto';
 
 @Injectable()
 export class UserService {
@@ -111,5 +112,17 @@ export class UserService {
     }): Promise<boolean> {
         const user = await this.findOneByEmail({ email });
         return !!user_id && user_id >= 0 && user ? user.id !== user_id : !!user;
+    }
+
+    async getUserRoles({ user_id }: { user_id: number }): Promise<Role[]> {
+        return this.prisma.roles.findMany({
+            where: {
+                user_roles: {
+                    some: {
+                        user_id: user_id,
+                    },
+                },
+            },
+        });
     }
 }

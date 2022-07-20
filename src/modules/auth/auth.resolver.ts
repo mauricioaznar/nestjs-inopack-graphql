@@ -1,4 +1,11 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+    Args,
+    Mutation,
+    Parent,
+    Query,
+    ResolveField,
+    Resolver,
+} from '@nestjs/graphql';
 import { AuthService } from './auth.service';
 import {
     AccessToken,
@@ -12,6 +19,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { UserService } from './user.service';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { Public } from './decorators/public.decorator';
+import { Role } from '../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => User)
 @Injectable()
@@ -73,5 +81,11 @@ export class AuthResolver {
     @UseGuards(GqlAuthGuard)
     async users() {
         return this.userService.findAll();
+    }
+
+    @ResolveField(() => [Role])
+    @UseGuards(GqlAuthGuard)
+    async roles(@Parent() user: User): Promise<Role[]> {
+        return this.userService.getUserRoles({ user_id: user.id });
     }
 }
