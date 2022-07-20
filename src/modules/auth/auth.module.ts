@@ -9,6 +9,8 @@ import { AuthResolver } from './auth.resolver';
 import { FilesModule } from '../files/files.module';
 import { AuthController } from './auth.controller';
 import { UserService } from './user.service';
+import { RoleResolver } from './role.resolver';
+import { RoleService } from './role.service';
 
 @Module({
     imports: [
@@ -26,6 +28,8 @@ import { UserService } from './user.service';
         LocalStrategy,
         JwtStrategy,
         AuthResolver,
+        RoleResolver,
+        RoleService,
     ],
     exports: [AuthService],
 })
