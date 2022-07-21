@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/role.decorator';
-import { RoleTypes } from '../../../common/dto/entities/auth/role.dto';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { UserWithRoles } from '../../../common/dto/entities';
 
@@ -10,7 +10,7 @@ export class GqlRolesGuard implements CanActivate {
     constructor(private reflector: Reflector) {}
 
     canActivate(ctx: ExecutionContext): boolean {
-        const requiredRoles = this.reflector.getAllAndOverride<RoleTypes[]>(
+        const requiredRoles = this.reflector.getAllAndOverride<RoleId[]>(
             ROLES_KEY,
             [ctx.getHandler(), ctx.getClass()],
         );
@@ -24,23 +24,23 @@ export class GqlRolesGuard implements CanActivate {
         const userRoleIds = user.user_roles.map((userRole) => userRole.role_id);
         return requiredRoles.some((role) => {
             switch (role) {
-                case 'super':
+                case 1: // super
                     return userRoleIds.includes(1);
-                case 'admin':
+                case 2: // admin
                     return userRoleIds.includes(1) || userRoleIds.includes(2);
-                case 'guest':
+                case 3: // guest
                     return (
                         userRoleIds.includes(3) ||
                         userRoleIds.includes(1) ||
                         userRoleIds.includes(2)
                     );
-                case 'production':
+                case 4: // production
                     return (
                         userRoleIds.includes(4) ||
                         userRoleIds.includes(1) ||
                         userRoleIds.includes(2)
                     );
-                case 'sales':
+                case 5: // sales
                     return (
                         userRoleIds.includes(5) ||
                         userRoleIds.includes(1) ||
