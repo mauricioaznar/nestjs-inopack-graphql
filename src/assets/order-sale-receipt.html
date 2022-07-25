@@ -1,269 +1,270 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-  <title><%= title %></title>
-  <style>
+    <title><%= title %></title>
+    <style>
 
-      article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
-          display: block;
-      }
+        article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
+            display: block;
+        }
 
-      html {
-          font-size: 10px;
-      }
+        html {
+            font-size: 16px;
+        }
 
-      body {
-          font-size: 10px;
-          line-height: 1;
-          margin: 2px auto;
-          padding: 0 10px;
-      }
+        body {
+            line-height: 1;
+            margin: 2px auto;
+            padding: 0 10px;
+        }
 
-      ol, ul {
-          list-style: none;
-      }
+        ol, ul {
+            list-style: none;
+        }
 
-      table {
-          border-collapse: collapse;
-          border-spacing: 0;
-      }
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
 
-      h1, h2, h3, h4, h5, h6 {
-          font-family: 'Open Sans', sans-serif;
-      }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Open Sans', sans-serif;
+        }
 
-      strong {
-          font-weight: 700;
-      }
+        strong {
+            font-weight: 700;
+        }
 
-      .sub_container:nth-child(1) {
-          margin-bottom: 10px;
-      }
+        .sub_container {
+            height: 14cm;
+        }
 
-
-      .company_name {
-          text-align: center;
-      }
-
-      .highlight_number {
-          font-size: 1.5em;
-          font-weight: bold;
-      }
-
-      .text-right {
-          text-align: right;
-      }
+        .sub_container:nth-child(1) {
+            margin-bottom: 10px;
+        }
 
 
-      .second_row {
-          -webkit-box-pack: justify;
-          display: -webkit-box;
-          margin-bottom: 10px;
-      }
+        .company_name {
+            text-align: center;
+        }
 
-      .items > p {
-          font-weight: 700;
-          text-align: right;
-          margin-bottom: 1%;
-          font-size: 65%;
-      }
+        .highlight_number {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
 
-      .items > table {
-          box-sizing: border-box;
-          width: 100%;
-          font-size: 85%;
-          border: solid black 1px;
-      }
+        .text-right {
+            text-align: right;
+        }
 
-      .items > table th:first-child {
-          text-align: left;
-          width: 50px;
-      }
 
-      .items > table th {
-          font-weight: 400;
-          padding: 1px 4px;
-      }
+        .second_row {
+            -webkit-box-pack: justify;
+            display: -webkit-box;
+            margin-bottom: 10px;
+        }
 
-      .items > table td {
-          padding: 1px 4px;
-      }
+        .items > p {
+            font-weight: 700;
+            text-align: right;
+            margin-bottom: 1%;
+            font-size: 65%;
+        }
 
-      .items > table th:nth-child(1) {
-          width: 10%;
-      }
+        .items > table {
+            box-sizing: border-box;
+            width: 100%;
+            font-size: 85%;
+            border: solid black 1px;
+        }
 
-      .items > table th:nth-child(2) {
-          width: 20%;
-      }
+        .items > table th:first-child {
+            text-align: left;
+            width: 50px;
+        }
 
-      .items > table th:nth-child(3) {
-          width: 39%;
-      }
+        .items > table th {
+            font-weight: 400;
+            padding: 1px 4px;
+        }
 
-      .items > table th:nth-child(4) {
-          width: 8%;
-      }
+        .items > table td {
+            padding: 1px 4px;
+        }
 
-      .items > table th:nth-child(5) {
-          width: 9%;
-      }
+        .items > table th:nth-child(1) {
+            width: 10%;
+        }
 
-      .items > table th:nth-child(6) {
-          width: 14%;
-      }
+        .items > table th:nth-child(2) {
+            width: 20%;
+        }
 
-      .items > table tr td:not(:first-child) {
-          text-align: right;
-          padding-right: 1%
-      }
+        .items > table th:nth-child(3) {
+            width: 39%;
+        }
 
-      .items table td {
-          border-right: solid grey 1px;
-      }
+        .items > table th:nth-child(4) {
+            width: 8%;
+        }
 
-      .items table tr td {
-          padding-top: 3px;
-          padding-bottom: 3px;
-          height: 10px;
-      }
+        .items > table th:nth-child(5) {
+            width: 9%;
+        }
 
-      .items table tr:nth-child(1) {
-          border: solid grey 1px;
-      }
+        .items > table th:nth-child(6) {
+            width: 14%;
+        }
 
-      .items td.text-center, .items th.text-center {
-          text-align: center;
-      }
+        .items > table tr td:not(:first-child) {
+            text-align: right;
+            padding-right: 1%
+        }
 
-      .items table tr th {
-          border-right: solid grey 1px;
-          padding: 3px;
-      }
+        .items table td {
+            border-right: solid grey 1px;
+        }
 
-      .items table tr:nth-child(2) > td {
-          padding-top: 8px;
-      }
+        .items table tr td {
+            padding-top: 3px;
+            padding-bottom: 3px;
+            height: 10px;
+        }
 
-      .fourth-row {
-          height: 70px;
-      }
+        .items table tr:nth-child(1) {
+            border: solid grey 1px;
+        }
 
-      .summary {
-          width: 100%;
-          margin-top: 15px;
-          -webkit-box-pack: justify;
-          display: -webkit-box;
-      }
+        .items td.text-center, .items th.text-center {
+            text-align: center;
+        }
 
-      .summary .observations {
-          border: 1px solid grey;
-          width: 320px;
-          height: 40px;
-          text-align: left;
-          vertical-align: top;
-      }
+        .items table tr th {
+            border-right: solid grey 1px;
+            padding: 3px;
+        }
 
-      .summary .observations span {
-          font-size: .70em;
-      }
+        .items table tr:nth-child(2) > td {
+            padding-top: 8px;
+        }
 
-      .quantity .item {
-          -webkit-box-pack: justify;
-          display: -webkit-box;
-      }
+        .fourth-row {
+            height: 70px;
+        }
 
-      .quantity .item .title {
-          margin-right: 10px;
-      }
+        .summary {
+            width: 100%;
+            margin-top: 15px;
+            -webkit-box-pack: justify;
+            display: -webkit-box;
+        }
 
-      .footer {
-          margin: auto;
-          -webkit-box-pack: justify;
-          display: -webkit-box;
-          margin-top: 30px;
-      }
+        .summary .observations {
+            border: 1px solid grey;
+            width: 320px;
+            height: 40px;
+            text-align: left;
+            vertical-align: top;
+        }
 
-      .footer .signature_box {
-          width: 150px;
-          height: 40px;
-          border-top: 1px solid grey;
-          text-align: center;
-      }
+        .summary .observations span {
+            font-size: .70em;
+        }
 
-  </style>
+        .quantity .item {
+            -webkit-box-pack: justify;
+            display: -webkit-box;
+        }
+
+        .quantity .item .title {
+            margin-right: 10px;
+        }
+
+        .footer {
+            margin: auto;
+            -webkit-box-pack: justify;
+            display: -webkit-box;
+            margin-top: 30px;
+        }
+
+        .footer .signature_box {
+            width: 150px;
+            height: 40px;
+            border-top: 1px solid grey;
+            text-align: center;
+        }
+
+    </style>
 </head>
 <body>
-
-<section slot="pdf-content">
+<section slot='pdf-content'>
     <% for(var j=0; j < 2; j++) { %>
-      <div class="sub_container">
-        <div class="first_row">
-          <div class="company_name">
-            <h1>Inopack</h1>
-          </div>
-        </div>
-        <div class="second_row">
-          <div class="client_information">
-            <p>
-              Nombre: <%= clientName %> <br>
-            </p>
-          </div>
-          <div class="receipt_information">
-            <p>
-              Remision #<%= orderCode %>
-              <span class="highlight_number"><%= receiptType %></span>
-              <br>Fecha de emision: <%= dateEmitted %><br>
-            </p>
-          </div>
-        </div>
-        <div class="items">
-          <table>
-            <tr>
-              <th class="text-center">Kilos</th>
-              <th class="text-center">Codigo</th>
-              <th class="text-center">Descripcion</th>
-              <th class="text-center">Precio</th>
-              <th class="text-center">Bultos</th>
-              <th class="text-center">Costo total</th>
-            </tr>
-            <% for(var i=0; i < orderSaleProducts.length; i++) { %>
-              <tr>
-                <td class="text-right"><%= orderSaleProducts[i].kilos %></td>
-                <td><%= orderSaleProducts[i].products.code %></td>
-                <td><%= orderSaleProducts[i].products.description %></td>
-                <td><%= orderSaleProducts[i].kilo_price %></td>
-                <td><%= orderSaleProducts[i].groups %></td>
-                <td><%= orderSaleProducts[i].total %></td>
-              </tr>
-            <% } %>
-          </table>
-        </div>
-        <div class="fourth-row">
-          <div class="summary">
-            <div class="observations">
-              <span>Observaciones</span>
+    <div class='sub_container'>
+        <div class='first_row'>
+            <div class='company_name'>
+                <h1>Inopack</h1>
             </div>
-            <div class="quantity">
-              <div class="item">
-                <div class="title">
-                  TOTAL
-                </div>
-                <div>
-                  <%= total %>
-                </div>
-              </div>
+        </div>
+        <div class='second_row'>
+            <div class='client_information'>
+                <p>
+                    Nombre: <%= clientName %> <br>
+                </p>
             </div>
-          </div>
+            <div class='receipt_information'>
+                <p>
+                    Remision #<%= orderCode %>
+                    <span class='highlight_number'><%= receiptType %></span>
+                    <br>Fecha de emision: <%= dateEmitted %><br>
+                </p>
+            </div>
         </div>
-        <div class="footer">
-          <div class="signature_box first">Firma del cliente</div>
-          <div class="signature_box second">Autorizado por</div>
-          <div class="signature_box third">Firma del almacenista</div>
+        <div class='items'>
+            <table>
+                <tr>
+                    <th class='text-center'>Kilos</th>
+                    <th class='text-center'>Codigo</th>
+                    <th class='text-center'>Descripcion</th>
+                    <th class='text-center'>Precio</th>
+                    <th class='text-center'>Bultos</th>
+                    <th class='text-center'>Costo total</th>
+                </tr>
+                <% for(var i=0; i < orderSaleProducts.length; i++) { %>
+                <tr>
+                    <td class='text-right'><%= orderSaleProducts[i].kilos %></td>
+                    <td><%= orderSaleProducts[i].products.code %></td>
+                    <td><%= orderSaleProducts[i].products.description %></td>
+                    <td><%= orderSaleProducts[i].kilo_price %></td>
+                    <td><%= orderSaleProducts[i].groups %></td>
+                    <td><%= orderSaleProducts[i].total %></td>
+                </tr>
+                <% } %>
+            </table>
         </div>
-      </div>
+        <div class='fourth-row'>
+            <div class='summary'>
+                <div class='observations'>
+                    <span>Observaciones</span>
+                </div>
+                <div class='quantity'>
+                    <div class='item'>
+                        <div class='title'>
+                            TOTAL
+                        </div>
+                        <div>
+                            <%= total %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class='footer'>
+            <div class='signature_box first'>Firma del cliente</div>
+            <div class='signature_box second'>Autorizado por</div>
+            <div class='signature_box third'>Firma del almacenista</div>
+        </div>
+    </div>
     <% } %>
 </section>
-
-
 </body>
+</html>
