@@ -111,7 +111,10 @@ export class FilesController {
 
         const createPDF = (html) =>
             new Promise((resolve, reject) => {
-                pdf.create(html, {}).toBuffer((err, buffer) => {
+                pdf.create(html, {
+                    format: 'A4',
+                    orientation: 'portrait',
+                }).toBuffer((err, buffer) => {
                     if (err !== null) {
                         reject(err);
                     } else {
