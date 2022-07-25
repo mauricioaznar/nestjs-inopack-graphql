@@ -111,10 +111,7 @@ export class FilesController {
 
         const createPDF = (html) =>
             new Promise((resolve, reject) => {
-                pdf.create(html, {
-                    height: '297mm',
-                    width: '210mm',
-                }).toBuffer((err, buffer) => {
+                pdf.create(html, {}).toBuffer((err, buffer) => {
                     if (err !== null) {
                         reject(err);
                     } else {
