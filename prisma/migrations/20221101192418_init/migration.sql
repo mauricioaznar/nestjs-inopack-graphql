@@ -183,7 +183,7 @@ CREATE TABLE `order_adjustment_type` (
 CREATE TABLE `order_adjustments` (
     `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `active` INTEGER NOT NULL DEFAULT 1,
-    `date` DATE NOT NULL,
+    `date` DATETIME(0) NOT NULL,
     `created_at` DATETIME(0) NULL,
     `updated_at` DATETIME(0) NULL,
     `order_adjustment_type_id` INTEGER UNSIGNED NULL,
@@ -387,7 +387,7 @@ CREATE TABLE `order_sales` (
     `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `order_code` INTEGER NOT NULL,
     `active` INTEGER NOT NULL DEFAULT 1,
-    `date` DATE NOT NULL,
+    `date` DATETIME(0) NOT NULL,
     `created_at` DATETIME(0) NULL,
     `updated_at` DATETIME(0) NULL,
     `client_contact_id` INTEGER UNSIGNED NULL,

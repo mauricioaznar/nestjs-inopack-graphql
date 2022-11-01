@@ -192,7 +192,7 @@ model order_adjustment_type {
 model order_adjustments {
   id                        Int                         @id @default(autoincrement()) @db.UnsignedInt
   active                    Int                         @default(1)
-  date                      DateTime                    @db.Date
+  date                      DateTime                    @db.DateTime(0)
   created_at                DateTime?                   @db.DateTime(0)
   updated_at                DateTime?                   @db.DateTime(0)
   order_adjustment_type_id  Int?                        @db.UnsignedInt
@@ -396,7 +396,7 @@ model order_sales {
   id                              Int                             @id @default(autoincrement()) @db.UnsignedInt
   order_code                      Int
   active                          Int                             @default(1)
-  date                            DateTime                        @db.Date
+  date                            DateTime                        @db.DateTime(0)
   created_at                      DateTime?                       @db.DateTime(0)
   updated_at                      DateTime?                       @db.DateTime(0)
   client_contact_id               Int?                            @db.UnsignedInt
