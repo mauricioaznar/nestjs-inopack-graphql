@@ -35,6 +35,7 @@ export async function createOrderRequestWithOneProduct({
             order_request_status_id: orderRequestStatus2.id,
             order_code: orderRequestCode,
             client_id: client.id,
+            notes: '',
             date: getUtcDate({ year: 2022, month: 1, day: 1 }),
             order_request_products: [orderRequestProduct],
             estimated_delivery_date: getUtcDate({
@@ -89,6 +90,7 @@ export async function createOrderRequestWithTwoProducts({
             order_request_status_id: orderRequestStatusId,
             order_code: orderRequestCode,
             client_id: client.id,
+            notes: '',
             date: getUtcDate({ year: 2022, month: 1, day: 1 }),
             order_request_products: [
                 orderRequestProduct1,

@@ -72,6 +72,7 @@ describe('upsert', () => {
             order_request_status_id: orderRequestStatus1.id,
             order_code: orderRequestCode,
             client_id: client.id,
+            notes: '',
             date: getUtcDate({ year: 2022, month: 1, day: 1 }),
             order_request_products: [
                 {
@@ -129,6 +130,7 @@ describe('upsert', () => {
             order_request_status_id: orderRequestStatus1.id,
             order_code: orderRequestCode,
             client_id: client.id,
+            notes: '',
             date: getUtcDate({ year: 2022, month: 1, day: 1 }),
             order_request_products: [
                 {
@@ -160,6 +162,7 @@ describe('upsert', () => {
                 order_request_status_id: orderRequestStatus2.id,
                 order_code: orderRequestCode,
                 client_id: client.id,
+                notes: '',
                 date: getUtcDate({ year: 2022, month: 2, day: 1 }),
                 order_request_products: [
                     {
@@ -222,6 +225,7 @@ describe('upsert', () => {
             order_request_status_id: orderRequestStatus1.id,
             order_code: orderRequestCode,
             client_id: client.id,
+            notes: '',
             date: getUtcDate({ year: 2022, month: 1, day: 1 }),
             order_request_products: [
                 {
@@ -246,6 +250,7 @@ describe('upsert', () => {
                 order_request_status_id: orderRequestStatus2.id,
                 order_code: orderRequestCode,
                 client_id: client.id,
+                notes: '',
                 date: getUtcDate({ year: 2022, month: 2, day: 1 }),
                 order_request_products: [
                     {
@@ -312,6 +317,7 @@ describe('upsert', () => {
             order_request_status_id: orderRequestStatus1.id,
             order_code: currentRequestOrderCode,
             client_id: client.id,
+            notes: '',
             date: getUtcDate({ year: 2022, month: 1, day: 1 }),
             order_request_products: [
                 {
@@ -338,6 +344,7 @@ describe('upsert', () => {
                 order_request_status_id: orderRequestStatus2.id,
                 order_code: 900000,
                 client_id: client.id,
+                notes: '',
                 date: getUtcDate({ year: 2022, month: 2, day: 1 }),
                 order_request_products: [
                     {
@@ -371,6 +378,7 @@ describe('upsert', () => {
                 order_code: currentRequestOrderCode,
                 client_id: client.id,
                 date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                notes: '',
                 order_request_products: [
                     {
                         product_id: product.id,
@@ -411,6 +419,7 @@ describe('upsert', () => {
                 order_request_status_id: orderRequestStatus1.id,
                 order_code: currentRequestOrderCode,
                 client_id: client.id,
+                notes: '',
                 date: getUtcDate({ year: 2022, month: 1, day: 1 }),
                 order_request_products: [],
                 estimated_delivery_date: getUtcDate({
@@ -442,6 +451,7 @@ describe('upsert', () => {
                 order_request_status_id: orderRequestStatus1.id,
                 order_code: currentRequestOrderCode,
                 client_id: client.id,
+                notes: '',
                 date: getUtcDate({ year: 2022, month: 1, day: 1 }),
                 order_request_products: [
                     {
@@ -483,6 +493,7 @@ describe('upsert', () => {
                 order_request_status_id: orderRequestStatus1.id,
                 order_code: currentRequestOrderCode,
                 client_id: client.id,
+                notes: '',
                 date: getUtcDate({ year: 2022, month: 1, day: 1 }),
                 order_request_products: [
                     {

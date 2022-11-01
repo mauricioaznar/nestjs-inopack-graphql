@@ -76,6 +76,7 @@ describe('upsert', () => {
             order_request_status_id: orderRequestStatus2.id,
             estimated_delivery_date: getUtcDate(),
             date: getUtcDate(),
+            notes: '',
             order_request_products: [
                 {
                     group_weight: product.current_group_weight,
@@ -286,6 +287,7 @@ describe('upsert', () => {
         const orderRequest = await orderRequestsService.upsertOrderRequest({
             order_code: currentRequestOrderCode,
             order_request_status_id: orderRequestStatus2.id,
+            notes: '',
             estimated_delivery_date: getUtcDate({
                 year: 2022,
                 day: 1,

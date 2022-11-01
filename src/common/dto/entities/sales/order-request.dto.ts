@@ -17,6 +17,9 @@ export class OrderRequestBase {
     @Field(() => Int, { nullable: true })
     client_id?: number | null;
 
+    @Field(() => String, { nullable: false })
+    notes: string;
+
     @Field(() => Int, { nullable: true })
     order_request_status_id?: number | null;
 }

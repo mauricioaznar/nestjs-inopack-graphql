@@ -225,6 +225,7 @@ export class OrderRequestsService {
 
         const orderRequest = await this.prisma.order_requests.upsert({
             create: {
+                notes: input.notes,
                 date: input.date,
                 order_code: input.order_code,
                 estimated_delivery_date: input.estimated_delivery_date,
@@ -233,6 +234,7 @@ export class OrderRequestsService {
                 priority: 0,
             },
             update: {
+                notes: input.notes,
                 date: input.date,
                 order_code: input.order_code,
                 estimated_delivery_date: input.estimated_delivery_date,
