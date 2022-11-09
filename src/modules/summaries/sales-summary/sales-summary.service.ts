@@ -2,7 +2,10 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { ProductionSummaryArgs } from '../../../common/dto/entities/summaries/production-summary.dto';
-import { getRangesFromYearMonth } from '../../../common/helpers';
+import {
+    getDatesInjections,
+    getRangesFromYearMonth,
+} from '../../../common/helpers';
 import dayjs from 'dayjs';
 import {
     SalesSummary,
@@ -32,7 +35,7 @@ export class SalesSummaryService {
         const formattedEndDate = dayjs(endDate).utc().format('YYYY-MM-DD');
 
         const { groupByDateGroup, orderByDateGroup, selectDateGroup } =
-            await SalesSummaryService.getDatesInjections({
+            getDatesInjections({
                 year,
                 month,
             });
@@ -136,33 +139,5 @@ export class SalesSummaryService {
         return {
             sales: production,
         };
-    }
-
-    private static async getDatesInjections({
-        year,
-        month,
-    }: Pick<ProductionSummaryArgs, 'year' | 'month'>): Promise<{
-        groupByDateGroup: string;
-        orderByDateGroup: string;
-        selectDateGroup: string;
-    }> {
-        if (year && month !== undefined && month !== null) {
-            return {
-                selectDateGroup:
-                    'day(ctc.start_date) day, month(ctc.start_date) month, year(ctc.start_date) year',
-                groupByDateGroup:
-                    'day(ctc.start_date), month(ctc.start_date), year(ctc.start_date)',
-                orderByDateGroup:
-                    'year(ctc.start_date) desc, month(ctc.start_date) desc, day(ctc.start_date) desc',
-            };
-        } else {
-            return {
-                selectDateGroup:
-                    'month(ctc.start_date) month, year(ctc.start_date) year',
-                groupByDateGroup: 'month(ctc.start_date), year(ctc.start_date)',
-                orderByDateGroup:
-                    'year(ctc.start_date) desc, month(ctc.start_date) desc',
-            };
-        }
     }
 }
