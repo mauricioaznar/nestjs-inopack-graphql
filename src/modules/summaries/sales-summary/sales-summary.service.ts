@@ -1,7 +1,6 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { ProductionSummaryArgs } from '../../../common/dto/entities/summaries/production-summary.dto';
 import {
     getDatesInjections,
     getRangesFromYearMonth,
