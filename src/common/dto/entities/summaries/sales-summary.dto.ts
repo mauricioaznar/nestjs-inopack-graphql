@@ -15,8 +15,8 @@ export class SalesSummaryArgs {
     @Field(() => Int, { nullable: true })
     month?: number | null;
 
-    @Field(() => SalesSummaryEntitiesGroup, { nullable: false })
-    entity_group: SalesSummaryEntitiesGroup;
+    @Field(() => [SalesSummaryEntitiesGroup], { nullable: false })
+    entity_groups: SalesSummaryEntitiesGroup[];
 }
 
 export enum SalesSummaryEntitiesGroup {

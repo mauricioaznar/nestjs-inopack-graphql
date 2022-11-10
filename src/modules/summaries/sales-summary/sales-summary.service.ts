@@ -21,7 +21,7 @@ export class SalesSummaryService {
     async getSalesSummary({
         year,
         month,
-        entity_group,
+        entity_groups,
     }: SalesSummaryArgs): Promise<SalesSummary> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: year,
@@ -41,31 +41,39 @@ export class SalesSummaryService {
 
         let groupByEntityGroup = '';
         let selectEntityGroup = '';
-        switch (entity_group) {
-            case 'client':
-                selectEntityGroup = 'client_id, client_name';
-                groupByEntityGroup = 'client_id, client_name';
-                break;
-            case 'receipt':
-                selectEntityGroup = 'receipt_type_id, receipt_type_name';
-                groupByEntityGroup = 'receipt_type_id, receipt_type_name';
-                break;
-            case 'productType':
-                selectEntityGroup = 'product_type_id, product_type_name';
-                groupByEntityGroup = 'product_type_id, product_type_name';
-                break;
-            case 'productTypeCategory':
-                selectEntityGroup =
-                    'product_type_category_id, product_type_category_name';
-                groupByEntityGroup =
-                    'product_type_category_id, product_type_category_name';
-                break;
-            case 'product':
-                selectEntityGroup = 'product_id, product_name';
-                groupByEntityGroup = 'product_id, product_name';
-                break;
-            default:
-                break;
+        for (let i = 0; i < entity_groups.length; i++) {
+            const entity_group = entity_groups[i];
+            switch (entity_group) {
+                case 'client':
+                    selectEntityGroup += 'client_id, client_name';
+                    groupByEntityGroup += 'client_id, client_name';
+                    break;
+                case 'receipt':
+                    selectEntityGroup += 'receipt_type_id, receipt_type_name';
+                    groupByEntityGroup += 'receipt_type_id, receipt_type_name';
+                    break;
+                case 'productType':
+                    selectEntityGroup += 'product_type_id, product_type_name';
+                    groupByEntityGroup += 'product_type_id, product_type_name';
+                    break;
+                case 'productTypeCategory':
+                    selectEntityGroup +=
+                        'product_type_category_id, product_type_category_name';
+                    groupByEntityGroup +=
+                        'product_type_category_id, product_type_category_name';
+                    break;
+                case 'product':
+                    selectEntityGroup += 'product_id, product_name';
+                    groupByEntityGroup += 'product_id, product_name';
+                    break;
+                default:
+                    break;
+            }
+
+            if (i + 1 !== entity_groups.length) {
+                selectEntityGroup += ', ';
+                groupByEntityGroup += ', ';
+            }
         }
 
         const production = await this.prisma.$queryRawUnsafe<
