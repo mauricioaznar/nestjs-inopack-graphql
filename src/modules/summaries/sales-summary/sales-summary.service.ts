@@ -70,28 +70,25 @@ export class SalesSummaryService {
                     break;
             }
 
-            if (i + 1 !== entity_groups.length) {
+            if (i !== entity_groups.length) {
                 selectEntityGroup += ', ';
                 groupByEntityGroup += ', ';
             }
         }
 
-        const production = await this.prisma.$queryRawUnsafe<
-            SalesSummary['sales']
-        >(`
+        const sales = await this.prisma.$queryRawUnsafe<SalesSummary['sales']>(`
             select sum(ctc.kilos_sold)                  as               kilos_sold,
                    sum(ctc.total) / sum(ctc.kilos_sold) as               kilo_price,
                    (sum(ctc.total) + sum(ctc.tax)) / sum(ctc.kilos_sold) kilo_price_with_tax,
                    sum(ctc.total)                       as               total,
                    sum(ctc.tax)                         as               tax,
                    sum(ctc.total_with_tax)              as               total_with_tax,
-                   ${selectEntityGroup},
+                   ${selectEntityGroup}
                    ${selectDateGroup}
             from (
-                     select date (date_add(order_sales.date, interval -WEEKDAY(order_sales.date) - 1
-                         day)) first_day_of_the_week,
-                 date(date_add(date_add(order_sales.date, interval -WEEKDAY(order_sales.date) - 1 day),
-                               interval 6 day)) last_day_of_the_week,
+             select 
+                 date (date_add(order_sales.date, interval -WEEKDAY(order_sales.date) - 1 day)) first_day_of_the_week,
+                 date(date_add(date_add(order_sales.date, interval -WEEKDAY(order_sales.date) - 1 day), interval 6 day)) last_day_of_the_week,
                  order_sales.date start_date,
                  products.id product_id,
                  products.description product_name,
@@ -139,12 +136,12 @@ export class SalesSummaryService {
             where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date
                 < '${formattedEndDate}'
-            group by ${groupByEntityGroup}, ${groupByDateGroup}
+            group by ${groupByEntityGroup} ${groupByDateGroup}
             order by ${orderByDateGroup}
         `);
 
         return {
-            sales: production,
+            sales: sales,
         };
     }
 }
