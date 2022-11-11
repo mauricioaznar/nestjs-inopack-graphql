@@ -9,14 +9,17 @@ import {
 
 @InputType('SalesSummaryArgs')
 export class SalesSummaryArgs {
-    @Field(() => Int, { nullable: false })
-    year: number;
+    @Field(() => Int, { nullable: true })
+    year?: number | null;
 
     @Field(() => Int, { nullable: true })
     month?: number | null;
 
     @Field(() => [SalesSummaryEntitiesGroup], { nullable: false })
     entity_groups: SalesSummaryEntitiesGroup[];
+
+    @Field(() => DateGroupBy, { nullable: false })
+    date_group_by: DateGroupBy;
 }
 
 export enum SalesSummaryEntitiesGroup {
@@ -29,6 +32,16 @@ export enum SalesSummaryEntitiesGroup {
 
 registerEnumType(SalesSummaryEntitiesGroup, {
     name: 'SalesSummaryEntitiesGroup',
+});
+
+export enum DateGroupBy {
+    year = 'year',
+    month = 'month',
+    day = 'day',
+}
+
+registerEnumType(DateGroupBy, {
+    name: 'DateGroupBy',
 });
 
 @ObjectType('SalesRecord')
@@ -96,8 +109,8 @@ export class SalesRecord {
     @Field(() => Int, { nullable: true })
     day: number;
 
-    @Field(() => Int, { nullable: false })
-    month: number;
+    @Field(() => Int, { nullable: true })
+    month: number | null;
 
     @Field(() => Int, { nullable: false })
     year: number;

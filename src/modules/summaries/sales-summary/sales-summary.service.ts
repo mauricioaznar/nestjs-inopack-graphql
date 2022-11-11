@@ -1,10 +1,7 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import {
-    getDatesInjections,
-    getRangesFromYearMonth,
-} from '../../../common/helpers';
+import { getDateRangeSql, getDatesInjectionsV2 } from '../../../common/helpers';
 import dayjs from 'dayjs';
 import {
     SalesSummary,
@@ -22,21 +19,16 @@ export class SalesSummaryService {
         year,
         month,
         entity_groups,
+        date_group_by,
     }: SalesSummaryArgs): Promise<SalesSummary> {
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getDateRangeSql({
             year: year,
             month: month,
-            value: 1,
-            unit: month ? 'month' : 'year',
         });
 
-        const formattedStartDate = dayjs(startDate).utc().format('YYYY-MM-DD');
-        const formattedEndDate = dayjs(endDate).utc().format('YYYY-MM-DD');
-
         const { groupByDateGroup, orderByDateGroup, selectDateGroup } =
-            getDatesInjections({
-                year,
-                month,
+            getDatesInjectionsV2({
+                dateGroupBy: date_group_by,
             });
 
         let groupByEntityGroup = '';
@@ -133,9 +125,9 @@ export class SalesSummaryService {
             where order_sale_products.active = 1
               and order_sales.active = 1
                 ) as ctc
-            where ctc.start_date >= '${formattedStartDate}'
+            where ctc.start_date >= '${startDate}'
               and ctc.start_date
-                < '${formattedEndDate}'
+                < '${endDate}'
             group by ${groupByEntityGroup} ${groupByDateGroup}
             order by ${orderByDateGroup}
         `);
