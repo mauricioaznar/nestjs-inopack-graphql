@@ -37,13 +37,6 @@ export class OrderSaleService {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
     }): Promise<PaginatedOrderSales> {
-        if (!datePaginator || !datePaginator.year || !datePaginator.month) {
-            return {
-                count: 0,
-                docs: [],
-            };
-        }
-
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
@@ -63,7 +56,7 @@ export class OrderSaleService {
                 },
                 {
                     date: {
-                        lt: endDate,
+                        lt: datePaginator.year ? endDate : undefined,
                     },
                 },
             ],
@@ -77,7 +70,7 @@ export class OrderSaleService {
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
             orderBy: {
-                id: 'desc',
+                updated_at: 'desc',
             },
         });
 

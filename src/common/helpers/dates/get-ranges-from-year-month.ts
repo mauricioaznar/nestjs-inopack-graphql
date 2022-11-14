@@ -1,12 +1,12 @@
 import dayjs, { ManipulateType } from 'dayjs';
 
 export function getRangesFromYearMonth({
-    year,
+    year = 2018,
     month,
     value,
     unit,
 }: {
-    year: number;
+    year?: number | null;
     month?: number | null;
     value: number;
     unit: ManipulateType;
@@ -14,6 +14,9 @@ export function getRangesFromYearMonth({
     startDate: Date;
     endDate: Date;
 } {
+    month = typeof month === 'number' ? month : 0;
+    year = typeof year === 'number' ? year : 2018;
+
     const startDate: Date = dayjs()
         .utc()
         .set('year', year)
