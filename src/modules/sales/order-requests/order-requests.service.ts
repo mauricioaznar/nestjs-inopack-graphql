@@ -95,8 +95,6 @@ export class OrderRequestsService {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
-            value: 1,
-            unit: 'month',
         });
 
         const orderRequestsWhere: Prisma.order_requestsWhereInput = {

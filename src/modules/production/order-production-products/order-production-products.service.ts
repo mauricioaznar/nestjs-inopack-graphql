@@ -15,8 +15,6 @@ export class OrderProductionProductsService {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: 2022,
             month: 4,
-            value: 1,
-            unit: 'month',
         });
 
         return this.prisma.order_production_products.findMany({

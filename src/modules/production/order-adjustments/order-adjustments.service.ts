@@ -59,8 +59,6 @@ export class OrderAdjustmentsService {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
-            value: 1,
-            unit: 'month',
         });
 
         const whereInput: Prisma.order_adjustmentsWhereInput = {

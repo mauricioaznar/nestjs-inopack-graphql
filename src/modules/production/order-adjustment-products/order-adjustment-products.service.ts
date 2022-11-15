@@ -15,8 +15,6 @@ export class OrderAdjustmentProductsService {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: 2021,
             month: 1,
-            value: 1,
-            unit: 'month',
         });
 
         return this.prisma.order_adjustment_products.findMany({

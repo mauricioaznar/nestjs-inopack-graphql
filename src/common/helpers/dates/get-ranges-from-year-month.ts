@@ -3,32 +3,39 @@ import dayjs, { ManipulateType } from 'dayjs';
 export function getRangesFromYearMonth({
     year = 2018,
     month,
-    value,
-    unit,
 }: {
     year?: number | null;
     month?: number | null;
-    value: number;
-    unit: ManipulateType;
 }): {
     startDate: Date;
-    endDate: Date;
+    endDate?: Date;
 } {
-    month = typeof month === 'number' ? month : 0;
-    year = typeof year === 'number' ? year : 2018;
+    const isYearDefined = typeof year === 'number';
+    const isMonthDefined = typeof month === 'number';
+
+    month = isMonthDefined && month !== null && month !== undefined ? month : 0;
+    year = isYearDefined && year !== null ? year : 2018;
+    const unit = !isMonthDefined ? 'year' : 'month';
 
     const startDate: Date = dayjs()
         .utc()
         .set('year', year)
         .set('month', month || 0)
-        .startOf('month')
+        .startOf(unit)
         .toDate();
+
+    if (!isYearDefined && !isMonthDefined) {
+        return {
+            startDate,
+            endDate: undefined,
+        };
+    }
 
     const endDate: Date = dayjs()
         .utc()
         .set('year', year)
-        .set('month', month || 0)
-        .add(value, unit)
+        .set('month', isMonthDefined ? month : 0)
+        .add(1, unit)
         .startOf('month')
         .toDate();
 

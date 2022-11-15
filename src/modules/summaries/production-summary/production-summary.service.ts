@@ -28,8 +28,6 @@ export class ProductionSummaryService {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: year,
             month: month,
-            value: 1,
-            unit: month ? 'month' : 'year',
         });
 
         const formattedStartDate = dayjs(startDate).utc().format('YYYY-MM-DD');

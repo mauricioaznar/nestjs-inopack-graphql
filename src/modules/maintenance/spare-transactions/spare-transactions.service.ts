@@ -21,8 +21,6 @@ export class SpareTransactionsService {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
-            value: 1,
-            unit: 'month',
         });
 
         return this.prisma.spare_transactions.findMany({

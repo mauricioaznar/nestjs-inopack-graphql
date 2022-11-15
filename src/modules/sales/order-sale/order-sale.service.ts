@@ -40,8 +40,6 @@ export class OrderSaleService {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
-            value: 1,
-            unit: 'month',
         });
 
         const orderSalesWhere: Prisma.order_salesWhereInput = {
