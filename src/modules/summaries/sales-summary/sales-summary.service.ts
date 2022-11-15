@@ -37,8 +37,10 @@ export class SalesSummaryService {
             const entity_group = entity_groups[i];
             switch (entity_group) {
                 case 'client':
-                    selectEntityGroup += 'client_id, client_name';
-                    groupByEntityGroup += 'client_id, client_name';
+                    selectEntityGroup +=
+                        'client_id, client_name, client_abbreviation';
+                    groupByEntityGroup +=
+                        'client_id, client_name, client_abbreviation';
                     break;
                 case 'receipt':
                     selectEntityGroup += 'receipt_type_id, receipt_type_name';
@@ -92,6 +94,7 @@ export class SalesSummaryService {
                  product_type_categories.name product_type_category_name,
                  clients.id client_id,
                  clients.name client_name,
+                 clients.abbreviation client_abbreviation,
                  order_sale_receipt_type.id receipt_type_id,
                  order_sale_receipt_type.name receipt_type_name,
                  order_sale_statuses.id status_id,

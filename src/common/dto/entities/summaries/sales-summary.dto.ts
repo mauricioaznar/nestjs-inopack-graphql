@@ -94,6 +94,9 @@ export class SalesRecord {
     @Field(() => String, { nullable: true })
     client_name: string | null;
 
+    @Field(() => String, { nullable: true })
+    client_abbreviation: string | null;
+
     @Field(() => Int, { nullable: true })
     receipt_type_id: number | null;
 
