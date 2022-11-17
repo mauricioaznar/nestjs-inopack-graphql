@@ -3,6 +3,8 @@ import { Product, ProductUpsertInput } from '../../../common/dto/entities';
 import { isEmpty } from 'class-validator';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
+import { ProductCategory } from '../../../common/dto/entities/production/product-category.dto';
+import { ProductMaterial } from '../../../common/dto/entities/production/product-material.dto';
 
 @Injectable()
 export class ProductsService {
@@ -54,6 +56,34 @@ export class ProductsService {
         });
     }
 
+    async getProductCategory({
+        product_category_id,
+    }: {
+        product_category_id: number | null;
+    }): Promise<ProductCategory | null> {
+        if (!product_category_id) return null;
+
+        return this.prisma.product_categories.findFirst({
+            where: {
+                id: product_category_id,
+            },
+        });
+    }
+
+    async getProductMaterial({
+        product_material_id,
+    }: {
+        product_material_id: number | null;
+    }): Promise<ProductMaterial | null> {
+        if (!product_material_id) return null;
+
+        return this.prisma.product_materials.findFirst({
+            where: {
+                id: product_material_id,
+            },
+        });
+    }
+
     // update or insert
     async upsertInput(input: ProductUpsertInput): Promise<Product> {
         await this.validateAndCleanUpsertInput(input);
@@ -70,6 +100,8 @@ export class ProductsService {
                 product_type_id: input.product_type_id,
                 order_production_type_id: input.order_production_type_id,
                 packing_id: input.packing_id,
+                product_category_id: input.product_category_id,
+                product_material_id: input.product_material_id,
             },
             update: {
                 calibre: input.calibre,
@@ -82,6 +114,8 @@ export class ProductsService {
                 product_type_id: input.product_type_id,
                 order_production_type_id: input.order_production_type_id,
                 packing_id: input.packing_id,
+                product_category_id: input.product_category_id,
+                product_material_id: input.product_material_id,
             },
             where: {
                 id: input.id || 0,

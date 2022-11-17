@@ -1,4 +1,4 @@
-import { setupApp } from '../../../common/__tests__/helpers/setup-app';
+import { setupApp } from '../../../common/__tests__/helpers';
 import { INestApplication } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import {
@@ -75,6 +75,8 @@ describe('upsert', () => {
             code: 'codigo del producto 1',
             description: 'asdfasdfjwe description',
             current_kilo_price: 1,
+            product_category_id: null,
+            product_material_id: null,
         });
 
         expect(product.id).toBeDefined();
@@ -102,6 +104,8 @@ describe('upsert', () => {
             code: 'codigo del producto 1',
             description: 'asdfasdfjwe description',
             current_kilo_price: 1,
+            product_category_id: null,
+            product_material_id: null,
         });
 
         expect(product.id).toBeDefined();
@@ -131,6 +135,8 @@ describe('upsert', () => {
             length: 30,
             packing_id: packing1.id,
             current_group_weight: 80,
+            product_category_id: null,
+            product_material_id: null,
         });
 
         expect(product.id).toBeDefined();
@@ -162,6 +168,8 @@ describe('upsert', () => {
                 code: 'codigo del producto 1',
                 description: 'asdfasdfjwe description',
                 current_kilo_price: 1,
+                product_category_id: null,
+                product_material_id: null,
             });
         } catch (e) {
             expect(e.response.message).toEqual(

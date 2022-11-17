@@ -28,6 +28,8 @@ export async function createProductForTesting({
             code: 'codigo del producto 1',
             description: 'asdfasdfjwe description',
             current_kilo_price: 1,
+            product_category_id: null,
+            product_material_id: null,
         });
     } catch (e) {
         console.error(e);

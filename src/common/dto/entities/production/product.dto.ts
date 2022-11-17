@@ -31,6 +31,12 @@ export class ProductBase {
     product_type_id: number | null;
 
     @Field(() => Int, { nullable: true })
+    product_category_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    product_material_id: number | null;
+
+    @Field(() => Int, { nullable: true })
     order_production_type_id: number | null;
 }
 

@@ -19,6 +19,8 @@ import { ProductType } from '../../../common/dto/entities/production/product-typ
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { ProductCategory } from '../../../common/dto/entities/production/product-category.dto';
+import { ProductMaterial } from '../../../common/dto/entities/production/product-material.dto';
 
 @Resolver(() => Product)
 @UseGuards(GqlAuthGuard)
@@ -80,6 +82,24 @@ export class ProductsResolver {
     ): Promise<ProductType | null> {
         return this.productsService.getProductType({
             product_type_id: product.product_type_id,
+        });
+    }
+
+    @ResolveField(() => ProductCategory, { nullable: true })
+    async product_category(
+        @Parent() product: Product,
+    ): Promise<ProductCategory | null> {
+        return this.productsService.getProductCategory({
+            product_category_id: product.product_category_id,
+        });
+    }
+
+    @ResolveField(() => ProductMaterial, { nullable: true })
+    async product_material(
+        @Parent() product: Product,
+    ): Promise<ProductMaterial | null> {
+        return this.productsService.getProductMaterial({
+            product_material_id: product.product_material_id,
         });
     }
 

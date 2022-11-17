@@ -12,6 +12,8 @@ import { OrderAdjustmentTypesModule } from './order-adjustment-types/order-adjus
 import { OrderAdjustmentProductsModule } from './order-adjustment-products/order-adjustment-products.module';
 import { EmployeeTypesModule } from './employee-types/employee-types.module';
 import { EmployeeStatusesModule } from './employee-status/employee-statuses.module';
+import { ProductMaterialsModule } from './product-materials/product-materials.module';
+import { ProductCategoriesModule } from './product-categories/product-categories.module';
 
 @Module({
     imports: [
@@ -25,6 +27,8 @@ import { EmployeeStatusesModule } from './employee-status/employee-statuses.modu
         OrderAdjustmentTypesModule,
         PackingsModule,
         ProductTypesModule,
+        ProductMaterialsModule,
+        ProductCategoriesModule,
         EmployeesModule,
         EmployeeTypesModule,
         EmployeeStatusesModule,
