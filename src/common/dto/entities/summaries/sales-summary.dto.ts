@@ -24,6 +24,7 @@ export class SalesSummaryArgs {
 
 export enum SalesSummaryEntitiesGroup {
     productType = 'productType',
+    productCategory = 'productCategory',
     client = 'client',
     receipt = 'receipt',
     productTypeCategory = 'productTypeCategory',
@@ -87,6 +88,12 @@ export class SalesRecord {
 
     @Field(() => String, { nullable: true })
     product_type_category_name: string | null;
+
+    @Field(() => Int, { nullable: true })
+    product_category_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    product_category_name: string | null;
 
     @Field(() => Int, { nullable: true })
     client_id: number | null;

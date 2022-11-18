@@ -56,6 +56,12 @@ export class SalesSummaryService {
                     groupByEntityGroup +=
                         'product_type_category_id, product_type_category_name';
                     break;
+                case 'productCategory':
+                    selectEntityGroup +=
+                        'product_category_id, product_category_name';
+                    groupByEntityGroup +=
+                        'product_category_id, product_category_name';
+                    break;
                 case 'product':
                     selectEntityGroup += 'product_id, product_name';
                     groupByEntityGroup += 'product_id, product_name';
@@ -92,6 +98,8 @@ export class SalesSummaryService {
                  product_type.name product_type_name,
                  product_type_categories.id product_type_category_id,
                  product_type_categories.name product_type_category_name,
+                 product_categories.id product_category_id,
+                 product_categories.name product_category_name,
                  clients.id client_id,
                  clients.name client_name,
                  clients.abbreviation client_abbreviation,
@@ -117,6 +125,8 @@ export class SalesSummaryService {
                 on order_production_type.id = products.order_production_type_id
                 left join product_type
                 on products.product_type_id = product_type.id
+                left join product_categories
+                on products.product_category_id = product_categories.id
                 left join product_type_categories
                 on product_type.product_type_category_id = product_type_categories.id
                 left join clients
