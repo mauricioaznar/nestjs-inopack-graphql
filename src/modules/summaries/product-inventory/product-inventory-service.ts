@@ -94,7 +94,7 @@ export class ProductInventoryService {
                                      GROUP BY product_id
                     ) as production_products
                 ON production_products.product_id = products.id
-                JOIN product_type 
+                LEFT JOIN product_type 
                 ON product_type.id = products.product_type_id
                 WHERE products.active = 1
                 ORDER BY last_update DESC

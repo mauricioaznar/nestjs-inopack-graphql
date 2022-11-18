@@ -30,6 +30,7 @@ export class ProductionSummaryArgs {
 export enum ProductionSummaryEntitiesGroup {
     productType = 'productType',
     machine = 'machine',
+    productCategory = 'productCategory',
 }
 
 registerEnumType(ProductionSummaryEntitiesGroup, {
@@ -61,6 +62,9 @@ export class ProductionRecord {
 
     @Field(() => Int, { nullable: true })
     product_type_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    product_category_id: number | null;
 
     @Field(() => String, { nullable: true })
     branch_name: string | null;
