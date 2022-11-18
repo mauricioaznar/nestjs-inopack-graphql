@@ -214,6 +214,29 @@ export class ProductsService {
             }
         }
 
+        // product type
+        // DoesProductTypeBelongToOrderProductionType
+        if (input.product_category_id) {
+            const productCategory =
+                await this.prisma.product_categories.findUnique({
+                    where: {
+                        id: input.product_category_id,
+                    },
+                });
+            if (!productCategory) {
+                errors.push('Product category not found');
+            }
+            if (
+                productCategory &&
+                productCategory.order_production_type_id !==
+                    input.order_production_type_id
+            ) {
+                errors.push(
+                    'Product category doesnt belong to order production type',
+                );
+            }
+        }
+
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }

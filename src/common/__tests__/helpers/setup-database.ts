@@ -16,6 +16,7 @@ import { orderSaleStatuses } from '../objects/sales/order-sale-statuses';
 import { orderSaleReceiptTypes } from '../objects/sales/order-sale-receipt-types';
 import { orderSaleCollectionStatuses } from '../objects/sales/order-sale-collection-statuses';
 import { roles } from '../objects/auth/roles';
+import { productCategories } from '../objects/production/product-categories';
 
 export default async function setupDatabase() {
     const app = await setupApp();
@@ -44,6 +45,7 @@ export default async function setupDatabase() {
     // level 3
     await prismaService.machines.deleteMany();
     await prismaService.product_type.deleteMany();
+    await prismaService.product_categories.deleteMany();
     await prismaService.client_contacts.deleteMany();
     await prismaService.order_adjustment_type.deleteMany();
     await prismaService.employees.deleteMany();
@@ -81,6 +83,9 @@ export default async function setupDatabase() {
     });
     await prismaService.product_type.createMany({
         data: productTypes,
+    });
+    await prismaService.product_categories.createMany({
+        data: productCategories,
     });
     await prismaService.packings.createMany({
         data: packings,

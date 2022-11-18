@@ -29,6 +29,10 @@ import {
     productsTestsOrderRequestsOrderCode,
     productsTestsOrderSalesOrderCode,
 } from '../../../common/__tests__/constants/unique-codes-initial-values';
+import {
+    productCategory1,
+    productCategory2,
+} from '../../../common/__tests__/objects/production/product-categories';
 
 let app: INestApplication;
 let productsService: ProductsService;
@@ -75,7 +79,7 @@ describe('upsert', () => {
             code: 'codigo del producto 1',
             description: 'asdfasdfjwe description',
             current_kilo_price: 1,
-            product_category_id: null,
+            product_category_id: productCategory1.id,
             product_material_id: null,
         });
 
@@ -90,6 +94,7 @@ describe('upsert', () => {
         expect(product.code).toMatch(/Codigo del producto 1/i);
         expect(product.description).toMatch(/asdfasdfjwe/i);
         expect(product.current_kilo_price).toBe(1);
+        expect(product.product_category_id).toBe(productCategory1.id);
     });
 
     it('creates product type 2 (roll)', async () => {
@@ -152,7 +157,7 @@ describe('upsert', () => {
         expect(product.current_kilo_price).toBe(10);
     });
 
-    // fails when a product is created with no matching product type and order production type
+    // fails when a product is attempted to be created with no matching product type and order production type
     it('fails when product type doesnt match order production type', async () => {
         expect.hasAssertions();
 
@@ -169,6 +174,34 @@ describe('upsert', () => {
                 description: 'asdfasdfjwe description',
                 current_kilo_price: 1,
                 product_category_id: null,
+                product_material_id: null,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(/doesnt belong/i),
+                ]),
+            );
+        }
+    });
+
+    // fails when a product is attempted to created with no matching product category and order production type
+    it('fails when product type doesnt match order production type', async () => {
+        expect.hasAssertions();
+
+        try {
+            await productsService.upsertInput({
+                order_production_type_id: orderProductionType1.id,
+                product_type_id: orderProductionType1.id,
+                width: 10,
+                packing_id: packing1.id,
+                calibre: 1,
+                length: 1,
+                current_group_weight: 10,
+                code: 'codigo del producto 1',
+                description: 'asdfasdfjwe description',
+                current_kilo_price: 1,
+                product_category_id: productCategory2.id,
                 product_material_id: null,
             });
         } catch (e) {

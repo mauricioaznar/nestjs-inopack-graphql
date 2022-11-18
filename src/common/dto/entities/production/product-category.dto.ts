@@ -11,4 +11,7 @@ export class ProductCategoryBase {
 export class ProductCategory extends ProductCategoryBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field(() => Int, { nullable: true })
+    order_production_type_id: number | null;
 }

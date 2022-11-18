@@ -238,16 +238,17 @@ model order_production_products {
 }
 
 model order_production_type {
-  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
-  active            Int                 @default(1)
-  name              String              @db.VarChar(255)
-  created_at        DateTime?           @db.DateTime(0)
-  updated_at        DateTime?           @db.DateTime(0)
-  employees         employees[]
-  machines          machines[]
-  order_productions order_productions[]
-  product_type      product_type[]
-  products          products[]
+  id                 Int                  @id @default(autoincrement()) @db.UnsignedInt
+  active             Int                  @default(1)
+  name               String               @db.VarChar(255)
+  created_at         DateTime?            @db.DateTime(0)
+  updated_at         DateTime?            @db.DateTime(0)
+  employees          employees[]
+  machines           machines[]
+  order_productions  order_productions[]
+  product_categories product_categories[]
+  product_type       product_type[]
+  products           products[]
 }
 
 model order_productions {
@@ -656,12 +657,16 @@ model spares {
 }
 
 model product_categories {
-  id         Int        @id @default(autoincrement()) @db.UnsignedInt
-  active     Int        @default(1)
-  created_at DateTime?  @db.Timestamp(0)
-  updated_at DateTime?  @db.Timestamp(0)
-  name       String     @db.VarChar(255)
-  products   products[]
+  id                       Int                    @id @default(autoincrement()) @db.UnsignedInt
+  active                   Int                    @default(1)
+  created_at               DateTime?              @db.Timestamp(0)
+  updated_at               DateTime?              @db.Timestamp(0)
+  name                     String                 @db.VarChar(255)
+  order_production_type_id Int?                   @db.UnsignedInt
+  order_production_type    order_production_type? @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_categories_order_production_type_id_foreign")
+  products                 products[]
+
+  @@index([order_production_type_id], map: "product_categories_order_production_type_id_foreign")
 }
 
 model product_materials {
