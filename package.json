@@ -20,7 +20,8 @@
     "db:introspect": "env-cmd -f .env prisma db pull",
     "db:format": "env-cmd -f ./.env prisma format",
     "db:seed": "env-cmd -f ./.env prisma db seed",
-    "db:reset": "env-cmd -f ./.env prisma migrate reset"
+    "db:reset": "env-cmd -f ./.env prisma migrate reset",
+    "db:resolve": "env-cmd -f ./.env prisma migrate resolve --applied 20221118213733_"
   },
   "prisma": {
     "seed": "ts-node src/modules/seeder/seed.ts"
