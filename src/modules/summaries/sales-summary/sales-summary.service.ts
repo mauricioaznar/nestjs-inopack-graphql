@@ -2,7 +2,6 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { getDateRangeSql, getDatesInjectionsV2 } from '../../../common/helpers';
-import dayjs from 'dayjs';
 import {
     SalesSummary,
     SalesSummaryArgs,
@@ -21,6 +20,12 @@ export class SalesSummaryService {
         entity_groups,
         date_group_by,
     }: SalesSummaryArgs): Promise<SalesSummary> {
+        if (year === null || year === undefined) {
+            return {
+                sales: [],
+            };
+        }
+
         const { startDate, endDate } = getDateRangeSql({
             year: year,
             month: month,
