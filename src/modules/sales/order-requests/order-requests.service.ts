@@ -85,13 +85,6 @@ export class OrderRequestsService {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
     }): Promise<PaginatedOrderRequests> {
-        if (
-            !datePaginator ||
-            !datePaginator.year ||
-            (!datePaginator.month && datePaginator.month !== 0)
-        )
-            return [];
-
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,

@@ -102,7 +102,7 @@ describe('upsert', () => {
             order_production_type_id: orderProductionType2.id,
             product_type_id: productType2.id,
             width: 100,
-            packing_id: packing1.id,
+            packing_id: null,
             calibre: 1,
             length: null,
             current_group_weight: 0,
@@ -117,7 +117,7 @@ describe('upsert', () => {
         expect(product.product_type_id).toBe(productType2.id);
         expect(product.order_production_type_id).toBe(orderProductionType2.id);
         expect(product.width).toBe(100);
-        expect(product.packing_id).toBe(packing1.id);
+        expect(product.packing_id).toBe(null);
         expect(product.calibre).toBe(1);
         expect(product.length).toBe(null);
         expect(product.current_group_weight).toBe(0);
