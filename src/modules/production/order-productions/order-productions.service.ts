@@ -12,7 +12,12 @@ import {
     PaginatedOrderProductions,
 } from '../../../common/dto/entities/production/order-production.dto';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
-import { getRangesFromYearMonth, vennDiagram } from '../../../common/helpers';
+import {
+    getCreatedAtProperty,
+    getRangesFromYearMonth,
+    getUpdatedAtProperty,
+    vennDiagram,
+} from '../../../common/helpers';
 import { OrderProductionEmployee } from '../../../common/dto/entities/production/order-production-employee.dto';
 import { Cache } from 'cache-manager';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -104,6 +109,9 @@ export class OrderProductionsService {
             where: orderProductionsWhere,
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
+            orderBy: {
+                updated_at: 'desc',
+            },
         });
 
         return {
@@ -138,12 +146,15 @@ export class OrderProductionsService {
 
         const orderProduction = await this.prisma.order_productions.upsert({
             create: {
+                ...getCreatedAtProperty(),
+                ...getUpdatedAtProperty(),
                 start_date: input.start_date,
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
                 waste: 0,
             },
             update: {
+                ...getUpdatedAtProperty(),
                 start_date: input.start_date,
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
@@ -176,6 +187,7 @@ export class OrderProductionsService {
         for await (const delItem of deleteProductItems) {
             await this.prisma.order_production_products.deleteMany({
                 where: {
+                    ...getUpdatedAtProperty(),
                     product_id: delItem.product_id,
                     machine_id: delItem.machine_id,
                     order_production_id: orderProduction.id,
@@ -187,6 +199,8 @@ export class OrderProductionsService {
         for await (const createItem of createProductItems) {
             await this.prisma.order_production_products.create({
                 data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
                     order_production_id: orderProduction.id,
                     product_id: createItem.product_id,
                     machine_id: createItem.machine_id,
@@ -202,6 +216,7 @@ export class OrderProductionsService {
         for await (const updateItem of updateProductItems) {
             await this.prisma.order_production_products.updateMany({
                 data: {
+                    ...getUpdatedAtProperty(),
                     product_id: updateItem.product_id,
                     machine_id: updateItem.machine_id,
                     kilos: updateItem.kilos,
@@ -240,6 +255,7 @@ export class OrderProductionsService {
         for await (const delItem of deleteEmployeeItems) {
             await this.prisma.order_production_employees.deleteMany({
                 where: {
+                    ...getUpdatedAtProperty(),
                     employee_id: delItem.employee_id,
                     order_production_id: orderProduction.id,
                 },
@@ -249,6 +265,8 @@ export class OrderProductionsService {
         for await (const createItem of createEmployeeItems) {
             await this.prisma.order_production_employees.create({
                 data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
                     order_production_id: orderProduction.id,
                     employee_id: createItem.employee_id,
                     is_leader: createItem.is_leader,
@@ -259,6 +277,7 @@ export class OrderProductionsService {
         for await (const updateItem of updateEmployeeItems) {
             await this.prisma.order_production_employees.updateMany({
                 data: {
+                    ...getUpdatedAtProperty(),
                     employee_id: updateItem.employee_id,
                     is_leader: updateItem.is_leader,
                 },

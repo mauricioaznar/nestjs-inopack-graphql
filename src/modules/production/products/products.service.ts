@@ -5,6 +5,10 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
 import { ProductCategory } from '../../../common/dto/entities/production/product-category.dto';
 import { ProductMaterial } from '../../../common/dto/entities/production/product-material.dto';
+import {
+    getCreatedAtProperty,
+    getUpdatedAtProperty,
+} from '../../../common/helpers';
 
 @Injectable()
 export class ProductsService {
@@ -90,6 +94,8 @@ export class ProductsService {
 
         return this.prisma.products.upsert({
             create: {
+                ...getCreatedAtProperty(),
+                ...getUpdatedAtProperty(),
                 calibre: input.calibre,
                 code: input.code,
                 current_group_weight: input.current_group_weight,
@@ -104,6 +110,7 @@ export class ProductsService {
                 product_material_id: input.product_material_id,
             },
             update: {
+                ...getUpdatedAtProperty(),
                 calibre: input.calibre,
                 code: input.code,
                 current_group_weight: input.current_group_weight,

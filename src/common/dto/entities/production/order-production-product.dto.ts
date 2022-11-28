@@ -6,10 +6,10 @@ export class OrderProductionProductBase {
     @Field(() => Float, { nullable: false })
     groups: number;
 
-    @Field({ nullable: false })
+    @Field(() => Float, { nullable: false })
     kilos: number;
 
-    @Field(() => Int, { nullable: false })
+    @Field(() => Float, { nullable: false })
     group_weight: number;
 
     @Field(() => Int, { nullable: true })

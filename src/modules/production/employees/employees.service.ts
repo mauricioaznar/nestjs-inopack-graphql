@@ -8,6 +8,10 @@ import {
     EmployeeUpsertInput,
 } from '../../../common/dto/entities/production/employee.dto';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
+import {
+    getCreatedAtProperty,
+    getUpdatedAtProperty,
+} from '../../../common/helpers';
 
 @Injectable()
 export class EmployeesService {
@@ -44,6 +48,8 @@ export class EmployeesService {
 
         return this.prisma.employees.upsert({
             create: {
+                ...getCreatedAtProperty(),
+                ...getUpdatedAtProperty(),
                 first_name: input.first_name,
                 last_name: input.last_name,
                 fullname: `${input.first_name} ${input.last_name}`,
@@ -52,6 +58,7 @@ export class EmployeesService {
                 order_production_type_id: input.order_production_type_id,
             },
             update: {
+                ...getUpdatedAtProperty(),
                 first_name: input.first_name,
                 last_name: input.last_name,
                 fullname: `${input.first_name} ${input.last_name}`,

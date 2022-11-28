@@ -114,7 +114,7 @@ export class OrderProductionsResolver {
 
     @ResolveField(() => Boolean)
     async is_deletable(
-        @Parent() orderAdjustment: OrderAdjustment,
+        @Parent() orderProduction: OrderProduction,
     ): Promise<boolean> {
         return true;
     }

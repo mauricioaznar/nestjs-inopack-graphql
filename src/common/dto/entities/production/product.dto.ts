@@ -1,4 +1,4 @@
-import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
+import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -9,16 +9,16 @@ export class ProductBase {
     @Field()
     code: string;
 
-    @Field()
+    @Field(() => Int, { nullable: false })
     current_kilo_price: number;
 
-    @Field()
+    @Field(() => Int, { nullable: false })
     width: number;
 
     @Field(() => Int, { nullable: true })
     length: number | null;
 
-    @Field({ nullable: false })
+    @Field(() => Float, { nullable: false })
     current_group_weight: number;
 
     @Field()

@@ -10,7 +10,7 @@ export class EmployeeTypesResolver {
     constructor(private service: EmployeeTypesService) {}
 
     @Query(() => [EmployeeType])
-    async getOrderAdjustmentTypes(): Promise<EmployeeType[]> {
+    async getEmployeeTypes(): Promise<EmployeeType[]> {
         return this.service.getEmployeeTypes();
     }
 }
