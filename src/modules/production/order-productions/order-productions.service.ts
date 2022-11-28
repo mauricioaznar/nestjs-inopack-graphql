@@ -151,14 +151,14 @@ export class OrderProductionsService {
                 start_date: input.start_date,
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
-                waste: 0,
+                waste: input.waste,
             },
             update: {
                 ...getUpdatedAtProperty(),
                 start_date: input.start_date,
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
-                waste: 0,
+                waste: input.waste,
             },
             where: {
                 id: input.id || 0,
