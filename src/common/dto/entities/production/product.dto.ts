@@ -9,13 +9,13 @@ export class ProductBase {
     @Field()
     code: string;
 
-    @Field(() => Int, { nullable: false })
+    @Field(() => Float, { nullable: false })
     current_kilo_price: number;
 
-    @Field(() => Int, { nullable: false })
+    @Field(() => Float, { nullable: false })
     width: number;
 
-    @Field(() => Int, { nullable: true })
+    @Field(() => Float, { nullable: true })
     length: number | null;
 
     @Field(() => Float, { nullable: false })
