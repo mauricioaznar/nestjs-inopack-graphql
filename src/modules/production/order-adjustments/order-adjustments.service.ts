@@ -174,9 +174,12 @@ export class OrderAdjustmentsService {
         });
 
         for await (const delItem of deleteProductItems) {
-            await this.prisma.order_adjustment_products.deleteMany({
-                where: {
+            await this.prisma.order_adjustment_products.updateMany({
+                data: {
                     ...getUpdatedAtProperty(),
+                    active: -1,
+                },
+                where: {
                     product_id: delItem.product_id,
                     order_adjustment_id: orderAdjustment.id,
                 },
@@ -255,6 +258,7 @@ export class OrderAdjustmentsService {
     }): Promise<boolean> {
         await this.prisma.order_adjustments.update({
             data: {
+                ...getUpdatedAtProperty(),
                 active: -1,
             },
             where: {
@@ -264,6 +268,7 @@ export class OrderAdjustmentsService {
 
         await this.prisma.order_adjustment_products.updateMany({
             data: {
+                ...getUpdatedAtProperty(),
                 active: -1,
             },
             where: {

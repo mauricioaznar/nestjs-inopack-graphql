@@ -126,6 +126,7 @@ export class EmployeesService {
 
         await this.prisma.employees.update({
             data: {
+                ...getUpdatedAtProperty(),
                 active: -1,
             },
             where: {

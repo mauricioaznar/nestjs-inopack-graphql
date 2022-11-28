@@ -185,9 +185,12 @@ export class OrderProductionsService {
         });
 
         for await (const delItem of deleteProductItems) {
-            await this.prisma.order_production_products.deleteMany({
-                where: {
+            await this.prisma.order_production_products.updateMany({
+                data: {
                     ...getUpdatedAtProperty(),
+                    active: -1,
+                },
+                where: {
                     product_id: delItem.product_id,
                     machine_id: delItem.machine_id,
                     order_production_id: orderProduction.id,
@@ -253,9 +256,12 @@ export class OrderProductionsService {
         });
 
         for await (const delItem of deleteEmployeeItems) {
-            await this.prisma.order_production_employees.deleteMany({
-                where: {
+            await this.prisma.order_production_employees.updateMany({
+                data: {
                     ...getUpdatedAtProperty(),
+                    active: -1,
+                },
+                where: {
                     employee_id: delItem.employee_id,
                     order_production_id: orderProduction.id,
                 },
@@ -541,6 +547,7 @@ export class OrderProductionsService {
 
         await this.prisma.order_productions.update({
             data: {
+                ...getUpdatedAtProperty(),
                 active: -1,
             },
             where: {
@@ -555,6 +562,7 @@ export class OrderProductionsService {
         for await (const orderProductionProduct of orderProductionProducts) {
             await this.prisma.order_production_products.update({
                 data: {
+                    ...getUpdatedAtProperty(),
                     active: -1,
                 },
 
@@ -573,6 +581,7 @@ export class OrderProductionsService {
         for await (const orderProductionEmployee of orderProductionEmployees) {
             await this.prisma.order_production_employees.update({
                 data: {
+                    ...getUpdatedAtProperty(),
                     active: -1,
                 },
 

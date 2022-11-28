@@ -16,7 +16,12 @@ import {
     OrderSaleReceiptType,
     PaginatedOrderSales,
 } from '../../../common/dto/entities';
-import { getRangesFromYearMonth, vennDiagram } from '../../../common/helpers';
+import {
+    getCreatedAtProperty,
+    getRangesFromYearMonth,
+    getUpdatedAtProperty,
+    vennDiagram,
+} from '../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderRequestRemainingProductsService } from '../../../common/services/entities/order-request-remaining-products-service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -390,6 +395,8 @@ export class OrderSaleService {
 
         const orderSale = await this.prisma.order_sales.upsert({
             create: {
+                ...getCreatedAtProperty(),
+                ...getUpdatedAtProperty(),
                 date: input.date,
                 order_code: input.order_code,
                 invoice_code:
@@ -401,6 +408,7 @@ export class OrderSaleService {
                 order_request_id: input.order_request_id,
             },
             update: {
+                ...getUpdatedAtProperty(),
                 date: input.date,
                 order_code: input.order_code,
                 invoice_code:
@@ -435,7 +443,11 @@ export class OrderSaleService {
 
         for await (const delItem of deleteProductItems) {
             if (delItem && delItem.id) {
-                await this.prisma.order_sale_products.deleteMany({
+                await this.prisma.order_sale_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
                     where: {
                         id: delItem.id,
                     },
@@ -447,6 +459,8 @@ export class OrderSaleService {
         for await (const createItem of createProductItems) {
             await this.prisma.order_sale_products.create({
                 data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
                     kilo_price: createItem.kilo_price,
                     order_sale_id: orderSale.id,
                     product_id: createItem.product_id,
@@ -463,6 +477,7 @@ export class OrderSaleService {
             if (updateItem && updateItem.id) {
                 await this.prisma.order_sale_products.updateMany({
                     data: {
+                        ...getUpdatedAtProperty(),
                         product_id: updateItem.product_id,
                         kilos: updateItem.kilos,
                         active: 1,
@@ -499,7 +514,11 @@ export class OrderSaleService {
 
         for await (const delItem of deletePaymentItems) {
             if (delItem && delItem.id) {
-                await this.prisma.order_sale_payments.delete({
+                await this.prisma.order_sale_payments.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
                     where: {
                         id: delItem.id,
                     },
@@ -510,6 +529,8 @@ export class OrderSaleService {
         for await (const createItem of createPaymentItems) {
             await this.prisma.order_sale_payments.create({
                 data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
                     amount: Math.round(createItem.amount * 100) / 100,
                     order_sale_collection_status_id:
                         createItem.order_sale_collection_status_id,
@@ -523,6 +544,7 @@ export class OrderSaleService {
             if (updateItem && updateItem.id) {
                 await this.prisma.order_sale_payments.updateMany({
                     data: {
+                        ...getUpdatedAtProperty(),
                         amount: Math.round(updateItem.amount * 100) / 100,
                         order_sale_collection_status_id:
                             updateItem.order_sale_collection_status_id,
@@ -844,6 +866,7 @@ export class OrderSaleService {
         for await (const orderSalePayment of orderSalePayments) {
             await this.prisma.order_sale_payments.update({
                 data: {
+                    ...getUpdatedAtProperty(),
                     active: -1,
                 },
                 where: {
@@ -855,6 +878,7 @@ export class OrderSaleService {
         for await (const orderSaleProduct of orderSaleProducts) {
             await this.prisma.order_sale_products.update({
                 data: {
+                    ...getUpdatedAtProperty(),
                     active: -1,
                 },
                 where: {
@@ -865,6 +889,7 @@ export class OrderSaleService {
 
         await this.prisma.order_sales.update({
             data: {
+                ...getUpdatedAtProperty(),
                 active: -1,
             },
             where: {

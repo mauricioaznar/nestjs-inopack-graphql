@@ -8,7 +8,11 @@ import {
     ClientContact,
     ClientUpsertInput,
 } from '../../../common/dto/entities';
-import { vennDiagram } from '../../../common/helpers';
+import {
+    getCreatedAtProperty,
+    getUpdatedAtProperty,
+    vennDiagram,
+} from '../../../common/helpers';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
 @Injectable()
@@ -44,10 +48,13 @@ export class ClientsService {
     async upsertClient(input: ClientUpsertInput): Promise<Client> {
         const client = await this.prisma.clients.upsert({
             create: {
+                ...getCreatedAtProperty(),
+                ...getUpdatedAtProperty(),
                 name: input.name,
                 abbreviation: input.abbreviation,
             },
             update: {
+                ...getUpdatedAtProperty(),
                 name: input.name,
                 abbreviation: input.abbreviation,
             },
@@ -79,6 +86,7 @@ export class ClientsService {
             if (delItem && delItem.id) {
                 await this.prisma.client_contacts.updateMany({
                     data: {
+                        ...getUpdatedAtProperty(),
                         active: -1,
                     },
                     where: {
@@ -91,6 +99,8 @@ export class ClientsService {
         for await (const createItem of createClientContactItems) {
             await this.prisma.client_contacts.create({
                 data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
                     client_id: client.id,
                     first_name: createItem.first_name,
                     last_name: createItem.last_name,
@@ -105,6 +115,7 @@ export class ClientsService {
             if (updateItem && updateItem.id) {
                 await this.prisma.client_contacts.updateMany({
                     data: {
+                        ...getUpdatedAtProperty(),
                         first_name: updateItem.first_name,
                         last_name: updateItem.last_name,
                         fullname: `${updateItem.first_name} ${updateItem.last_name}`,
@@ -172,6 +183,7 @@ export class ClientsService {
         for await (const contact of clientContacts) {
             await this.prisma.client_contacts.update({
                 data: {
+                    ...getUpdatedAtProperty(),
                     active: -1,
                 },
                 where: {
@@ -182,6 +194,7 @@ export class ClientsService {
 
         await this.prisma.clients.update({
             data: {
+                ...getUpdatedAtProperty(),
                 active: -1,
             },
             where: {

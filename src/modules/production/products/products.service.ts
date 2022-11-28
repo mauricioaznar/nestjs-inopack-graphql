@@ -346,6 +346,7 @@ export class ProductsService {
 
         await this.prisma.products.update({
             data: {
+                ...getUpdatedAtProperty(),
                 active: -1,
             },
             where: {

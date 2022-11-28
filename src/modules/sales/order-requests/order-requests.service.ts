@@ -13,7 +13,12 @@ import {
     OrderSaleProduct,
     PaginatedOrderRequests,
 } from '../../../common/dto/entities';
-import { getRangesFromYearMonth, vennDiagram } from '../../../common/helpers';
+import {
+    getCreatedAtProperty,
+    getRangesFromYearMonth,
+    getUpdatedAtProperty,
+    vennDiagram,
+} from '../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderRequestRemainingProductsService } from '../../../common/services/entities/order-request-remaining-products-service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -216,6 +221,8 @@ export class OrderRequestsService {
 
         const orderRequest = await this.prisma.order_requests.upsert({
             create: {
+                ...getCreatedAtProperty(),
+                ...getUpdatedAtProperty(),
                 notes: input.notes,
                 date: input.date,
                 order_code: input.order_code,
@@ -225,6 +232,7 @@ export class OrderRequestsService {
                 priority: 0,
             },
             update: {
+                ...getUpdatedAtProperty(),
                 notes: input.notes,
                 date: input.date,
                 order_code: input.order_code,
@@ -259,7 +267,11 @@ export class OrderRequestsService {
 
         for await (const delItem of deleteProductItems) {
             if (delItem && delItem.id) {
-                await this.prisma.order_request_products.deleteMany({
+                await this.prisma.order_request_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
                     where: {
                         id: delItem.id,
                     },
@@ -271,6 +283,8 @@ export class OrderRequestsService {
         for await (const createItem of createProductItems) {
             await this.prisma.order_request_products.create({
                 data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
                     kilo_price: createItem.kilo_price,
                     order_request_id: orderRequest.id,
                     product_id: createItem.product_id,
@@ -287,6 +301,7 @@ export class OrderRequestsService {
             if (updateItem && updateItem.id) {
                 await this.prisma.order_request_products.updateMany({
                     data: {
+                        ...getUpdatedAtProperty(),
                         product_id: updateItem.product_id,
                         kilos: updateItem.kilos,
                         active: 1,
@@ -530,6 +545,7 @@ export class OrderRequestsService {
 
         await this.prisma.order_request_products.updateMany({
             data: {
+                ...getUpdatedAtProperty(),
                 active: -1,
             },
             where: {
@@ -539,6 +555,7 @@ export class OrderRequestsService {
 
         await this.prisma.order_requests.updateMany({
             data: {
+                ...getUpdatedAtProperty(),
                 active: -1,
             },
             where: {
