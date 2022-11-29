@@ -276,7 +276,7 @@ export class OrderRequestsService {
                         id: delItem.id,
                     },
                 });
-                await this.cacheManager.del(`product_inventory`);
+                // await this.cacheManager.del(`product_inventory`);
             }
         }
 
@@ -294,7 +294,7 @@ export class OrderRequestsService {
                     groups: createItem.groups,
                 },
             });
-            await this.cacheManager.del(`product_inventory`);
+            // await this.cacheManager.del(`product_inventory`);
         }
 
         for await (const updateItem of updateProductItems) {
@@ -313,7 +313,7 @@ export class OrderRequestsService {
                         id: updateItem.id,
                     },
                 });
-                await this.cacheManager.del(`product_inventory`);
+                // await this.cacheManager.del(`product_inventory`);
             }
         }
 

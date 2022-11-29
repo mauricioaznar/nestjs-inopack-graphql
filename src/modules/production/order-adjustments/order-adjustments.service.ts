@@ -184,7 +184,7 @@ export class OrderAdjustmentsService {
                     order_adjustment_id: orderAdjustment.id,
                 },
             });
-            await this.cacheManager.del(`product_inventory`);
+            // await this.cacheManager.del(`product_inventory`);
         }
 
         for await (const createItem of createProductItems) {
@@ -200,7 +200,7 @@ export class OrderAdjustmentsService {
                     groups: createItem.groups,
                 },
             });
-            await this.cacheManager.del(`product_inventory`);
+            // await this.cacheManager.del(`product_inventory`);
         }
 
         for await (const updateItem of updateProductItems) {
@@ -218,7 +218,7 @@ export class OrderAdjustmentsService {
                     order_adjustment_id: orderAdjustment.id,
                 },
             });
-            await this.cacheManager.del(`product_inventory`);
+            // await this.cacheManager.del(`product_inventory`);
         }
 
         return orderAdjustment;

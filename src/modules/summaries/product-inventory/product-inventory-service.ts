@@ -12,10 +12,10 @@ export class ProductInventoryService {
     ) {}
 
     async getProductsInventory(): Promise<ProductInventory[]> {
-        const cachedProductInventory: ProductInventory[] | undefined =
-            await this.cacheManager.get(`product_inventory`);
-
-        if (!!cachedProductInventory) return cachedProductInventory;
+        // const cachedProductInventory: ProductInventory[] | undefined =
+        //     await this.cacheManager.get(`product_inventory`);
+        //
+        // if (!!cachedProductInventory) return cachedProductInventory;
 
         const results = await this.prisma.$queryRaw<ProductInventory[]>`
             SELECT 
@@ -94,14 +94,12 @@ export class ProductInventoryService {
                                      GROUP BY product_id
                     ) as production_products
                 ON production_products.product_id = products.id
-                LEFT JOIN product_type 
-                ON product_type.id = products.product_type_id
                 WHERE products.active = 1
                 ORDER BY last_update DESC
             ) as cte;
         `;
 
-        await this.cacheManager.set(`product_inventory`, results);
+        // await this.cacheManager.set(`product_inventory`, results);
         return results;
     }
 

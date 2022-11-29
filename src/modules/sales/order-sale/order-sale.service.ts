@@ -452,7 +452,7 @@ export class OrderSaleService {
                         id: delItem.id,
                     },
                 });
-                await this.cacheManager.del(`product_inventory`);
+                // await this.cacheManager.del(`product_inventory`);
             }
         }
 
@@ -470,7 +470,7 @@ export class OrderSaleService {
                     groups: createItem.groups,
                 },
             });
-            await this.cacheManager.del(`product_inventory`);
+            // await this.cacheManager.del(`product_inventory`);
         }
 
         for await (const updateItem of updateProductItems) {
@@ -489,7 +489,7 @@ export class OrderSaleService {
                         id: updateItem.id,
                     },
                 });
-                await this.cacheManager.del(`product_inventory`);
+                // await this.cacheManager.del(`product_inventory`);
             }
         }
 
