@@ -23,6 +23,7 @@ import { Cache } from 'cache-manager';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
+import { Branch, OrderProductionType } from '../../../common/dto/entities';
 
 @Injectable()
 export class OrderProductionsService {
@@ -93,11 +94,12 @@ export class OrderProductionsService {
                     },
                 },
                 {
-                    branch_id: orderProductionQueryArgs.branch_id,
+                    branch_id: orderProductionQueryArgs.branch_id || undefined,
                 },
                 {
                     order_production_type_id:
-                        orderProductionQueryArgs.order_production_type_id,
+                        orderProductionQueryArgs.order_production_type_id ||
+                        undefined,
                 },
             ],
         };
@@ -592,5 +594,39 @@ export class OrderProductionsService {
         }
 
         return true;
+    }
+
+    async getOrderProductionType({
+        order_production_type_id,
+    }: {
+        order_production_type_id: number | null;
+    }): Promise<OrderProductionType | null> {
+        if (!order_production_type_id) {
+            return null;
+        }
+
+        return this.prisma.order_production_type.findFirst({
+            where: {
+                id: order_production_type_id,
+                active: 1,
+            },
+        });
+    }
+
+    async getBranch({
+        branch_id,
+    }: {
+        branch_id: number | null;
+    }): Promise<Branch | null> {
+        if (!branch_id) {
+            return null;
+        }
+
+        return this.prisma.branches.findFirst({
+            where: {
+                id: branch_id,
+                active: 1,
+            },
+        });
     }
 }

@@ -19,6 +19,8 @@ import { OrderProductionProduct } from '../../../common/dto/entities/production/
 import { OrderProductionEmployee } from '../../../common/dto/entities/production/order-production-employee.dto';
 import {
     ActivityTypeName,
+    Branch,
+    OrderProductionType,
     PaginatedOrderSales,
     User,
 } from '../../../common/dto/entities';
@@ -117,6 +119,24 @@ export class OrderProductionsResolver {
         @Parent() orderProduction: OrderProduction,
     ): Promise<boolean> {
         return true;
+    }
+
+    @ResolveField(() => OrderProductionType, { nullable: true })
+    async order_production_type(
+        @Parent() orderProduction: OrderProduction,
+    ): Promise<OrderProductionType | null> {
+        return this.service.getOrderProductionType({
+            order_production_type_id: orderProduction.order_production_type_id,
+        });
+    }
+
+    @ResolveField(() => Branch, { nullable: true })
+    async branch(
+        @Parent() orderProduction: OrderProduction,
+    ): Promise<Branch | null> {
+        return this.service.getBranch({
+            branch_id: orderProduction.branch_id,
+        });
     }
 
     @Subscription(() => OrderProduction)

@@ -44,9 +44,9 @@ export class PaginatedOrderProductions extends OffsetPaginatorResult(
 
 @ArgsType()
 export class OrderProductionQueryArgs {
-    @Field(() => Int, { nullable: false })
+    @Field(() => Int, { nullable: true })
     order_production_type_id: number;
 
-    @Field(() => Int, { nullable: false })
+    @Field(() => Int, { nullable: true })
     branch_id: number;
 }
