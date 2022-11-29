@@ -40,9 +40,14 @@ export class ProductsService {
             where: {
                 active: 1,
             },
-            orderBy: {
-                description: 'asc',
-            },
+            orderBy: [
+                {
+                    order_production_type_id: 'asc',
+                },
+                {
+                    description: 'asc',
+                },
+            ],
         });
     }
 
