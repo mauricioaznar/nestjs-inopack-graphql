@@ -95,6 +95,7 @@ export class ProductInventoryService {
                     ) as production_products
                 ON production_products.product_id = products.id
                 WHERE products.active = 1
+                AND (products.order_production_type_id = 1 OR products.order_production_type_id is null)
                 ORDER BY last_update DESC
             ) as cte;
         `;
