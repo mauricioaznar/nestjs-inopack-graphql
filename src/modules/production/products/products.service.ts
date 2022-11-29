@@ -88,6 +88,20 @@ export class ProductsService {
         });
     }
 
+    async getOrderProductionType({
+        order_production_type_id,
+    }: {
+        order_production_type_id: number | null;
+    }): Promise<ProductMaterial | null> {
+        if (!order_production_type_id) return null;
+
+        return this.prisma.order_production_type.findFirst({
+            where: {
+                id: order_production_type_id,
+            },
+        });
+    }
+
     // update or insert
     async upsertInput(input: ProductUpsertInput): Promise<Product> {
         await this.validateAndCleanUpsertInput(input);

@@ -11,6 +11,7 @@ import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import {
     ActivityTypeName,
+    OrderProductionType,
     Product,
     ProductUpsertInput,
     User,
@@ -100,6 +101,15 @@ export class ProductsResolver {
     ): Promise<ProductMaterial | null> {
         return this.productsService.getProductMaterial({
             product_material_id: product.product_material_id,
+        });
+    }
+
+    @ResolveField(() => OrderProductionType, { nullable: true })
+    async order_production_type(
+        @Parent() product: Product,
+    ): Promise<ProductMaterial | null> {
+        return this.productsService.getOrderProductionType({
+            order_production_type_id: product.order_production_type_id,
         });
     }
 
