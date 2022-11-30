@@ -1,4 +1,4 @@
-import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
+import { ArgsType, Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { OrderSaleProductInput } from './order-sale-product.dto';
 import { OrderSalePaymentInput } from './order-sale-payment.dto';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
@@ -54,3 +54,9 @@ export class OrderSale extends OrderSaleBase {
 
 @ObjectType()
 export class PaginatedOrderSales extends OffsetPaginatorResult(OrderSale) {}
+
+@ArgsType()
+export class OrderSalesQueryArgs {
+    @Field(() => String, { nullable: true })
+    filter: string;
+}

@@ -14,6 +14,7 @@ import {
     OrderSalePayment,
     OrderSaleProduct,
     OrderSaleReceiptType,
+    OrderSalesQueryArgs,
     PaginatedOrderSales,
 } from '../../../common/dto/entities';
 import {
@@ -38,14 +39,23 @@ export class OrderSaleService {
     async paginatedOrderSales({
         offsetPaginatorArgs,
         datePaginator,
+        orderSalesQueryArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
+        orderSalesQueryArgs: OrderSalesQueryArgs;
     }): Promise<PaginatedOrderSales> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
         });
+
+        const filter =
+            orderSalesQueryArgs.filter !== '' && !!orderSalesQueryArgs.filter
+                ? orderSalesQueryArgs.filter
+                : undefined;
+
+        const isFilterANumber = !Number.isNaN(Number(filter));
 
         const orderSalesWhere: Prisma.order_salesWhereInput = {
             AND: [
@@ -61,6 +71,57 @@ export class OrderSaleService {
                     date: {
                         lt: datePaginator.year ? endDate : undefined,
                     },
+                },
+                {
+                    OR: [
+                        {
+                            order_code: {
+                                in: isFilterANumber
+                                    ? Number(filter)
+                                    : undefined,
+                            },
+                        },
+                        {
+                            order_requests: {
+                                order_code: {
+                                    in: isFilterANumber
+                                        ? Number(filter)
+                                        : undefined,
+                                },
+                            },
+                        },
+                        {
+                            invoice_code: {
+                                in: isFilterANumber
+                                    ? Number(filter)
+                                    : undefined,
+                            },
+                        },
+                    ],
+                },
+                {
+                    OR: [
+                        {
+                            order_requests: {
+                                clients: {
+                                    name: {
+                                        contains: !isFilterANumber
+                                            ? filter
+                                            : undefined,
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            order_sale_receipt_type: {
+                                name: {
+                                    contains: !isFilterANumber
+                                        ? filter
+                                        : undefined,
+                                },
+                            },
+                        },
+                    ],
                 },
             ],
         };
