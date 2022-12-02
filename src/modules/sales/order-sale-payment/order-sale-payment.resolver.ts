@@ -1,8 +1,13 @@
-import { Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderSalePaymentService } from './order-sale-payment.service';
 import { Public } from '../../auth/decorators/public.decorator';
-import { OrderSale, OrderSalePayment } from '../../../common/dto/entities';
+import {
+    OrderSale,
+    OrderSalePayment,
+    PaginatedOrderSalePayments,
+} from '../../../common/dto/entities';
+import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 
 @Resolver(() => OrderSalePayment)
 @Public()
@@ -13,6 +18,17 @@ export class OrderSalePaymentResolver {
     @Query(() => [OrderSalePayment])
     async getOrderSalePayments(): Promise<OrderSalePayment[]> {
         return this.service.getOrderSalePayments();
+    }
+
+    @Query(() => PaginatedOrderSalePayments)
+    async paginatedOrderSalePayments(
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false }) datePaginator: YearMonth,
+    ): Promise<PaginatedOrderSalePayments> {
+        return this.service.paginatedOrderSalePayments({
+            offsetPaginatorArgs,
+            datePaginator,
+        });
     }
 
     @ResolveField(() => OrderSale, { nullable: true })
