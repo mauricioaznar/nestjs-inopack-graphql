@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
     OrderSale,
+    OrderSaleCollectionStatus,
     OrderSalePayment,
     PaginatedOrderSalePayments,
 } from '../../../common/dto/entities';
@@ -31,17 +32,13 @@ export class OrderSalePaymentService {
                     active: 1,
                 },
                 {
-                    order_sales: {
-                        date: {
-                            gte: startDate,
-                        },
+                    date_paid: {
+                        gte: startDate,
                     },
                 },
                 {
-                    order_sales: {
-                        date: {
-                            lt: datePaginator.year ? endDate : undefined,
-                        },
+                    date_paid: {
+                        lt: datePaginator.year ? endDate : undefined,
                     },
                 },
             ],
@@ -55,7 +52,7 @@ export class OrderSalePaymentService {
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
             orderBy: {
-                updated_at: 'desc',
+                date_paid: 'desc',
             },
         });
 
@@ -79,6 +76,20 @@ export class OrderSalePaymentService {
         return this.prisma.order_sales.findUnique({
             where: {
                 id: order_sale_id,
+            },
+        });
+    }
+
+    async getOrderSaleCollectionStatus({
+        order_sale_collection_status_id,
+    }: {
+        order_sale_collection_status_id?: number | null;
+    }): Promise<OrderSaleCollectionStatus | null> {
+        if (!order_sale_collection_status_id) return null;
+
+        return this.prisma.order_sale_collection_statuses.findUnique({
+            where: {
+                id: order_sale_collection_status_id,
             },
         });
     }

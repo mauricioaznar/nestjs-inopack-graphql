@@ -4,6 +4,7 @@ import { OrderSalePaymentService } from './order-sale-payment.service';
 import { Public } from '../../auth/decorators/public.decorator';
 import {
     OrderSale,
+    OrderSaleCollectionStatus,
     OrderSalePayment,
     PaginatedOrderSalePayments,
 } from '../../../common/dto/entities';
@@ -37,6 +38,16 @@ export class OrderSalePaymentResolver {
     ): Promise<OrderSale | null> {
         return this.service.getOrderSale({
             order_sale_id: orderSalePayment.order_sale_id,
+        });
+    }
+
+    @ResolveField(() => OrderSaleCollectionStatus, { nullable: true })
+    async order_sale_collection_status(
+        orderSalePayment: OrderSalePayment,
+    ): Promise<OrderSaleCollectionStatus | null> {
+        return this.service.getOrderSaleCollectionStatus({
+            order_sale_collection_status_id:
+                orderSalePayment.order_sale_collection_status_id,
         });
     }
 }
