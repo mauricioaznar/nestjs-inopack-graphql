@@ -1,24 +1,34 @@
-import { Args, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderSalePaymentService } from './order-sale-payment.service';
-import { Public } from '../../auth/decorators/public.decorator';
 import {
+    ActivityTypeName,
     OrderSale,
     OrderSaleCollectionStatus,
     OrderSalePayment,
+    OrderSalePaymentUpdateInput,
     PaginatedOrderSalePayments,
+    User,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Resolver(() => OrderSalePayment)
-@Public()
 @Injectable()
 export class OrderSalePaymentResolver {
-    constructor(private service: OrderSalePaymentService) {}
+    constructor(
+        private service: OrderSalePaymentService,
+        private pubSubService: PubSubService,
+    ) {}
 
-    @Query(() => [OrderSalePayment])
-    async getOrderSalePayments(): Promise<OrderSalePayment[]> {
-        return this.service.getOrderSalePayments();
+    @Query(() => OrderSalePayment, { nullable: true })
+    async getOrderSalePayment(
+        @Args('OrderSalePaymentId') orderSalePaymentId: number,
+    ): Promise<OrderSalePayment | null> {
+        return this.service.getOrderSalePayment({
+            order_sale_payment_id: orderSalePaymentId,
+        });
     }
 
     @Query(() => PaginatedOrderSalePayments)
@@ -30,6 +40,26 @@ export class OrderSalePaymentResolver {
             offsetPaginatorArgs,
             datePaginator,
         });
+    }
+
+    @Mutation(() => OrderSalePayment)
+    async updateOrderSalePayment(
+        @Args('OrderSalePaymentUpdateInput') input: OrderSalePaymentUpdateInput,
+        @CurrentUser() currentUser: User,
+    ): Promise<OrderSalePayment> {
+        const orderSalePayment = await this.service.updateOrderSalePayment(
+            input,
+        );
+        const orderSale = await this.service.getOrderSale({
+            order_sale_id: orderSalePayment.order_sale_id,
+        });
+
+        await this.pubSubService.orderSale({
+            orderSale: orderSale!,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        });
+        return orderSalePayment;
     }
 
     @ResolveField(() => OrderSale, { nullable: true })

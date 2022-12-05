@@ -2,11 +2,18 @@ import { Injectable } from '@nestjs/common';
 import {
     OrderSale,
     OrderSaleCollectionStatus,
+    OrderSaleInput,
     OrderSalePayment,
+    OrderSalePaymentUpdateInput,
     PaginatedOrderSalePayments,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { getRangesFromYearMonth } from '../../../common/helpers';
+import {
+    getCreatedAtProperty,
+    getRangesFromYearMonth,
+    getUpdatedAtProperty,
+    vennDiagram,
+} from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 
@@ -62,8 +69,35 @@ export class OrderSalePaymentService {
         };
     }
 
-    async getOrderSalePayments(): Promise<OrderSalePayment[]> {
-        return this.prisma.order_sale_payments.findMany();
+    async getOrderSalePayment({
+        order_sale_payment_id,
+    }: {
+        order_sale_payment_id: number | null;
+    }): Promise<OrderSalePayment | null> {
+        if (!order_sale_payment_id) {
+            return null;
+        }
+
+        return this.prisma.order_sale_payments.findUnique({
+            where: {
+                id: order_sale_payment_id,
+            },
+        });
+    }
+
+    async updateOrderSalePayment(
+        input: OrderSalePaymentUpdateInput,
+    ): Promise<OrderSalePayment> {
+        return await this.prisma.order_sale_payments.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                order_sale_collection_status_id:
+                    input.order_sale_collection_status_id,
+            },
+            where: {
+                id: input.id || 0,
+            },
+        });
     }
 
     async getOrderSale({
