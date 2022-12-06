@@ -2,18 +2,16 @@ import { Injectable } from '@nestjs/common';
 import {
     OrderSale,
     OrderSaleCollectionStatus,
-    OrderSaleInput,
     OrderSalePayment,
+    OrderSalePaymentQueryArgs,
     OrderSalePaymentSortArgs,
     OrderSalePaymentUpdateInput,
     PaginatedOrderSalePayments,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
-    getCreatedAtProperty,
     getRangesFromYearMonth,
     getUpdatedAtProperty,
-    vennDiagram,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -26,10 +24,12 @@ export class OrderSalePaymentService {
         offsetPaginatorArgs,
         datePaginator,
         orderSalePaymentSortArgs,
+        orderSalePaymentsQueryArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
         orderSalePaymentSortArgs: OrderSalePaymentSortArgs;
+        orderSalePaymentsQueryArgs: OrderSalePaymentQueryArgs;
     }): Promise<PaginatedOrderSalePayments> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
@@ -37,6 +37,7 @@ export class OrderSalePaymentService {
         });
 
         const { sort_order, sort_field } = orderSalePaymentSortArgs;
+        const { order_sale_collection_status_id } = orderSalePaymentsQueryArgs;
 
         const orderSalesWhere: Prisma.order_sale_paymentsWhereInput = {
             AND: [
@@ -52,6 +53,13 @@ export class OrderSalePaymentService {
                     date_paid: {
                         lt: datePaginator.year ? endDate : undefined,
                     },
+                },
+                {
+                    order_sale_collection_status_id:
+                        order_sale_collection_status_id !== null &&
+                        order_sale_collection_status_id !== undefined
+                            ? order_sale_collection_status_id
+                            : undefined,
                 },
             ],
         };

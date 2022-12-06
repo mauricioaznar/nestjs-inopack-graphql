@@ -28,7 +28,6 @@ import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { OrderProductionQueryArgs } from '../../../common/dto/entities/production/order-production.dto';
 
 @Resolver(() => OrderSale)
 @UseGuards(GqlAuthGuard)

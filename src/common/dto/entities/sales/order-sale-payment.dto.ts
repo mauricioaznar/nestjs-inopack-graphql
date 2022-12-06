@@ -68,3 +68,9 @@ export class OrderSalePaymentSortArgs {
     @Field(() => OrderSalePaymentSortableFields, { nullable: true })
     sort_field: OrderSalePaymentSortableFields | null;
 }
+
+@ArgsType()
+export class OrderSalePaymentQueryArgs {
+    @Field(() => Int, { nullable: true })
+    order_sale_collection_status_id: number | null;
+}
