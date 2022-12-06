@@ -38,6 +38,13 @@ export class OrderSalePaymentService {
 
         const { sort_order, sort_field } = orderSalePaymentSortArgs;
         const { order_sale_collection_status_id } = orderSalePaymentsQueryArgs;
+        const filter =
+            orderSalePaymentsQueryArgs.filter !== '' &&
+            orderSalePaymentsQueryArgs.filter
+                ? orderSalePaymentsQueryArgs.filter
+                : undefined;
+
+        const isFilterANumber = !Number.isNaN(Number(filter));
 
         const orderSalesWhere: Prisma.order_sale_paymentsWhereInput = {
             AND: [
@@ -60,6 +67,67 @@ export class OrderSalePaymentService {
                         order_sale_collection_status_id !== undefined
                             ? order_sale_collection_status_id
                             : undefined,
+                },
+                {
+                    OR: [
+                        {
+                            order_sales: {
+                                order_code: {
+                                    in: isFilterANumber
+                                        ? Number(filter)
+                                        : undefined,
+                                },
+                            },
+                        },
+                        {
+                            order_sales: {
+                                order_requests: {
+                                    order_code: {
+                                        in: isFilterANumber
+                                            ? Number(filter)
+                                            : undefined,
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            order_sales: {
+                                invoice_code: {
+                                    in: isFilterANumber
+                                        ? Number(filter)
+                                        : undefined,
+                                },
+                            },
+                        },
+                    ],
+                },
+                {
+                    OR: [
+                        {
+                            order_sales: {
+                                order_requests: {
+                                    clients: {
+                                        name: {
+                                            contains: !isFilterANumber
+                                                ? filter
+                                                : undefined,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            order_sales: {
+                                order_sale_receipt_type: {
+                                    name: {
+                                        contains: !isFilterANumber
+                                            ? filter
+                                            : undefined,
+                                    },
+                                },
+                            },
+                        },
+                    ],
                 },
             ],
         };

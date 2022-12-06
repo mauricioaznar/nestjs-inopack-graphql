@@ -71,6 +71,9 @@ export class OrderSalePaymentSortArgs {
 
 @ArgsType()
 export class OrderSalePaymentQueryArgs {
+    @Field(() => String, { nullable: true })
+    filter: string;
+
     @Field(() => Int, { nullable: true })
     order_sale_collection_status_id: number | null;
 }
