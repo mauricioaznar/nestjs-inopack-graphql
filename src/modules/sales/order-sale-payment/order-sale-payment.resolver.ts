@@ -6,6 +6,8 @@ import {
     OrderSale,
     OrderSaleCollectionStatus,
     OrderSalePayment,
+    OrderSalePaymentSortableFields,
+    OrderSalePaymentSortArgs,
     OrderSalePaymentUpdateInput,
     PaginatedOrderSalePayments,
     User,
@@ -35,10 +37,13 @@ export class OrderSalePaymentResolver {
     async paginatedOrderSalePayments(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false })
+        orderSalePaymentSortArgs: OrderSalePaymentSortArgs,
     ): Promise<PaginatedOrderSalePayments> {
         return this.service.paginatedOrderSalePayments({
             offsetPaginatorArgs,
             datePaginator,
+            orderSalePaymentSortArgs,
         });
     }
 

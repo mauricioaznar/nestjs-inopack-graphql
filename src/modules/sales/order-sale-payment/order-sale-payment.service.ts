@@ -4,6 +4,7 @@ import {
     OrderSaleCollectionStatus,
     OrderSaleInput,
     OrderSalePayment,
+    OrderSalePaymentSortArgs,
     OrderSalePaymentUpdateInput,
     PaginatedOrderSalePayments,
 } from '../../../common/dto/entities';
@@ -24,14 +25,18 @@ export class OrderSalePaymentService {
     async paginatedOrderSalePayments({
         offsetPaginatorArgs,
         datePaginator,
+        orderSalePaymentSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
+        orderSalePaymentSortArgs: OrderSalePaymentSortArgs;
     }): Promise<PaginatedOrderSalePayments> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
         });
+
+        const { sort_order, sort_field } = orderSalePaymentSortArgs;
 
         const orderSalesWhere: Prisma.order_sale_paymentsWhereInput = {
             AND: [
@@ -51,6 +56,25 @@ export class OrderSalePaymentService {
             ],
         };
 
+        let orderSalesOrderBy: Prisma.order_sale_paymentsOrderByWithRelationInput =
+            {
+                updated_at: 'desc',
+            };
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'date_paid') {
+                orderSalesOrderBy = {
+                    date_paid: sort_order,
+                };
+            } else if (sort_field === 'order_code') {
+                orderSalesOrderBy = {
+                    order_sales: {
+                        order_code: sort_order,
+                    },
+                };
+            }
+        }
+
         const orderSalesCount = await this.prisma.order_sale_payments.count({
             where: orderSalesWhere,
         });
@@ -58,9 +82,7 @@ export class OrderSalePaymentService {
             where: orderSalesWhere,
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
-            orderBy: {
-                date_paid: 'desc',
-            },
+            orderBy: orderSalesOrderBy,
         });
 
         return {

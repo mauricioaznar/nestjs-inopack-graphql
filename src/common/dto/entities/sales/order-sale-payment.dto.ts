@@ -1,5 +1,13 @@
-import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
+import {
+    ArgsType,
+    Field,
+    InputType,
+    Int,
+    ObjectType,
+    registerEnumType,
+} from '@nestjs/graphql';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
+import { ColumnOrder } from '../../pagination';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -42,3 +50,21 @@ export class OrderSalePayment extends OrderSalePaymentBase {
 export class PaginatedOrderSalePayments extends OffsetPaginatorResult(
     OrderSalePayment,
 ) {}
+
+export enum OrderSalePaymentSortableFields {
+    date_paid = 'date_paid',
+    order_code = 'order_code',
+}
+
+registerEnumType(OrderSalePaymentSortableFields, {
+    name: 'OrderSalePaymentSortableFields',
+});
+
+@ArgsType()
+export class OrderSalePaymentSortArgs {
+    @Field(() => ColumnOrder, { nullable: true })
+    sort_order: ColumnOrder | null;
+
+    @Field(() => OrderSalePaymentSortableFields, { nullable: true })
+    sort_field: OrderSalePaymentSortableFields | null;
+}
