@@ -4,7 +4,13 @@ import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 @InputType({ isAbstract: true })
 export class ProductBase {
     @Field()
-    description: string;
+    internal_description: string;
+
+    @Field()
+    external_description: string;
+
+    @Field(() => Boolean)
+    discontinued: boolean;
 
     @Field()
     code: string;

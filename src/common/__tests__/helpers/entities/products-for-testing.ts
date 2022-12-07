@@ -26,10 +26,12 @@ export async function createProductForTesting({
             length: 1,
             current_group_weight: current_group_weight,
             code: 'codigo del producto 1',
-            description: 'asdfasdfjwe description',
             current_kilo_price: 1,
             product_category_id: null,
             product_material_id: null,
+            discontinued: false,
+            internal_description: '',
+            external_description: '',
         });
     } catch (e) {
         console.error(e);

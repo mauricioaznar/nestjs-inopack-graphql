@@ -479,6 +479,9 @@ model products {
   order_production_type_id  Int?                        @db.UnsignedInt
   product_material_id       Int?                        @db.UnsignedInt
   product_category_id       Int?                        @db.UnsignedInt
+  internal_description      String                      @db.VarChar(255)
+  external_description      String                      @db.VarChar(255)
+  discontinued              Boolean                     @default(false)
   order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_order_production_type_id_foreign")
   packings                  packings?                   @relation(fields: [packing_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_packing_id_foreign")
   product_categories        product_categories?         @relation(fields: [product_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_category_id")

@@ -118,6 +118,13 @@ export class ProductsResolver {
         return this.productsService.isDeletable({ product_id: product.id });
     }
 
+    @ResolveField(() => String, { nullable: false })
+    async compound_description(@Parent() product: Product): Promise<string> {
+        return product.internal_description !== ''
+            ? `${product.external_description} (${product.internal_description})`
+            : product.external_description;
+    }
+
     @Subscription(() => Product)
     async product() {
         return this.pubSubService.listenForProduct();

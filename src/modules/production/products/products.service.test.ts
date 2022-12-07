@@ -77,10 +77,12 @@ describe('upsert', () => {
             length: 1,
             current_group_weight: 10,
             code: 'codigo del producto 1',
-            description: 'asdfasdfjwe description',
             current_kilo_price: 1,
             product_category_id: productCategory1.id,
             product_material_id: null,
+            internal_description: 'P1',
+            external_description: 'product 1',
+            discontinued: false,
         });
 
         expect(product.id).toBeDefined();
@@ -92,9 +94,11 @@ describe('upsert', () => {
         expect(product.length).toBe(1);
         expect(product.current_group_weight).toBe(10);
         expect(product.code).toMatch(/Codigo del producto 1/i);
-        expect(product.description).toMatch(/asdfasdfjwe/i);
         expect(product.current_kilo_price).toBe(1);
         expect(product.product_category_id).toBe(productCategory1.id);
+        expect(product.internal_description).toBe('P1');
+        expect(product.external_description).toBe('product 1');
+        expect(product.discontinued).toBe(false);
     });
 
     it('creates product type 2 (roll)', async () => {
@@ -107,10 +111,12 @@ describe('upsert', () => {
             length: null,
             current_group_weight: 0,
             code: 'codigo del producto 1',
-            description: 'asdfasdfjwe description',
             current_kilo_price: 1,
             product_category_id: null,
             product_material_id: null,
+            discontinued: false,
+            internal_description: '',
+            external_description: '',
         });
 
         expect(product.id).toBeDefined();
@@ -122,7 +128,6 @@ describe('upsert', () => {
         expect(product.length).toBe(null);
         expect(product.current_group_weight).toBe(0);
         expect(product.code).toMatch(/Codigo del producto 1/i);
-        expect(product.description).toMatch(/asdfasdfjwe/i);
         expect(product.current_kilo_price).toBe(1);
     });
 
@@ -136,12 +141,14 @@ describe('upsert', () => {
             calibre: 30,
             current_kilo_price: 10,
             code: productCode,
-            description: productDescription,
             length: 30,
             packing_id: packing1.id,
             current_group_weight: 80,
             product_category_id: null,
             product_material_id: null,
+            discontinued: false,
+            external_description: '',
+            internal_description: '',
         });
 
         expect(product.id).toBeDefined();
@@ -153,7 +160,6 @@ describe('upsert', () => {
         expect(product.length).toBe(null);
         expect(product.current_group_weight).toBe(0);
         expect(product.code).toMatch(productCode);
-        expect(product.description).toMatch(productDescription);
         expect(product.current_kilo_price).toBe(10);
     });
 
@@ -171,10 +177,12 @@ describe('upsert', () => {
                 length: 1,
                 current_group_weight: 10,
                 code: 'codigo del producto 1',
-                description: 'asdfasdfjwe description',
                 current_kilo_price: 1,
                 product_category_id: null,
                 product_material_id: null,
+                discontinued: false,
+                internal_description: '',
+                external_description: '',
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -199,10 +207,12 @@ describe('upsert', () => {
                 length: 1,
                 current_group_weight: 10,
                 code: 'codigo del producto 1',
-                description: 'asdfasdfjwe description',
                 current_kilo_price: 1,
                 product_category_id: productCategory2.id,
                 product_material_id: null,
+                discontinued: false,
+                internal_description: '',
+                external_description: '',
             });
         } catch (e) {
             expect(e.response.message).toEqual(

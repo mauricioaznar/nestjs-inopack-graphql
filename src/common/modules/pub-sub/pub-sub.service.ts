@@ -37,7 +37,7 @@ export class PubSubService {
             type: type,
             entity_id: product.id,
             userId,
-            description: `Producto: ${product.description} (${product.code})`,
+            description: `Producto: ${product.external_description} (${product.code})`,
         });
     }
 
