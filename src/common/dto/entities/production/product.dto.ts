@@ -76,7 +76,7 @@ export class Product extends ProductBase {
 export class PaginatedProducts extends OffsetPaginatorResult(Product) {}
 
 @ArgsType()
-export class ProductsQueryArgs {
+export class PaginatedProductsQueryArgs {
     @Field(() => String, { nullable: false })
     filter: string;
 
@@ -99,10 +99,16 @@ registerEnumType(ProductsSortableFields, {
 });
 
 @ArgsType()
-export class ProductsSortArgs {
+export class PaginatedProductsSortArgs {
     @Field(() => ColumnOrder, { nullable: true })
     sort_order: ColumnOrder | null;
 
     @Field(() => ProductsSortableFields, { nullable: true })
     sort_field: ProductsSortableFields | null;
+}
+
+@ArgsType()
+export class GetProductsQueryFields {
+    @Field(() => Boolean, { nullable: true })
+    exclude_discontinued: boolean | null;
 }

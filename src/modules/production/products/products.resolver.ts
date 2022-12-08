@@ -14,10 +14,11 @@ import {
     OrderProductionType,
     PaginatedProducts,
     Product,
-    ProductsQueryArgs,
-    ProductsSortArgs,
+    PaginatedProductsQueryArgs,
+    PaginatedProductsSortArgs,
     ProductUpsertInput,
     User,
+    GetProductsQueryFields,
 } from '../../../common/dto/entities';
 import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
@@ -38,15 +39,21 @@ export class ProductsResolver {
     ) {}
 
     @Query(() => [Product])
-    async getProducts(): Promise<Product[]> {
-        return this.productsService.getProducts();
+    async getProducts(
+        @Args({ nullable: true })
+        getProductsQueryFields: GetProductsQueryFields,
+    ): Promise<Product[]> {
+        return this.productsService.getProducts({
+            getProductsQueryFields,
+        });
     }
 
     @Query(() => PaginatedProducts)
     async paginatedProducts(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
-        @Args({ nullable: false }) productsQueryArgs: ProductsQueryArgs,
-        @Args({ nullable: false }) productsSortArgs: ProductsSortArgs,
+        @Args({ nullable: false })
+        productsQueryArgs: PaginatedProductsQueryArgs,
+        @Args({ nullable: false }) productsSortArgs: PaginatedProductsSortArgs,
     ): Promise<PaginatedProducts> {
         return this.productsService.paginatedProducts({
             offsetPaginatorArgs,

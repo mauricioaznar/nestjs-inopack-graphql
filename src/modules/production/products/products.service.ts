@@ -2,9 +2,10 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import {
     PaginatedProducts,
     Product,
-    ProductsQueryArgs,
-    ProductsSortArgs,
+    PaginatedProductsQueryArgs,
+    PaginatedProductsSortArgs,
     ProductUpsertInput,
+    GetProductsQueryFields,
 } from '../../../common/dto/entities';
 import { isEmpty } from 'class-validator';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
@@ -43,10 +44,23 @@ export class ProductsService {
         });
     }
 
-    async getProducts(): Promise<Product[]> {
+    async getProducts(args?: {
+        getProductsQueryFields?: GetProductsQueryFields;
+    }): Promise<Product[]> {
+        const getProductsQueryFields = args?.getProductsQueryFields;
+        const excludeDiscontinued =
+            getProductsQueryFields?.exclude_discontinued;
+
         return this.prisma.products.findMany({
             where: {
-                active: 1,
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        discontinued: excludeDiscontinued ? false : undefined,
+                    },
+                ],
             },
             orderBy: [
                 {
@@ -65,8 +79,8 @@ export class ProductsService {
         productsSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
-        productsQueryArgs: ProductsQueryArgs;
-        productsSortArgs: ProductsSortArgs;
+        productsQueryArgs: PaginatedProductsQueryArgs;
+        productsSortArgs: PaginatedProductsSortArgs;
     }): Promise<PaginatedProducts> {
         const filter =
             productsQueryArgs.filter !== ''
