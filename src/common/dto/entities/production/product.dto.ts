@@ -5,9 +5,11 @@ import {
     InputType,
     Int,
     ObjectType,
+    registerEnumType,
 } from '@nestjs/graphql';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { OrderProduction } from './order-production.dto';
+import { ColumnOrder } from '../../pagination';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -65,6 +67,9 @@ export class ProductUpsertInput extends ProductBase {
 export class Product extends ProductBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field(() => Date, { nullable: true })
+    updated_at: Date | null;
 }
 
 @ObjectType()
@@ -74,4 +79,30 @@ export class PaginatedProducts extends OffsetPaginatorResult(Product) {}
 export class ProductsQueryArgs {
     @Field(() => String, { nullable: false })
     filter: string;
+
+    @Field(() => Int, { nullable: true })
+    product_category_id: number | null;
+
+    @Field(() => Boolean, { nullable: false })
+    include_discontinued: boolean;
+}
+
+export enum ProductsSortableFields {
+    external_description = 'external_description',
+    internal_description = 'internal_description',
+    order_production_type_id = 'order_production_type_id',
+    product_category_id = 'product_category_id',
+}
+
+registerEnumType(ProductsSortableFields, {
+    name: 'ProductsSortableFields',
+});
+
+@ArgsType()
+export class ProductsSortArgs {
+    @Field(() => ColumnOrder, { nullable: true })
+    sort_order: ColumnOrder | null;
+
+    @Field(() => ProductsSortableFields, { nullable: true })
+    sort_field: ProductsSortableFields | null;
 }

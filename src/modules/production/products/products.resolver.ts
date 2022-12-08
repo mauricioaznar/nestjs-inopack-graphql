@@ -15,6 +15,7 @@ import {
     PaginatedProducts,
     Product,
     ProductsQueryArgs,
+    ProductsSortArgs,
     ProductUpsertInput,
     User,
 } from '../../../common/dto/entities';
@@ -45,10 +46,12 @@ export class ProductsResolver {
     async paginatedProducts(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) productsQueryArgs: ProductsQueryArgs,
+        @Args({ nullable: false }) productsSortArgs: ProductsSortArgs,
     ): Promise<PaginatedProducts> {
         return this.productsService.paginatedProducts({
             offsetPaginatorArgs,
             productsQueryArgs,
+            productsSortArgs,
         });
     }
 

@@ -3,6 +3,7 @@ import {
     PaginatedProducts,
     Product,
     ProductsQueryArgs,
+    ProductsSortArgs,
     ProductUpsertInput,
 } from '../../../common/dto/entities';
 import { isEmpty } from 'class-validator';
@@ -61,19 +62,32 @@ export class ProductsService {
     async paginatedProducts({
         offsetPaginatorArgs,
         productsQueryArgs,
+        productsSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         productsQueryArgs: ProductsQueryArgs;
+        productsSortArgs: ProductsSortArgs;
     }): Promise<PaginatedProducts> {
         const filter =
             productsQueryArgs.filter !== ''
                 ? productsQueryArgs.filter
                 : undefined;
 
-        const orderProductionsWhere: Prisma.productsWhereInput = {
+        const { sort_order, sort_field } = productsSortArgs;
+
+        const where: Prisma.productsWhereInput = {
             AND: [
                 {
                     active: 1,
+                },
+                {
+                    product_category_id:
+                        productsQueryArgs.product_category_id || undefined,
+                },
+                {
+                    discontinued: !productsQueryArgs.include_discontinued
+                        ? false
+                        : undefined,
                 },
                 {
                     OR: [
@@ -92,16 +106,38 @@ export class ProductsService {
             ],
         };
 
+        let orderBy: Prisma.productsOrderByWithRelationInput = {
+            updated_at: 'desc',
+        };
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'external_description') {
+                orderBy = {
+                    external_description: sort_order,
+                };
+            } else if (sort_field === 'internal_description') {
+                orderBy = {
+                    internal_description: sort_order,
+                };
+            } else if (sort_field === 'order_production_type_id') {
+                orderBy = {
+                    order_production_type_id: sort_order,
+                };
+            } else if (sort_field === 'product_category_id') {
+                orderBy = {
+                    product_category_id: sort_order,
+                };
+            }
+        }
+
         const count = await this.prisma.products.count({
-            where: orderProductionsWhere,
+            where: where,
         });
         const products = await this.prisma.products.findMany({
-            where: orderProductionsWhere,
+            where: where,
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
-            orderBy: {
-                updated_at: 'desc',
-            },
+            orderBy: orderBy,
         });
 
         return {
