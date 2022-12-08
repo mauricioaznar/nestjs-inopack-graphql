@@ -39,6 +39,9 @@ export class OrderSalePaymentUpdateInput {
 
 @ObjectType('OrderSalePayment')
 export class OrderSalePayment extends OrderSalePaymentBase {
+    @Field(() => Date, { nullable: true })
+    updated_at: Date | null;
+
     @Field({ nullable: false })
     id: number;
 
