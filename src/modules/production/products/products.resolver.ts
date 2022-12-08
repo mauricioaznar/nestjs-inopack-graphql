@@ -12,7 +12,9 @@ import { ProductsService } from './products.service';
 import {
     ActivityTypeName,
     OrderProductionType,
+    PaginatedProducts,
     Product,
+    ProductsQueryArgs,
     ProductUpsertInput,
     User,
 } from '../../../common/dto/entities';
@@ -22,6 +24,7 @@ import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { ProductCategory } from '../../../common/dto/entities/production/product-category.dto';
 import { ProductMaterial } from '../../../common/dto/entities/production/product-material.dto';
+import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 
 @Resolver(() => Product)
 @UseGuards(GqlAuthGuard)
@@ -36,6 +39,17 @@ export class ProductsResolver {
     @Query(() => [Product])
     async getProducts(): Promise<Product[]> {
         return this.productsService.getProducts();
+    }
+
+    @Query(() => PaginatedProducts)
+    async paginatedProducts(
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false }) productsQueryArgs: ProductsQueryArgs,
+    ): Promise<PaginatedProducts> {
+        return this.productsService.paginatedProducts({
+            offsetPaginatorArgs,
+            productsQueryArgs,
+        });
     }
 
     @Query(() => Product)

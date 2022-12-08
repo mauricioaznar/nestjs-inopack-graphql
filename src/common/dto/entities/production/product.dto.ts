@@ -1,4 +1,13 @@
-import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
+import {
+    ArgsType,
+    Field,
+    Float,
+    InputType,
+    Int,
+    ObjectType,
+} from '@nestjs/graphql';
+import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
+import { OrderProduction } from './order-production.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -56,4 +65,13 @@ export class ProductUpsertInput extends ProductBase {
 export class Product extends ProductBase {
     @Field({ nullable: false })
     id: number;
+}
+
+@ObjectType()
+export class PaginatedProducts extends OffsetPaginatorResult(Product) {}
+
+@ArgsType()
+export class ProductsQueryArgs {
+    @Field(() => String, { nullable: false })
+    filter: string;
 }

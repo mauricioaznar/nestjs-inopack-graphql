@@ -21,14 +21,12 @@ import {
     ActivityTypeName,
     Branch,
     OrderProductionType,
-    PaginatedOrderSales,
     User,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { OrderAdjustment } from '../../../common/dto/entities/production/order-adjustment.dto';
 
 @Resolver(() => OrderProduction)
 @UseGuards(GqlAuthGuard)
@@ -54,7 +52,7 @@ export class OrderProductionsResolver {
         @Args({ nullable: false }) datePaginator: YearMonth,
         @Args({ nullable: false })
         orderProductionQueryArgs: OrderProductionQueryArgs,
-    ): Promise<PaginatedOrderSales> {
+    ): Promise<PaginatedOrderProductions> {
         return this.service.paginatedOrderProductions({
             offsetPaginatorArgs,
             datePaginator,

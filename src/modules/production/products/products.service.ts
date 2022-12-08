@@ -1,5 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Product, ProductUpsertInput } from '../../../common/dto/entities';
+import {
+    PaginatedProducts,
+    Product,
+    ProductsQueryArgs,
+    ProductUpsertInput,
+} from '../../../common/dto/entities';
 import { isEmpty } from 'class-validator';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
@@ -9,6 +14,8 @@ import {
     getCreatedAtProperty,
     getUpdatedAtProperty,
 } from '../../../common/helpers';
+import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProductsService {
@@ -49,6 +56,58 @@ export class ProductsService {
                 },
             ],
         });
+    }
+
+    async paginatedProducts({
+        offsetPaginatorArgs,
+        productsQueryArgs,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+        productsQueryArgs: ProductsQueryArgs;
+    }): Promise<PaginatedProducts> {
+        const filter =
+            productsQueryArgs.filter !== ''
+                ? productsQueryArgs.filter
+                : undefined;
+
+        const orderProductionsWhere: Prisma.productsWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+                {
+                    OR: [
+                        {
+                            external_description: {
+                                contains: filter,
+                            },
+                        },
+                        {
+                            internal_description: {
+                                contains: filter,
+                            },
+                        },
+                    ],
+                },
+            ],
+        };
+
+        const count = await this.prisma.products.count({
+            where: orderProductionsWhere,
+        });
+        const products = await this.prisma.products.findMany({
+            where: orderProductionsWhere,
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+            orderBy: {
+                updated_at: 'desc',
+            },
+        });
+
+        return {
+            count: count || 0,
+            docs: products || [],
+        };
     }
 
     async getProductType({
