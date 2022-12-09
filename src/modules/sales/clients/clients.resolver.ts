@@ -14,11 +14,15 @@ import {
     Client,
     ClientContact,
     ClientUpsertInput,
+    PaginatedClients,
+    PaginatedClientsQueryArgs,
+    PaginatedClientsSortArgs,
     User,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 
 @Resolver(() => Client)
 @UseGuards(GqlAuthGuard)
@@ -41,6 +45,21 @@ export class ClientsResolver {
     ): Promise<Client | null> {
         return this.service.getClient({
             client_id: clientId,
+        });
+    }
+
+    @Query(() => PaginatedClients)
+    async paginatedClients(
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false })
+        paginatedClientsQueryArgs: PaginatedClientsQueryArgs,
+        @Args({ nullable: false })
+        paginatedClientsSortArgs: PaginatedClientsSortArgs,
+    ): Promise<PaginatedClients> {
+        return this.service.paginatedClients({
+            offsetPaginatorArgs,
+            paginatedClientsQueryArgs,
+            paginatedClientsSortArgs,
         });
     }
 

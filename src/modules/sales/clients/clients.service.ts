@@ -7,6 +7,9 @@ import {
     Client,
     ClientContact,
     ClientUpsertInput,
+    PaginatedClientsQueryArgs,
+    PaginatedClientsSortArgs,
+    PaginatedProducts,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -14,6 +17,8 @@ import {
     vennDiagram,
 } from '../../../common/helpers';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
+import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ClientsService {
@@ -28,6 +33,76 @@ export class ClientsService {
                 name: 'asc',
             },
         });
+    }
+
+    async paginatedClients({
+        offsetPaginatorArgs,
+        paginatedClientsQueryArgs,
+        paginatedClientsSortArgs,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+        paginatedClientsQueryArgs: PaginatedClientsQueryArgs;
+        paginatedClientsSortArgs: PaginatedClientsSortArgs;
+    }): Promise<PaginatedProducts> {
+        const filter =
+            paginatedClientsQueryArgs.filter !== ''
+                ? paginatedClientsQueryArgs.filter
+                : undefined;
+
+        const { sort_order, sort_field } = paginatedClientsSortArgs;
+
+        const where: Prisma.clientsWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+                {
+                    OR: [
+                        {
+                            name: {
+                                contains: filter,
+                            },
+                        },
+                        {
+                            abbreviation: {
+                                contains: filter,
+                            },
+                        },
+                    ],
+                },
+            ],
+        };
+
+        let orderBy: Prisma.clientsOrderByWithRelationInput = {
+            updated_at: 'desc',
+        };
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'name') {
+                orderBy = {
+                    name: sort_order,
+                };
+            } else if (sort_field === 'abbreviation') {
+                orderBy = {
+                    abbreviation: sort_order,
+                };
+            }
+        }
+
+        const count = await this.prisma.clients.count({
+            where: where,
+        });
+        const clients = await this.prisma.clients.findMany({
+            where: where,
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+            orderBy: orderBy,
+        });
+
+        return {
+            count: count || 0,
+            docs: clients || [],
+        };
     }
 
     async getClient({
