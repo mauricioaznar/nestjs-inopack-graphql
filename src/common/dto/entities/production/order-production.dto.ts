@@ -35,6 +35,9 @@ export class OrderProductionInput extends OrderProductionBase {
 export class OrderProduction extends OrderProductionBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field(() => Date, { nullable: true })
+    updated_at: Date | null;
 }
 
 @ObjectType()
@@ -45,8 +48,8 @@ export class PaginatedOrderProductions extends OffsetPaginatorResult(
 @ArgsType()
 export class OrderProductionQueryArgs {
     @Field(() => Int, { nullable: true })
-    order_production_type_id: number;
+    order_production_type_id: number | null;
 
     @Field(() => Int, { nullable: true })
-    branch_id: number;
+    branch_id: number | null;
 }

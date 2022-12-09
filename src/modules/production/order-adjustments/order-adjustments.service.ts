@@ -15,6 +15,7 @@ import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/
 import {
     OrderAdjustment,
     OrderAdjustmentInput,
+    OrderAdjustmentQueryArgs,
     PaginatedOrderAdjustments,
 } from '../../../common/dto/entities/production/order-adjustment.dto';
 import { OrderAdjustmentType } from '../../../common/dto/entities/production/order-adjustment-type.dto';
@@ -46,9 +47,11 @@ export class OrderAdjustmentsService {
     async paginatedOrderAdjustments({
         offsetPaginatorArgs,
         datePaginator,
+        orderAdjustmentQueryArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
+        orderAdjustmentQueryArgs: OrderAdjustmentQueryArgs;
     }): Promise<PaginatedOrderAdjustments> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
@@ -69,6 +72,11 @@ export class OrderAdjustmentsService {
                     date: {
                         lt: endDate,
                     },
+                },
+                {
+                    order_adjustment_type_id:
+                        orderAdjustmentQueryArgs.order_adjustment_type_id ||
+                        undefined,
                 },
             ],
         };

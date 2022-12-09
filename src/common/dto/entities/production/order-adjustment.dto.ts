@@ -1,4 +1,4 @@
-import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
+import { ArgsType, Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { OrderAdjustmentProductInput } from './order-adjustment-product.dto';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { OrderProduction } from './order-production.dto';
@@ -32,3 +32,9 @@ export class OrderAdjustment extends OrderAdjustmentBase {
 export class PaginatedOrderAdjustments extends OffsetPaginatorResult(
     OrderAdjustment,
 ) {}
+
+@ArgsType()
+export class OrderAdjustmentQueryArgs {
+    @Field(() => Int, { nullable: true })
+    order_adjustment_type_id: number | null;
+}

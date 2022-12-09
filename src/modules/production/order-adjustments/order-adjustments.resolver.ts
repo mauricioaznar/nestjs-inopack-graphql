@@ -12,6 +12,7 @@ import { OrderAdjustmentsService } from './order-adjustments.service';
 import {
     OrderAdjustment,
     OrderAdjustmentInput,
+    OrderAdjustmentQueryArgs,
     PaginatedOrderAdjustments,
 } from '../../../common/dto/entities/production/order-adjustment.dto';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
@@ -49,10 +50,13 @@ export class OrderAdjustmentsResolver {
     async paginatedOrderAdjustments(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false })
+        orderAdjustmentQueryArgs: OrderAdjustmentQueryArgs,
     ): Promise<PaginatedOrderAdjustments> {
         return this.service.paginatedOrderAdjustments({
             offsetPaginatorArgs,
             datePaginator,
+            orderAdjustmentQueryArgs,
         });
     }
 
