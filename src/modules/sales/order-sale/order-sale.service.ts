@@ -15,6 +15,7 @@ import {
     OrderSaleProduct,
     OrderSaleReceiptType,
     OrderSalesQueryArgs,
+    OrderSalesSortArgs,
     PaginatedOrderSales,
 } from '../../../common/dto/entities';
 import {
@@ -40,15 +41,19 @@ export class OrderSaleService {
         offsetPaginatorArgs,
         datePaginator,
         orderSalesQueryArgs,
+        orderSalesSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
         orderSalesQueryArgs: OrderSalesQueryArgs;
+        orderSalesSortArgs: OrderSalesSortArgs;
     }): Promise<PaginatedOrderSales> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
         });
+
+        const { sort_order, sort_field } = orderSalesSortArgs;
 
         const filter =
             orderSalesQueryArgs.filter !== '' && !!orderSalesQueryArgs.filter
@@ -125,17 +130,27 @@ export class OrderSaleService {
                 },
             ],
         };
+        let orderBy: Prisma.order_salesOrderByWithRelationInput = {
+            updated_at: 'desc',
+        };
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'order_code') {
+                orderBy = {
+                    order_code: sort_order,
+                };
+            }
+        }
 
         const orderSalesCount = await this.prisma.order_sales.count({
             where: orderSalesWhere,
         });
+
         const orderSales = await this.prisma.order_sales.findMany({
             where: orderSalesWhere,
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
-            orderBy: {
-                updated_at: 'desc',
-            },
+            orderBy: orderBy,
         });
 
         return {

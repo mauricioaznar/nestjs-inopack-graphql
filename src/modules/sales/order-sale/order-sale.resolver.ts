@@ -21,6 +21,8 @@ import {
     OrderSaleProduct,
     OrderSaleReceiptType,
     OrderSalesQueryArgs,
+    OrderSalesSortableFields,
+    OrderSalesSortArgs,
     PaginatedOrderSales,
     User,
 } from '../../../common/dto/entities';
@@ -53,11 +55,14 @@ export class OrderSaleResolver {
         @Args({ nullable: false }) datePaginator: YearMonth,
         @Args({ nullable: false })
         orderSalesQueryArgs: OrderSalesQueryArgs,
+        @Args({ nullable: false })
+        orderSalesSortArgs: OrderSalesSortArgs,
     ): Promise<PaginatedOrderSales> {
         return this.service.paginatedOrderSales({
             offsetPaginatorArgs,
             datePaginator,
             orderSalesQueryArgs,
+            orderSalesSortArgs,
         });
     }
 
