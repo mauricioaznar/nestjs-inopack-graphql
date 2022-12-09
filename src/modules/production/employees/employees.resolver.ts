@@ -12,11 +12,22 @@ import { EmployeesService } from './employees.service';
 import {
     Employee,
     EmployeeUpsertInput,
+    PaginatedEmployees,
+    PaginatedEmployeesQueryArgs,
+    PaginatedEmployeesSortArgs,
 } from '../../../common/dto/entities/production/employee.dto';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { ActivityTypeName, User } from '../../../common/dto/entities';
+import {
+    ActivityTypeName,
+    Branch,
+    OrderProductionType,
+    PaginatedProducts,
+    User,
+} from '../../../common/dto/entities';
+import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
+import { EmployeeType } from '../../../common/dto/entities/production/employee-type.dto';
 
 @Resolver(() => Employee)
 @UseGuards(GqlAuthGuard)
@@ -30,6 +41,21 @@ export class EmployeesResolver {
     @Query(() => [Employee])
     async getEmployees(): Promise<Employee[]> {
         return this.service.getEmployees();
+    }
+
+    @Query(() => PaginatedEmployees)
+    async paginatedEmployees(
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false })
+        paginatedEmployeesQueryArgs: PaginatedEmployeesQueryArgs,
+        @Args({ nullable: false })
+        paginatedEmployeesSortArgs: PaginatedEmployeesSortArgs,
+    ): Promise<PaginatedEmployees> {
+        return this.service.paginatedEmployees({
+            offsetPaginatorArgs,
+            paginatedEmployeesSortArgs,
+            paginatedEmployeesQueryArgs,
+        });
     }
 
     @Query(() => Employee, { nullable: true })
@@ -77,6 +103,20 @@ export class EmployeesResolver {
     @ResolveField(() => Boolean)
     async is_deletable(@Parent() employee: Employee): Promise<boolean> {
         return this.service.isDeletable({ employee_id: employee.id });
+    }
+
+    @ResolveField(() => Branch, { nullable: true })
+    async branch(@Parent() employee: Employee): Promise<EmployeeType | null> {
+        return this.service.getBranch({ branch_id: employee.branch_id });
+    }
+
+    @ResolveField(() => OrderProductionType, { nullable: true })
+    async order_production_type(
+        @Parent() employee: Employee,
+    ): Promise<EmployeeType | null> {
+        return this.service.getOrderProductionType({
+            order_production_type_id: employee.order_production_type_id,
+        });
     }
 
     @Subscription(() => Employee)

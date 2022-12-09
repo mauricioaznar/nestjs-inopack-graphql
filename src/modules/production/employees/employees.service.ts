@@ -6,12 +6,19 @@ import {
 import {
     Employee,
     EmployeeUpsertInput,
+    PaginatedEmployees,
+    PaginatedEmployeesQueryArgs,
+    PaginatedEmployeesSortArgs,
 } from '../../../common/dto/entities/production/employee.dto';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
     getCreatedAtProperty,
     getUpdatedAtProperty,
 } from '../../../common/helpers';
+import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
+import { Prisma } from '@prisma/client';
+import { EmployeeType } from '../../../common/dto/entities/production/employee-type.dto';
+import { Branch, OrderProductionType } from '../../../common/dto/entities';
 
 @Injectable()
 export class EmployeesService {
@@ -26,6 +33,86 @@ export class EmployeesService {
                 fullname: 'asc',
             },
         });
+    }
+
+    async paginatedEmployees({
+        offsetPaginatorArgs,
+        paginatedEmployeesQueryArgs,
+        paginatedEmployeesSortArgs,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+        paginatedEmployeesQueryArgs: PaginatedEmployeesQueryArgs;
+        paginatedEmployeesSortArgs: PaginatedEmployeesSortArgs;
+    }): Promise<PaginatedEmployees> {
+        const filter =
+            paginatedEmployeesQueryArgs.filter !== ''
+                ? paginatedEmployeesQueryArgs.filter
+                : undefined;
+
+        const { sort_order, sort_field } = paginatedEmployeesSortArgs;
+
+        const where: Prisma.employeesWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+                {
+                    OR: [
+                        {
+                            first_name: {
+                                contains: filter,
+                            },
+                        },
+                        {
+                            last_name: {
+                                contains: filter,
+                            },
+                        },
+                        {
+                            branch_id:
+                                paginatedEmployeesQueryArgs.branch_id ||
+                                undefined,
+                        },
+                        {
+                            order_production_type_id:
+                                paginatedEmployeesQueryArgs.order_production_type_id ||
+                                undefined,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        let orderBy: Prisma.employeesOrderByWithRelationInput = {
+            updated_at: 'desc',
+        };
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'first_name') {
+                orderBy = {
+                    first_name: sort_order,
+                };
+            } else if (sort_field === 'last_name') {
+                orderBy = {
+                    last_name: sort_order,
+                };
+            }
+        }
+
+        const count = await this.prisma.employees.count({
+            where: where,
+        });
+        const employees = await this.prisma.employees.findMany({
+            where: where,
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+            orderBy: orderBy,
+        });
+
+        return {
+            count: count || 0,
+            docs: employees || [],
+        };
     }
 
     async getEmployee({
@@ -183,6 +270,38 @@ export class EmployeesService {
         return {
             order_productions_count: orderProductionsCount,
         };
+    }
+
+    async getBranch({
+        branch_id,
+    }: {
+        branch_id: number | null;
+    }): Promise<Branch | null> {
+        if (!branch_id) {
+            return null;
+        }
+
+        return this.prisma.branches.findFirst({
+            where: {
+                id: branch_id,
+            },
+        });
+    }
+
+    async getOrderProductionType({
+        order_production_type_id,
+    }: {
+        order_production_type_id: number | null;
+    }): Promise<OrderProductionType | null> {
+        if (!order_production_type_id) {
+            return null;
+        }
+
+        return this.prisma.order_production_type.findFirst({
+            where: {
+                id: order_production_type_id,
+            },
+        });
     }
 
     async isDeletable({

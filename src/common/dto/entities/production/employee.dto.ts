@@ -1,4 +1,13 @@
-import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
+import {
+    ArgsType,
+    Field,
+    InputType,
+    Int,
+    ObjectType,
+    registerEnumType,
+} from '@nestjs/graphql';
+import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
+import { ColumnOrder } from '../../pagination';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -32,4 +41,37 @@ export class Employee extends EmployeeBase {
 
     @Field()
     fullname: string;
+}
+
+export enum PaginatedEmployeesSortableFields {
+    first_name = 'first_name',
+    last_name = 'last_name',
+}
+
+registerEnumType(PaginatedEmployeesSortableFields, {
+    name: 'PaginatedEmployeesSortableFields',
+});
+
+@ArgsType()
+export class PaginatedEmployeesSortArgs {
+    @Field(() => ColumnOrder, { nullable: true })
+    sort_order: ColumnOrder | null;
+
+    @Field(() => PaginatedEmployeesSortableFields, { nullable: true })
+    sort_field: PaginatedEmployeesSortableFields | null;
+}
+
+@ObjectType()
+export class PaginatedEmployees extends OffsetPaginatorResult(Employee) {}
+
+@ArgsType()
+export class PaginatedEmployeesQueryArgs {
+    @Field(() => String, { nullable: false })
+    filter: string;
+
+    @Field(() => Int, { nullable: true })
+    order_production_type_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    branch_id: number | null;
 }
