@@ -79,6 +79,10 @@ export class OrderSaleService {
                         undefined,
                 },
                 {
+                    order_sale_status_id:
+                        orderSalesQueryArgs.order_sale_status_id || undefined,
+                },
+                {
                     order_requests: {
                         client_id: orderSalesQueryArgs.client_id || undefined,
                     },

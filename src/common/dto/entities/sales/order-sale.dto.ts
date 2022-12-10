@@ -73,6 +73,9 @@ export class OrderSalesQueryArgs {
 
     @Field(() => Int, { nullable: true })
     order_sale_receipt_type_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    order_sale_status_id: number | null;
 }
 
 export enum OrderSalesSortableFields {
