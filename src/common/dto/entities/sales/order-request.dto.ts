@@ -65,6 +65,9 @@ export class PaginatedOrderRequestsQueryArgs {
 
     @Field(() => Int, { nullable: true })
     client_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    order_request_status_id: number | null;
 }
 
 export enum OrderRequestsSortableFields {

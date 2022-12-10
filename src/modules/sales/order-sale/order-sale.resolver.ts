@@ -22,6 +22,7 @@ import {
     OrderSaleReceiptType,
     OrderSalesQueryArgs,
     OrderSalesSortArgs,
+    OrderSaleStatus,
     PaginatedOrderSales,
     User,
 } from '../../../common/dto/entities';
@@ -171,6 +172,15 @@ export class OrderSaleResolver {
     async tax_total(@Parent() orderSale: OrderSale): Promise<number> {
         return this.service.getOrderSaleTaxTotal({
             order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => OrderSaleStatus, { nullable: true })
+    async order_sale_status(
+        @Parent() orderSale: OrderSale,
+    ): Promise<OrderSaleStatus | null> {
+        return this.service.getOrderSaleStatus({
+            order_sale_status_id: orderSale.order_sale_status_id,
         });
     }
 

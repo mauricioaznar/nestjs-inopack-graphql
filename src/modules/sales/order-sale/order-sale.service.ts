@@ -16,6 +16,7 @@ import {
     OrderSaleReceiptType,
     OrderSalesQueryArgs,
     OrderSalesSortArgs,
+    OrderSaleStatus,
     PaginatedOrderSales,
 } from '../../../common/dto/entities';
 import {
@@ -432,6 +433,21 @@ export class OrderSaleService {
         }, 0);
 
         return Math.round(orderSaleTaxTotal * 100) / 100;
+    }
+
+    async getOrderSaleStatus({
+        order_sale_status_id,
+    }: {
+        order_sale_status_id?: number | null;
+    }): Promise<OrderSaleStatus | null> {
+        if (!order_sale_status_id) {
+            return null;
+        }
+        return this.prisma.order_sale_statuses.findFirst({
+            where: {
+                id: order_sale_status_id,
+            },
+        });
     }
 
     async getOrderSalePaymentsTotal({

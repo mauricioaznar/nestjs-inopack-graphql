@@ -12,7 +12,9 @@ import {
     OrderRequestInput,
     OrderRequestProduct,
     OrderRequestsSortArgs,
+    OrderRequestStatus,
     OrderSaleProduct,
+    OrderSaleStatus,
     PaginatedOrderRequests,
     PaginatedOrderRequestsQueryArgs,
 } from '../../../common/dto/entities';
@@ -130,6 +132,11 @@ export class OrderRequestsService {
                 {
                     client_id:
                         paginatedOrderRequestsQueryArgs.client_id || undefined,
+                },
+                {
+                    order_request_status_id:
+                        paginatedOrderRequestsQueryArgs.order_request_status_id ||
+                        undefined,
                 },
                 {
                     OR: [
@@ -651,6 +658,21 @@ export class OrderRequestsService {
         return this.prisma.clients.findFirst({
             where: {
                 id: client_id,
+            },
+        });
+    }
+
+    async getOrderRequestStatus({
+        order_request_status_id,
+    }: {
+        order_request_status_id?: number | null;
+    }): Promise<OrderRequestStatus | null> {
+        if (!order_request_status_id) {
+            return null;
+        }
+        return this.prisma.order_request_statuses.findFirst({
+            where: {
+                id: order_request_status_id,
             },
         });
     }

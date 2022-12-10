@@ -19,7 +19,10 @@ import {
     OrderRequestInput,
     OrderRequestProduct,
     OrderRequestsSortArgs,
+    OrderRequestStatus,
+    OrderSale,
     OrderSaleProduct,
+    OrderSaleStatus,
     PaginatedOrderRequests,
     PaginatedOrderRequestsQueryArgs,
     PaginatedOrderSales,
@@ -170,6 +173,15 @@ export class OrderRequestsResolver {
     @ResolveField(() => Client, { nullable: true })
     async client(@Parent() orderRequest: OrderRequest): Promise<Client | null> {
         return this.service.getClient({ client_id: orderRequest.client_id });
+    }
+
+    @ResolveField(() => OrderRequestStatus, { nullable: true })
+    async order_request_status(
+        @Parent() orderRequest: OrderRequest,
+    ): Promise<OrderRequestStatus | null> {
+        return this.service.getOrderRequestStatus({
+            order_request_status_id: orderRequest.order_request_status_id,
+        });
     }
 
     @Subscription(() => OrderRequest)

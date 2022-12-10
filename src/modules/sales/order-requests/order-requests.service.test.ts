@@ -57,6 +57,7 @@ describe('pagination', () => {
                 paginatedOrderRequestsQueryArgs: {
                     client_id: null,
                     filter: '',
+                    order_request_status_id: null,
                 },
                 orderRequestsSortArgs: {
                     sort_order: ColumnOrder.asc,
