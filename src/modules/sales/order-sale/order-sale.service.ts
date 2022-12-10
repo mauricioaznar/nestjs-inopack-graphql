@@ -114,30 +114,6 @@ export class OrderSaleService {
                         },
                     ],
                 },
-                {
-                    OR: [
-                        {
-                            order_requests: {
-                                clients: {
-                                    name: {
-                                        contains: !isFilterANumber
-                                            ? filter
-                                            : undefined,
-                                    },
-                                },
-                            },
-                        },
-                        {
-                            order_sale_receipt_type: {
-                                name: {
-                                    contains: !isFilterANumber
-                                        ? filter
-                                        : undefined,
-                                },
-                            },
-                        },
-                    ],
-                },
             ],
         };
         let orderBy: Prisma.order_salesOrderByWithRelationInput = {

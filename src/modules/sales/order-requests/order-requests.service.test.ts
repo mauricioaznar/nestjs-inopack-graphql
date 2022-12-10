@@ -19,6 +19,7 @@ import {
     orderRequestsTestsOrderRequestsOrderCode,
     orderRequestsTestsOrderSalesOrderCode,
 } from '../../../common/__tests__/constants/unique-codes-initial-values';
+import { ColumnOrder } from '../../../common/dto/pagination';
 
 let app: INestApplication;
 let orderRequestsService: OrderRequestsService;
@@ -52,6 +53,14 @@ describe('pagination', () => {
                 datePaginator: {
                     month: 0,
                     year: 2022,
+                },
+                paginatedOrderRequestsQueryArgs: {
+                    client_id: null,
+                    filter: '',
+                },
+                orderRequestsSortArgs: {
+                    sort_order: ColumnOrder.asc,
+                    sort_field: null,
                 },
             });
         expect(Array.isArray(paginatedOrderRequests.docs)).toBe(true);

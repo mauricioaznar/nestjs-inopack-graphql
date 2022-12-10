@@ -13,12 +13,15 @@ import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { OrderRequestsService } from './order-requests.service';
 import {
     ActivityTypeName,
+    Client,
     GetOrderRequestsArgs,
     OrderRequest,
     OrderRequestInput,
     OrderRequestProduct,
+    OrderRequestsSortArgs,
     OrderSaleProduct,
     PaginatedOrderRequests,
+    PaginatedOrderRequestsQueryArgs,
     PaginatedOrderSales,
     User,
 } from '../../../common/dto/entities';
@@ -61,10 +64,16 @@ export class OrderRequestsResolver {
     async paginatedOrderRequests(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false })
+        paginatedOrderRequestsQueryArgs: PaginatedOrderRequestsQueryArgs,
+        @Args({ nullable: false })
+        orderRequestsSortArgs: OrderRequestsSortArgs,
     ): Promise<PaginatedOrderSales> {
         return this.service.paginatedOrderRequests({
             offsetPaginatorArgs,
             datePaginator,
+            paginatedOrderRequestsQueryArgs,
+            orderRequestsSortArgs,
         });
     }
 
@@ -156,6 +165,11 @@ export class OrderRequestsResolver {
     @ResolveField(() => Boolean)
     async is_deletable(@Parent() orderRequest: OrderRequest): Promise<boolean> {
         return this.service.isDeletable({ order_request_id: orderRequest.id });
+    }
+
+    @ResolveField(() => Client, { nullable: true })
+    async client(@Parent() orderRequest: OrderRequest): Promise<Client | null> {
+        return this.service.getClient({ client_id: orderRequest.client_id });
     }
 
     @Subscription(() => OrderRequest)

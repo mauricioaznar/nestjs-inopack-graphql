@@ -6,12 +6,15 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import {
+    Client,
     GetOrderRequestsArgs,
     OrderRequest,
     OrderRequestInput,
     OrderRequestProduct,
+    OrderRequestsSortArgs,
     OrderSaleProduct,
     PaginatedOrderRequests,
+    PaginatedOrderRequestsQueryArgs,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -86,16 +89,30 @@ export class OrderRequestsService {
     async paginatedOrderRequests({
         offsetPaginatorArgs,
         datePaginator,
+        paginatedOrderRequestsQueryArgs,
+        orderRequestsSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
+        paginatedOrderRequestsQueryArgs: PaginatedOrderRequestsQueryArgs;
+        orderRequestsSortArgs: OrderRequestsSortArgs;
     }): Promise<PaginatedOrderRequests> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
         });
 
-        const orderRequestsWhere: Prisma.order_requestsWhereInput = {
+        const { sort_order, sort_field } = orderRequestsSortArgs;
+
+        const filter =
+            paginatedOrderRequestsQueryArgs.filter !== '' &&
+            !!paginatedOrderRequestsQueryArgs.filter
+                ? paginatedOrderRequestsQueryArgs.filter
+                : undefined;
+
+        const isFilterANumber = !Number.isNaN(Number(filter));
+
+        const where: Prisma.order_requestsWhereInput = {
             AND: [
                 {
                     active: 1,
@@ -110,16 +127,48 @@ export class OrderRequestsService {
                         lt: endDate,
                     },
                 },
+                {
+                    client_id:
+                        paginatedOrderRequestsQueryArgs.client_id || undefined,
+                },
+                {
+                    OR: [
+                        {
+                            order_code: {
+                                in: isFilterANumber
+                                    ? Number(filter)
+                                    : undefined,
+                            },
+                        },
+                    ],
+                },
             ],
         };
 
+        let orderBy: Prisma.order_requestsOrderByWithRelationInput = {
+            updated_at: 'desc',
+        };
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'order_code') {
+                orderBy = {
+                    order_code: sort_order,
+                };
+            } else if (sort_field === 'date') {
+                orderBy = {
+                    date: sort_order,
+                };
+            }
+        }
+
         const orderRequestsCount = await this.prisma.order_requests.count({
-            where: orderRequestsWhere,
+            where: where,
         });
         const orderRequests = await this.prisma.order_requests.findMany({
-            where: orderRequestsWhere,
+            where: where,
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
+            orderBy: orderBy,
         });
 
         return {
@@ -588,6 +637,22 @@ export class OrderRequestsService {
         return {
             order_sales_count: orderSaleCount,
         };
+    }
+
+    async getClient({
+        client_id,
+    }: {
+        client_id?: number | null;
+    }): Promise<Client | null> {
+        if (!client_id) {
+            return null;
+        }
+
+        return this.prisma.clients.findFirst({
+            where: {
+                id: client_id,
+            },
+        });
     }
 
     async isDeletable({
