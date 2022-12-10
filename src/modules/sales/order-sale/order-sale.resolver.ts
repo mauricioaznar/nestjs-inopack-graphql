@@ -21,7 +21,6 @@ import {
     OrderSaleProduct,
     OrderSaleReceiptType,
     OrderSalesQueryArgs,
-    OrderSalesSortableFields,
     OrderSalesSortArgs,
     PaginatedOrderSales,
     User,

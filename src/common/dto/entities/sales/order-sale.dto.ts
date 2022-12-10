@@ -67,10 +67,18 @@ export class PaginatedOrderSales extends OffsetPaginatorResult(OrderSale) {}
 export class OrderSalesQueryArgs {
     @Field(() => String, { nullable: true })
     filter: string;
+
+    @Field(() => Int, { nullable: true })
+    client_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    order_sale_receipt_type_id: number | null;
 }
 
 export enum OrderSalesSortableFields {
     order_code = 'order_code',
+    order_request = 'order_request',
+    date = 'date',
 }
 
 registerEnumType(OrderSalesSortableFields, {

@@ -73,6 +73,16 @@ export class OrderSaleService {
                     },
                 },
                 {
+                    order_sale_receipt_type_id:
+                        orderSalesQueryArgs.order_sale_receipt_type_id ||
+                        undefined,
+                },
+                {
+                    order_requests: {
+                        client_id: orderSalesQueryArgs.client_id || undefined,
+                    },
+                },
+                {
                     date: {
                         lt: datePaginator.year ? endDate : undefined,
                     },
@@ -135,9 +145,19 @@ export class OrderSaleService {
         };
 
         if (sort_order && sort_field) {
-            if (sort_field === 'order_code') {
+            if (sort_field === 'order_request') {
+                orderBy = {
+                    order_requests: {
+                        order_code: sort_order,
+                    },
+                };
+            } else if (sort_field === 'order_code') {
                 orderBy = {
                     order_code: sort_order,
+                };
+            } else if (sort_field === 'date') {
+                orderBy = {
+                    date: sort_order,
                 };
             }
         }
