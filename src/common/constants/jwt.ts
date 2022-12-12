@@ -1,4 +1,4 @@
-const expiresIn = '6000s';
+const expiresIn = '43200s';
 
 export const jwtConstants = {
     authSecret: 'secretKey',

@@ -28,6 +28,8 @@ import {
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { EmployeeType } from '../../../common/dto/entities/production/employee-type.dto';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => Employee)
 @UseGuards(GqlAuthGuard)
@@ -68,6 +70,7 @@ export class EmployeesResolver {
     }
 
     @Mutation(() => Employee)
+    @RolesDecorator(RoleId.PRODUCTION)
     async upsertEmployee(
         @Args('EmployeeUpsertInput') input: EmployeeUpsertInput,
         @CurrentUser() currentUser: User,
@@ -82,6 +85,7 @@ export class EmployeesResolver {
     }
 
     @Mutation(() => Boolean)
+    @RolesDecorator(RoleId.PRODUCTION)
     async deleteEmployee(
         @Args('EmployeeId') employeeId: number,
         @CurrentUser() currentUser: User,

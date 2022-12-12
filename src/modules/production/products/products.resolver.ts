@@ -27,6 +27,8 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { ProductCategory } from '../../../common/dto/entities/production/product-category.dto';
 import { ProductMaterial } from '../../../common/dto/entities/production/product-material.dto';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => Product)
 @UseGuards(GqlAuthGuard)
@@ -70,6 +72,7 @@ export class ProductsResolver {
     }
 
     @Mutation(() => Product)
+    @RolesDecorator(RoleId.PRODUCTION)
     async upsertProduct(
         @Args('ProductUpsertInput') input: ProductUpsertInput,
         @CurrentUser() currentUser: User,
@@ -84,6 +87,7 @@ export class ProductsResolver {
     }
 
     @Mutation(() => Boolean)
+    @RolesDecorator(RoleId.PRODUCTION)
     async deleteProduct(
         @Args('ProductId') productId: number,
         @CurrentUser() currentUser: User,

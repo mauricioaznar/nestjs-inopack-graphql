@@ -22,6 +22,8 @@ import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { ActivityTypeName, User } from '../../../common/dto/entities';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => OrderAdjustment)
 @UseGuards(GqlAuthGuard)
@@ -61,6 +63,7 @@ export class OrderAdjustmentsResolver {
     }
 
     @Mutation(() => OrderAdjustment)
+    @RolesDecorator(RoleId.PRODUCTION)
     async upsertOrderAdjustment(
         @Args('OrderAdjustmentInput') input: OrderAdjustmentInput,
         @CurrentUser() currentUser: User,
@@ -75,6 +78,7 @@ export class OrderAdjustmentsResolver {
     }
 
     @Mutation(() => Boolean)
+    @RolesDecorator(RoleId.PRODUCTION)
     async deleteOrderAdjustment(
         @Args('OrderAdjustmentId') orderAdjustmentId: number,
         @CurrentUser() currentUser: User,

@@ -27,6 +27,8 @@ import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => OrderProduction)
 @UseGuards(GqlAuthGuard)
@@ -61,6 +63,7 @@ export class OrderProductionsResolver {
     }
 
     @Mutation(() => OrderProduction)
+    @RolesDecorator(RoleId.PRODUCTION)
     async upsertOrderProduction(
         @Args('OrderProductionInput') input: OrderProductionInput,
         @CurrentUser() currentUser: User,
@@ -75,6 +78,7 @@ export class OrderProductionsResolver {
     }
 
     @Mutation(() => Boolean)
+    @RolesDecorator(RoleId.PRODUCTION)
     async deleteOrderProduction(
         @Args('OrderProductionId') orderProductionId: number,
         @CurrentUser() currentUser: User,
