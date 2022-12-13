@@ -33,6 +33,7 @@ import {
     productCategory1,
     productCategory2,
 } from '../../../common/__tests__/objects/production/product-categories';
+import { adminUser } from '../../../common/__tests__/objects/auth/users';
 
 let app: INestApplication;
 let productsService: ProductsService;
@@ -356,31 +357,34 @@ describe('delete', () => {
         });
 
         await orderSaleService.upsertOrderSale({
-            order_code: currentOrderSaleCode,
-            date: getUtcDate(),
-            order_sale_status_id: orderSaleStatus1.id,
-            order_sale_products: [
-                {
-                    product_id: product.id,
-                    groups: 1,
-                    group_weight: product.current_group_weight,
-                    kilo_price: product.current_kilo_price,
-                    kilos: product.current_group_weight,
-                },
-            ],
-            order_sale_payments: [
-                {
-                    amount:
-                        product.current_kilo_price *
-                        product.current_group_weight,
-                    date_paid: getUtcDate(),
-                    order_sale_collection_status_id:
-                        orderSaleCollectionStatus2.id,
-                },
-            ],
-            order_sale_receipt_type_id: orderSaleReceiptType1.id,
-            invoice_code: 0,
-            order_request_id: orderRequest.id,
+            input: {
+                order_code: currentOrderSaleCode,
+                date: getUtcDate(),
+                order_sale_status_id: orderSaleStatus1.id,
+                order_sale_products: [
+                    {
+                        product_id: product.id,
+                        groups: 1,
+                        group_weight: product.current_group_weight,
+                        kilo_price: product.current_kilo_price,
+                        kilos: product.current_group_weight,
+                    },
+                ],
+                order_sale_payments: [
+                    {
+                        amount:
+                            product.current_kilo_price *
+                            product.current_group_weight,
+                        date_paid: getUtcDate(),
+                        order_sale_collection_status_id:
+                            orderSaleCollectionStatus2.id,
+                    },
+                ],
+                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                invoice_code: 0,
+                order_request_id: orderRequest.id,
+            },
+            current_user_id: adminUser.id,
         });
 
         try {

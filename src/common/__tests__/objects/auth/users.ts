@@ -1,7 +1,7 @@
 import { CreateUserInput } from '../../../dto/entities';
 import { role1, role2 } from './roles';
 
-export const adminUser: CreateUserInput = {
+export const adminUser: CreateUserInput & { id: number } = {
     id: 1,
     email: 'john@example',
     password: 'changeme',

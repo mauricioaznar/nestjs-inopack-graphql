@@ -111,18 +111,21 @@ describe('upsert', () => {
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
-            order_code: orderCode,
-            order_request_id: orderRequest.id,
-            invoice_code: 0,
-            order_sale_receipt_type_id: orderSaleReceiptType1.id,
-            date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-            order_sale_status_id: orderSaleStatus1.id,
-            order_sale_products: [orderSaleProductInput],
-            order_sale_payments: [orderSalePaymentInput],
+            input: {
+                order_code: orderCode,
+                order_request_id: orderRequest.id,
+                invoice_code: 0,
+                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                date: getUtcDate({
+                    year: 2022,
+                    day: 1,
+                    month: 2,
+                }),
+                order_sale_status_id: orderSaleStatus1.id,
+                order_sale_products: [orderSaleProductInput],
+                order_sale_payments: [orderSalePaymentInput],
+            },
+            current_user_id: adminUser.id,
         });
 
         const orderSaleProducts = await orderSalesService.getOrderSaleProducts({
@@ -195,18 +198,21 @@ describe('upsert', () => {
         };
 
         const createdOrderSale = await orderSalesService.upsertOrderSale({
-            order_code: orderCode,
-            order_request_id: orderRequest.id,
-            invoice_code: 0,
-            order_sale_receipt_type_id: orderSaleReceiptType1.id,
-            date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-            order_sale_status_id: orderSaleStatus1.id,
-            order_sale_products: [orderSaleProductInput],
-            order_sale_payments: [orderSalePaymentInput],
+            input: {
+                order_code: orderCode,
+                order_request_id: orderRequest.id,
+                invoice_code: 0,
+                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                date: getUtcDate({
+                    year: 2022,
+                    day: 1,
+                    month: 2,
+                }),
+                order_sale_status_id: orderSaleStatus1.id,
+                order_sale_products: [orderSaleProductInput],
+                order_sale_payments: [orderSalePaymentInput],
+            },
+            current_user_id: adminUser.id,
         });
 
         const updatedOrderSaleProductInput: OrderSaleProductInput = {
@@ -228,19 +234,22 @@ describe('upsert', () => {
         };
 
         const updatedOrderSale = await orderSalesService.upsertOrderSale({
-            id: createdOrderSale.id,
-            order_code: orderCode,
-            order_request_id: orderRequest.id,
-            invoice_code: 0,
-            order_sale_receipt_type_id: orderSaleReceiptType1.id,
-            date: getUtcDate({
-                year: 2022,
-                day: 2,
-                month: 3,
-            }),
-            order_sale_status_id: orderSaleStatus2.id,
-            order_sale_products: [updatedOrderSaleProductInput],
-            order_sale_payments: [updatedOrderSalePaymentInput],
+            input: {
+                id: createdOrderSale.id,
+                order_code: orderCode,
+                order_request_id: orderRequest.id,
+                invoice_code: 0,
+                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                date: getUtcDate({
+                    year: 2022,
+                    day: 2,
+                    month: 3,
+                }),
+                order_sale_status_id: orderSaleStatus2.id,
+                order_sale_products: [updatedOrderSaleProductInput],
+                order_sale_payments: [updatedOrderSalePaymentInput],
+            },
+            current_user_id: adminUser.id,
         });
 
         const updatedOrderSaleProducts =
@@ -333,18 +342,21 @@ describe('upsert', () => {
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
-            order_code: orderCode,
-            order_request_id: orderRequest.id,
-            invoice_code: invoiceCode,
-            order_sale_receipt_type_id: orderSaleReceiptType2.id,
-            date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-            order_sale_status_id: orderSaleStatus1.id,
-            order_sale_products: [orderSaleProductInput],
-            order_sale_payments: [orderSalePaymentInput],
+            input: {
+                order_code: orderCode,
+                order_request_id: orderRequest.id,
+                invoice_code: invoiceCode,
+                order_sale_receipt_type_id: orderSaleReceiptType2.id,
+                date: getUtcDate({
+                    year: 2022,
+                    day: 1,
+                    month: 2,
+                }),
+                order_sale_status_id: orderSaleStatus1.id,
+                order_sale_products: [orderSaleProductInput],
+                order_sale_payments: [orderSalePaymentInput],
+            },
+            current_user_id: adminUser.id,
         });
 
         const orderSalePayments = await orderSalesService.getOrderSalePayments({
@@ -379,29 +391,32 @@ describe('upsert', () => {
 
         try {
             const orderSale = await orderSalesService.upsertOrderSale({
-                order_code: veryHighOrderCode,
-                order_request_id: orderRequest.id,
-                invoice_code: 0,
-                order_sale_status_id: orderSaleStatus1.id,
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                date: getUtcDate({}),
-                order_sale_products: [
-                    {
-                        kilos: product1.current_group_weight,
-                        groups: 1,
-                        group_weight: product1.current_group_weight,
-                        kilo_price: 20,
-                        product_id: product1.id,
-                    },
-                ],
-                order_sale_payments: [
-                    {
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus3.id,
-                        amount: 20 * product1.current_group_weight,
-                        date_paid: getUtcDate({}),
-                    },
-                ],
+                input: {
+                    order_code: veryHighOrderCode,
+                    order_request_id: orderRequest.id,
+                    invoice_code: 0,
+                    order_sale_status_id: orderSaleStatus1.id,
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    date: getUtcDate({}),
+                    order_sale_products: [
+                        {
+                            kilos: product1.current_group_weight,
+                            groups: 1,
+                            group_weight: product1.current_group_weight,
+                            kilo_price: 20,
+                            product_id: product1.id,
+                        },
+                    ],
+                    order_sale_payments: [
+                        {
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus3.id,
+                            amount: 20 * product1.current_group_weight,
+                            date_paid: getUtcDate({}),
+                        },
+                    ],
+                },
+                current_user_id: adminUser.id,
             });
 
             expect(orderSale.order_code).toBe(veryHighOrderCode);
@@ -450,31 +465,34 @@ describe('upsert', () => {
 
         try {
             await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                invoice_code: 0,
-                date: getUtcDate({
-                    year: 2022,
-                    day: 1,
-                    month: 1,
-                }),
-                order_sale_products: [orderSaleProduct1, orderSaleProduct1],
-                order_sale_payments: [
-                    {
-                        amount:
-                            orderSaleProduct1.kilos *
-                            orderSaleProduct1.kilo_price,
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        date_paid: getUtcDate({
-                            year: 2022,
-                            day: 1,
-                            month: 1,
-                        }),
-                    },
-                ],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderSaleStatus1.id,
+                input: {
+                    order_code: currentSaleOrderCode,
+                    order_request_id: orderRequest.id,
+                    invoice_code: 0,
+                    date: getUtcDate({
+                        year: 2022,
+                        day: 1,
+                        month: 1,
+                    }),
+                    order_sale_products: [orderSaleProduct1, orderSaleProduct1],
+                    order_sale_payments: [
+                        {
+                            amount:
+                                orderSaleProduct1.kilos *
+                                orderSaleProduct1.kilo_price,
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus1.id,
+                            date_paid: getUtcDate({
+                                year: 2022,
+                                day: 1,
+                                month: 1,
+                            }),
+                        },
+                    ],
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_status_id: orderSaleStatus1.id,
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -521,23 +539,26 @@ describe('upsert', () => {
 
         try {
             await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                invoice_code: 0,
-                date: getUtcDate({}),
-                order_sale_products: [orderSaleProduct1],
-                order_sale_payments: [
-                    {
-                        amount:
-                            orderRequestProduct1.kilos *
-                            orderRequestProduct1.kilo_price,
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        date_paid: getUtcDate({}),
-                    },
-                ],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderSaleStatus1.id,
+                input: {
+                    order_code: currentSaleOrderCode,
+                    order_request_id: orderRequest.id,
+                    invoice_code: 0,
+                    date: getUtcDate({}),
+                    order_sale_products: [orderSaleProduct1],
+                    order_sale_payments: [
+                        {
+                            amount:
+                                orderRequestProduct1.kilos *
+                                orderRequestProduct1.kilo_price,
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus1.id,
+                            date_paid: getUtcDate({}),
+                        },
+                    ],
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_status_id: orderSaleStatus1.id,
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -590,23 +611,26 @@ describe('upsert', () => {
 
         try {
             await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                invoice_code: 0,
-                date: getUtcDate({}),
-                order_sale_products: [orderSaleProduct1],
-                order_sale_payments: [
-                    {
-                        amount:
-                            orderRequestProduct1.kilos *
-                            orderRequestProduct1.kilo_price,
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        date_paid: getUtcDate({}),
-                    },
-                ],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderSaleStatus1.id,
+                input: {
+                    order_code: currentSaleOrderCode,
+                    order_request_id: orderRequest.id,
+                    invoice_code: 0,
+                    date: getUtcDate({}),
+                    order_sale_products: [orderSaleProduct1],
+                    order_sale_payments: [
+                        {
+                            amount:
+                                orderRequestProduct1.kilos *
+                                orderRequestProduct1.kilo_price,
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus1.id,
+                            date_paid: getUtcDate({}),
+                        },
+                    ],
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_status_id: orderSaleStatus1.id,
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -647,23 +671,26 @@ describe('upsert', () => {
 
         try {
             await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                invoice_code: 0,
-                date: getUtcDate({}),
-                order_sale_products: [orderSaleProduct1],
-                order_sale_payments: [
-                    {
-                        amount:
-                            orderSaleProduct1.kilos *
-                            orderSaleProduct1.kilo_price,
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        date_paid: getUtcDate({}),
-                    },
-                ],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderSaleStatus1.id,
+                input: {
+                    order_code: currentSaleOrderCode,
+                    order_request_id: orderRequest.id,
+                    invoice_code: 0,
+                    date: getUtcDate({}),
+                    order_sale_products: [orderSaleProduct1],
+                    order_sale_payments: [
+                        {
+                            amount:
+                                orderSaleProduct1.kilos *
+                                orderSaleProduct1.kilo_price,
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus1.id,
+                            date_paid: getUtcDate({}),
+                        },
+                    ],
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_status_id: orderSaleStatus1.id,
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -702,24 +729,27 @@ describe('upsert', () => {
 
         try {
             await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                invoice_code: 0,
-                date: getUtcDate({}),
-                order_sale_products: [orderSaleProduct1],
-                order_sale_payments: [
-                    {
-                        amount:
-                            orderSaleProduct1.kilos *
-                            orderSaleProduct1.kilo_price *
-                            1000,
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        date_paid: getUtcDate({}),
-                    },
-                ],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderSaleStatus1.id,
+                input: {
+                    order_code: currentSaleOrderCode,
+                    order_request_id: orderRequest.id,
+                    invoice_code: 0,
+                    date: getUtcDate({}),
+                    order_sale_products: [orderSaleProduct1],
+                    order_sale_payments: [
+                        {
+                            amount:
+                                orderSaleProduct1.kilos *
+                                orderSaleProduct1.kilo_price *
+                                1000,
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus1.id,
+                            date_paid: getUtcDate({}),
+                        },
+                    ],
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_status_id: orderSaleStatus1.id,
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -778,10 +808,16 @@ describe('upsert', () => {
             order_sale_status_id: orderSaleStatus1.id,
         };
 
-        await orderSalesService.upsertOrderSale(orderSaleInput);
+        await orderSalesService.upsertOrderSale({
+            input: orderSaleInput,
+            current_user_id: adminUser.id,
+        });
 
         try {
-            await orderSalesService.upsertOrderSale(orderSaleInput);
+            await orderSalesService.upsertOrderSale({
+                input: orderSaleInput,
+                current_user_id: adminUser.id,
+            });
         } catch (e) {
             expect(e.response.message).toEqual(
                 expect.arrayContaining([
@@ -838,10 +874,16 @@ describe('upsert', () => {
             order_sale_status_id: orderSaleStatus1.id,
         };
 
-        await orderSalesService.upsertOrderSale(orderSaleInput);
+        await orderSalesService.upsertOrderSale({
+            input: orderSaleInput,
+            current_user_id: adminUser.id,
+        });
 
         try {
-            await orderSalesService.upsertOrderSale(orderSaleInput);
+            await orderSalesService.upsertOrderSale({
+                input: orderSaleInput,
+                current_user_id: adminUser.id,
+            });
         } catch (e) {
             expect(e.response.message).toEqual(
                 expect.arrayContaining([
@@ -898,15 +940,19 @@ describe('upsert', () => {
             order_sale_status_id: orderSaleStatus1.id,
         };
 
-        const orderSale = await orderSalesService.upsertOrderSale(
-            orderSaleInput,
-        );
+        const orderSale = await orderSalesService.upsertOrderSale({
+            input: orderSaleInput,
+            current_user_id: adminUser.id,
+        });
 
         try {
             await orderSalesService.upsertOrderSale({
-                ...orderSaleInput,
-                id: orderSale.id,
-                order_request_id: orderRequest1.id + 1,
+                input: {
+                    ...orderSaleInput,
+                    id: orderSale.id,
+                    order_request_id: orderRequest1.id + 1,
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -964,15 +1010,21 @@ describe('upsert', () => {
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
-            ...orderSaleInput,
-            order_sale_receipt_type_id: orderSaleReceiptType1.id,
+            input: {
+                ...orderSaleInput,
+                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+            },
+            current_user_id: adminUser.id,
         });
 
         try {
             await orderSalesService.upsertOrderSale({
-                ...orderSaleInput,
-                id: orderSale.id,
-                order_sale_receipt_type_id: orderSaleReceiptType2.id,
+                input: {
+                    ...orderSaleInput,
+                    id: orderSale.id,
+                    order_sale_receipt_type_id: orderSaleReceiptType2.id,
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -1013,24 +1065,27 @@ describe('upsert', () => {
 
         try {
             await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest1.id,
-                invoice_code: 0,
-                date: getUtcDate({}),
-                order_sale_products: [orderSaleProductInput],
-                order_sale_payments: [
-                    {
-                        amount:
-                            orderSaleProductInput.kilos *
-                            orderSaleProductInput.kilo_price *
-                            1.16,
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        date_paid: getUtcDate({}),
-                    },
-                ],
-                order_sale_status_id: orderSaleStatus1.id,
-                order_sale_receipt_type_id: orderSaleReceiptType2.id,
+                input: {
+                    order_code: currentSaleOrderCode,
+                    order_request_id: orderRequest1.id,
+                    invoice_code: 0,
+                    date: getUtcDate({}),
+                    order_sale_products: [orderSaleProductInput],
+                    order_sale_payments: [
+                        {
+                            amount:
+                                orderSaleProductInput.kilos *
+                                orderSaleProductInput.kilo_price *
+                                1.16,
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus1.id,
+                            date_paid: getUtcDate({}),
+                        },
+                    ],
+                    order_sale_status_id: orderSaleStatus1.id,
+                    order_sale_receipt_type_id: orderSaleReceiptType2.id,
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -1065,32 +1120,35 @@ describe('upsert', () => {
 
         try {
             await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                invoice_code: 0,
-                order_request_id: orderRequest.id,
-                date: getUtcDate(),
-                order_sale_status_id: orderSaleStatus1.id,
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_products: [
-                    {
-                        product_id: product.id,
-                        kilos: 3 * orderRequestProduct.group_weight,
-                        groups: 3,
-                        group_weight: orderRequestProduct.group_weight,
-                        kilo_price: differntPriceFromOrderRequest,
-                    },
-                ],
-                order_sale_payments: [
-                    {
-                        amount:
-                            3 *
-                            product.current_group_weight *
-                            differntPriceFromOrderRequest,
-                        date_paid: getUtcDate(),
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus2.id,
-                    },
-                ],
+                input: {
+                    order_code: currentSaleOrderCode,
+                    invoice_code: 0,
+                    order_request_id: orderRequest.id,
+                    date: getUtcDate(),
+                    order_sale_status_id: orderSaleStatus1.id,
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_products: [
+                        {
+                            product_id: product.id,
+                            kilos: 3 * orderRequestProduct.group_weight,
+                            groups: 3,
+                            group_weight: orderRequestProduct.group_weight,
+                            kilo_price: differntPriceFromOrderRequest,
+                        },
+                    ],
+                    order_sale_payments: [
+                        {
+                            amount:
+                                3 *
+                                product.current_group_weight *
+                                differntPriceFromOrderRequest,
+                            date_paid: getUtcDate(),
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus2.id,
+                        },
+                    ],
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -1127,32 +1185,35 @@ describe('upsert', () => {
 
         try {
             await orderSalesService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                invoice_code: 0,
-                order_request_id: orderRequest.id,
-                date: getUtcDate(),
-                order_sale_status_id: orderSaleStatus1.id,
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_products: [
-                    {
-                        product_id: product.id,
-                        kilos: 3 * differentGroupWeight,
-                        groups: 3,
-                        group_weight: differentGroupWeight,
-                        kilo_price: orderRequestProduct.kilo_price,
-                    },
-                ],
-                order_sale_payments: [
-                    {
-                        amount:
-                            3 *
-                            differentGroupWeight *
-                            orderRequestProduct.kilo_price,
-                        date_paid: getUtcDate(),
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus2.id,
-                    },
-                ],
+                input: {
+                    order_code: currentSaleOrderCode,
+                    invoice_code: 0,
+                    order_request_id: orderRequest.id,
+                    date: getUtcDate(),
+                    order_sale_status_id: orderSaleStatus1.id,
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_products: [
+                        {
+                            product_id: product.id,
+                            kilos: 3 * differentGroupWeight,
+                            groups: 3,
+                            group_weight: differentGroupWeight,
+                            kilo_price: orderRequestProduct.kilo_price,
+                        },
+                    ],
+                    order_sale_payments: [
+                        {
+                            amount:
+                                3 *
+                                differentGroupWeight *
+                                orderRequestProduct.kilo_price,
+                            date_paid: getUtcDate(),
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus2.id,
+                        },
+                    ],
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -1206,18 +1267,21 @@ describe('delete', () => {
         };
 
         const createdOrderSale = await orderSalesService.upsertOrderSale({
-            order_code: orderCode,
-            order_request_id: orderRequest.id,
-            invoice_code: 0,
-            order_sale_receipt_type_id: orderSaleReceiptType1.id,
-            date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-            order_sale_status_id: orderSaleStatus1.id,
-            order_sale_products: [orderSaleProductInput],
-            order_sale_payments: [orderSalePaymentInput],
+            input: {
+                order_code: orderCode,
+                order_request_id: orderRequest.id,
+                invoice_code: 0,
+                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                date: getUtcDate({
+                    year: 2022,
+                    day: 1,
+                    month: 2,
+                }),
+                order_sale_status_id: orderSaleStatus1.id,
+                order_sale_products: [orderSaleProductInput],
+                order_sale_payments: [orderSalePaymentInput],
+            },
+            current_user_id: adminUser.id,
         });
 
         try {
@@ -1283,14 +1347,17 @@ describe('delete', () => {
 
         try {
             createdOrderSale = await orderSalesService.upsertOrderSale({
-                order_code: orderCode,
-                order_request_id: orderRequest.id,
-                invoice_code: currentSaleInvoiceCode,
-                order_sale_receipt_type_id: orderSaleReceiptType2.id,
-                date: getUtcDate(),
-                order_sale_status_id: orderSaleStatus1.id,
-                order_sale_products: [orderSaleProductInput],
-                order_sale_payments: [orderSalePaymentInput],
+                input: {
+                    order_code: orderCode,
+                    order_request_id: orderRequest.id,
+                    invoice_code: currentSaleInvoiceCode,
+                    order_sale_receipt_type_id: orderSaleReceiptType2.id,
+                    date: getUtcDate(),
+                    order_sale_status_id: orderSaleStatus1.id,
+                    order_sale_products: [orderSaleProductInput],
+                    order_sale_payments: [orderSalePaymentInput],
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             console.error(e);
@@ -1299,7 +1366,7 @@ describe('delete', () => {
         try {
             await orderSalesService.deleteOrderSale({
                 order_sale_id: createdOrderSale?.id || 0,
-                current_user_id: adminUser.id!,
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             console.error(e);
@@ -1309,14 +1376,17 @@ describe('delete', () => {
 
         try {
             newOrderSale = await orderSalesService.upsertOrderSale({
-                order_code: orderCode,
-                invoice_code: currentSaleInvoiceCode,
-                order_request_id: orderRequest.id,
-                order_sale_receipt_type_id: orderSaleReceiptType2.id,
-                date: getUtcDate(),
-                order_sale_status_id: orderSaleStatus1.id,
-                order_sale_products: [orderSaleProductInput],
-                order_sale_payments: [orderSalePaymentInput],
+                input: {
+                    order_code: orderCode,
+                    invoice_code: currentSaleInvoiceCode,
+                    order_request_id: orderRequest.id,
+                    order_sale_receipt_type_id: orderSaleReceiptType2.id,
+                    date: getUtcDate(),
+                    order_sale_status_id: orderSaleStatus1.id,
+                    order_sale_products: [orderSaleProductInput],
+                    order_sale_payments: [orderSalePaymentInput],
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             console.error(e);

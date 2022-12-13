@@ -551,31 +551,34 @@ describe('upsert', () => {
 
         try {
             await orderSaleService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                date: getUtcDate(),
-                invoice_code: 0,
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderRequestStatus1.id,
-                order_sale_products: [
-                    {
-                        product_id: product.id,
-                        kilos: orderRequestProduct.kilos,
-                        groups: orderRequestProduct.groups,
-                        group_weight: orderRequestProduct.group_weight,
-                        kilo_price: orderRequestProduct.kilo_price,
-                    },
-                ],
-                order_sale_payments: [
-                    {
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        amount:
-                            orderRequestProduct.kilos *
-                            orderRequestProduct.kilo_price,
-                        date_paid: getUtcDate(),
-                    },
-                ],
+                input: {
+                    order_code: currentSaleOrderCode,
+                    order_request_id: orderRequest.id,
+                    date: getUtcDate(),
+                    invoice_code: 0,
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_status_id: orderRequestStatus1.id,
+                    order_sale_products: [
+                        {
+                            product_id: product.id,
+                            kilos: orderRequestProduct.kilos,
+                            groups: orderRequestProduct.groups,
+                            group_weight: orderRequestProduct.group_weight,
+                            kilo_price: orderRequestProduct.kilo_price,
+                        },
+                    ],
+                    order_sale_payments: [
+                        {
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus1.id,
+                            amount:
+                                orderRequestProduct.kilos *
+                                orderRequestProduct.kilo_price,
+                            date_paid: getUtcDate(),
+                        },
+                    ],
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             console.error(e);
@@ -622,31 +625,34 @@ describe('upsert', () => {
 
         try {
             await orderSaleService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                date: getUtcDate(),
-                invoice_code: 0,
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderRequestStatus1.id,
-                order_sale_products: [
-                    {
-                        product_id: product.id,
-                        kilos: orderRequestProduct.kilos,
-                        groups: orderRequestProduct.groups,
-                        group_weight: orderRequestProduct.group_weight,
-                        kilo_price: orderRequestProduct.kilo_price,
-                    },
-                ],
-                order_sale_payments: [
-                    {
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        amount:
-                            orderRequestProduct.kilos *
-                            orderRequestProduct.kilo_price,
-                        date_paid: getUtcDate(),
-                    },
-                ],
+                input: {
+                    order_code: currentSaleOrderCode,
+                    order_request_id: orderRequest.id,
+                    date: getUtcDate(),
+                    invoice_code: 0,
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_status_id: orderRequestStatus1.id,
+                    order_sale_products: [
+                        {
+                            product_id: product.id,
+                            kilos: orderRequestProduct.kilos,
+                            groups: orderRequestProduct.groups,
+                            group_weight: orderRequestProduct.group_weight,
+                            kilo_price: orderRequestProduct.kilo_price,
+                        },
+                    ],
+                    order_sale_payments: [
+                        {
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus1.id,
+                            amount:
+                                orderRequestProduct.kilos *
+                                orderRequestProduct.kilo_price,
+                            date_paid: getUtcDate(),
+                        },
+                    ],
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             console.error(e);
@@ -780,31 +786,34 @@ describe('delete', () => {
 
         try {
             await orderSaleService.upsertOrderSale({
-                order_code: currentSaleOrderCode,
-                order_request_id: orderRequest.id,
-                date: getUtcDate(),
-                invoice_code: 0,
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
-                order_sale_status_id: orderRequestStatus1.id,
-                order_sale_products: [
-                    {
-                        product_id: product.id,
-                        kilos: orderRequestProduct.kilos,
-                        groups: orderRequestProduct.groups,
-                        group_weight: orderRequestProduct.group_weight,
-                        kilo_price: orderRequestProduct.kilo_price,
-                    },
-                ],
-                order_sale_payments: [
-                    {
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus1.id,
-                        amount:
-                            orderRequestProduct.kilos *
-                            orderRequestProduct.kilo_price,
-                        date_paid: getUtcDate(),
-                    },
-                ],
+                input: {
+                    order_code: currentSaleOrderCode,
+                    order_request_id: orderRequest.id,
+                    date: getUtcDate(),
+                    invoice_code: 0,
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_status_id: orderRequestStatus1.id,
+                    order_sale_products: [
+                        {
+                            product_id: product.id,
+                            kilos: orderRequestProduct.kilos,
+                            groups: orderRequestProduct.groups,
+                            group_weight: orderRequestProduct.group_weight,
+                            kilo_price: orderRequestProduct.kilo_price,
+                        },
+                    ],
+                    order_sale_payments: [
+                        {
+                            order_sale_collection_status_id:
+                                orderSaleCollectionStatus1.id,
+                            amount:
+                                orderRequestProduct.kilos *
+                                orderRequestProduct.kilo_price,
+                            date_paid: getUtcDate(),
+                        },
+                    ],
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             console.error(e);

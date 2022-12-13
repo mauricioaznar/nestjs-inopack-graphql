@@ -71,7 +71,10 @@ export class OrderSaleResolver {
         @Args('OrderSaleInput') input: OrderSaleInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderSale> {
-        const orderSale = await this.service.upsertOrderSale(input);
+        const orderSale = await this.service.upsertOrderSale({
+            input,
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.orderSale({
             orderSale,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,

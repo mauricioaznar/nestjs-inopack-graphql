@@ -483,8 +483,14 @@ export class OrderSaleService {
         return Math.round(orderSalePaymentsTotal * 100) / 100;
     }
 
-    async upsertOrderSale(input: OrderSaleInput): Promise<OrderSale> {
-        await this.validateOrderSale(input);
+    async upsertOrderSale({
+        input,
+        current_user_id,
+    }: {
+        input: OrderSaleInput;
+        current_user_id: number;
+    }): Promise<OrderSale> {
+        await this.validateOrderSale(input, current_user_id);
 
         const orderSale = await this.prisma.order_sales.upsert({
             create: {
@@ -653,8 +659,25 @@ export class OrderSaleService {
         return orderSale;
     }
 
-    async validateOrderSale(input: OrderSaleInput): Promise<void> {
+    async validateOrderSale(
+        input: OrderSaleInput,
+        current_user_id: number,
+    ): Promise<void> {
         const errors: string[] = [];
+
+        // IsEditable
+
+        {
+            if (input.id) {
+                const is_editable = await this.isEditable({
+                    current_user_id: current_user_id,
+                    order_sale_id: input.id,
+                });
+                if (!is_editable) {
+                    errors.push('Order sale is not editable');
+                }
+            }
+        }
 
         // AreProductsUnique
         {
