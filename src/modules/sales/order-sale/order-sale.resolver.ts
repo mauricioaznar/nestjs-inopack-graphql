@@ -87,7 +87,10 @@ export class OrderSaleResolver {
     ): Promise<boolean> {
         const orderSale = await this.getOrderSale(orderSaleId);
         if (!orderSale) throw new NotFoundException();
-        await this.service.deleteOrderSale({ order_sale_id: orderSale.id });
+        await this.service.deleteOrderSale({
+            order_sale_id: orderSale.id,
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.orderSale({
             orderSale,
             type: ActivityTypeName.DELETE,
@@ -192,8 +195,25 @@ export class OrderSaleResolver {
     }
 
     @ResolveField(() => Boolean)
-    async is_deletable(@Parent() orderSale: OrderSale): Promise<boolean> {
-        return this.service.isDeletable({ order_sale_id: orderSale.id });
+    async is_deletable(
+        @Parent() orderSale: OrderSale,
+        @CurrentUser() user: User,
+    ): Promise<boolean> {
+        return this.service.isDeletable({
+            order_sale_id: orderSale.id,
+            current_user_id: user.id,
+        });
+    }
+
+    @ResolveField(() => Boolean)
+    async is_editable(
+        @Parent() orderSale: OrderSale,
+        @CurrentUser() user: User,
+    ): Promise<boolean> {
+        return this.service.isEditable({
+            current_user_id: user.id,
+            order_sale_id: orderSale.id,
+        });
     }
 
     @Subscription(() => OrderSale)

@@ -18,6 +18,7 @@ import {
     OrderSalesSortArgs,
     OrderSaleStatus,
     PaginatedOrderSales,
+    User,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -163,7 +164,7 @@ export class OrderSaleService {
     async getOrderSale({
         orderSaleId,
     }: {
-        orderSaleId: number;
+        orderSaleId?: number | null;
     }): Promise<OrderSale | null> {
         if (!orderSaleId) return null;
 
@@ -925,8 +926,10 @@ export class OrderSaleService {
 
     async deleteOrderSale({
         order_sale_id,
+        current_user_id,
     }: {
         order_sale_id: number;
+        current_user_id: number;
     }): Promise<boolean> {
         const orderSale = await this.getOrderSale({
             orderSaleId: order_sale_id,
@@ -936,7 +939,10 @@ export class OrderSaleService {
             throw new NotFoundException();
         }
 
-        const isDeletable = await this.isDeletable({ order_sale_id });
+        const isDeletable = await this.isDeletable({
+            order_sale_id,
+            current_user_id,
+        });
 
         if (!isDeletable) {
             const errors: string[] = [];
@@ -994,13 +1000,51 @@ export class OrderSaleService {
 
     async isDeletable({
         order_sale_id,
+        current_user_id,
     }: {
         order_sale_id: number;
+        current_user_id: number;
     }): Promise<boolean> {
-        const orderSale = await this.getOrderSale({
+        return this.isEditable({
+            order_sale_id: order_sale_id,
+            current_user_id: current_user_id,
+        });
+    }
+
+    async isEditable({
+        current_user_id,
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+        current_user_id: number;
+    }): Promise<boolean> {
+        const previousOrderSale = await this.getOrderSale({
             orderSaleId: order_sale_id,
         });
 
-        return !!orderSale && orderSale.order_sale_status_id !== 2;
+        if (!previousOrderSale) {
+            return true;
+        }
+
+        const userRoles = await this.prisma.user_roles.findMany({
+            where: {
+                id: current_user_id,
+            },
+            include: {
+                roles: true,
+            },
+        });
+
+        if (!userRoles) {
+            return true;
+        }
+
+        const isUserAdmin = User.isUserAdmin({
+            roles: userRoles.filter((ur) => ur.roles).map((ur) => ur.roles!),
+        });
+
+        return previousOrderSale.order_sale_status_id === 2
+            ? isUserAdmin
+            : true;
     }
 }

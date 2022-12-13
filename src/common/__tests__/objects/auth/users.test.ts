@@ -24,5 +24,6 @@ describe('validate user', () => {
 
         expect(userWithRoles).toBeDefined();
         expect(userWithRoles?.id).toBeDefined();
+        expect(userWithRoles?.id).toBe(adminUser.id);
     });
 });

@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { IsString } from 'class-validator';
 import { Role, RoleInput } from './role.dto';
 
@@ -28,6 +28,9 @@ export class LoginInput {
 
 @InputType('CreateUserInput')
 export class CreateUserInput extends UserBase {
+    @Field(() => Int, { nullable: true })
+    id?: number | null;
+
     @Field()
     password: string;
 
@@ -54,6 +57,30 @@ export class User extends UserBase {
 
     @Field()
     fullname: string;
+
+    static isUserSalesman({ roles }: { roles: Role[] }): boolean {
+        return !!roles.find((role) => {
+            return role.id === 5;
+        });
+    }
+
+    static isUserSuper({ roles }: { roles: Role[] }) {
+        return !!roles.find((role) => {
+            return role.id === 1;
+        });
+    }
+
+    static isUserAdmin({ roles }: { roles: Role[] }) {
+        return !!roles.find((role) => {
+            return role.id === 1 || role.id === 2;
+        });
+    }
+
+    static isUserProduction({ roles }: { roles: Role[] }) {
+        return !!roles.find((role) => {
+            return role.id === 4;
+        });
+    }
 }
 
 @ObjectType('UserWithRoles')

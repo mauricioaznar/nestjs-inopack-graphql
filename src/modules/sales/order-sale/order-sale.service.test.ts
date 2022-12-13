@@ -39,6 +39,7 @@ import {
     orderSalesTestsOrderSalesInvoiceCode,
     orderSalesTestsOrderSalesOrderCode,
 } from '../../../common/__tests__/constants/unique-codes-initial-values';
+import { adminUser } from '../../../common/__tests__/objects/auth/users';
 
 let app: INestApplication;
 let orderRequestsService: OrderRequestsService;
@@ -1222,6 +1223,7 @@ describe('delete', () => {
         try {
             await orderSalesService.deleteOrderSale({
                 order_sale_id: createdOrderSale.id,
+                current_user_id: adminUser.id!,
             });
         } catch (e) {
             console.log(e);
@@ -1297,6 +1299,7 @@ describe('delete', () => {
         try {
             await orderSalesService.deleteOrderSale({
                 order_sale_id: createdOrderSale?.id || 0,
+                current_user_id: adminUser.id!,
             });
         } catch (e) {
             console.error(e);
