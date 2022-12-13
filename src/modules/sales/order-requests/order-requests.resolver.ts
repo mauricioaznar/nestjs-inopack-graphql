@@ -106,6 +106,7 @@ export class OrderRequestsResolver {
         }
         await this.service.deleteOrderRequest({
             order_request_id: orderRequestId,
+            current_user_id: currentUser.id,
         });
         await this.pubSubService.orderRequest({
             orderRequest,
@@ -164,8 +165,25 @@ export class OrderRequestsResolver {
     }
 
     @ResolveField(() => Boolean)
-    async is_deletable(@Parent() orderRequest: OrderRequest): Promise<boolean> {
-        return this.service.isDeletable({ order_request_id: orderRequest.id });
+    async is_deletable(
+        @Parent() orderRequest: OrderRequest,
+        @CurrentUser() currentUser: User,
+    ): Promise<boolean> {
+        return this.service.isDeletable({
+            order_request_id: orderRequest.id,
+            current_user_id: currentUser.id,
+        });
+    }
+
+    @ResolveField(() => Boolean)
+    async is_editable(
+        @Parent() orderRequest: OrderRequest,
+        @CurrentUser() currentUser: User,
+    ): Promise<boolean> {
+        return this.service.isEditable({
+            order_request_id: orderRequest.id,
+            current_user_id: currentUser.id,
+        });
     }
 
     @ResolveField(() => Client, { nullable: true })

@@ -1028,7 +1028,7 @@ export class OrderSaleService {
 
         const userRoles = await this.prisma.user_roles.findMany({
             where: {
-                id: current_user_id,
+                user_id: current_user_id,
             },
             include: {
                 roles: true,

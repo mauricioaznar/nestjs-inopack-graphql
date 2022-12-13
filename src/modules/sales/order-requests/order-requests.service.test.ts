@@ -20,6 +20,7 @@ import {
     orderRequestsTestsOrderSalesOrderCode,
 } from '../../../common/__tests__/constants/unique-codes-initial-values';
 import { ColumnOrder } from '../../../common/dto/pagination';
+import { adminUser } from '../../../common/__tests__/objects/auth/users';
 
 let app: INestApplication;
 let orderRequestsService: OrderRequestsService;
@@ -699,6 +700,7 @@ describe('delete', () => {
         try {
             await orderRequestsService.deleteOrderRequest({
                 order_request_id: createdOrderRequest.id,
+                current_user_id: adminUser.id!,
             });
         } catch (e) {
             console.error(e);
@@ -738,6 +740,7 @@ describe('delete', () => {
         try {
             await orderRequestsService.deleteOrderRequest({
                 order_request_id: createdOrderRequest.id,
+                current_user_id: adminUser.id!,
             });
         } catch (e) {
             console.error(e);
@@ -810,6 +813,7 @@ describe('delete', () => {
         try {
             await orderRequestsService.deleteOrderRequest({
                 order_request_id: orderRequest.id,
+                current_user_id: adminUser.id!,
             });
         } catch (e) {
             expect(e.response.message).toEqual([

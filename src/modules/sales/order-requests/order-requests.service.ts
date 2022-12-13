@@ -17,6 +17,7 @@ import {
     OrderSaleStatus,
     PaginatedOrderRequests,
     PaginatedOrderRequestsQueryArgs,
+    User,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -569,8 +570,10 @@ export class OrderRequestsService {
 
     async deleteOrderRequest({
         order_request_id,
+        current_user_id,
     }: {
         order_request_id: number;
+        current_user_id: number;
     }): Promise<boolean> {
         const orderRequest = await this.prisma.order_requests.findFirst({
             where: {
@@ -583,7 +586,10 @@ export class OrderRequestsService {
             throw new NotFoundException();
         }
 
-        const isDeletable = await this.isDeletable({ order_request_id });
+        const isDeletable = await this.isDeletable({
+            order_request_id,
+            current_user_id,
+        });
 
         if (!isDeletable) {
             const { order_sales_count } = await this.getDependenciesCount({
@@ -679,13 +685,58 @@ export class OrderRequestsService {
 
     async isDeletable({
         order_request_id,
+        current_user_id,
     }: {
         order_request_id: number;
+        current_user_id: number;
     }): Promise<boolean> {
         const { order_sales_count } = await this.getDependenciesCount({
             order_request_id,
         });
 
-        return order_sales_count === 0;
+        const is_editable = await this.isEditable({
+            current_user_id,
+            order_request_id,
+        });
+
+        return order_sales_count === 0 && is_editable;
+    }
+
+    async isEditable({
+        current_user_id,
+        order_request_id,
+    }: {
+        order_request_id: number;
+        current_user_id: number;
+    }): Promise<boolean> {
+        const previousOrderRequest = await this.getOrderRequest({
+            orderRequestId: order_request_id,
+        });
+
+        if (!previousOrderRequest) {
+            return true;
+        }
+
+        const userRoles = await this.prisma.user_roles.findMany({
+            where: {
+                user_id: current_user_id,
+            },
+            include: {
+                roles: true,
+            },
+        });
+
+        if (!userRoles) {
+            return true;
+        }
+
+        const isUserAdmin = User.isUserAdmin({
+            roles: userRoles.filter((ur) => ur.roles).map((ur) => ur.roles!),
+        });
+
+        return previousOrderRequest.order_request_status_id &&
+            previousOrderRequest.order_request_status_id > 1
+            ? isUserAdmin
+            : true;
     }
 }
