@@ -273,8 +273,14 @@ export class OrderRequestsService {
         }, 0);
     }
 
-    async upsertOrderRequest(input: OrderRequestInput): Promise<OrderRequest> {
-        await this.validateOrderRequest(input);
+    async upsertOrderRequest({
+        input,
+        current_user_id,
+    }: {
+        input: OrderRequestInput;
+        current_user_id: number;
+    }): Promise<OrderRequest> {
+        await this.validateOrderRequest(input, current_user_id);
 
         const orderRequest = await this.prisma.order_requests.upsert({
             create: {
@@ -377,8 +383,24 @@ export class OrderRequestsService {
         return orderRequest;
     }
 
-    async validateOrderRequest(input: OrderRequestInput): Promise<void> {
+    async validateOrderRequest(
+        input: OrderRequestInput,
+        current_user_id: number,
+    ): Promise<void> {
         const errors: string[] = [];
+
+        // IsEditable
+        {
+            if (input.id) {
+                const is_editable = await this.isEditable({
+                    current_user_id: current_user_id,
+                    order_request_id: input.id,
+                });
+                if (!is_editable) {
+                    errors.push('Order request is not editable');
+                }
+            }
+        }
 
         // IsOrderCodeOccupied
         {

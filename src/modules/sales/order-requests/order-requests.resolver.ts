@@ -84,7 +84,10 @@ export class OrderRequestsResolver {
         @Args('OrderRequestInput') input: OrderRequestInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderRequest> {
-        const orderRequest = await this.service.upsertOrderRequest(input);
+        const orderRequest = await this.service.upsertOrderRequest({
+            input,
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.orderRequest({
             orderRequest,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,

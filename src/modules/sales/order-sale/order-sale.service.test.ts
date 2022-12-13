@@ -73,21 +73,24 @@ describe('upsert', () => {
             app,
         });
         const orderRequest = await orderRequestsService.upsertOrderRequest({
-            order_code: currentRequestOrderCode,
-            order_request_status_id: orderRequestStatus2.id,
-            estimated_delivery_date: getUtcDate(),
-            date: getUtcDate(),
-            notes: '',
-            order_request_products: [
-                {
-                    group_weight: product.current_group_weight,
-                    groups: 2,
-                    kilos: 2 * product.current_group_weight,
-                    kilo_price: 20,
-                    product_id: product.id,
-                },
-            ],
-            client_id: client.id,
+            input: {
+                order_code: currentRequestOrderCode,
+                order_request_status_id: orderRequestStatus2.id,
+                estimated_delivery_date: getUtcDate(),
+                date: getUtcDate(),
+                notes: '',
+                order_request_products: [
+                    {
+                        group_weight: product.current_group_weight,
+                        groups: 2,
+                        kilos: 2 * product.current_group_weight,
+                        kilo_price: 20,
+                        product_id: product.id,
+                    },
+                ],
+                client_id: client.id,
+            },
+            current_user_id: adminUser.id,
         });
 
         const orderCode = currentSaleOrderCode;
@@ -295,29 +298,32 @@ describe('upsert', () => {
             app,
         });
         const orderRequest = await orderRequestsService.upsertOrderRequest({
-            order_code: currentRequestOrderCode,
-            order_request_status_id: orderRequestStatus2.id,
-            notes: '',
-            estimated_delivery_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-            date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-            order_request_products: [
-                {
-                    group_weight: product.current_group_weight,
-                    groups: 2,
-                    kilos: 2 * product.current_group_weight,
-                    kilo_price: 20,
-                    product_id: product.id,
-                },
-            ],
-            client_id: client.id,
+            input: {
+                order_code: currentRequestOrderCode,
+                order_request_status_id: orderRequestStatus2.id,
+                notes: '',
+                estimated_delivery_date: getUtcDate({
+                    year: 2022,
+                    day: 1,
+                    month: 2,
+                }),
+                date: getUtcDate({
+                    year: 2022,
+                    day: 1,
+                    month: 2,
+                }),
+                order_request_products: [
+                    {
+                        group_weight: product.current_group_weight,
+                        groups: 2,
+                        kilos: 2 * product.current_group_weight,
+                        kilo_price: 20,
+                        product_id: product.id,
+                    },
+                ],
+                client_id: client.id,
+            },
+            current_user_id: adminUser.id,
         });
 
         const orderCode = currentSaleOrderCode;

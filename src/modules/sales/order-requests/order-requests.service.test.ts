@@ -80,25 +80,28 @@ describe('upsert', () => {
         });
         const orderRequestCode = currentRequestOrderCode;
         const orderRequest = await orderRequestsService.upsertOrderRequest({
-            order_request_status_id: orderRequestStatus1.id,
-            order_code: orderRequestCode,
-            client_id: client.id,
-            notes: '',
-            date: getUtcDate({ year: 2022, month: 1, day: 1 }),
-            order_request_products: [
-                {
-                    product_id: product.id,
-                    groups: 20,
-                    kilos: product.current_group_weight * 20,
-                    group_weight: product.current_group_weight,
-                    kilo_price: 10,
-                },
-            ],
-            estimated_delivery_date: getUtcDate({
-                year: 2022,
-                month: 1,
-                day: 1,
-            }),
+            input: {
+                order_request_status_id: orderRequestStatus1.id,
+                order_code: orderRequestCode,
+                client_id: client.id,
+                notes: '',
+                date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                order_request_products: [
+                    {
+                        product_id: product.id,
+                        groups: 20,
+                        kilos: product.current_group_weight * 20,
+                        group_weight: product.current_group_weight,
+                        kilo_price: 10,
+                    },
+                ],
+                estimated_delivery_date: getUtcDate({
+                    year: 2022,
+                    month: 1,
+                    day: 1,
+                }),
+            },
+            current_user_id: adminUser.id,
         });
 
         expect(orderRequest).toBeDefined();
@@ -160,7 +163,10 @@ describe('upsert', () => {
         };
 
         const createdOrderRequest =
-            await orderRequestsService.upsertOrderRequest(orderRequestInput);
+            await orderRequestsService.upsertOrderRequest({
+                input: orderRequestInput,
+                current_user_id: adminUser.id,
+            });
 
         const createdOrderRequestProducts =
             await orderRequestsService.getOrderRequestProducts({
@@ -169,27 +175,30 @@ describe('upsert', () => {
 
         const updatedOrderRequest =
             await orderRequestsService.upsertOrderRequest({
-                id: createdOrderRequest.id,
-                order_request_status_id: orderRequestStatus2.id,
-                order_code: orderRequestCode,
-                client_id: client.id,
-                notes: '',
-                date: getUtcDate({ year: 2022, month: 2, day: 1 }),
-                order_request_products: [
-                    {
-                        id: createdOrderRequestProducts[0].id,
-                        product_id: product.id,
-                        groups: 30,
-                        kilos: product.current_group_weight * 30,
-                        group_weight: product.current_group_weight,
-                        kilo_price: 10,
-                    },
-                ],
-                estimated_delivery_date: getUtcDate({
-                    year: 2022,
-                    month: 2,
-                    day: 1,
-                }),
+                input: {
+                    id: createdOrderRequest.id,
+                    order_request_status_id: orderRequestStatus2.id,
+                    order_code: orderRequestCode,
+                    client_id: client.id,
+                    notes: '',
+                    date: getUtcDate({ year: 2022, month: 2, day: 1 }),
+                    order_request_products: [
+                        {
+                            id: createdOrderRequestProducts[0].id,
+                            product_id: product.id,
+                            groups: 30,
+                            kilos: product.current_group_weight * 30,
+                            group_weight: product.current_group_weight,
+                            kilo_price: 10,
+                        },
+                    ],
+                    estimated_delivery_date: getUtcDate({
+                        year: 2022,
+                        month: 2,
+                        day: 1,
+                    }),
+                },
+                current_user_id: adminUser.id,
             });
 
         const updatedOrderRequestProducts =
@@ -254,29 +263,35 @@ describe('upsert', () => {
             }),
         };
 
-        await orderRequestsService.upsertOrderRequest(orderRequestInput);
+        await orderRequestsService.upsertOrderRequest({
+            input: orderRequestInput,
+            current_user_id: adminUser.id,
+        });
 
         try {
             await orderRequestsService.upsertOrderRequest({
-                order_request_status_id: orderRequestStatus2.id,
-                order_code: orderRequestCode,
-                client_id: client.id,
-                notes: '',
-                date: getUtcDate({ year: 2022, month: 2, day: 1 }),
-                order_request_products: [
-                    {
-                        product_id: product.id,
-                        groups: 30,
-                        kilos: product.current_group_weight * 30,
-                        group_weight: product.current_group_weight,
-                        kilo_price: 10,
-                    },
-                ],
-                estimated_delivery_date: getUtcDate({
-                    year: 2022,
-                    month: 2,
-                    day: 1,
-                }),
+                input: {
+                    order_request_status_id: orderRequestStatus2.id,
+                    order_code: orderRequestCode,
+                    client_id: client.id,
+                    notes: '',
+                    date: getUtcDate({ year: 2022, month: 2, day: 1 }),
+                    order_request_products: [
+                        {
+                            product_id: product.id,
+                            groups: 30,
+                            kilos: product.current_group_weight * 30,
+                            group_weight: product.current_group_weight,
+                            kilo_price: 10,
+                        },
+                    ],
+                    estimated_delivery_date: getUtcDate({
+                        year: 2022,
+                        month: 2,
+                        day: 1,
+                    }),
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -347,30 +362,36 @@ describe('upsert', () => {
         };
 
         const createdOrderRequest =
-            await orderRequestsService.upsertOrderRequest(orderRequestInput);
+            await orderRequestsService.upsertOrderRequest({
+                input: orderRequestInput,
+                current_user_id: adminUser.id,
+            });
 
         const updatedOrderRequest =
             await orderRequestsService.upsertOrderRequest({
-                id: createdOrderRequest.id,
-                order_request_status_id: orderRequestStatus2.id,
-                order_code: 900000,
-                client_id: client.id,
-                notes: '',
-                date: getUtcDate({ year: 2022, month: 2, day: 1 }),
-                order_request_products: [
-                    {
-                        product_id: product.id,
-                        groups: 30,
-                        kilos: product.current_group_weight * 30,
-                        group_weight: product.current_group_weight,
-                        kilo_price: 10,
-                    },
-                ],
-                estimated_delivery_date: getUtcDate({
-                    year: 2022,
-                    month: 2,
-                    day: 1,
-                }),
+                input: {
+                    id: createdOrderRequest.id,
+                    order_request_status_id: orderRequestStatus2.id,
+                    order_code: 900000,
+                    client_id: client.id,
+                    notes: '',
+                    date: getUtcDate({ year: 2022, month: 2, day: 1 }),
+                    order_request_products: [
+                        {
+                            product_id: product.id,
+                            groups: 30,
+                            kilos: product.current_group_weight * 30,
+                            group_weight: product.current_group_weight,
+                            kilo_price: 10,
+                        },
+                    ],
+                    estimated_delivery_date: getUtcDate({
+                        year: 2022,
+                        month: 2,
+                        day: 1,
+                    }),
+                },
+                current_user_id: adminUser.id,
             });
 
         expect(updatedOrderRequest.order_code).toBe(900000);
@@ -385,32 +406,35 @@ describe('upsert', () => {
         });
         try {
             await orderRequestsService.upsertOrderRequest({
-                order_request_status_id: orderRequestStatus1.id,
-                order_code: currentRequestOrderCode,
-                client_id: client.id,
-                date: getUtcDate({ year: 2022, month: 1, day: 1 }),
-                notes: '',
-                order_request_products: [
-                    {
-                        product_id: product.id,
-                        groups: 20,
-                        kilos: product.current_group_weight * 20,
-                        group_weight: product.current_group_weight,
-                        kilo_price: 10,
-                    },
-                    {
-                        product_id: product.id,
-                        groups: 20,
-                        kilos: product.current_group_weight * 20,
-                        group_weight: product.current_group_weight,
-                        kilo_price: 10,
-                    },
-                ],
-                estimated_delivery_date: getUtcDate({
-                    year: 2022,
-                    month: 1,
-                    day: 1,
-                }),
+                input: {
+                    order_request_status_id: orderRequestStatus1.id,
+                    order_code: currentRequestOrderCode,
+                    client_id: client.id,
+                    date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                    notes: '',
+                    order_request_products: [
+                        {
+                            product_id: product.id,
+                            groups: 20,
+                            kilos: product.current_group_weight * 20,
+                            group_weight: product.current_group_weight,
+                            kilo_price: 10,
+                        },
+                        {
+                            product_id: product.id,
+                            groups: 20,
+                            kilos: product.current_group_weight * 20,
+                            group_weight: product.current_group_weight,
+                            kilo_price: 10,
+                        },
+                    ],
+                    estimated_delivery_date: getUtcDate({
+                        year: 2022,
+                        month: 1,
+                        day: 1,
+                    }),
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -427,17 +451,20 @@ describe('upsert', () => {
         });
         try {
             await orderRequestsService.upsertOrderRequest({
-                order_request_status_id: orderRequestStatus1.id,
-                order_code: currentRequestOrderCode,
-                client_id: client.id,
-                notes: '',
-                date: getUtcDate({ year: 2022, month: 1, day: 1 }),
-                order_request_products: [],
-                estimated_delivery_date: getUtcDate({
-                    year: 2022,
-                    month: 1,
-                    day: 1,
-                }),
+                input: {
+                    order_request_status_id: orderRequestStatus1.id,
+                    order_code: currentRequestOrderCode,
+                    client_id: client.id,
+                    notes: '',
+                    date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                    order_request_products: [],
+                    estimated_delivery_date: getUtcDate({
+                        year: 2022,
+                        month: 1,
+                        day: 1,
+                    }),
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -459,25 +486,28 @@ describe('upsert', () => {
         });
         try {
             await orderRequestsService.upsertOrderRequest({
-                order_request_status_id: orderRequestStatus1.id,
-                order_code: currentRequestOrderCode,
-                client_id: client.id,
-                notes: '',
-                date: getUtcDate({ year: 2022, month: 1, day: 1 }),
-                order_request_products: [
-                    {
-                        product_id: product.id,
-                        groups: 20,
-                        kilos: product.current_group_weight * 53,
-                        group_weight: product.current_group_weight,
-                        kilo_price: 10,
-                    },
-                ],
-                estimated_delivery_date: getUtcDate({
-                    year: 2022,
-                    month: 1,
-                    day: 1,
-                }),
+                input: {
+                    order_request_status_id: orderRequestStatus1.id,
+                    order_code: currentRequestOrderCode,
+                    client_id: client.id,
+                    notes: '',
+                    date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                    order_request_products: [
+                        {
+                            product_id: product.id,
+                            groups: 20,
+                            kilos: product.current_group_weight * 53,
+                            group_weight: product.current_group_weight,
+                            kilo_price: 10,
+                        },
+                    ],
+                    estimated_delivery_date: getUtcDate({
+                        year: 2022,
+                        month: 1,
+                        day: 1,
+                    }),
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -501,25 +531,28 @@ describe('upsert', () => {
         const groupWeight = 40;
         try {
             await orderRequestsService.upsertOrderRequest({
-                order_request_status_id: orderRequestStatus1.id,
-                order_code: currentRequestOrderCode,
-                client_id: client.id,
-                notes: '',
-                date: getUtcDate({ year: 2022, month: 1, day: 1 }),
-                order_request_products: [
-                    {
-                        product_id: product.id,
-                        groups: 20,
-                        group_weight: groupWeight,
-                        kilos: groupWeight * 20,
-                        kilo_price: 10,
-                    },
-                ],
-                estimated_delivery_date: getUtcDate({
-                    year: 2022,
-                    month: 1,
-                    day: 1,
-                }),
+                input: {
+                    order_request_status_id: orderRequestStatus1.id,
+                    order_code: currentRequestOrderCode,
+                    client_id: client.id,
+                    notes: '',
+                    date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                    order_request_products: [
+                        {
+                            product_id: product.id,
+                            groups: 20,
+                            group_weight: groupWeight,
+                            kilos: groupWeight * 20,
+                            kilo_price: 10,
+                        },
+                    ],
+                    estimated_delivery_date: getUtcDate({
+                        year: 2022,
+                        month: 1,
+                        day: 1,
+                    }),
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
@@ -586,17 +619,20 @@ describe('upsert', () => {
 
         try {
             await orderRequestsService.upsertOrderRequest({
-                ...orderRequest,
-                id: orderRequest.id,
-                order_request_products: [
-                    {
-                        product_id: product.id,
-                        kilos: product.current_group_weight,
-                        groups: 1,
-                        group_weight: product.current_group_weight,
-                        kilo_price: product.current_kilo_price,
-                    },
-                ],
+                input: {
+                    ...orderRequest,
+                    id: orderRequest.id,
+                    order_request_products: [
+                        {
+                            product_id: product.id,
+                            kilos: product.current_group_weight,
+                            groups: 1,
+                            group_weight: product.current_group_weight,
+                            kilo_price: product.current_kilo_price,
+                        },
+                    ],
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual([
@@ -664,17 +700,20 @@ describe('upsert', () => {
 
         try {
             await orderRequestsService.upsertOrderRequest({
-                ...orderRequest,
-                id: orderRequest.id,
-                order_request_products: [
-                    {
-                        product_id: product2.id,
-                        kilos: product2.current_group_weight,
-                        groups: 1,
-                        group_weight: product2.current_group_weight,
-                        kilo_price: product2.current_kilo_price,
-                    },
-                ],
+                input: {
+                    ...orderRequest,
+                    id: orderRequest.id,
+                    order_request_products: [
+                        {
+                            product_id: product2.id,
+                            kilos: product2.current_group_weight,
+                            groups: 1,
+                            group_weight: product2.current_group_weight,
+                            kilo_price: product2.current_kilo_price,
+                        },
+                    ],
+                },
+                current_user_id: adminUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual([

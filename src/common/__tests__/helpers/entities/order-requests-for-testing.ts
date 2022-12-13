@@ -9,6 +9,7 @@ import { orderRequestStatus2 } from '../../objects/sales/order-request-statuses'
 import { getUtcDate } from '../dates';
 import { createClientForTesting } from './clients-for-testing';
 import { INestApplication } from '@nestjs/common';
+import { adminUser } from '../../objects/auth/users';
 
 type OrderRequestWithOneProduct = {
     orderRequest: OrderRequest;
@@ -32,17 +33,20 @@ export async function createOrderRequestWithOneProduct({
 
     try {
         const orderRequest = await orderRequestsService.upsertOrderRequest({
-            order_request_status_id: orderRequestStatus2.id,
-            order_code: orderRequestCode,
-            client_id: client.id,
-            notes: '',
-            date: getUtcDate({ year: 2022, month: 1, day: 1 }),
-            order_request_products: [orderRequestProduct],
-            estimated_delivery_date: getUtcDate({
-                year: 2022,
-                month: 1,
-                day: 1,
-            }),
+            input: {
+                order_request_status_id: orderRequestStatus2.id,
+                order_code: orderRequestCode,
+                client_id: client.id,
+                notes: '',
+                date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                order_request_products: [orderRequestProduct],
+                estimated_delivery_date: getUtcDate({
+                    year: 2022,
+                    month: 1,
+                    day: 1,
+                }),
+            },
+            current_user_id: adminUser.id,
         });
         const orderRequestProducts =
             await orderRequestsService.getOrderRequestProducts({
@@ -87,20 +91,23 @@ export async function createOrderRequestWithTwoProducts({
 
     try {
         const orderRequest = await orderRequestsService.upsertOrderRequest({
-            order_request_status_id: orderRequestStatusId,
-            order_code: orderRequestCode,
-            client_id: client.id,
-            notes: '',
-            date: getUtcDate({ year: 2022, month: 1, day: 1 }),
-            order_request_products: [
-                orderRequestProduct1,
-                orderRequestProduct2,
-            ],
-            estimated_delivery_date: getUtcDate({
-                year: 2022,
-                month: 1,
-                day: 1,
-            }),
+            input: {
+                order_request_status_id: orderRequestStatusId,
+                order_code: orderRequestCode,
+                client_id: client.id,
+                notes: '',
+                date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                order_request_products: [
+                    orderRequestProduct1,
+                    orderRequestProduct2,
+                ],
+                estimated_delivery_date: getUtcDate({
+                    year: 2022,
+                    month: 1,
+                    day: 1,
+                }),
+            },
+            current_user_id: adminUser.id,
         });
         const orderRequestProducts =
             await orderRequestsService.getOrderRequestProducts({
