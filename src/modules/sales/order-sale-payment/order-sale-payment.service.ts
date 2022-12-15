@@ -37,7 +37,8 @@ export class OrderSalePaymentService {
         });
 
         const { sort_order, sort_field } = orderSalePaymentSortArgs;
-        const { order_sale_collection_status_id } = orderSalePaymentsQueryArgs;
+        const { order_sale_collection_status_id, order_sale_receipt_type_id } =
+            orderSalePaymentsQueryArgs;
         const filter =
             orderSalePaymentsQueryArgs.filter !== '' &&
             orderSalePaymentsQueryArgs.filter
@@ -67,6 +68,15 @@ export class OrderSalePaymentService {
                         order_sale_collection_status_id !== undefined
                             ? order_sale_collection_status_id
                             : undefined,
+                },
+                {
+                    order_sales: {
+                        order_sale_receipt_type_id:
+                            order_sale_receipt_type_id !== null &&
+                            order_sale_receipt_type_id !== undefined
+                                ? order_sale_receipt_type_id
+                                : undefined,
+                    },
                 },
                 {
                     OR: [
@@ -118,11 +128,13 @@ export class OrderSalePaymentService {
                         },
                         {
                             order_sales: {
-                                order_sale_receipt_type: {
-                                    name: {
-                                        contains: !isFilterANumber
-                                            ? filter
-                                            : undefined,
+                                order_requests: {
+                                    clients: {
+                                        abbreviation: {
+                                            contains: !isFilterANumber
+                                                ? filter
+                                                : undefined,
+                                        },
                                     },
                                 },
                             },

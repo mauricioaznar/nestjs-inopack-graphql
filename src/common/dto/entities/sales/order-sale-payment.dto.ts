@@ -79,4 +79,7 @@ export class OrderSalePaymentQueryArgs {
 
     @Field(() => Int, { nullable: true })
     order_sale_collection_status_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    order_sale_receipt_type_id: number | null;
 }
