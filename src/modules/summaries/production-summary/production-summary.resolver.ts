@@ -7,7 +7,7 @@ import {
     ProductionSummaryArgs,
 } from '../../../common/dto/entities/summaries/production-summary.dto';
 
-@Resolver(() => ProductInventory)
+@Resolver(() => ProductionSummary)
 // @Role('super')
 @Injectable()
 export class ProductionSummaryResolver {

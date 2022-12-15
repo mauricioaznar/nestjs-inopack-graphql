@@ -1,13 +1,12 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
-import { ProductInventory } from '../../../common/dto/entities/production/product-inventory.dto';
 import { SalesSummaryService } from './sales-summary.service';
 import {
     SalesSummary,
     SalesSummaryArgs,
 } from '../../../common/dto/entities/summaries/sales-summary.dto';
 
-@Resolver(() => ProductInventory)
+@Resolver(() => SalesSummary)
 // @Role('super')
 @Injectable()
 export class SalesSummaryResolver {

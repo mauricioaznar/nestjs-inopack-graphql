@@ -1,5 +1,5 @@
-import { DateGroupBy } from '../../dto/entities/summaries/sales-summary.dto';
 import dayjs from 'dayjs';
+import { DateGroupBy } from '../../dto/dates/dates';
 
 export const getDatesInjections = function ({
     year,

@@ -38,3 +38,13 @@ export class Day {
     @Field({ description: 'Month' })
     public day: number;
 }
+
+export enum DateGroupBy {
+    year = 'year',
+    month = 'month',
+    day = 'day',
+}
+
+registerEnumType(DateGroupBy, {
+    name: 'DateGroupBy',
+});

@@ -6,6 +6,7 @@ import {
     ObjectType,
     registerEnumType,
 } from '@nestjs/graphql';
+import { DateGroupBy } from '../../dates/dates';
 
 @InputType('SalesSummaryArgs')
 export class SalesSummaryArgs {
@@ -33,16 +34,6 @@ export enum SalesSummaryEntitiesGroup {
 
 registerEnumType(SalesSummaryEntitiesGroup, {
     name: 'SalesSummaryEntitiesGroup',
-});
-
-export enum DateGroupBy {
-    year = 'year',
-    month = 'month',
-    day = 'day',
-}
-
-registerEnumType(DateGroupBy, {
-    name: 'DateGroupBy',
 });
 
 @ObjectType('SalesRecord')
