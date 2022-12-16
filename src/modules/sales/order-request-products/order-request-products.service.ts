@@ -43,6 +43,12 @@ export class OrderRequestProductsService {
         });
     }
 
+    async getOrderRequestProductTotal(
+        orderRequestProduct: OrderRequestProduct,
+    ): Promise<number> {
+        return orderRequestProduct.kilo_price * orderRequestProduct.kilos;
+    }
+
     async getOptimizedRequestProducts(): Promise<OptimizedRequestProduct[]> {
         return await this.prisma.$queryRaw<OptimizedRequestProduct[]>`
                  select 

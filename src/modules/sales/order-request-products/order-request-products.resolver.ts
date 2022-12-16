@@ -1,4 +1,4 @@
-import { Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Float, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderRequestProductsService } from './order-request-products.service';
 import { Public } from '../../auth/decorators/public.decorator';
@@ -41,5 +41,10 @@ export class OrderRequestProductsResolver {
         return this.service.getProduct({
             product_id: orderRequestProduct.product_id,
         });
+    }
+
+    @ResolveField(() => Float, { nullable: false })
+    async total(orderRequestProduct: OrderRequestProduct): Promise<number> {
+        return this.service.getOrderRequestProductTotal(orderRequestProduct);
     }
 }
