@@ -203,6 +203,7 @@ export class OrderSalePaymentService {
                 ...getUpdatedAtProperty(),
                 order_sale_collection_status_id:
                     input.order_sale_collection_status_id,
+                date_paid: input.date_paid,
             },
             where: {
                 id: input.id || 0,

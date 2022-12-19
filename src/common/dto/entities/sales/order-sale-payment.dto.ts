@@ -35,6 +35,9 @@ export class OrderSalePaymentUpdateInput {
 
     @Field(() => Int, { nullable: false })
     order_sale_collection_status_id: number;
+
+    @Field()
+    date_paid: Date;
 }
 
 @ObjectType('OrderSalePayment')

@@ -752,22 +752,6 @@ export class OrderSaleService {
         }
 
         // IsOrderRequestInProduction
-        {
-            const orderRequest = await this.prisma.order_requests.findUnique({
-                where: {
-                    id: input.order_request_id,
-                },
-            });
-            if (!orderRequest) {
-                errors.push('Order request doesnt exist');
-            }
-
-            if (orderRequest && orderRequest.order_request_status_id !== 2) {
-                errors.push(
-                    `Order request is not in production (order_request_status_id === ${orderRequest.order_request_status_id})`,
-                );
-            }
-        }
 
         // AreOrderSaleProductsInRequest
         {
@@ -1049,6 +1033,16 @@ export class OrderSaleService {
             return true;
         }
 
+        const orderRequest = await this.prisma.order_requests.findUnique({
+            where: {
+                id: previousOrderSale.order_request_id!,
+            },
+        });
+
+        if (!orderRequest) {
+            return true;
+        }
+
         const userRoles = await this.prisma.user_roles.findMany({
             where: {
                 user_id: current_user_id,
@@ -1066,7 +1060,8 @@ export class OrderSaleService {
             roles: userRoles.filter((ur) => ur.roles).map((ur) => ur.roles!),
         });
 
-        return previousOrderSale.order_sale_status_id === 2
+        return previousOrderSale.order_sale_status_id === 2 ||
+            orderRequest.order_request_status_id !== 2
             ? isUserAdmin
             : true;
     }
