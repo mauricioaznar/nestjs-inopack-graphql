@@ -14,7 +14,6 @@ import {
     OrderRequestsSortArgs,
     OrderRequestStatus,
     OrderSaleProduct,
-    OrderSaleStatus,
     PaginatedOrderRequests,
     PaginatedOrderRequestsQueryArgs,
     User,
@@ -121,12 +120,12 @@ export class OrderRequestsService {
                     active: 1,
                 },
                 {
-                    date: {
+                    estimated_delivery_date: {
                         gte: startDate,
                     },
                 },
                 {
-                    date: {
+                    estimated_delivery_date: {
                         lt: endDate,
                     },
                 },
@@ -162,9 +161,9 @@ export class OrderRequestsService {
                 orderBy = {
                     order_code: sort_order,
                 };
-            } else if (sort_field === 'date') {
+            } else if (sort_field === 'estimated_delivery_date') {
                 orderBy = {
-                    date: sort_order,
+                    estimated_delivery_date: sort_order,
                 };
             }
         }
