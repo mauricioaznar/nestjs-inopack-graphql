@@ -398,7 +398,7 @@ export class OrderSaleService {
             0,
         );
 
-        return Math.round(orderSaleProductsTotal * 1000) / 1000;
+        return Math.round(orderSaleProductsTotal * 100) / 100;
     }
 
     async getOrderSaleTaxTotal({
