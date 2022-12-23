@@ -39,7 +39,10 @@ import {
     orderSalesTestsOrderSalesInvoiceCode,
     orderSalesTestsOrderSalesOrderCode,
 } from '../../../common/__tests__/constants/unique-codes-initial-values';
-import { adminUser } from '../../../common/__tests__/objects/auth/users';
+import {
+    adminUser,
+    salesUser,
+} from '../../../common/__tests__/objects/auth/users';
 
 let app: INestApplication;
 let orderRequestsService: OrderRequestsService;
@@ -288,6 +291,108 @@ describe('upsert', () => {
                     updatedOrderSalePaymentInput.order_sale_collection_status_id,
             }),
         ]);
+    });
+
+    it('fails to update order sale when user is salesman and sale was delivered', async () => {
+        expect.hasAssertions();
+
+        const product = await createProductForTesting({
+            app,
+        });
+        const { orderRequest } = await createOrderRequestWithOneProduct({
+            app,
+            orderRequestCode: currentRequestOrderCode,
+            orderRequestProduct: {
+                group_weight: product.current_group_weight,
+                groups: 2,
+                kilos: 2 * product.current_group_weight,
+                kilo_price: 20,
+                product_id: product.id,
+            },
+        });
+
+        const orderCode = currentSaleOrderCode;
+
+        const orderSaleProductInput: OrderSaleProductInput = {
+            group_weight: product.current_group_weight,
+            groups: 2,
+            kilos: 2 * product.current_group_weight,
+            kilo_price: 20,
+            product_id: product.id,
+        };
+
+        const orderSalePaymentInput: OrderSalePaymentInput = {
+            amount: 20 * 2 * product.current_group_weight,
+            date_paid: getUtcDate({
+                year: 2022,
+                day: 1,
+                month: 2,
+            }),
+            order_sale_collection_status_id: orderSaleCollectionStatus1.id,
+        };
+
+        const createdOrderSale = await orderSalesService.upsertOrderSale({
+            input: {
+                order_code: orderCode,
+                order_request_id: orderRequest.id,
+                invoice_code: 0,
+                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                date: getUtcDate({
+                    year: 2022,
+                    day: 1,
+                    month: 2,
+                }),
+                order_sale_status_id: orderSaleStatus2.id,
+                order_sale_products: [orderSaleProductInput],
+                order_sale_payments: [orderSalePaymentInput],
+            },
+            current_user_id: adminUser.id,
+        });
+
+        const updatedOrderSaleProductInput: OrderSaleProductInput = {
+            group_weight: product.current_group_weight,
+            groups: 1,
+            kilos: product.current_group_weight,
+            kilo_price: 20,
+            product_id: product.id,
+        };
+
+        const updatedOrderSalePaymentInput: OrderSalePaymentInput = {
+            amount: 20 * product.current_group_weight,
+            date_paid: getUtcDate({
+                year: 2022,
+                day: 1,
+                month: 2,
+            }),
+            order_sale_collection_status_id: orderSaleCollectionStatus2.id,
+        };
+
+        try {
+            await orderSalesService.upsertOrderSale({
+                input: {
+                    id: createdOrderSale.id,
+                    order_code: orderCode,
+                    order_request_id: orderRequest.id,
+                    invoice_code: 0,
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    date: getUtcDate({
+                        year: 2022,
+                        day: 2,
+                        month: 3,
+                    }),
+                    order_sale_status_id: orderSaleStatus2.id,
+                    order_sale_products: [updatedOrderSaleProductInput],
+                    order_sale_payments: [updatedOrderSalePaymentInput],
+                },
+                current_user_id: salesUser.id,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(/order sale is not editable/i),
+                ]),
+            );
+        }
     });
 
     it('creates order sale (invoice - type 2)', async () => {
@@ -580,7 +685,7 @@ describe('upsert', () => {
         }
     });
 
-    it('fails when order request status is not 2', async () => {
+    it('fails when order request status is not 2 and is sales users', async () => {
         expect.hasAssertions();
 
         const product1 = await createProductForTesting({ app });
@@ -636,17 +741,76 @@ describe('upsert', () => {
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                 },
-                current_user_id: adminUser.id,
+                current_user_id: salesUser.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
                 expect.arrayContaining([
-                    expect.stringMatching(
-                        /order request is not in production/i,
-                    ),
+                    expect.stringMatching(/order sale is not editable/i),
                 ]),
             );
         }
+    });
+
+    it('passes when order request status is not 2 and is admin user', async () => {
+        expect.hasAssertions();
+
+        const product1 = await createProductForTesting({ app });
+        const product2 = await createProductForTesting({ app });
+
+        const { orderRequest, orderRequestProduct1 } =
+            await createOrderRequestWithTwoProducts({
+                app,
+                orderRequestCode: currentRequestOrderCode,
+                orderRequestStatusId: orderRequestStatus1.id,
+                orderRequestProduct1: {
+                    product_id: product1.id,
+                    kilos: 2 * product1.current_group_weight,
+                    groups: 2,
+                    group_weight: product1.current_group_weight,
+                    kilo_price: 20,
+                },
+                orderRequestProduct2: {
+                    product_id: product2.id,
+                    kilos: 2 * product2.current_group_weight,
+                    groups: 2,
+                    group_weight: product2.current_group_weight,
+                    kilo_price: 20,
+                },
+            });
+
+        const orderSaleProduct1: OrderSaleProductInput = {
+            product_id: orderRequestProduct1.product_id,
+            kilos: 2 * orderRequestProduct1.group_weight,
+            groups: 2,
+            group_weight: orderRequestProduct1.group_weight,
+            kilo_price: 20,
+        };
+
+        const orderSale = await orderSalesService.upsertOrderSale({
+            input: {
+                order_code: currentSaleOrderCode,
+                order_request_id: orderRequest.id,
+                invoice_code: 0,
+                date: getUtcDate({}),
+                order_sale_products: [orderSaleProduct1],
+                order_sale_payments: [
+                    {
+                        amount:
+                            orderRequestProduct1.kilos *
+                            orderRequestProduct1.kilo_price,
+                        order_sale_collection_status_id:
+                            orderSaleCollectionStatus1.id,
+                        date_paid: getUtcDate({}),
+                    },
+                ],
+                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                order_sale_status_id: orderSaleStatus1.id,
+            },
+            current_user_id: adminUser.id,
+        });
+
+        expect(orderSale.id).toBeDefined();
     });
 
     it('fails when order sale product is not in request', async () => {

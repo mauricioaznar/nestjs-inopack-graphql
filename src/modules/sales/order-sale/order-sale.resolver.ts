@@ -205,6 +205,7 @@ export class OrderSaleResolver {
         return this.service.isDeletable({
             order_sale_id: orderSale.id,
             current_user_id: user.id,
+            order_request_id: orderSale.order_request_id!,
         });
     }
 
@@ -216,6 +217,7 @@ export class OrderSaleResolver {
         return this.service.isEditable({
             current_user_id: user.id,
             order_sale_id: orderSale.id,
+            order_request_id: orderSale.order_request_id!,
         });
     }
 

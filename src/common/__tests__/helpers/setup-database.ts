@@ -1,4 +1,4 @@
-import { adminUser } from '../objects/auth/users';
+import { adminUser, salesUser } from '../objects/auth/users';
 import { UserService } from '../../../modules/auth/user.service';
 import { setupApp } from './setup-app';
 import {
@@ -72,6 +72,7 @@ export default async function setupDatabase() {
         data: roles,
     });
     await userService.create({ ...adminUser });
+    await userService.create({ ...salesUser });
     await prismaService.order_production_type.createMany({
         data: orderProductionTypes,
     });

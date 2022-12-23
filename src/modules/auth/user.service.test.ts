@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { UserService } from './user.service';
 import { setupApp } from '../../common/__tests__/helpers/setup-app';
-import { role1, roles } from '../../common/__tests__/objects/auth/roles';
+import { superRole, roles } from '../../common/__tests__/objects/auth/roles';
 
 let app: INestApplication;
 let userService: UserService;
@@ -83,7 +83,7 @@ describe('users upsert', () => {
             first_name: 'first name 2',
             last_name: 'last name 2',
             password: 'thissiaapassword',
-            roles: [role1],
+            roles: [superRole],
         });
 
         const userRoles = await userService.getUserRoles({ user_id: user.id });

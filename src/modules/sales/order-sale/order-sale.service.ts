@@ -668,14 +668,13 @@ export class OrderSaleService {
         // IsEditable
 
         {
-            if (input.id) {
-                const is_editable = await this.isEditable({
-                    current_user_id: current_user_id,
-                    order_sale_id: input.id,
-                });
-                if (!is_editable) {
-                    errors.push('Order sale is not editable');
-                }
+            const is_editable = await this.isEditable({
+                current_user_id: current_user_id,
+                order_sale_id: input.id,
+                order_request_id: input.order_request_id,
+            });
+            if (!is_editable) {
+                errors.push('Order sale is not editable');
             }
         }
 
@@ -750,8 +749,6 @@ export class OrderSaleService {
                 }
             }
         }
-
-        // IsOrderRequestInProduction
 
         // AreOrderSaleProductsInRequest
         {
@@ -949,6 +946,7 @@ export class OrderSaleService {
         const isDeletable = await this.isDeletable({
             order_sale_id,
             current_user_id,
+            order_request_id: orderSale.order_request_id!,
         });
 
         if (!isDeletable) {
@@ -1008,22 +1006,59 @@ export class OrderSaleService {
     async isDeletable({
         order_sale_id,
         current_user_id,
+        order_request_id,
     }: {
         order_sale_id: number;
+        order_request_id: number;
         current_user_id: number;
     }): Promise<boolean> {
         return this.isEditable({
             order_sale_id: order_sale_id,
             current_user_id: current_user_id,
+            order_request_id: order_request_id,
         });
     }
 
     async isEditable({
         current_user_id,
         order_sale_id,
+        order_request_id,
+    }: {
+        order_sale_id?: number | null;
+        order_request_id: number;
+        current_user_id: number;
+    }): Promise<boolean> {
+        let wasOrderSaleDelivered = false;
+
+        if (!!order_sale_id) {
+            wasOrderSaleDelivered = await this.wasOrderSaleDelivered({
+                order_sale_id,
+            });
+        }
+
+        const isOrderRequestInProduction =
+            await this.isOrderRequestInProduction({
+                order_request_id: order_request_id,
+            });
+
+        const userRequiresMoreValidation =
+            await this.doesUserRequiresMoreValidation({ current_user_id });
+
+        if (userRequiresMoreValidation) {
+            if (wasOrderSaleDelivered) {
+                return false;
+            } else if (!isOrderRequestInProduction) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    async wasOrderSaleDelivered({
+        order_sale_id,
     }: {
         order_sale_id: number;
-        current_user_id: number;
     }): Promise<boolean> {
         const previousOrderSale = await this.getOrderSale({
             orderSaleId: order_sale_id,
@@ -1033,16 +1068,14 @@ export class OrderSaleService {
             return true;
         }
 
-        const orderRequest = await this.prisma.order_requests.findUnique({
-            where: {
-                id: previousOrderSale.order_request_id!,
-            },
-        });
+        return previousOrderSale.order_sale_status_id === 2;
+    }
 
-        if (!orderRequest) {
-            return true;
-        }
-
+    async doesUserRequiresMoreValidation({
+        current_user_id,
+    }: {
+        current_user_id: number;
+    }): Promise<boolean> {
         const userRoles = await this.prisma.user_roles.findMany({
             where: {
                 user_id: current_user_id,
@@ -1060,9 +1093,24 @@ export class OrderSaleService {
             roles: userRoles.filter((ur) => ur.roles).map((ur) => ur.roles!),
         });
 
-        return previousOrderSale.order_sale_status_id === 2 ||
-            orderRequest.order_request_status_id !== 2
-            ? isUserAdmin
-            : true;
+        return !isUserAdmin;
+    }
+
+    async isOrderRequestInProduction({
+        order_request_id,
+    }: {
+        order_request_id: number;
+    }): Promise<boolean> {
+        const orderRequest = await this.prisma.order_requests.findUnique({
+            where: {
+                id: order_request_id,
+            },
+        });
+
+        if (!orderRequest) {
+            return true;
+        }
+
+        return orderRequest.order_request_status_id === 2;
     }
 }

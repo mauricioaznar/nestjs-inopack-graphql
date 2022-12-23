@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { AuthService } from '../../../../modules/auth/auth.service';
 import { setupApp } from '../../helpers';
-import { adminUser } from './users';
+import { adminUser, salesUser } from './users';
 
 let app: INestApplication;
 let authService: AuthService;
@@ -25,5 +25,16 @@ describe('validate user', () => {
         expect(userWithRoles).toBeDefined();
         expect(userWithRoles?.id).toBeDefined();
         expect(userWithRoles?.id).toBe(adminUser.id);
+    });
+
+    it('returns true if admin is valid', async () => {
+        const userWithRoles = await authService.validateUser({
+            email: salesUser.email,
+            password: salesUser.password,
+        });
+
+        expect(userWithRoles).toBeDefined();
+        expect(userWithRoles?.id).toBeDefined();
+        expect(userWithRoles?.id).toBe(salesUser.id);
     });
 });
