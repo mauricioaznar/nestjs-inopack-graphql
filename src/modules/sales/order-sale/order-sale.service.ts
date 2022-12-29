@@ -388,12 +388,16 @@ export class OrderSaleService {
 
         const orderSaleProductsTotal = orderSaleProducts.reduce(
             (acc, product) => {
-                return (
-                    acc +
+                const productsTotal =
                     product.kilo_price *
-                        product.kilos *
-                        (orderSale.order_sale_receipt_type_id === 2 ? 1.16 : 1)
-                );
+                    product.kilos *
+                    (orderSale.order_sale_receipt_type_id === 2 ? 1.16 : 1);
+
+                const discountTotal =
+                    productsTotal -
+                    (productsTotal - productsTotal * (product.discount / 100));
+
+                return acc + (productsTotal - discountTotal);
             },
             0,
         );
@@ -429,12 +433,15 @@ export class OrderSaleService {
         if (!orderSale) return 0;
 
         const orderSaleTaxTotal = orderSaleProducts.reduce((acc, product) => {
-            return (
-                acc +
+            const taxTotal =
                 product.kilo_price *
-                    product.kilos *
-                    (orderSale.order_sale_receipt_type_id === 2 ? 0.16 : 0)
-            );
+                product.kilos *
+                (orderSale.order_sale_receipt_type_id === 2 ? 0.16 : 0);
+
+            const discountTotal =
+                taxTotal - taxTotal * (product.discount / 100);
+
+            return acc + (taxTotal - discountTotal);
         }, 0);
 
         return Math.round(orderSaleTaxTotal * 100) / 100;
@@ -785,10 +792,12 @@ export class OrderSaleService {
             let productsTotal = 0;
 
             for (const saleProduct of input.order_sale_products) {
-                productsTotal +=
+                const productTotal =
                     saleProduct.kilos *
                     saleProduct.kilo_price *
                     (input.order_sale_receipt_type_id === 2 ? 1.16 : 1);
+                const discount = productTotal * (saleProduct.discount / 100);
+                productsTotal = productsTotal + productTotal - discount;
             }
 
             for (const payment of input.order_sale_payments) {
