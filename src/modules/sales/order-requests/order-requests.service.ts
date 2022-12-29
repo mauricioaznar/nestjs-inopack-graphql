@@ -267,9 +267,11 @@ export class OrderRequestsService {
                 },
             });
 
-        return orderRequestProducts.reduce((acc, orderRequest) => {
+        const total = orderRequestProducts.reduce((acc, orderRequest) => {
             return acc + orderRequest.kilo_price * orderRequest.kilos;
         }, 0);
+
+        return Math.round(total * 100) / 100;
     }
 
     async upsertOrderRequest({
