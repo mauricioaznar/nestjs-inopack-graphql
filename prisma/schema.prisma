@@ -369,6 +369,7 @@ model order_sale_products {
   group_weight  Float        @default(0.00)
   product_id    Int?         @db.UnsignedInt
   order_sale_id Int?         @db.UnsignedInt
+  discount      Float        @default(0.00)
   order_sales   order_sales? @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_products_order_sale_id_foreign")
   products      products?    @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_products_product_id_foreign")
 

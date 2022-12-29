@@ -598,6 +598,7 @@ describe('upsert', () => {
                             groups: orderRequestProduct.groups,
                             group_weight: orderRequestProduct.group_weight,
                             kilo_price: orderRequestProduct.kilo_price,
+                            discount: 0,
                         },
                     ],
                     order_sale_payments: [
@@ -675,6 +676,7 @@ describe('upsert', () => {
                             groups: orderRequestProduct.groups,
                             group_weight: orderRequestProduct.group_weight,
                             kilo_price: orderRequestProduct.kilo_price,
+                            discount: 0,
                         },
                     ],
                     order_sale_payments: [
@@ -839,6 +841,7 @@ describe('delete', () => {
                             groups: orderRequestProduct.groups,
                             group_weight: orderRequestProduct.group_weight,
                             kilo_price: orderRequestProduct.kilo_price,
+                            discount: 0,
                         },
                     ],
                     order_sale_payments: [

@@ -51,6 +51,7 @@ it('create order request for testing with its default values', async () => {
                 kilos: 2 * product.current_group_weight,
                 kilo_price: 20,
                 product_id: product.id,
+                discount: 0,
             },
             orderRequest: orderRequest,
             orderSaleCode: currentSaleOrderCode,

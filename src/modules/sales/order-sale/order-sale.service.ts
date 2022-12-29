@@ -567,6 +567,7 @@ export class OrderSaleService {
                     active: 1,
                     group_weight: createItem.group_weight,
                     groups: createItem.groups,
+                    discount: createItem.discount,
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
@@ -583,6 +584,7 @@ export class OrderSaleService {
                         group_weight: updateItem.group_weight,
                         groups: updateItem.groups,
                         kilo_price: updateItem.kilo_price,
+                        discount: updateItem.discount,
                     },
                     where: {
                         id: updateItem.id,
