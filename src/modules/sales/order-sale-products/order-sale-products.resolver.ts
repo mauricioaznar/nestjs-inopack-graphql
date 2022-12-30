@@ -39,9 +39,4 @@ export class OrderSaleProductsResolver {
     async total(orderSaleProduct: OrderSaleProduct): Promise<number> {
         return this.service.getOrderSaleProductTotal(orderSaleProduct);
     }
-
-    @ResolveField(() => Float, { nullable: false })
-    async tax(orderSaleProduct: OrderSaleProduct): Promise<number> {
-        return this.service.getOrderSaleProductTax(orderSaleProduct);
-    }
 }

@@ -45,36 +45,9 @@ export class OrderSaleProductsService {
     async getOrderSaleProductTotal(
         orderSaleProduct: OrderSaleProduct,
     ): Promise<number> {
-        const orderSale = await this.getOrderSale({
-            order_sale_id: orderSaleProduct.order_sale_id,
-        });
-
-        if (!orderSale) {
-            return 0;
-        }
-
-        return (
-            orderSaleProduct.kilo_price *
-            orderSaleProduct.kilos *
-            (orderSale.order_sale_receipt_type_id === 2 ? 1.16 : 1)
-        );
-    }
-
-    async getOrderSaleProductTax(
-        orderSaleProduct: OrderSaleProduct,
-    ): Promise<number> {
-        const orderSale = await this.getOrderSale({
-            order_sale_id: orderSaleProduct.order_sale_id,
-        });
-
-        if (!orderSale) {
-            return 0;
-        }
-
-        return (
-            orderSaleProduct.kilo_price *
-            orderSaleProduct.kilos *
-            (orderSale.order_sale_receipt_type_id === 2 ? 0.16 : 0)
-        );
+        const total = orderSaleProduct.kilo_price * orderSaleProduct.kilos;
+        const discount = total * (orderSaleProduct.discount / 100);
+        const totalMinusDiscount = total - discount;
+        return Math.round(totalMinusDiscount * 100) / 100;
     }
 }
