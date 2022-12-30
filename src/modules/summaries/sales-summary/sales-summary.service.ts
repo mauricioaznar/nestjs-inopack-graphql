@@ -114,11 +114,11 @@ export class SalesSummaryService {
                  order_sale_statuses.name status_name,
                  order_sale_products.kilos kilos_sold,
                  order_sale_products.kilo_price kilo_price,
-                 order_sale_products.kilos * order_sale_products.kilo_price total,
-                        order_sale_products.kilos * order_sale_products.kilo_price *
-                        if(order_sales.order_sale_receipt_type_id = 2, 0.16, 0)    tax,
-                        order_sale_products.kilos * order_sale_products.kilo_price *
-                        if(order_sales.order_sale_receipt_type_id = 2, 1.16, 1)    total_with_tax
+                 ((order_sale_products.kilos * order_sale_products.kilo_price) -(order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) total,
+                 ((order_sale_products.kilos * order_sale_products.kilo_price) - (order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) *
+                 if(order_sales.order_sale_receipt_type_id = 2, 0.16, 0)    tax,
+                 ((order_sale_products.kilos * order_sale_products.kilo_price) - (order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) *
+                 if(order_sales.order_sale_receipt_type_id = 2, 1.16, 1)    total_with_tax
             from order_sales
                 join order_sale_products
                 on order_sale_products.order_sale_id = order_sales.id

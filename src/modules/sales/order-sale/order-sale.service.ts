@@ -396,16 +396,18 @@ export class OrderSaleService {
 
         const orderSaleProductsTotal = orderSaleProducts.reduce(
             (acc, product) => {
-                const productsTotal =
+                const productTotal =
                     product.kilo_price *
                     product.kilos *
                     (orderSale.order_sale_receipt_type_id === 2 ? 1.16 : 1);
 
                 const discountTotal =
-                    productsTotal -
-                    (productsTotal - productsTotal * (product.discount / 100));
+                    productTotal -
+                    (productTotal - productTotal * (product.discount / 100));
 
-                return acc + (productsTotal - discountTotal);
+                const productTotalMinusDiscount = productTotal - discountTotal;
+
+                return acc + productTotalMinusDiscount;
             },
             0,
         );
@@ -418,20 +420,6 @@ export class OrderSaleService {
     }: {
         order_sale_id: number;
     }): Promise<number> {
-        const orderSaleProducts =
-            await this.prisma.order_sale_products.findMany({
-                where: {
-                    AND: [
-                        {
-                            order_sale_id: order_sale_id,
-                        },
-                        {
-                            active: 1,
-                        },
-                    ],
-                },
-            });
-
         const orderSale = await this.prisma.order_sales.findUnique({
             where: {
                 id: order_sale_id,
@@ -440,17 +428,15 @@ export class OrderSaleService {
 
         if (!orderSale) return 0;
 
-        const orderSaleTaxTotal = orderSaleProducts.reduce((acc, product) => {
-            const taxTotal =
-                product.kilo_price *
-                product.kilos *
-                (orderSale.order_sale_receipt_type_id === 2 ? 0.16 : 0);
+        const orderSaleProductsTotal = await this.getOrderSaleProductsTotal({
+            order_sale_id,
+        });
 
-            const discountTotal =
-                taxTotal - taxTotal * (product.discount / 100);
+        if (orderSale.order_sale_receipt_type_id !== 2) {
+            return 0;
+        }
 
-            return acc + (taxTotal - discountTotal);
-        }, 0);
+        const orderSaleTaxTotal = (orderSaleProductsTotal / 1.16) * 0.16;
 
         return Math.round(orderSaleTaxTotal * 100) / 100;
     }
