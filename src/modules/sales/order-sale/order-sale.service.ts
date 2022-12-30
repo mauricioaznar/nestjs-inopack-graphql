@@ -242,8 +242,12 @@ export class OrderSaleService {
     async getOrderSaleProducts({
         order_sale_id,
     }: {
-        order_sale_id: number;
+        order_sale_id: number | null;
     }): Promise<OrderSaleProduct[]> {
+        if (!order_sale_id) {
+            return [];
+        }
+
         return this.prisma.order_sale_products.findMany({
             where: {
                 AND: [
@@ -261,8 +265,12 @@ export class OrderSaleService {
     async getOrderSalePayments({
         order_sale_id,
     }: {
-        order_sale_id: number;
+        order_sale_id: number | null;
     }): Promise<OrderSalePayment[]> {
+        if (!order_sale_id) {
+            return [];
+        }
+
         return this.prisma.order_sale_payments.findMany({
             where: {
                 AND: [

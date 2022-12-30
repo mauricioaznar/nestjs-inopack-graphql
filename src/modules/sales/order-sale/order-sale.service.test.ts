@@ -168,7 +168,116 @@ describe('upsert', () => {
         ]);
     });
 
-    it('updates order sale', async () => {
+    it('creates order sale', async () => {
+        const product = await createProductForTesting({
+            app,
+        });
+        const client = await createClientForTesting({
+            app,
+        });
+        const orderRequest = await orderRequestsService.upsertOrderRequest({
+            input: {
+                order_code: currentRequestOrderCode,
+                order_request_status_id: orderRequestStatus2.id,
+                estimated_delivery_date: getUtcDate(),
+                date: getUtcDate(),
+                notes: '',
+                order_request_products: [
+                    {
+                        group_weight: product.current_group_weight,
+                        groups: 2,
+                        kilos: 2 * product.current_group_weight,
+                        kilo_price: 20,
+                        product_id: product.id,
+                    },
+                ],
+                client_id: client.id,
+            },
+            current_user_id: adminUser.id,
+        });
+
+        const orderCode = currentSaleOrderCode;
+
+        const orderSaleProductInput: OrderSaleProductInput = {
+            group_weight: product.current_group_weight,
+            groups: 2,
+            kilos: 2 * product.current_group_weight,
+            kilo_price: 20,
+            product_id: product.id,
+            discount: 2,
+        };
+
+        const total = 20 * 2 * product.current_group_weight;
+        const discount = total * (2 / 100);
+
+        const orderSalePaymentInput: OrderSalePaymentInput = {
+            amount: total - discount,
+            date_paid: getUtcDate({
+                year: 2022,
+                day: 1,
+                month: 2,
+            }),
+            order_sale_collection_status_id: orderSaleCollectionStatus1.id,
+        };
+
+        let orderSale: OrderSale | undefined;
+
+        try {
+            orderSale = await orderSalesService.upsertOrderSale({
+                input: {
+                    order_code: orderCode,
+                    order_request_id: orderRequest.id,
+                    invoice_code: 0,
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    date: getUtcDate({
+                        year: 2022,
+                        day: 1,
+                        month: 2,
+                    }),
+                    order_sale_status_id: orderSaleStatus1.id,
+                    order_sale_products: [orderSaleProductInput],
+                    order_sale_payments: [orderSalePaymentInput],
+                },
+                current_user_id: adminUser.id,
+            });
+        } catch (e) {
+            console.log(e);
+        }
+
+        const orderSaleProducts = await orderSalesService.getOrderSaleProducts({
+            order_sale_id: orderSale?.id || null,
+        });
+
+        const orderSalePayments = await orderSalesService.getOrderSalePayments({
+            order_sale_id: orderSale?.id || null,
+        });
+
+        expect(orderSale).toBeDefined();
+        expect(orderSale?.id).toBeDefined();
+        expect(orderSale?.order_code).toBe(orderCode);
+        expect(orderSale?.order_request_id).toBe(orderRequest.id);
+        expect(orderSale?.invoice_code).toBe(0);
+        expect(orderSale?.order_sale_receipt_type_id).toBe(
+            orderSaleReceiptType1.id,
+        );
+        expect(orderSale?.date.toISOString()).toMatch(/2022-03-01/i);
+        expect(orderSale?.order_sale_status_id).toBe(orderSaleStatus1.id);
+        expect(orderSaleProducts).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ ...orderSaleProductInput }),
+            ]),
+        );
+
+        expect(orderSalePayments).toEqual([
+            expect.objectContaining({
+                amount: orderSalePaymentInput.amount,
+                order_sale_collection_status_id:
+                    orderSalePaymentInput.order_sale_collection_status_id,
+            }),
+        ]);
+    });
+
+    it('updates order sale with discount', async () => {
         const product = await createProductForTesting({
             app,
         });
