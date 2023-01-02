@@ -723,6 +723,8 @@ describe('upsert', () => {
             ]);
         }
     });
+
+    it.todo('fails to create when user is salesman and status is not pending');
 });
 
 describe('delete', () => {

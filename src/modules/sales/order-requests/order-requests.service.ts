@@ -586,6 +586,22 @@ export class OrderRequestsService {
             }
         }
 
+        // IsSalesUserAndIsOrderRequestPending
+        {
+            const userRequiresMoreValidation =
+                await this.doesUserRequiresMoreValidation({ current_user_id });
+
+            if (
+                userRequiresMoreValidation &&
+                !input.id &&
+                input.order_request_status_id !== 1
+            ) {
+                errors.push(
+                    `order request can only be created using pending state`,
+                );
+            }
+        }
+
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
@@ -740,6 +756,24 @@ export class OrderRequestsService {
             return true;
         }
 
+        const userRequiresMoreValidation =
+            await this.doesUserRequiresMoreValidation({ current_user_id });
+
+        if (userRequiresMoreValidation && previousOrderRequest) {
+            return (
+                !!previousOrderRequest.order_request_status_id &&
+                previousOrderRequest.order_request_status_id === 1
+            );
+        } else {
+            return true;
+        }
+    }
+
+    async doesUserRequiresMoreValidation({
+        current_user_id,
+    }: {
+        current_user_id: number;
+    }): Promise<boolean> {
         const userRoles = await this.prisma.user_roles.findMany({
             where: {
                 user_id: current_user_id,
@@ -757,9 +791,6 @@ export class OrderRequestsService {
             roles: userRoles.filter((ur) => ur.roles).map((ur) => ur.roles!),
         });
 
-        return previousOrderRequest.order_request_status_id &&
-            previousOrderRequest.order_request_status_id > 1
-            ? isUserAdmin
-            : true;
+        return !isUserAdmin;
     }
 }
