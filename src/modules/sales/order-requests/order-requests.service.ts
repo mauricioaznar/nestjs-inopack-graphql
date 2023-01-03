@@ -587,20 +587,20 @@ export class OrderRequestsService {
         }
 
         // IsSalesUserAndIsOrderRequestPending
-        {
-            const userRequiresMoreValidation =
-                await this.doesUserRequiresMoreValidation({ current_user_id });
-
-            if (
-                userRequiresMoreValidation &&
-                !input.id &&
-                input.order_request_status_id !== 1
-            ) {
-                errors.push(
-                    `order request can only be created using pending state`,
-                );
-            }
-        }
+        // {
+        //     const userRequiresMoreValidation =
+        //         await this.doesUserRequiresMoreValidation({ current_user_id });
+        //
+        //     if (
+        //         userRequiresMoreValidation &&
+        //         !input.id &&
+        //         input.order_request_status_id !== 1
+        //     ) {
+        //         errors.push(
+        //             `order request can only be created using pending state`,
+        //         );
+        //     }
+        // }
 
         if (errors.length > 0) {
             throw new BadRequestException(errors);
