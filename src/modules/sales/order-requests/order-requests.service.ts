@@ -147,6 +147,11 @@ export class OrderRequestsService {
                                     : undefined,
                             },
                         },
+                        {
+                            notes: {
+                                contains: filter,
+                            },
+                        },
                     ],
                 },
             ],
