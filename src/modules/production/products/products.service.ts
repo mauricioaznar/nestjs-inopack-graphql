@@ -18,6 +18,7 @@ import {
 } from '../../../common/helpers';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
+import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -38,6 +39,32 @@ export class ProductsService {
                     },
                     {
                         active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
+    async getOrderProductionProducts({
+        product_id,
+    }: {
+        product_id: number | null;
+    }): Promise<OrderProductionProduct[]> {
+        if (!product_id) return [];
+
+        return this.prisma.order_production_products.findMany({
+            where: {
+                AND: [
+                    {
+                        product_id: product_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                    {
+                        order_productions: {
+                            active: 1,
+                        },
                     },
                 ],
             },

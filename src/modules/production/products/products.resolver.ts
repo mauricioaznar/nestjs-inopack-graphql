@@ -29,6 +29,7 @@ import { ProductMaterial } from '../../../common/dto/entities/production/product
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 
 @Resolver(() => Product)
 @UseGuards(GqlAuthGuard)
@@ -151,6 +152,15 @@ export class ProductsResolver {
         return product.internal_description !== ''
             ? `${product.external_description} (${product.internal_description})`
             : product.external_description;
+    }
+
+    @ResolveField(() => [OrderProductionProduct], { nullable: false })
+    async order_production_products(
+        @Parent() product: Product,
+    ): Promise<OrderProductionProduct[]> {
+        return this.productsService.getOrderProductionProducts({
+            product_id: product.id,
+        });
     }
 
     @Subscription(() => Product)

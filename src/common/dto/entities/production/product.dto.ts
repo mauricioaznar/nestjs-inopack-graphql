@@ -8,7 +8,6 @@ import {
     registerEnumType,
 } from '@nestjs/graphql';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
-import { OrderProduction } from './order-production.dto';
 import { ColumnOrder } from '../../pagination';
 
 @ObjectType({ isAbstract: true })
