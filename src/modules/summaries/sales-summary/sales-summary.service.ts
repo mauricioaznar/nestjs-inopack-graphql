@@ -63,9 +63,9 @@ export class SalesSummaryService {
                     break;
                 case 'productCategory':
                     selectEntityGroup +=
-                        'product_category_id, product_category_name';
+                        'product_category_id, product_category_name, order_production_type_id, order_production_type_name';
                     groupByEntityGroup +=
-                        'product_category_id, product_category_name';
+                        'product_category_id, product_category_name, order_production_type_id, order_production_type_name';
                     break;
                 case 'product':
                     selectEntityGroup += 'product_id, product_name';
