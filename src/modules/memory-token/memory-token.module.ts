@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MemoryTokenService } from './memory-token.service';
 import { JwtModule } from '@nestjs/jwt';
-import { jwtConstants } from '../../constants/jwt';
+import { jwtConstants } from '../../common/constants/jwt';
 
 @Module({
     imports: [
