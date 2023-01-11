@@ -73,8 +73,12 @@ export class OrderRequestProductsService {
                    products.order_production_type_id                order_production_type_id,
                    order_request_products.kilos                     order_request_kilos,
                    IFNULL(order_sale_products_delivered.kilos, 0)   order_sale_delivered_kilos,
+                   IFNULL(order_sale_products_delivered.groups, 0)   order_sale_delivered_groups,
+                   order_request_products.groups                    order_request_groups,
                    (order_request_products.kilos -
-                    IFNULL(order_sale_products_delivered.kilos, 0)) order_sale_remaining_kilos
+                    IFNULL(order_sale_products_delivered.kilos, 0)) order_sale_remaining_kilos,
+                   (order_request_products.groups -   
+                    IFNULL(order_sale_products_delivered.groups, 0)) order_sale_remaining_groups
             from order_requests
                      join order_request_products
                           on order_requests.id = order_request_products.order_request_id
@@ -91,6 +95,7 @@ export class OrderRequestProductsService {
                      select order_sale_products.product_id product_id,
                             order_sales.order_request_id   order_request_id,
                             sum(order_sale_products.kilos) kilos,
+                            sum(order_sale_products.groups) \'groups\',
                             max(order_sales.date)          last_sale,
                             min(order_sales.date)          first_sale
                      from order_sales

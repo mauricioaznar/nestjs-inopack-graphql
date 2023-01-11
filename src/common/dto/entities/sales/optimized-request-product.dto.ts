@@ -37,4 +37,13 @@ export class OptimizedRequestProduct {
 
     @Field(() => Float, { nullable: true })
     order_sale_remaining_kilos?: number | null;
+
+    @Field(() => Float, { nullable: true })
+    order_request_groups?: number | null;
+
+    @Field(() => Float, { nullable: true })
+    order_sale_delivered_groups?: number | null;
+
+    @Field(() => Float, { nullable: true })
+    order_sale_remaining_groups?: number | null;
 }
