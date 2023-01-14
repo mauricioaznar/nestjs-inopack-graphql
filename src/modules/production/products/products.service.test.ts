@@ -1,21 +1,17 @@
-import { setupApp } from '../../../common/__tests__/helpers';
+import {
+    createEmployeeForTesting,
+    createMachineForTesting,
+    createProductForTesting,
+    getUtcDate,
+    setupApp,
+} from '../../../common/__tests__/helpers';
 import { INestApplication } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import {
     orderProductionType1,
     orderProductionType2,
     orderProductionType3,
-    packing1,
-    productType1,
-    productType2,
-    productType3,
 } from '../../../common/__tests__/objects';
-import {
-    createEmployeeForTesting,
-    createMachineForTesting,
-    createProductForTesting,
-    getUtcDate,
-} from '../../../common/__tests__/helpers';
 import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 import { OrderProductionsService } from '../order-productions/order-productions.service';
 import { OrderAdjustmentsService } from '../order-adjustments/order-adjustments.service';
@@ -71,9 +67,7 @@ describe('upsert', () => {
     it('creates product type 1 (bag)', async () => {
         const product = await productsService.upsertInput({
             order_production_type_id: orderProductionType1.id,
-            product_type_id: productType1.id,
             width: 10,
-            packing_id: packing1.id,
             calibre: 1,
             length: 1,
             current_group_weight: 10,
@@ -87,10 +81,8 @@ describe('upsert', () => {
         });
 
         expect(product.id).toBeDefined();
-        expect(product.product_type_id).toBe(productType1.id);
         expect(product.order_production_type_id).toBe(orderProductionType1.id);
         expect(product.width).toBe(10);
-        expect(product.packing_id).toBe(packing1.id);
         expect(product.calibre).toBe(1);
         expect(product.length).toBe(1);
         expect(product.current_group_weight).toBe(10);
@@ -105,9 +97,7 @@ describe('upsert', () => {
     it('creates product type 2 (roll)', async () => {
         const product = await productsService.upsertInput({
             order_production_type_id: orderProductionType2.id,
-            product_type_id: productType2.id,
             width: 100,
-            packing_id: null,
             calibre: 1,
             length: null,
             current_group_weight: 0,
@@ -121,10 +111,8 @@ describe('upsert', () => {
         });
 
         expect(product.id).toBeDefined();
-        expect(product.product_type_id).toBe(productType2.id);
         expect(product.order_production_type_id).toBe(orderProductionType2.id);
         expect(product.width).toBe(100);
-        expect(product.packing_id).toBe(null);
         expect(product.calibre).toBe(1);
         expect(product.length).toBe(null);
         expect(product.current_group_weight).toBe(0);
@@ -137,13 +125,11 @@ describe('upsert', () => {
         const productDescription = 'product descirpiton 2038383838';
         const product = await productsService.upsertInput({
             order_production_type_id: orderProductionType3.id,
-            product_type_id: productType3.id,
             width: 100,
             calibre: 30,
             current_kilo_price: 10,
             code: productCode,
             length: 30,
-            packing_id: packing1.id,
             current_group_weight: 80,
             product_category_id: null,
             product_material_id: null,
@@ -153,10 +139,8 @@ describe('upsert', () => {
         });
 
         expect(product.id).toBeDefined();
-        expect(product.product_type_id).toBe(productType3.id);
         expect(product.order_production_type_id).toBe(orderProductionType3.id);
         expect(product.width).toBe(0);
-        expect(product.packing_id).toBe(null);
         expect(product.calibre).toBe(0);
         expect(product.length).toBe(null);
         expect(product.current_group_weight).toBe(0);
@@ -171,9 +155,7 @@ describe('upsert', () => {
         try {
             await productsService.upsertInput({
                 order_production_type_id: orderProductionType1.id,
-                product_type_id: orderProductionType2.id,
                 width: 10,
-                packing_id: packing1.id,
                 calibre: 1,
                 length: 1,
                 current_group_weight: 10,
@@ -201,9 +183,7 @@ describe('upsert', () => {
         try {
             await productsService.upsertInput({
                 order_production_type_id: orderProductionType1.id,
-                product_type_id: orderProductionType1.id,
                 width: 10,
-                packing_id: packing1.id,
                 calibre: 1,
                 length: 1,
                 current_group_weight: 10,
@@ -229,7 +209,6 @@ describe('upsert', () => {
 
         const productCreated = await createProductForTesting({
             app,
-            product_type_id: productType1.id,
             order_production_type_id: orderProductionType1.id,
         });
 
@@ -240,7 +219,6 @@ describe('upsert', () => {
         try {
             await productsService.upsertInput({
                 ...productCreated,
-                product_type_id: productType2.id,
                 order_production_type_id: orderProductionType2.id,
             });
         } catch (e) {

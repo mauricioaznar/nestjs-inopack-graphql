@@ -14,7 +14,6 @@ import {
 import {
     orderProductionType1,
     orderProductionType2,
-    productType2,
 } from '../../../common/__tests__/objects';
 import { OrderProductionInput } from '../../../common/dto/entities/production/order-production.dto';
 import { employeeStatus2 } from '../../../common/__tests__/objects/maintenance/employee-statuses';
@@ -246,7 +245,6 @@ describe('upsert', () => {
     it('creates order production (roll)', async () => {
         const productForTesting = await createProductForTesting({
             app,
-            product_type_id: productType2.id,
             order_production_type_id: orderProductionType2.id,
         });
         const employeeForTesting = await createEmployeeForTesting({
@@ -636,7 +634,6 @@ describe('upsert', () => {
         const productForTesting = await createProductForTesting({
             app,
             order_production_type_id: orderProductionType2.id,
-            product_type_id: productType2.id,
         });
         const employeeForTesting = await createEmployeeForTesting({
             app,

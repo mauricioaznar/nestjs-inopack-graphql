@@ -11,16 +11,15 @@ import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import {
     ActivityTypeName,
+    GetProductsQueryFields,
     OrderProductionType,
     PaginatedProducts,
-    Product,
     PaginatedProductsQueryArgs,
     PaginatedProductsSortArgs,
+    Product,
     ProductUpsertInput,
     User,
-    GetProductsQueryFields,
 } from '../../../common/dto/entities';
-import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -104,15 +103,6 @@ export class ProductsResolver {
             userId: currentUser.id,
         });
         return true;
-    }
-
-    @ResolveField(() => ProductType, { nullable: true })
-    async product_type(
-        @Parent() product: Product,
-    ): Promise<ProductType | null> {
-        return this.productsService.getProductType({
-            product_type_id: product.product_type_id,
-        });
     }
 
     @ResolveField(() => ProductCategory, { nullable: true })

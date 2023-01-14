@@ -41,12 +41,6 @@ export class ProductBase {
     calibre: number;
 
     @Field(() => Int, { nullable: true })
-    packing_id: number | null;
-
-    @Field(() => Int, { nullable: true })
-    product_type_id: number | null;
-
-    @Field(() => Int, { nullable: true })
     product_category_id: number | null;
 
     @Field(() => Int, { nullable: true })

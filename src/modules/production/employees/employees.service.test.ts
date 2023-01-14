@@ -8,7 +8,6 @@ import {
 import {
     orderProductionType1,
     orderProductionType2,
-    productType1,
 } from '../../../common/__tests__/objects';
 import {
     branch1,
@@ -179,7 +178,6 @@ describe('deletes employee', () => {
         const product = await createProductForTesting({
             app,
             order_production_type_id: orderProductionType1.id,
-            product_type_id: productType1.id,
         });
 
         const machine = await createMachineForTesting({

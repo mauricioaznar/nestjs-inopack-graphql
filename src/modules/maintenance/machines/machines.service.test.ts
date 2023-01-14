@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { setupApp } from '../../../common/__tests__/helpers/setup-app';
+import { setupApp } from '../../../common/__tests__/helpers';
 import { MachinesService } from './machines.service';
 import {
     branch1,
@@ -8,7 +8,6 @@ import {
 import {
     orderProductionType1,
     orderProductionType2,
-    productType1,
 } from '../../../common/__tests__/objects';
 import {
     createEmployeeForTesting,
@@ -141,7 +140,6 @@ describe('deletes', () => {
 
         const product = await createProductForTesting({
             app,
-            product_type_id: productType1.id,
             order_production_type_id: orderProductionType1.id,
         });
 

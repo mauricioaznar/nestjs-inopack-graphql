@@ -247,7 +247,6 @@ model order_production_type {
   machines           machines[]
   order_productions  order_productions[]
   product_categories product_categories[]
-  product_type       product_type[]
   products           products[]
 }
 
@@ -428,40 +427,6 @@ model order_sales {
   @@index([order_sale_status_id], map: "order_sales_order_sale_status_id_foreign")
 }
 
-model packings {
-  id         Int        @id @default(autoincrement()) @db.UnsignedInt
-  name       String     @db.VarChar(255)
-  active     Int        @default(1)
-  created_at DateTime?  @db.DateTime(0)
-  updated_at DateTime?  @db.DateTime(0)
-  products   products[]
-}
-
-model product_type {
-  id                       Int                      @id @default(autoincrement()) @db.UnsignedInt
-  name                     String                   @db.VarChar(255)
-  active                   Int                      @default(1)
-  created_at               DateTime?                @db.DateTime(0)
-  updated_at               DateTime?                @db.DateTime(0)
-  order_production_type_id Int?                     @db.UnsignedInt
-  product_type_category_id Int?                     @db.UnsignedInt
-  order_production_type    order_production_type?   @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "materials_order_production_type_id_foreign")
-  product_type_categories  product_type_categories? @relation(fields: [product_type_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_type_product_type_category_id_foreign")
-  products                 products[]
-
-  @@index([order_production_type_id], map: "materials_order_production_type_id_foreign")
-  @@index([product_type_category_id], map: "product_type_product_type_category_id_foreign")
-}
-
-model product_type_categories {
-  id           Int            @id @default(autoincrement()) @db.UnsignedInt
-  active       Int            @default(1)
-  created_at   DateTime?      @db.Timestamp(0)
-  updated_at   DateTime?      @db.Timestamp(0)
-  name         String         @db.VarChar(255)
-  product_type product_type[]
-}
-
 model products {
   id                        Int                         @id @default(autoincrement()) @db.UnsignedInt
   active                    Int                         @default(1)
@@ -474,8 +439,6 @@ model products {
   current_group_weight      Float                       @default(0.00)
   created_at                DateTime?                   @db.DateTime(0)
   updated_at                DateTime?                   @db.DateTime(0)
-  product_type_id           Int?                        @db.UnsignedInt
-  packing_id                Int?                        @db.UnsignedInt
   calibre                   Float
   order_production_type_id  Int?                        @db.UnsignedInt
   product_material_id       Int?                        @db.UnsignedInt
@@ -484,18 +447,14 @@ model products {
   external_description      String                      @db.VarChar(255)
   discontinued              Boolean                     @default(false)
   order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_order_production_type_id_foreign")
-  packings                  packings?                   @relation(fields: [packing_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_packing_id_foreign")
   product_categories        product_categories?         @relation(fields: [product_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_category_id")
   product_materials         product_materials?          @relation(fields: [product_material_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_material_id")
-  product_type              product_type?               @relation(fields: [product_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_product_type_id_foreign")
   order_adjustment_products order_adjustment_products[]
   order_production_products order_production_products[]
   order_request_products    order_request_products[]
   order_sale_products       order_sale_products[]
 
-  @@index([product_type_id], map: "products_material_id_foreign")
   @@index([order_production_type_id], map: "products_order_production_type_id_foreign")
-  @@index([packing_id], map: "products_packing_id_foreign")
   @@index([product_category_id], map: "product_category_id")
   @@index([product_material_id], map: "product_material_id")
 }

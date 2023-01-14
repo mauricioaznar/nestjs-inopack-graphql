@@ -1,15 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
+    GetProductsQueryFields,
     PaginatedProducts,
-    Product,
     PaginatedProductsQueryArgs,
     PaginatedProductsSortArgs,
+    Product,
     ProductUpsertInput,
-    GetProductsQueryFields,
 } from '../../../common/dto/entities';
 import { isEmpty } from 'class-validator';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { ProductType } from '../../../common/dto/entities/production/product-type.dto';
 import { ProductCategory } from '../../../common/dto/entities/production/product-category.dto';
 import { ProductMaterial } from '../../../common/dto/entities/production/product-material.dto';
 import {
@@ -187,20 +186,6 @@ export class ProductsService {
         };
     }
 
-    async getProductType({
-        product_type_id,
-    }: {
-        product_type_id: number | null;
-    }): Promise<ProductType | null> {
-        if (!product_type_id) return null;
-
-        return this.prisma.product_type.findFirst({
-            where: {
-                id: product_type_id,
-            },
-        });
-    }
-
     async getProductCategory({
         product_category_id,
     }: {
@@ -261,9 +246,7 @@ export class ProductsService {
                 description: input.external_description,
                 width: input.width,
                 length: input.length,
-                product_type_id: input.product_type_id,
                 order_production_type_id: input.order_production_type_id,
-                packing_id: input.packing_id,
                 product_category_id: input.product_category_id,
                 product_material_id: input.product_material_id,
             },
@@ -279,9 +262,7 @@ export class ProductsService {
                 width: input.width,
                 length: input.length,
                 description: input.external_description,
-                product_type_id: input.product_type_id,
                 order_production_type_id: input.order_production_type_id,
-                packing_id: input.packing_id,
                 product_category_id: input.product_category_id,
                 product_material_id: input.product_material_id,
             },
@@ -332,33 +313,25 @@ export class ProductsService {
             input.calibre = 0;
         }
 
-        // packing
-        if (ProductsService.isPackingIdRequired(input)) {
-            if (isEmpty(input.packing_id)) {
-                errors.push('Packing is required');
-            }
-        } else {
-            input.packing_id = null;
-        }
-
         // product type
         // DoesProductTypeBelongToOrderProductionType
-        if (input.product_type_id) {
-            const productType = await this.prisma.product_type.findUnique({
-                where: {
-                    id: input.product_type_id,
-                },
-            });
-            if (!productType) {
+        if (input.product_category_id) {
+            const productCategory =
+                await this.prisma.product_categories.findUnique({
+                    where: {
+                        id: input.product_category_id,
+                    },
+                });
+            if (!productCategory) {
                 errors.push('Product type not found');
             }
             if (
-                productType &&
-                productType.order_production_type_id !==
+                productCategory &&
+                productCategory.order_production_type_id !==
                     input.order_production_type_id
             ) {
                 errors.push(
-                    'Product type doesnt belong to order production type',
+                    'Product category doesnt belong to order production type',
                 );
             }
         }
@@ -370,7 +343,10 @@ export class ProductsService {
         });
 
         if (!!previousProduct) {
-            if (previousProduct.product_type_id !== input.product_type_id) {
+            if (
+                previousProduct.product_category_id !==
+                input.product_category_id
+            ) {
                 errors.push('Product type cant be changed');
             }
 
