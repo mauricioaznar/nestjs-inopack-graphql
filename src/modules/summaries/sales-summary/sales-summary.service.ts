@@ -51,16 +51,6 @@ export class SalesSummaryService {
                     selectEntityGroup += 'receipt_type_id, receipt_type_name';
                     groupByEntityGroup += 'receipt_type_id, receipt_type_name';
                     break;
-                case 'productType':
-                    selectEntityGroup += 'product_type_id, product_type_name';
-                    groupByEntityGroup += 'product_type_id, product_type_name';
-                    break;
-                case 'productTypeCategory':
-                    selectEntityGroup +=
-                        'product_type_category_id, product_type_category_name';
-                    groupByEntityGroup +=
-                        'product_type_category_id, product_type_category_name';
-                    break;
                 case 'productCategory':
                     selectEntityGroup +=
                         'product_category_id, product_category_name, order_production_type_id, order_production_type_name';
@@ -99,10 +89,6 @@ export class SalesSummaryService {
                  products.description product_name,
                  products.order_production_type_id order_production_type_id,
                  order_production_type.name order_production_type_name,
-                 product_type.id product_type_id,
-                 product_type.name product_type_name,
-                 product_type_categories.id product_type_category_id,
-                 product_type_categories.name product_type_category_name,
                  product_categories.id product_category_id,
                  product_categories.name product_category_name,
                  clients.id client_id,
@@ -128,12 +114,8 @@ export class SalesSummaryService {
                 on order_sale_products.product_id = products.id
                 left join order_production_type
                 on order_production_type.id = products.order_production_type_id
-                left join product_type
-                on products.product_type_id = product_type.id
                 left join product_categories
                 on products.product_category_id = product_categories.id
-                left join product_type_categories
-                on product_type.product_type_category_id = product_type_categories.id
                 left join clients
                 on clients.id = order_requests.client_id
                 left join order_sale_statuses

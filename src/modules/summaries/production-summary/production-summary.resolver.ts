@@ -1,6 +1,5 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
-import { ProductInventory } from '../../../common/dto/entities/production/product-inventory.dto';
 import { ProductionSummaryService } from './production-summary.service';
 import {
     ProductionSummary,

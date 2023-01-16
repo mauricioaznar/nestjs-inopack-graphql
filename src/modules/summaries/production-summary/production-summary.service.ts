@@ -51,12 +51,6 @@ export class ProductionSummaryService {
                 groupByEntityGroup =
                     'machine_id, machine_type_id, machine_name, branch_name, branch_id';
                 break;
-            case 'productType':
-                selectEntityGroup =
-                    'product_type_id, product_type_name, branch_name, branch_id';
-                groupByEntityGroup =
-                    'product_type_id, product_type_name, branch_name, branch_id';
-                break;
             case 'productCategory':
                 selectEntityGroup =
                     'product_category_id, product_category_name, branch_name, branch_id';
@@ -82,8 +76,6 @@ export class ProductionSummaryService {
                                         -WEEKDAY(order_productions.start_date) - 1 day), interval 6
                                    day)) last_day_of_the_week,
                  date(order_productions.start_date) as start_date,
-                 products.product_type_id product_type_id,
-                 product_type.name product_type_name,
                  product_categories.name product_category_name,
                  product_categories.id product_category_id,
                  branches.id branch_id,
@@ -103,8 +95,6 @@ export class ProductionSummaryService {
                 on order_production_type.id = order_productions.order_production_type_id
                 join products
                 on products.id = order_production_products.product_id
-                left join product_type
-                on product_type.id = products.product_type_id
                 left join product_categories
                 on product_categories.id = products.product_category_id
                 join machines

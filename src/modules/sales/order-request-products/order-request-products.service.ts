@@ -67,8 +67,6 @@ export class OrderRequestProductsService {
                    products.description                             product_description,
                    products.code                                    product_code,
                    products.width                                   product_width,
-                   products.product_type_id                             product_type_id,
-                   product_type.name                                   product_type_name,
                    products.calibre                                 product_calibre,
                    products.order_production_type_id                order_production_type_id,
                    order_request_products.kilos                     order_request_kilos,
@@ -86,8 +84,6 @@ export class OrderRequestProductsService {
                           on products.id = order_request_products.product_id
                      join clients
                           on clients.id = order_requests.client_id
-                     join product_type
-                          on product_type.id = products.product_type_id
                      join order_request_statuses
                           on order_request_statuses.id = order_requests.order_request_status_id
                      left join
@@ -99,8 +95,8 @@ export class OrderRequestProductsService {
                             max(order_sales.date)          last_sale,
                             min(order_sales.date)          first_sale
                      from order_sales
-                              join order_sale_products
-                                   on order_sale_products.order_sale_id = order_sales.id
+                     join order_sale_products
+                     on order_sale_products.order_sale_id = order_sales.id
                      where order_sales.active = 1
                        and order_sale_products.active = 1
                        and order_sales.order_sale_status_id = 2

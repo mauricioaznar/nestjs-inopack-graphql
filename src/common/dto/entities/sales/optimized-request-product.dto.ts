@@ -21,9 +21,6 @@ export class OptimizedRequestProduct {
     product_calibre?: number | null;
 
     @Field(() => Int, { nullable: true })
-    product_type_id?: number | null;
-
-    @Field(() => Int, { nullable: true })
     order_request_status_id?: number | null;
 
     @Field(() => String, { nullable: false })
