@@ -313,8 +313,8 @@ export class ProductsService {
             input.calibre = 0;
         }
 
-        // product type
-        // DoesProductTypeBelongToOrderProductionType
+        // product category
+        // DoesProductCategoryBelongToOrderProductionType
         if (input.product_category_id) {
             const productCategory =
                 await this.prisma.product_categories.findUnique({
