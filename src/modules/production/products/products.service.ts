@@ -426,10 +426,6 @@ export class ProductsService {
         );
     }
 
-    private static isPackingIdRequired(input: ProductUpsertInput) {
-        return ProductsService.isBag(input);
-    }
-
     async deleteProduct({ product_id }: { product_id: number }): Promise<void> {
         const product = await this.prisma.products.findUnique({
             where: {
