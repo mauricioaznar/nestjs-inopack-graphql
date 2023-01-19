@@ -122,7 +122,6 @@ describe('upsert', () => {
 
     it('create product type 3 (pellet)', async () => {
         const productCode = 'abcdsaec1234757575';
-        const productDescription = 'product descirpiton 2038383838';
         const product = await productsService.upsertInput({
             order_production_type_id: orderProductionType3.id,
             width: 100,
@@ -148,36 +147,8 @@ describe('upsert', () => {
         expect(product.current_kilo_price).toBe(10);
     });
 
-    // fails when a product is attempted to be created with no matching product type and order production type
-    it('fails when product type doesnt match order production type', async () => {
-        expect.hasAssertions();
-
-        try {
-            await productsService.upsertInput({
-                order_production_type_id: orderProductionType1.id,
-                width: 10,
-                calibre: 1,
-                length: 1,
-                current_group_weight: 10,
-                code: 'codigo del producto 1',
-                current_kilo_price: 1,
-                product_category_id: null,
-                product_material_id: null,
-                discontinued: false,
-                internal_description: '',
-                external_description: '',
-            });
-        } catch (e) {
-            expect(e.response.message).toEqual(
-                expect.arrayContaining([
-                    expect.stringMatching(/doesnt belong/i),
-                ]),
-            );
-        }
-    });
-
     // fails when a product is attempted to created with no matching product category and order production type
-    it('fails when product type doesnt match order production type', async () => {
+    it('fails when product category doesnt match order production type', async () => {
         expect.hasAssertions();
 
         try {
@@ -210,6 +181,7 @@ describe('upsert', () => {
         const productCreated = await createProductForTesting({
             app,
             order_production_type_id: orderProductionType1.id,
+            product_category_id: productCategory1.id,
         });
 
         if (!productCreated) {
@@ -220,11 +192,12 @@ describe('upsert', () => {
             await productsService.upsertInput({
                 ...productCreated,
                 order_production_type_id: orderProductionType2.id,
+                product_category_id: productCategory2.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
                 expect.arrayContaining([
-                    expect.stringMatching(/product type cant be changed/i),
+                    expect.stringMatching(/product category cant be changed/i),
                     expect.stringMatching(
                         /order production type cant be changed/i,
                     ),

@@ -17,6 +17,7 @@ import {
 } from '../../../common/__tests__/objects';
 import { OrderProductionInput } from '../../../common/dto/entities/production/order-production.dto';
 import { employeeStatus2 } from '../../../common/__tests__/objects/maintenance/employee-statuses';
+import { productCategory2 } from '../../../common/__tests__/objects/production/product-categories';
 
 let orderProductionsService: OrderProductionsService;
 let app: INestApplication;
@@ -246,6 +247,7 @@ describe('upsert', () => {
         const productForTesting = await createProductForTesting({
             app,
             order_production_type_id: orderProductionType2.id,
+            product_category_id: productCategory2.id,
         });
         const employeeForTesting = await createEmployeeForTesting({
             app,
@@ -634,6 +636,7 @@ describe('upsert', () => {
         const productForTesting = await createProductForTesting({
             app,
             order_production_type_id: orderProductionType2.id,
+            product_category_id: productCategory2.id,
         });
         const employeeForTesting = await createEmployeeForTesting({
             app,

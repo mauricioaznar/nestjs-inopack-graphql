@@ -347,7 +347,7 @@ export class ProductsService {
                 previousProduct.product_category_id !==
                 input.product_category_id
             ) {
-                errors.push('Product type cant be changed');
+                errors.push('Product category cant be changed');
             }
 
             if (
