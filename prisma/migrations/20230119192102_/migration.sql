@@ -412,43 +412,6 @@ CREATE TABLE `order_sales` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `packings` (
-    `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` VARCHAR(255) NOT NULL,
-    `active` INTEGER NOT NULL DEFAULT 1,
-    `created_at` DATETIME(0) NULL,
-    `updated_at` DATETIME(0) NULL,
-
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `product_type` (
-    `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` VARCHAR(255) NOT NULL,
-    `active` INTEGER NOT NULL DEFAULT 1,
-    `created_at` DATETIME(0) NULL,
-    `updated_at` DATETIME(0) NULL,
-    `order_production_type_id` INTEGER UNSIGNED NULL,
-    `product_type_category_id` INTEGER UNSIGNED NULL,
-
-    INDEX `materials_order_production_type_id_foreign`(`order_production_type_id`),
-    INDEX `product_type_product_type_category_id_foreign`(`product_type_category_id`),
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `product_type_categories` (
-    `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-    `active` INTEGER NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP(0) NULL,
-    `updated_at` TIMESTAMP(0) NULL,
-    `name` VARCHAR(255) NOT NULL,
-
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
 CREATE TABLE `products` (
     `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `active` INTEGER NOT NULL DEFAULT 1,
@@ -461,8 +424,6 @@ CREATE TABLE `products` (
     `current_group_weight` DOUBLE NOT NULL DEFAULT 0.00,
     `created_at` DATETIME(0) NULL,
     `updated_at` DATETIME(0) NULL,
-    `product_type_id` INTEGER UNSIGNED NULL,
-    `packing_id` INTEGER UNSIGNED NULL,
     `calibre` DOUBLE NOT NULL,
     `order_production_type_id` INTEGER UNSIGNED NULL,
     `product_material_id` INTEGER UNSIGNED NULL,
@@ -471,9 +432,7 @@ CREATE TABLE `products` (
     `external_description` VARCHAR(255) NOT NULL,
     `discontinued` BOOLEAN NOT NULL DEFAULT false,
 
-    INDEX `products_material_id_foreign`(`product_type_id`),
     INDEX `products_order_production_type_id_foreign`(`order_production_type_id`),
-    INDEX `products_packing_id_foreign`(`packing_id`),
     INDEX `product_category_id`(`product_category_id`),
     INDEX `product_material_id`(`product_material_id`),
     PRIMARY KEY (`id`)
@@ -773,19 +732,7 @@ ALTER TABLE `order_sales` ADD CONSTRAINT `order_sales_order_sale_receipt_type_id
 ALTER TABLE `order_sales` ADD CONSTRAINT `order_sales_order_sale_status_id_foreign` FOREIGN KEY (`order_sale_status_id`) REFERENCES `order_sale_statuses`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE `product_type` ADD CONSTRAINT `materials_order_production_type_id_foreign` FOREIGN KEY (`order_production_type_id`) REFERENCES `order_production_type`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE `product_type` ADD CONSTRAINT `product_type_product_type_category_id_foreign` FOREIGN KEY (`product_type_category_id`) REFERENCES `product_type_categories`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
 ALTER TABLE `products` ADD CONSTRAINT `products_order_production_type_id_foreign` FOREIGN KEY (`order_production_type_id`) REFERENCES `order_production_type`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE `products` ADD CONSTRAINT `products_packing_id_foreign` FOREIGN KEY (`packing_id`) REFERENCES `packings`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE `products` ADD CONSTRAINT `products_product_type_id_foreign` FOREIGN KEY (`product_type_id`) REFERENCES `product_type`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE `products` ADD CONSTRAINT `product_category_id` FOREIGN KEY (`product_category_id`) REFERENCES `product_categories`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
