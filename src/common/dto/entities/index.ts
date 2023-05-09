@@ -38,3 +38,7 @@ export * from './sales/order-sale-collection-status.dto';
 
 // activities
 export * from './activities/activity.dto';
+
+// expenditures
+export * from './expenditures/expense.dto';
+export * from './expenditures/supplier.dto';

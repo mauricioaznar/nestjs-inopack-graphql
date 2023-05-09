@@ -620,6 +620,30 @@ CREATE TABLE `product_materials` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `expenses` (
+    `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `active` INTEGER NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP(0) NULL,
+    `updated_at` TIMESTAMP(0) NULL,
+    `supplier_id` INTEGER UNSIGNED NULL,
+    `amount` INTEGER UNSIGNED NOT NULL,
+
+    INDEX `expenses_supplier_id_foreign`(`supplier_id`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `suppliers` (
+    `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `active` INTEGER NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP(0) NULL,
+    `updated_at` TIMESTAMP(0) NULL,
+    `name` VARCHAR(255) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `activities` ADD CONSTRAINT `activities_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
@@ -787,3 +811,6 @@ ALTER TABLE `spares` ADD CONSTRAINT `spares_spare_category_id_foreign` FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE `product_categories` ADD CONSTRAINT `product_categories_order_production_type_id_foreign` FOREIGN KEY (`order_production_type_id`) REFERENCES `order_production_type`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `expenses` ADD CONSTRAINT `expenses_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;

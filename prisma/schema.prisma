@@ -640,3 +640,24 @@ model product_materials {
   name       String     @db.VarChar(255)
   products   products[]
 }
+
+model expenses {
+  id          Int        @id @default(autoincrement()) @db.UnsignedInt
+  active      Int        @default(1)
+  created_at  DateTime?  @db.Timestamp(0)
+  updated_at  DateTime?  @db.Timestamp(0)
+  supplier_id Int?       @db.UnsignedInt
+  amount      Int        @db.UnsignedInt
+  suppliers   suppliers? @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_supplier_id_foreign")
+
+  @@index([supplier_id], map: "expenses_supplier_id_foreign")
+}
+
+model suppliers {
+  id         Int        @id @default(autoincrement()) @db.UnsignedInt
+  active     Int        @default(1)
+  created_at DateTime?  @db.Timestamp(0)
+  updated_at DateTime?  @db.Timestamp(0)
+  name       String     @db.VarChar(255)
+  expenses   expenses[]
+}

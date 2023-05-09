@@ -21,6 +21,7 @@ import { PrismaModule } from './common/modules/prisma/prisma.module';
 import { SummariesModule } from './modules/summaries/summaries.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { PubSubModule } from './common/modules/pub-sub/pub-sub.module';
+import { ExpendituresModule } from './modules/expenditures/expenditures.module';
 
 @Module({
     imports: [
@@ -74,6 +75,7 @@ import { PubSubModule } from './common/modules/pub-sub/pub-sub.module';
         AuthModule,
         ProductionModule,
         MaintenanceModule,
+        ExpendituresModule,
         SalesModule,
         SummariesModule,
         MemoryTokenModule,

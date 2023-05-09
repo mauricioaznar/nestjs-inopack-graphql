@@ -4,6 +4,7 @@ import { MachinesService } from '../../../maintenance/machines/machines.service'
 import { MachineSectionsService } from '../../../maintenance/machine-sections/machine-sections.service';
 import { MachinePartsService } from '../../../maintenance/machine-parts/machine-parts.service';
 import { SpareInventoryService } from '../../../../common/services/entities/spare-inventory.service';
+import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
 
 @Module({
     providers: [
@@ -13,6 +14,7 @@ import { SpareInventoryService } from '../../../../common/services/entities/spar
         MachinePartsService,
         MachineSeederService,
         SpareInventoryService,
+        PrismaService,
     ],
     exports: [MachineSeederService],
 })
