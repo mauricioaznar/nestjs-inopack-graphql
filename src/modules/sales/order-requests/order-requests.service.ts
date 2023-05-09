@@ -120,12 +120,12 @@ export class OrderRequestsService {
                     active: 1,
                 },
                 {
-                    estimated_delivery_date: {
+                    date: {
                         gte: startDate,
                     },
                 },
                 {
-                    estimated_delivery_date: {
+                    date: {
                         lt: endDate,
                     },
                 },
