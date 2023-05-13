@@ -10,6 +10,8 @@
 
 ## Todo
 
+* change clients for accounts
+
 * separate select date from group date
   * group by years, months, or days 
   * ex: select all days from month 1
