@@ -4,4 +4,4 @@ import { TransfersModule } from './transfers/transfers.module';
 @Module({
     imports: [TransfersModule],
 })
-export class ExpendituresModule {}
+export class ManagementModule {}

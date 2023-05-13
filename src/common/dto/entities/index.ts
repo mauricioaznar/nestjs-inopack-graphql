@@ -39,5 +39,5 @@ export * from './sales/order-sale-collection-status.dto';
 // activities
 export * from './activities/activity.dto';
 
-// expenditures
+// management
 export * from './expenditures/transfer.dto';

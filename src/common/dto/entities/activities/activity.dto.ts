@@ -17,6 +17,7 @@ export enum ActivityEntityName {
     MACHINE = 'machines',
     USER = 'users',
     EQUIPMENTS = 'equipments',
+    TRANSFER = 'transfers',
 }
 
 registerEnumType(ActivityEntityName, {

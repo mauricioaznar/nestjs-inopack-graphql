@@ -8,6 +8,7 @@ import {
     OrderRequest,
     OrderSale,
     Product,
+    Transfer,
     User,
 } from '../../dto/entities';
 import { OrderProduction } from '../../dto/entities/production/order-production.dto';
@@ -188,6 +189,27 @@ export class PubSubService {
         });
     }
 
+    async transfer({
+        transfer,
+        type,
+        userId,
+    }: {
+        transfer: Transfer;
+        type: ActivityTypeName;
+        userId: number;
+    }) {
+        await this.pubSub.publish('transfer', {
+            transfer: transfer,
+        });
+        await this.publishActivity({
+            entity_name: ActivityEntityName.TRANSFER,
+            type: type,
+            entity_id: transfer.id,
+            userId,
+            description: `Transferencia: ${transfer.id}`,
+        });
+    }
+
     async publishActivity({
         entity_id,
         entity_name,
@@ -234,6 +256,10 @@ export class PubSubService {
 
     async listenForEmployee() {
         return this.pubSub.asyncIterator('employee');
+    }
+
+    async listenForTransfer() {
+        return this.pubSub.asyncIterator('transfer');
     }
 
     async listenForClient() {

@@ -168,4 +168,12 @@ export class TransfersService {
     }): Promise<boolean> {
         return true;
     }
+
+    async isEditable({
+        transfer_id,
+    }: {
+        transfer_id: number;
+    }): Promise<boolean> {
+        return true;
+    }
 }
