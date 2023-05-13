@@ -3,8 +3,17 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { Transfer, TransferUpsertInput } from '../../../common/dto/entities';
+import {
+    TransfersQueryArgs,
+    TransfersSortArgs,
+    PaginatedTransfers,
+    Transfer,
+    TransferUpsertInput,
+} from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
+import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { getRangesFromYearMonth } from '../../../common/helpers';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class TransfersService {
@@ -51,6 +60,67 @@ export class TransfersService {
                 id: transferInput.id || 0,
             },
         });
+    }
+
+    async paginatedTransfers({
+        offsetPaginatorArgs,
+        datePaginator,
+        transfersQueryArgs,
+        transfersSortArgs,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+        datePaginator: YearMonth;
+        transfersQueryArgs: TransfersQueryArgs;
+        transfersSortArgs: TransfersSortArgs;
+    }): Promise<PaginatedTransfers> {
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+        });
+
+        const { sort_order, sort_field } = transfersSortArgs;
+
+        const filter =
+            transfersQueryArgs.filter !== '' && !!transfersQueryArgs.filter
+                ? transfersQueryArgs.filter
+                : undefined;
+
+        const isFilterANumber = !Number.isNaN(Number(filter));
+
+        const transfersWhere: Prisma.transfersWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+            ],
+        };
+        let orderBy: Prisma.transfersOrderByWithRelationInput = {
+            updated_at: 'desc',
+        };
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'amount') {
+                orderBy = {
+                    amount: sort_order,
+                };
+            }
+        }
+
+        const transfersCount = await this.prisma.transfers.count({
+            where: transfersWhere,
+        });
+
+        const transfers = await this.prisma.transfers.findMany({
+            where: transfersWhere,
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+            orderBy: orderBy,
+        });
+
+        return {
+            count: transfersCount,
+            docs: transfers,
+        };
     }
 
     async validateUpsertTransfer(

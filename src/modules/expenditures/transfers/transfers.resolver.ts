@@ -1,7 +1,14 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { TransfersService } from './transfers.service';
-import { Transfer, TransferUpsertInput } from '../../../common/dto/entities';
+import {
+    TransfersQueryArgs,
+    TransfersSortArgs,
+    PaginatedTransfers,
+    Transfer,
+    TransferUpsertInput,
+} from '../../../common/dto/entities';
+import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 
 @Resolver(() => Transfer)
 @Injectable()
@@ -27,5 +34,22 @@ export class TransfersResolver {
     @Query(() => [Transfer])
     async getTransfers(): Promise<Transfer[]> {
         return this.service.getTransfers();
+    }
+
+    @Query(() => PaginatedTransfers)
+    async paginatedTransfers(
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false })
+        transfersQueryArgs: TransfersQueryArgs,
+        @Args({ nullable: false })
+        transfersSortArgs: TransfersSortArgs,
+    ): Promise<PaginatedTransfers> {
+        return this.service.paginatedTransfers({
+            offsetPaginatorArgs,
+            datePaginator,
+            transfersQueryArgs,
+            transfersSortArgs,
+        });
     }
 }
