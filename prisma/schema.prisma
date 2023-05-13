@@ -61,20 +61,22 @@ model client_contacts {
 }
 
 model clients {
-  id              Int               @id @default(autoincrement()) @db.UnsignedInt
-  active          Int               @default(1)
-  name            String            @db.VarChar(255)
-  abbreviation    String            @db.VarChar(255)
-  house_phone     String            @default("") @db.VarChar(255)
-  address1        String            @default("") @db.VarChar(60)
-  address2        String            @default("") @db.VarChar(60)
-  country         String            @default("") @db.VarChar(255)
-  city            String            @default("") @db.VarChar(255)
-  zip_code        String            @default("") @db.VarChar(255)
-  created_at      DateTime?         @db.DateTime(0)
-  updated_at      DateTime?         @db.DateTime(0)
-  client_contacts client_contacts[]
-  order_requests  order_requests[]
+  id                                           Int               @id @default(autoincrement()) @db.UnsignedInt
+  active                                       Int               @default(1)
+  name                                         String            @db.VarChar(255)
+  abbreviation                                 String            @db.VarChar(255)
+  house_phone                                  String            @default("") @db.VarChar(255)
+  address1                                     String            @default("") @db.VarChar(60)
+  address2                                     String            @default("") @db.VarChar(60)
+  country                                      String            @default("") @db.VarChar(255)
+  city                                         String            @default("") @db.VarChar(255)
+  zip_code                                     String            @default("") @db.VarChar(255)
+  created_at                                   DateTime?         @db.DateTime(0)
+  updated_at                                   DateTime?         @db.DateTime(0)
+  client_contacts                              client_contacts[]
+  order_requests                               order_requests[]
+  transfers_clientsTotransfers_from_account_id transfers[]       @relation("clientsTotransfers_from_account_id")
+  transfers_clientsTotransfers_to_account_id   transfers[]       @relation("clientsTotransfers_to_account_id")
 }
 
 model employee_statuses {
@@ -454,9 +456,9 @@ model products {
   order_request_products    order_request_products[]
   order_sale_products       order_sale_products[]
 
-  @@index([order_production_type_id], map: "products_order_production_type_id_foreign")
   @@index([product_category_id], map: "product_category_id")
   @@index([product_material_id], map: "product_material_id")
+  @@index([order_production_type_id], map: "products_order_production_type_id_foreign")
 }
 
 model roles {
@@ -641,23 +643,17 @@ model product_materials {
   products   products[]
 }
 
-model expenses {
-  id          Int        @id @default(autoincrement()) @db.UnsignedInt
-  active      Int        @default(1)
-  created_at  DateTime?  @db.Timestamp(0)
-  updated_at  DateTime?  @db.Timestamp(0)
-  supplier_id Int?       @db.UnsignedInt
-  amount      Int        @db.UnsignedInt
-  suppliers   suppliers? @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_supplier_id_foreign")
+model transfers {
+  id                                         Int       @id @default(autoincrement()) @db.UnsignedInt
+  active                                     Int       @default(1)
+  created_at                                 DateTime? @db.Timestamp(0)
+  updated_at                                 DateTime? @db.Timestamp(0)
+  from_account_id                            Int?      @db.UnsignedInt
+  to_account_id                              Int?      @db.UnsignedInt
+  amount                                     Int       @db.UnsignedInt
+  clients_clientsTotransfers_from_account_id clients?  @relation("clientsTotransfers_from_account_id", fields: [from_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_from_account_id_foreign")
+  clients_clientsTotransfers_to_account_id   clients?  @relation("clientsTotransfers_to_account_id", fields: [to_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_to_account_id_foreign")
 
-  @@index([supplier_id], map: "expenses_supplier_id_foreign")
-}
-
-model suppliers {
-  id         Int        @id @default(autoincrement()) @db.UnsignedInt
-  active     Int        @default(1)
-  created_at DateTime?  @db.Timestamp(0)
-  updated_at DateTime?  @db.Timestamp(0)
-  name       String     @db.VarChar(255)
-  expenses   expenses[]
+  @@index([from_account_id], map: "transfers_from_account_id_foreign")
+  @@index([to_account_id], map: "transfers_to_account_id_foreign")
 }

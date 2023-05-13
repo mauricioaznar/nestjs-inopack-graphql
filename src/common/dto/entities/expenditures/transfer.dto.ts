@@ -3,22 +3,25 @@ import { Day } from '../../dates/dates';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
-export class ExpenseBase {
+export class TransferBase {
     @Field(() => Float, { nullable: false })
     amount: number;
 
     @Field(() => Int, { nullable: true })
-    supplier_id: number | null;
+    from_account_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    to_account_id: number | null;
 }
 
-@InputType('ExpenseUpsertInput')
-export class ExpenseUpsertInput extends ExpenseBase {
+@InputType('TransferUpsertInput')
+export class TransferUpsertInput extends TransferBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
 }
 
-@ObjectType('Expense')
-export class Expense extends ExpenseBase {
+@ObjectType('Transfer')
+export class Transfer extends TransferBase {
     @Field({ nullable: false })
     id: number;
 }
