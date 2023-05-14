@@ -13,7 +13,7 @@ export enum ActivityEntityName {
     PRODUCT = 'products',
     EMPLOYEE = 'employees',
     ORDER_ADJUSTMENT = 'orderAdjustments',
-    CLIENT = 'clients',
+    CLIENT = 'Transfer',
     MACHINE = 'machines',
     USER = 'users',
     EQUIPMENTS = 'equipments',

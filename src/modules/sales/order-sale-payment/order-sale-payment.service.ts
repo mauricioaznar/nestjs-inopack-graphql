@@ -116,7 +116,7 @@ export class OrderSalePaymentService {
                         {
                             order_sales: {
                                 order_requests: {
-                                    clients: {
+                                    accounts: {
                                         name: {
                                             contains: !isFilterANumber
                                                 ? filter
@@ -129,7 +129,7 @@ export class OrderSalePaymentService {
                         {
                             order_sales: {
                                 order_requests: {
-                                    clients: {
+                                    accounts: {
                                         abbreviation: {
                                             contains: !isFilterANumber
                                                 ? filter

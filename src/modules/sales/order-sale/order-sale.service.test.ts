@@ -10,7 +10,7 @@ import {
     orderRequestStatus1,
     orderRequestStatus2,
 } from '../../../common/__tests__/objects/sales/order-request-statuses';
-import { createClientForTesting } from '../../../common/__tests__/helpers/entities/clients-for-testing';
+import { createAccountForTesting } from '../../../common/__tests__/helpers/entities/accounts-for-testing';
 import {
     orderSaleCollectionStatus1,
     orderSaleCollectionStatus2,
@@ -72,7 +72,7 @@ describe('upsert', () => {
         const product = await createProductForTesting({
             app,
         });
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
         const orderRequest = await orderRequestsService.upsertOrderRequest({
@@ -91,7 +91,7 @@ describe('upsert', () => {
                         product_id: product.id,
                     },
                 ],
-                client_id: client.id,
+                account_id: account.id,
             },
             current_user_id: adminUser.id,
         });
@@ -172,7 +172,7 @@ describe('upsert', () => {
         const product = await createProductForTesting({
             app,
         });
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
         const orderRequest = await orderRequestsService.upsertOrderRequest({
@@ -191,7 +191,7 @@ describe('upsert', () => {
                         product_id: product.id,
                     },
                 ],
-                client_id: client.id,
+                account_id: account.id,
             },
             current_user_id: adminUser.id,
         });
@@ -513,7 +513,7 @@ describe('upsert', () => {
         const product = await createProductForTesting({
             app,
         });
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
         const orderRequest = await orderRequestsService.upsertOrderRequest({
@@ -540,7 +540,7 @@ describe('upsert', () => {
                         product_id: product.id,
                     },
                 ],
-                client_id: client.id,
+                account_id: account.id,
             },
             current_user_id: adminUser.id,
         });

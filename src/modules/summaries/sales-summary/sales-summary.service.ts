@@ -41,11 +41,11 @@ export class SalesSummaryService {
         for (let i = 0; i < entity_groups.length; i++) {
             const entity_group = entity_groups[i];
             switch (entity_group) {
-                case 'client':
+                case 'account':
                     selectEntityGroup +=
-                        'client_id, client_name, client_abbreviation';
+                        'account_id, account_name, account_abbreviation';
                     groupByEntityGroup +=
-                        'client_id, client_name, client_abbreviation';
+                        'account_id, account_name, account_abbreviation';
                     break;
                 case 'receipt':
                     selectEntityGroup += 'receipt_type_id, receipt_type_name';
@@ -91,9 +91,9 @@ export class SalesSummaryService {
                  order_production_type.name order_production_type_name,
                  product_categories.id product_category_id,
                  product_categories.name product_category_name,
-                 clients.id client_id,
-                 clients.name client_name,
-                 clients.abbreviation client_abbreviation,
+                 accounts.id account_id,
+                 accounts.name account_name,
+                 accounts.abbreviation account_abbreviation,
                  order_sale_receipt_type.id receipt_type_id,
                  order_sale_receipt_type.name receipt_type_name,
                  order_sale_statuses.id status_id,
@@ -116,8 +116,8 @@ export class SalesSummaryService {
                 on order_production_type.id = products.order_production_type_id
                 left join product_categories
                 on products.product_category_id = product_categories.id
-                left join clients
-                on clients.id = order_requests.client_id
+                left join accounts
+                on accounts.id = order_requests.account_id
                 left join order_sale_statuses
                 on order_sale_statuses.id = order_sales.order_sale_status_id
                 left join order_sale_receipt_type

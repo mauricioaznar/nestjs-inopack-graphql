@@ -6,7 +6,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import {
-    Client,
+    Account,
     GetOrderRequestsArgs,
     OrderRequest,
     OrderRequestInput,
@@ -130,8 +130,8 @@ export class OrderRequestsService {
                     },
                 },
                 {
-                    client_id:
-                        paginatedOrderRequestsQueryArgs.client_id || undefined,
+                    account_id:
+                        paginatedOrderRequestsQueryArgs.account_id || undefined,
                 },
                 {
                     order_request_status_id:
@@ -296,7 +296,7 @@ export class OrderRequestsService {
                 date: input.date,
                 order_code: input.order_code,
                 estimated_delivery_date: input.estimated_delivery_date,
-                client_id: input.client_id,
+                account_id: input.account_id,
                 order_request_status_id: input.order_request_status_id,
                 priority: 0,
             },
@@ -306,7 +306,7 @@ export class OrderRequestsService {
                 date: input.date,
                 order_code: input.order_code,
                 estimated_delivery_date: input.estimated_delivery_date,
-                client_id: input.client_id,
+                account_id: input.account_id,
                 order_request_status_id: input.order_request_status_id,
                 priority: 0,
             },
@@ -696,18 +696,18 @@ export class OrderRequestsService {
         };
     }
 
-    async getClient({
-        client_id,
+    async getAccount({
+        account_id,
     }: {
-        client_id?: number | null;
-    }): Promise<Client | null> {
-        if (!client_id) {
+        account_id?: number | null;
+    }): Promise<Account | null> {
+        if (!account_id) {
             return null;
         }
 
-        return this.prisma.clients.findFirst({
+        return this.prisma.accounts.findFirst({
             where: {
-                id: client_id,
+                id: account_id,
             },
         });
     }

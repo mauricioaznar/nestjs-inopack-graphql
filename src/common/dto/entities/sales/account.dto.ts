@@ -6,14 +6,14 @@ import {
     ObjectType,
     registerEnumType,
 } from '@nestjs/graphql';
-import { ClientContactInput } from './client-contact.dto';
+import { AccountContactInput } from './account-contact.dto';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
 import { ProductBase } from '../production/product.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
-export class ClientBase {
+export class AccountBase {
     @Field()
     name: string;
 
@@ -21,44 +21,44 @@ export class ClientBase {
     abbreviation: string;
 }
 
-@InputType('ClientUpsertInput')
-export class ClientUpsertInput extends ClientBase {
+@InputType('AccountUpsertInput')
+export class AccountUpsertInput extends AccountBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
 
-    @Field(() => [ClientContactInput])
-    client_contacts: ClientContactInput[];
+    @Field(() => [AccountContactInput])
+    account_contacts: AccountContactInput[];
 }
 
-@ObjectType('Client')
-export class Client extends ClientBase {
+@ObjectType('Account')
+export class Account extends AccountBase {
     @Field({ nullable: false })
     id: number;
 }
 
 @ObjectType()
-export class PaginatedClients extends OffsetPaginatorResult(Client) {}
+export class PaginatedAccounts extends OffsetPaginatorResult(Account) {}
 
 @ArgsType()
-export class PaginatedClientsQueryArgs {
+export class PaginatedAccountsQueryArgs {
     @Field(() => String, { nullable: false })
     filter: string;
 }
 
-export enum ClientsSortableFields {
+export enum AccountsSortableFields {
     name = 'name',
     abbreviation = 'abbreviation',
 }
 
-registerEnumType(ClientsSortableFields, {
-    name: 'ClientsSortableFields',
+registerEnumType(AccountsSortableFields, {
+    name: 'AccountsSortableFields',
 });
 
 @ArgsType()
-export class PaginatedClientsSortArgs {
+export class PaginatedAccountsSortArgs {
     @Field(() => ColumnOrder, { nullable: true })
     sort_order: ColumnOrder | null;
 
-    @Field(() => ClientsSortableFields, { nullable: true })
-    sort_field: ClientsSortableFields | null;
+    @Field(() => AccountsSortableFields, { nullable: true })
+    sort_field: AccountsSortableFields | null;
 }

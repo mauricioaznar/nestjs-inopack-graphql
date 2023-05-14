@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ClientsModule } from './clients/clients.module';
-import { ClientContactsModule } from './client-contacts/client-contacts.module';
+import { AccountsModule } from './accounts/accounts.module';
+import { AccountContactsModule } from './account-contacts/account-contacts.module';
 import { OrderRequestStatusesModule } from './order-request-statuses/order-request-statuses.module';
 import { OrderRequestsModule } from './order-requests/order-requests.module';
 import { OrderRequestProductsModule } from './order-request-products/order-request-products.module';
@@ -13,8 +13,8 @@ import { OrderSaleCollectionStatusModule } from './order-sale-collection-status/
 
 @Module({
     imports: [
-        ClientsModule,
-        ClientContactsModule,
+        AccountsModule,
+        AccountContactsModule,
         OrderRequestStatusesModule,
         OrderRequestsModule,
         OrderRequestProductsModule,

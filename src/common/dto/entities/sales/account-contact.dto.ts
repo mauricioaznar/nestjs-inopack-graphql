@@ -2,7 +2,7 @@ import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
-export class ClientContactBase {
+export class AccountContactBase {
     @Field()
     first_name: string;
 
@@ -16,14 +16,14 @@ export class ClientContactBase {
     cellphone: string;
 }
 
-@InputType('ClientContactInput')
-export class ClientContactInput extends ClientContactBase {
+@InputType('AccountContactInput')
+export class AccountContactInput extends AccountContactBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
 }
 
-@ObjectType('ClientContact')
-export class ClientContact extends ClientContactBase {
+@ObjectType('AccountContact')
+export class AccountContact extends AccountContactBase {
     @Field({ nullable: false })
     id: number;
 

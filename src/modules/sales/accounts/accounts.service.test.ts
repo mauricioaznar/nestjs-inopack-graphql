@@ -3,16 +3,16 @@ import {
     setupApp,
 } from '../../../common/__tests__/helpers';
 import { INestApplication } from '@nestjs/common';
-import { ClientsService } from './clients.service';
+import { AccountsService } from './accounts.service';
 import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 
 let app: INestApplication;
-let clientsService: ClientsService;
+let accountsService: AccountsService;
 let currentOrderRequestCode = 30000;
 
 beforeAll(async () => {
     app = await setupApp();
-    clientsService = app.get(ClientsService);
+    accountsService = app.get(AccountsService);
     currentOrderRequestCode = currentOrderRequestCode + 1;
 });
 
@@ -20,19 +20,19 @@ afterAll(async () => {
     await app.close();
 });
 
-describe('client list', () => {
+describe('account list', () => {
     it('returns list', async () => {
-        const clients = await clientsService.getClients();
-        expect(Array.isArray(clients)).toBe(true);
+        const accounts = await accountsService.getAccounts();
+        expect(Array.isArray(accounts)).toBe(true);
     });
 });
 
-describe('client upsert', () => {
-    it('creates client', async () => {
-        const client = await clientsService.upsertClient({
+describe('account upsert', () => {
+    it('creates account', async () => {
+        const account = await accountsService.upsertAccount({
             abbreviation: 'ADB',
             name: 'A D B',
-            client_contacts: [
+            account_contacts: [
                 {
                     email: 'email@gmail.com',
                     cellphone: '9993516898',
@@ -42,16 +42,16 @@ describe('client upsert', () => {
             ],
         });
 
-        expect(client.id).toBeDefined();
-        expect(client.abbreviation).toBe('ADB');
-        expect(client.name).toBe('A D B');
+        expect(account.id).toBeDefined();
+        expect(account.abbreviation).toBe('ADB');
+        expect(account.name).toBe('A D B');
 
-        const clientContacts = await clientsService.getClientContacts({
-            client_id: client.id,
+        const accountContacts = await accountsService.getAccountContacts({
+            account_id: account.id,
         });
 
-        expect(clientContacts.length).toBe(1);
-        expect(clientContacts).toEqual(
+        expect(accountContacts.length).toBe(1);
+        expect(accountContacts).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
                     first_name: expect.stringMatching(/ffirst/i),
@@ -60,11 +60,11 @@ describe('client upsert', () => {
         );
     });
 
-    it('updates client', async () => {
-        const createdClient = await clientsService.upsertClient({
+    it('updates account', async () => {
+        const createdAccount = await accountsService.upsertAccount({
             abbreviation: 'ADB',
             name: 'A D B',
-            client_contacts: [
+            account_contacts: [
                 {
                     email: 'email@gmail.com',
                     cellphone: '9993516898',
@@ -74,46 +74,46 @@ describe('client upsert', () => {
             ],
         });
 
-        const updatedClient = await clientsService.upsertClient({
-            id: createdClient.id,
+        const updatedAccount = await accountsService.upsertAccount({
+            id: createdAccount.id,
             name: 'New name',
             abbreviation: 'New abbr',
-            client_contacts: [],
+            account_contacts: [],
         });
-        expect(updatedClient.name).toBe('New name');
-        expect(updatedClient.abbreviation).toBe('New abbr');
+        expect(updatedAccount.name).toBe('New name');
+        expect(updatedAccount.abbreviation).toBe('New abbr');
 
-        const clientContacts = await clientsService.getClientContacts({
-            client_id: updatedClient.id,
+        const accountContacts = await accountsService.getAccountContacts({
+            account_id: updatedAccount.id,
         });
 
-        expect(clientContacts.length).toBe(0);
+        expect(accountContacts.length).toBe(0);
     });
 });
 
-describe('gets client', () => {
-    it('returns client', async () => {
-        const createdClient = await clientsService.upsertClient({
+describe('gets account', () => {
+    it('returns account', async () => {
+        const createdAccount = await accountsService.upsertAccount({
             name: 'Name',
             abbreviation: 'Abbr',
-            client_contacts: [],
+            account_contacts: [],
         });
 
-        const client = await clientsService.getClient({
-            client_id: createdClient.id,
+        const account = await accountsService.getAccount({
+            account_id: createdAccount.id,
         });
 
-        expect(client?.abbreviation).toBe('Abbr');
-        expect(client?.name).toBe('Name');
+        expect(account?.abbreviation).toBe('Abbr');
+        expect(account?.name).toBe('Name');
     });
 });
 
-describe('deletes client', () => {
-    it('deletes client and its client contacts', async () => {
-        const createdClient = await clientsService.upsertClient({
+describe('deletes account', () => {
+    it('deletes account and its account contacts', async () => {
+        const createdAccount = await accountsService.upsertAccount({
             abbreviation: 'Abbr',
             name: 'Name',
-            client_contacts: [
+            account_contacts: [
                 {
                     email: 'email@email.com',
                     last_name: 'last_nae',
@@ -123,27 +123,27 @@ describe('deletes client', () => {
             ],
         });
 
-        await clientsService.deletesClient({
-            client_id: createdClient.id,
+        await accountsService.deletesAccount({
+            account_id: createdAccount.id,
         });
 
-        const clientContacts = await clientsService.getClientContacts({
-            client_id: createdClient.id,
+        const accountContacts = await accountsService.getAccountContacts({
+            account_id: createdAccount.id,
         });
 
-        const client = await clientsService.getClient({
-            client_id: createdClient.id,
+        const account = await accountsService.getAccount({
+            account_id: createdAccount.id,
         });
 
-        expect(client).toBeFalsy();
-        expect(clientContacts.length).toBe(0);
+        expect(account).toBeFalsy();
+        expect(accountContacts.length).toBe(0);
     });
 
-    it('forbids to delete client when there is are related order requests', async () => {
+    it('forbids to delete account when there is are related order requests', async () => {
         expect.hasAssertions();
 
         const product = await createProductForTesting({ app });
-        const { client } = await createOrderRequestWithOneProduct({
+        const { account } = await createOrderRequestWithOneProduct({
             app,
             orderRequestCode: currentOrderRequestCode,
             orderRequestProduct: {
@@ -156,8 +156,8 @@ describe('deletes client', () => {
         });
 
         try {
-            await clientsService.deletesClient({
-                client_id: client.id,
+            await accountsService.deletesAccount({
+                account_id: account.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual([

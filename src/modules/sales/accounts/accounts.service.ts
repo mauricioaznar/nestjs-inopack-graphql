@@ -4,11 +4,11 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import {
-    Client,
-    ClientContact,
-    ClientUpsertInput,
-    PaginatedClientsQueryArgs,
-    PaginatedClientsSortArgs,
+    Account,
+    AccountContact,
+    AccountUpsertInput,
+    PaginatedAccountsQueryArgs,
+    PaginatedAccountsSortArgs,
     PaginatedProducts,
 } from '../../../common/dto/entities';
 import {
@@ -21,11 +21,11 @@ import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
-export class ClientsService {
+export class AccountsService {
     constructor(private prisma: PrismaService) {}
 
-    async getClients(): Promise<Client[]> {
-        return this.prisma.clients.findMany({
+    async getAccounts(): Promise<Account[]> {
+        return this.prisma.accounts.findMany({
             where: {
                 active: 1,
             },
@@ -35,23 +35,23 @@ export class ClientsService {
         });
     }
 
-    async paginatedClients({
+    async paginatedAccounts({
         offsetPaginatorArgs,
-        paginatedClientsQueryArgs,
-        paginatedClientsSortArgs,
+        paginatedAccountsQueryArgs,
+        paginatedAccountsSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
-        paginatedClientsQueryArgs: PaginatedClientsQueryArgs;
-        paginatedClientsSortArgs: PaginatedClientsSortArgs;
+        paginatedAccountsQueryArgs: PaginatedAccountsQueryArgs;
+        paginatedAccountsSortArgs: PaginatedAccountsSortArgs;
     }): Promise<PaginatedProducts> {
         const filter =
-            paginatedClientsQueryArgs.filter !== ''
-                ? paginatedClientsQueryArgs.filter
+            paginatedAccountsQueryArgs.filter !== ''
+                ? paginatedAccountsQueryArgs.filter
                 : undefined;
 
-        const { sort_order, sort_field } = paginatedClientsSortArgs;
+        const { sort_order, sort_field } = paginatedAccountsSortArgs;
 
-        const where: Prisma.clientsWhereInput = {
+        const where: Prisma.accountsWhereInput = {
             AND: [
                 {
                     active: 1,
@@ -73,7 +73,7 @@ export class ClientsService {
             ],
         };
 
-        let orderBy: Prisma.clientsOrderByWithRelationInput = {
+        let orderBy: Prisma.accountsOrderByWithRelationInput = {
             updated_at: 'desc',
         };
 
@@ -89,10 +89,10 @@ export class ClientsService {
             }
         }
 
-        const count = await this.prisma.clients.count({
+        const count = await this.prisma.accounts.count({
             where: where,
         });
-        const clients = await this.prisma.clients.findMany({
+        const accounts = await this.prisma.accounts.findMany({
             where: where,
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
@@ -101,27 +101,27 @@ export class ClientsService {
 
         return {
             count: count || 0,
-            docs: clients || [],
+            docs: accounts || [],
         };
     }
 
-    async getClient({
-        client_id,
+    async getAccount({
+        account_id,
     }: {
-        client_id: number;
-    }): Promise<Client | null> {
-        if (!client_id) return null;
+        account_id: number;
+    }): Promise<Account | null> {
+        if (!account_id) return null;
 
-        return this.prisma.clients.findFirst({
+        return this.prisma.accounts.findFirst({
             where: {
-                id: client_id,
+                id: account_id,
                 active: 1,
             },
         });
     }
 
-    async upsertClient(input: ClientUpsertInput): Promise<Client> {
-        const client = await this.prisma.clients.upsert({
+    async upsertAccount(input: AccountUpsertInput): Promise<Account> {
+        const account = await this.prisma.accounts.upsert({
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
@@ -138,28 +138,28 @@ export class ClientsService {
             },
         });
 
-        const newClientContactItems = input.client_contacts;
-        const oldClientContactItems = input.id
-            ? await this.prisma.client_contacts.findMany({
+        const newAccountContactItems = input.account_contacts;
+        const oldAccountContactItems = input.id
+            ? await this.prisma.account_contacts.findMany({
                   where: {
-                      client_id: input.id,
+                      account_id: input.id,
                   },
               })
             : [];
 
         const {
-            aMinusB: deleteClientContactItems,
-            bMinusA: createClientContactItems,
-            intersection: updateClientContactItems,
+            aMinusB: deleteAccountContactItems,
+            bMinusA: createAccountContactItems,
+            intersection: updateAccountContactItems,
         } = vennDiagram({
-            a: oldClientContactItems,
-            b: newClientContactItems,
+            a: oldAccountContactItems,
+            b: newAccountContactItems,
             indexProperties: ['id'],
         });
 
-        for await (const delItem of deleteClientContactItems) {
+        for await (const delItem of deleteAccountContactItems) {
             if (delItem && delItem.id) {
-                await this.prisma.client_contacts.updateMany({
+                await this.prisma.account_contacts.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         active: -1,
@@ -171,12 +171,12 @@ export class ClientsService {
             }
         }
 
-        for await (const createItem of createClientContactItems) {
-            await this.prisma.client_contacts.create({
+        for await (const createItem of createAccountContactItems) {
+            await this.prisma.account_contacts.create({
                 data: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
-                    client_id: client.id,
+                    account_id: account.id,
                     first_name: createItem.first_name,
                     last_name: createItem.last_name,
                     fullname: `${createItem.first_name} ${createItem.last_name}`,
@@ -186,9 +186,9 @@ export class ClientsService {
             });
         }
 
-        for await (const updateItem of updateClientContactItems) {
+        for await (const updateItem of updateAccountContactItems) {
             if (updateItem && updateItem.id) {
-                await this.prisma.client_contacts.updateMany({
+                await this.prisma.account_contacts.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         first_name: updateItem.first_name,
@@ -204,19 +204,19 @@ export class ClientsService {
             }
         }
 
-        return client;
+        return account;
     }
 
-    async getClientContacts({
-        client_id,
+    async getAccountContacts({
+        account_id,
     }: {
-        client_id: number;
-    }): Promise<ClientContact[]> {
-        return this.prisma.client_contacts.findMany({
+        account_id: number;
+    }): Promise<AccountContact[]> {
+        return this.prisma.account_contacts.findMany({
             where: {
                 AND: [
                     {
-                        client_id: client_id,
+                        account_id: account_id,
                     },
                     {
                         active: 1,
@@ -226,22 +226,22 @@ export class ClientsService {
         });
     }
 
-    async deletesClient({
-        client_id,
+    async deletesAccount({
+        account_id,
     }: {
-        client_id: number;
+        account_id: number;
     }): Promise<boolean> {
-        const client = await this.getClient({ client_id });
+        const account = await this.getAccount({ account_id });
 
-        if (!client) {
+        if (!account) {
             throw new NotFoundException();
         }
 
-        const isDeletable = await this.isDeletable({ client_id });
+        const isDeletable = await this.isDeletable({ account_id });
 
         if (!isDeletable) {
             const { order_requests_count } = await this.getDependenciesCount({
-                client_id,
+                account_id,
             });
 
             const errors: string[] = [];
@@ -253,10 +253,10 @@ export class ClientsService {
             throw new BadRequestException(errors);
         }
 
-        const clientContacts = await this.getClientContacts({ client_id });
+        const accountContacts = await this.getAccountContacts({ account_id });
 
-        for await (const contact of clientContacts) {
-            await this.prisma.client_contacts.update({
+        for await (const contact of accountContacts) {
+            await this.prisma.account_contacts.update({
                 data: {
                     ...getUpdatedAtProperty(),
                     active: -1,
@@ -267,13 +267,13 @@ export class ClientsService {
             });
         }
 
-        await this.prisma.clients.update({
+        await this.prisma.accounts.update({
             data: {
                 ...getUpdatedAtProperty(),
                 active: -1,
             },
             where: {
-                id: client.id,
+                id: account.id,
             },
         });
 
@@ -281,9 +281,9 @@ export class ClientsService {
     }
 
     async getDependenciesCount({
-        client_id,
+        account_id,
     }: {
-        client_id: number;
+        account_id: number;
     }): Promise<{ order_requests_count: number }> {
         const {
             _count: { id: orderRequestsCount },
@@ -292,7 +292,7 @@ export class ClientsService {
                 id: true,
             },
             where: {
-                client_id: client_id,
+                account_id: account_id,
                 active: 1,
             },
         });
@@ -302,9 +302,13 @@ export class ClientsService {
         };
     }
 
-    async isDeletable({ client_id }: { client_id: number }): Promise<boolean> {
+    async isDeletable({
+        account_id,
+    }: {
+        account_id: number;
+    }): Promise<boolean> {
         const { order_requests_count } = await this.getDependenciesCount({
-            client_id,
+            account_id,
         });
 
         return order_requests_count === 0;

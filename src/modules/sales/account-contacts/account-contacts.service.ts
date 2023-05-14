@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { ClientContact } from '../../../common/dto/entities';
+import { AccountContact } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
 @Injectable()
-export class ClientContactsService {
+export class AccountContactsService {
     constructor(private prisma: PrismaService) {}
 
-    async getClientContacts(): Promise<ClientContact[]> {
-        return this.prisma.client_contacts.findMany({
+    async getAccountContacts(): Promise<AccountContact[]> {
+        return this.prisma.account_contacts.findMany({
             where: {
                 active: 1,
             },

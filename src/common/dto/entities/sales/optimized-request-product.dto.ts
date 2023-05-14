@@ -6,7 +6,7 @@ export class OptimizedRequestProduct {
     order_code?: number | null;
 
     @Field(() => String, { nullable: false })
-    client_name: string;
+    account_name: string;
 
     @Field(() => String, { nullable: true })
     order_request_estimated_delivery_date: string | null;

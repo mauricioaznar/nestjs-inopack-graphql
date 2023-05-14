@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
-    Client,
+    Account,
     OrderRequest,
     OrderSale,
     OrderSaleInput,
@@ -85,7 +85,7 @@ export class OrderSaleService {
                 },
                 {
                     order_requests: {
-                        client_id: orderSalesQueryArgs.client_id || undefined,
+                        account_id: orderSalesQueryArgs.account_id || undefined,
                     },
                 },
                 {
@@ -285,11 +285,11 @@ export class OrderSaleService {
         });
     }
 
-    async getClient({
+    async getAccount({
         order_sale_id,
     }: {
         order_sale_id: number;
-    }): Promise<Client | null> {
+    }): Promise<Account | null> {
         const orderSale = await this.getOrderSale({
             orderSaleId: order_sale_id,
         });
@@ -302,16 +302,16 @@ export class OrderSaleService {
             },
         });
 
-        if (!orderRequest || !orderRequest.client_id) return null;
+        if (!orderRequest || !orderRequest.account_id) return null;
 
-        return this.prisma.clients.findFirst({
+        return this.prisma.accounts.findFirst({
             where: {
-                id: orderRequest.client_id,
+                id: orderRequest.account_id,
             },
         });
     }
 
-    async getClientId({
+    async getAccountId({
         order_sale_id,
     }: {
         order_sale_id: number;
@@ -332,7 +332,7 @@ export class OrderSaleService {
 
         if (!orderRequest) return null;
 
-        return orderRequest.client_id;
+        return orderRequest.account_id;
     }
 
     async getOrderSaleReceiptType({

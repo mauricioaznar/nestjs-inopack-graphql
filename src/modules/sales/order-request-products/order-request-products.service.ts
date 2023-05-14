@@ -61,8 +61,8 @@ export class OrderRequestProductsService {
                    order_request_statuses.id                        order_request_status_id,
                    order_sale_products_delivered.last_sale,
                    order_sale_products_delivered.first_sale,
-                   clients.id                                       client_id,
-                   clients.name                                     client_name,
+                   accounts.id                                       account_id,
+                   accounts.name                                     account_name,
                    order_request_products.product_id                product_id,
                    products.description                             product_description,
                    products.code                                    product_code,
@@ -82,8 +82,8 @@ export class OrderRequestProductsService {
                           on order_requests.id = order_request_products.order_request_id
                      join products
                           on products.id = order_request_products.product_id
-                     join clients
-                          on clients.id = order_requests.client_id
+                     join accounts
+                          on accounts.id = order_requests.account_id
                      join order_request_statuses
                           on order_request_statuses.id = order_requests.order_request_status_id
                      left join

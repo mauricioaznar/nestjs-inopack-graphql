@@ -68,7 +68,7 @@ describe('users upsert', () => {
         }
     });
 
-    it('updates client', async () => {
+    it('updates user', async () => {
         const createdUser = await userService.create({
             email: 'create2useremail@email.com',
             first_name: 'first name',

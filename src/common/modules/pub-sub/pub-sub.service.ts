@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
     ActivityEntityName,
     ActivityTypeName,
-    Client,
+    Account,
     OrderRequest,
     OrderSale,
     Product,
@@ -105,24 +105,24 @@ export class PubSubService {
         });
     }
 
-    async client({
-        client,
+    async account({
+        account,
         type,
         userId,
     }: {
-        client: Client;
+        account: Account;
         type: ActivityTypeName;
         userId: number;
     }) {
-        await this.pubSub.publish('client', {
-            client: client,
+        await this.pubSub.publish('account', {
+            account: account,
         });
         await this.publishActivity({
             entity_name: ActivityEntityName.CLIENT,
             type: type,
-            entity_id: client.id,
+            entity_id: account.id,
             userId,
-            description: `Cliente: ${client.abbreviation} (${client.name})`,
+            description: `Cuenta: ${account.abbreviation} (${account.name})`,
         });
     }
 
@@ -262,8 +262,8 @@ export class PubSubService {
         return this.pubSub.asyncIterator('transfer');
     }
 
-    async listenForClient() {
-        return this.pubSub.asyncIterator('client');
+    async listenForAccount() {
+        return this.pubSub.asyncIterator('account');
     }
 
     async listenForOrderRequest() {

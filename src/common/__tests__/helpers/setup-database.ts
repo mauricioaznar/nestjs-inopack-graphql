@@ -40,13 +40,13 @@ export default async function setupDatabase() {
     // level 3
     await prismaService.machines.deleteMany();
     await prismaService.product_categories.deleteMany();
-    await prismaService.client_contacts.deleteMany();
+    await prismaService.account_contacts.deleteMany();
     await prismaService.order_adjustment_type.deleteMany();
     await prismaService.employees.deleteMany();
 
     //level 2
     await prismaService.order_production_type.deleteMany();
-    await prismaService.clients.deleteMany();
+    await prismaService.transfers.deleteMany();
     await prismaService.employee_statuses.deleteMany();
     await prismaService.order_request_statuses.deleteMany();
     await prismaService.order_sale_statuses.deleteMany();

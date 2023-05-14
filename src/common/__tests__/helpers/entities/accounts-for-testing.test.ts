@@ -1,6 +1,6 @@
 import { setupApp } from '../setup-app';
 import { INestApplication } from '@nestjs/common';
-import { createClientForTesting } from './clients-for-testing';
+import { createAccountForTesting } from './accounts-for-testing';
 
 let app: INestApplication;
 
@@ -12,11 +12,11 @@ afterAll(async () => {
     await app.close();
 });
 
-it('create client for testing returns a client', async () => {
-    const client = await createClientForTesting({
+it('create account for testing returns a account', async () => {
+    const account = await createAccountForTesting({
         app,
     });
 
-    expect(client).toBeTruthy();
-    expect(client.id).toBeTruthy();
+    expect(account).toBeTruthy();
+    expect(account.id).toBeTruthy();
 });

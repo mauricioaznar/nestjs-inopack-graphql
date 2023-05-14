@@ -1,5 +1,5 @@
 import {
-    Client,
+    Account,
     OrderRequest,
     OrderRequestProduct,
     OrderRequestProductInput,
@@ -7,14 +7,14 @@ import {
 import { OrderRequestsService } from '../../../../modules/sales/order-requests/order-requests.service';
 import { orderRequestStatus2 } from '../../objects/sales/order-request-statuses';
 import { getUtcDate } from '../dates';
-import { createClientForTesting } from './clients-for-testing';
+import { createAccountForTesting } from './accounts-for-testing';
 import { INestApplication } from '@nestjs/common';
 import { adminUser } from '../../objects/auth/users';
 
 type OrderRequestWithOneProduct = {
     orderRequest: OrderRequest;
     orderRequestProduct: OrderRequestProduct;
-    client: Client;
+    account: Account;
 };
 
 export async function createOrderRequestWithOneProduct({
@@ -27,7 +27,7 @@ export async function createOrderRequestWithOneProduct({
     orderRequestProduct: OrderRequestProductInput;
 }): Promise<OrderRequestWithOneProduct> {
     const orderRequestsService = app.get(OrderRequestsService);
-    const client = await createClientForTesting({
+    const account = await createAccountForTesting({
         app,
     });
 
@@ -36,7 +36,7 @@ export async function createOrderRequestWithOneProduct({
             input: {
                 order_request_status_id: orderRequestStatus2.id,
                 order_code: orderRequestCode,
-                client_id: client.id,
+                account_id: account.id,
                 notes: '',
                 date: getUtcDate({ year: 2022, month: 1, day: 1 }),
                 order_request_products: [orderRequestProduct],
@@ -55,7 +55,7 @@ export async function createOrderRequestWithOneProduct({
         return {
             orderRequest,
             orderRequestProduct: orderRequestProducts[0],
-            client,
+            account,
         };
     } catch (e) {
         console.error(e);
@@ -68,7 +68,7 @@ type OrderRequestWithTwoProducts = {
     orderRequest: OrderRequest;
     orderRequestProduct1: OrderRequestProduct;
     orderRequestProduct2: OrderRequestProduct;
-    client: Client;
+    account: Account;
 };
 
 export async function createOrderRequestWithTwoProducts({
@@ -85,7 +85,7 @@ export async function createOrderRequestWithTwoProducts({
     orderRequestProduct2: OrderRequestProductInput;
 }): Promise<OrderRequestWithTwoProducts> {
     const orderRequestsService = app.get(OrderRequestsService);
-    const client = await createClientForTesting({
+    const account = await createAccountForTesting({
         app,
     });
 
@@ -94,7 +94,7 @@ export async function createOrderRequestWithTwoProducts({
             input: {
                 order_request_status_id: orderRequestStatusId,
                 order_code: orderRequestCode,
-                client_id: client.id,
+                account_id: account.id,
                 notes: '',
                 date: getUtcDate({ year: 2022, month: 1, day: 1 }),
                 order_request_products: [
@@ -117,7 +117,7 @@ export async function createOrderRequestWithTwoProducts({
             orderRequest,
             orderRequestProduct1: orderRequestProducts[0],
             orderRequestProduct2: orderRequestProducts[1],
-            client,
+            account,
         };
     } catch (e) {
         console.error(e);

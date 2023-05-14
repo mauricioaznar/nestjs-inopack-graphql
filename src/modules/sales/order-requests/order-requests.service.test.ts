@@ -9,7 +9,7 @@ import {
     orderRequestStatus1,
     orderRequestStatus2,
 } from '../../../common/__tests__/objects/sales/order-request-statuses';
-import { createClientForTesting } from '../../../common/__tests__/helpers/entities/clients-for-testing';
+import { createAccountForTesting } from '../../../common/__tests__/helpers/entities/accounts-for-testing';
 import { OrderRequestInput } from '../../../common/dto/entities';
 import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 import { OrderSaleService } from '../order-sale/order-sale.service';
@@ -56,7 +56,7 @@ describe('pagination', () => {
                     year: 2022,
                 },
                 paginatedOrderRequestsQueryArgs: {
-                    client_id: null,
+                    account_id: null,
                     filter: '',
                     order_request_status_id: null,
                 },
@@ -72,7 +72,7 @@ describe('pagination', () => {
 
 describe('upsert', () => {
     it('creates', async () => {
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -83,7 +83,7 @@ describe('upsert', () => {
             input: {
                 order_request_status_id: orderRequestStatus1.id,
                 order_code: orderRequestCode,
-                client_id: client.id,
+                account_id: account.id,
                 notes: '',
                 date: getUtcDate({ year: 2022, month: 1, day: 1 }),
                 order_request_products: [
@@ -132,7 +132,7 @@ describe('upsert', () => {
     });
 
     it('updates (allows to have a the same order code)', async () => {
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -143,7 +143,7 @@ describe('upsert', () => {
         const orderRequestInput: OrderRequestInput = {
             order_request_status_id: orderRequestStatus1.id,
             order_code: orderRequestCode,
-            client_id: client.id,
+            account_id: account.id,
             notes: '',
             date: getUtcDate({ year: 2022, month: 1, day: 1 }),
             order_request_products: [
@@ -179,7 +179,7 @@ describe('upsert', () => {
                     id: createdOrderRequest.id,
                     order_request_status_id: orderRequestStatus2.id,
                     order_code: orderRequestCode,
-                    client_id: client.id,
+                    account_id: account.id,
                     notes: '',
                     date: getUtcDate({ year: 2022, month: 2, day: 1 }),
                     order_request_products: [
@@ -233,7 +233,7 @@ describe('upsert', () => {
     it('fails when order code is occupied', async () => {
         expect.hasAssertions();
 
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -244,7 +244,7 @@ describe('upsert', () => {
         const orderRequestInput: OrderRequestInput = {
             order_request_status_id: orderRequestStatus1.id,
             order_code: orderRequestCode,
-            client_id: client.id,
+            account_id: account.id,
             notes: '',
             date: getUtcDate({ year: 2022, month: 1, day: 1 }),
             order_request_products: [
@@ -273,7 +273,7 @@ describe('upsert', () => {
                 input: {
                     order_request_status_id: orderRequestStatus2.id,
                     order_code: orderRequestCode,
-                    client_id: client.id,
+                    account_id: account.id,
                     notes: '',
                     date: getUtcDate({ year: 2022, month: 2, day: 1 }),
                     order_request_products: [
@@ -332,7 +332,7 @@ describe('upsert', () => {
     });
 
     it('allows to change the order code when order code is not occupied', async () => {
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -342,7 +342,7 @@ describe('upsert', () => {
         const orderRequestInput: OrderRequestInput = {
             order_request_status_id: orderRequestStatus1.id,
             order_code: currentRequestOrderCode,
-            client_id: client.id,
+            account_id: account.id,
             notes: '',
             date: getUtcDate({ year: 2022, month: 1, day: 1 }),
             order_request_products: [
@@ -373,7 +373,7 @@ describe('upsert', () => {
                     id: createdOrderRequest.id,
                     order_request_status_id: orderRequestStatus2.id,
                     order_code: 900000,
-                    client_id: client.id,
+                    account_id: account.id,
                     notes: '',
                     date: getUtcDate({ year: 2022, month: 2, day: 1 }),
                     order_request_products: [
@@ -398,7 +398,7 @@ describe('upsert', () => {
     });
 
     it('fails when products are not unique', async () => {
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -409,7 +409,7 @@ describe('upsert', () => {
                 input: {
                     order_request_status_id: orderRequestStatus1.id,
                     order_code: currentRequestOrderCode,
-                    client_id: client.id,
+                    account_id: account.id,
                     date: getUtcDate({ year: 2022, month: 1, day: 1 }),
                     notes: '',
                     order_request_products: [
@@ -446,7 +446,7 @@ describe('upsert', () => {
     });
 
     it('fails when products array is empty', async () => {
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
         try {
@@ -454,7 +454,7 @@ describe('upsert', () => {
                 input: {
                     order_request_status_id: orderRequestStatus1.id,
                     order_code: currentRequestOrderCode,
-                    client_id: client.id,
+                    account_id: account.id,
                     notes: '',
                     date: getUtcDate({ year: 2022, month: 1, day: 1 }),
                     order_request_products: [],
@@ -478,7 +478,7 @@ describe('upsert', () => {
     });
 
     it('fails when product is incorrectly calculated', async () => {
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -489,7 +489,7 @@ describe('upsert', () => {
                 input: {
                     order_request_status_id: orderRequestStatus1.id,
                     order_code: currentRequestOrderCode,
-                    client_id: client.id,
+                    account_id: account.id,
                     notes: '',
                     date: getUtcDate({ year: 2022, month: 1, day: 1 }),
                     order_request_products: [
@@ -519,7 +519,7 @@ describe('upsert', () => {
     });
 
     it('fails when current group weight doesnt match group weight', async () => {
-        const client = await createClientForTesting({
+        const account = await createAccountForTesting({
             app,
         });
 
@@ -534,7 +534,7 @@ describe('upsert', () => {
                 input: {
                     order_request_status_id: orderRequestStatus1.id,
                     order_code: currentRequestOrderCode,
-                    client_id: client.id,
+                    account_id: account.id,
                     notes: '',
                     date: getUtcDate({ year: 2022, month: 1, day: 1 }),
                     order_request_products: [

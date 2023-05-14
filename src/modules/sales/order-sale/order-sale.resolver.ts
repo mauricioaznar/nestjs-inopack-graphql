@@ -13,7 +13,7 @@ import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { OrderSaleService } from './order-sale.service';
 import {
     ActivityTypeName,
-    Client,
+    Account,
     OrderRequest,
     OrderSale,
     OrderSaleInput,
@@ -144,16 +144,16 @@ export class OrderSaleResolver {
         });
     }
 
-    @ResolveField(() => Client, { nullable: true })
-    async client(orderSale: OrderSale): Promise<Client | null> {
-        return this.service.getClient({
+    @ResolveField(() => Account, { nullable: true })
+    async account(orderSale: OrderSale): Promise<Account | null> {
+        return this.service.getAccount({
             order_sale_id: orderSale.id,
         });
     }
 
     @ResolveField(() => Float, { nullable: true })
-    async client_id(orderSale: OrderSale): Promise<number | null> {
-        return this.service.getClientId({
+    async account_id(orderSale: OrderSale): Promise<number | null> {
+        return this.service.getAccountId({
             order_sale_id: orderSale.id,
         });
     }

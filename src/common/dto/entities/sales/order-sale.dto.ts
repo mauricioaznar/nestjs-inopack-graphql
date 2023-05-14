@@ -69,7 +69,7 @@ export class OrderSalesQueryArgs {
     filter: string;
 
     @Field(() => Int, { nullable: true })
-    client_id: number | null;
+    account_id: number | null;
 
     @Field(() => Int, { nullable: true })
     order_sale_receipt_type_id: number | null;
