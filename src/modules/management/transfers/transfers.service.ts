@@ -12,7 +12,11 @@ import {
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
-import { getRangesFromYearMonth } from '../../../common/helpers';
+import {
+    getCreatedAtProperty,
+    getRangesFromYearMonth,
+    getUpdatedAtProperty,
+} from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -47,14 +51,23 @@ export class TransfersService {
 
         return this.prisma.transfers.upsert({
             create: {
+                ...getCreatedAtProperty(),
+                ...getUpdatedAtProperty(),
                 amount: transferInput.amount,
                 from_account_id: transferInput.from_account_id,
                 to_account_id: transferInput.to_account_id,
+                expected_date: transferInput.expected_date,
+                completed_date: transferInput.completed_date,
+                locked: transferInput.locked,
             },
             update: {
+                ...getUpdatedAtProperty(),
                 amount: transferInput.amount,
                 from_account_id: transferInput.from_account_id,
                 to_account_id: transferInput.to_account_id,
+                expected_date: transferInput.expected_date,
+                completed_date: transferInput.completed_date,
+                locked: transferInput.locked,
             },
             where: {
                 id: transferInput.id || 0,

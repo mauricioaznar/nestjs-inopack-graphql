@@ -21,6 +21,15 @@ export class TransferBase {
 
     @Field(() => Int, { nullable: true })
     to_account_id: number | null;
+
+    @Field(() => Date, { nullable: true })
+    expected_date: Date | null;
+
+    @Field(() => Date, { nullable: true })
+    completed_date: Date | null;
+
+    @Field(() => Boolean, { nullable: false })
+    locked: boolean;
 }
 
 @InputType('TransferUpsertInput')

@@ -17,7 +17,8 @@
   * ex: select all days from month 1
   * ex: select all months from year
   * ex: group sales by month where month === 1
-
+* update timestamps to datetime (mysql)
+* change coalition so errors disappear (mysql console)
 * products & products testing
 * server validation ( date, numbers, emails  (static properties) )
 * maybe class inheritance with part operations (part_operations => part_transactions, part_costs)

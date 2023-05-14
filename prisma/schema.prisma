@@ -646,10 +646,13 @@ model product_materials {
 model transfers {
   id                                         Int       @id @default(autoincrement()) @db.UnsignedInt
   active                                     Int       @default(1)
-  created_at                                 DateTime? @db.Timestamp(0)
-  updated_at                                 DateTime? @db.Timestamp(0)
+  created_at                                 DateTime? @db.DateTime(0)
+  updated_at                                 DateTime? @db.DateTime(0)
   from_account_id                            Int?      @db.UnsignedInt
   to_account_id                              Int?      @db.UnsignedInt
+  completed_date                             DateTime? @db.DateTime(0)
+  expected_date                              DateTime? @db.DateTime(0)
+  locked                                     Boolean   @default(false)
   amount                                     Int       @db.UnsignedInt
   clients_clientsTotransfers_from_account_id clients?  @relation("clientsTotransfers_from_account_id", fields: [from_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_from_account_id_foreign")
   clients_clientsTotransfers_to_account_id   clients?  @relation("clientsTotransfers_to_account_id", fields: [to_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_to_account_id_foreign")
