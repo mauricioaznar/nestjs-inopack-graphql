@@ -118,7 +118,7 @@ export class PubSubService {
             account: account,
         });
         await this.publishActivity({
-            entity_name: ActivityEntityName.CLIENT,
+            entity_name: ActivityEntityName.ACCOUNT,
             type: type,
             entity_id: account.id,
             userId,
