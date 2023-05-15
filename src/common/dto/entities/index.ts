@@ -18,14 +18,10 @@ export * from './maintenance/spare-operation.dto';
 export * from './maintenance/spare-transactions.dto';
 
 // production
-
 export * from './production/product.dto';
 export * from './production/order-production-type.dto';
 
 // sales
-
-export * from './sales/account.dto';
-export * from './sales/account-contact.dto';
 export * from './sales/order-request-status.dto';
 export * from './sales/order-request.dto';
 export * from './sales/order-request-product.dto';
@@ -40,4 +36,6 @@ export * from './sales/order-sale-collection-status.dto';
 export * from './activities/activity.dto';
 
 // management
-export * from './expenditures/transfer.dto';
+export * from './management/transfer.dto';
+export * from './management/account.dto';
+export * from './management/account-contact.dto';

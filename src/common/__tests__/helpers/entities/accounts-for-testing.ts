@@ -1,4 +1,4 @@
-import { AccountsService } from '../../../../modules/sales/accounts/accounts.service';
+import { AccountsService } from '../../../../modules/management/accounts/accounts.service';
 import { Account } from '../../../dto/entities';
 import { INestApplication } from '@nestjs/common';
 
