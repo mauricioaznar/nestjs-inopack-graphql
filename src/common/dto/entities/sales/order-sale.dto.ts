@@ -1,6 +1,7 @@
 import {
     ArgsType,
     Field,
+    Float,
     InputType,
     Int,
     ObjectType,
@@ -33,6 +34,18 @@ export class OrderSaleBase {
     order_request_id?: number | null;
 }
 
+@InputType('OrderSaleTransferInput')
+export class OrderSaleTransferInput {
+    @Field(() => Int, { nullable: true })
+    id?: number | null;
+
+    @Field(() => Float, { nullable: false })
+    amount: number;
+
+    @Field(() => Date, { nullable: true })
+    expected_date: Date | null;
+}
+
 @InputType('OrderSaleInput')
 export class OrderSaleInput extends OrderSaleBase {
     @Field(() => Int, { nullable: true })
@@ -43,6 +56,9 @@ export class OrderSaleInput extends OrderSaleBase {
 
     @Field(() => [OrderSalePaymentInput])
     order_sale_payments: OrderSalePaymentInput[];
+
+    @Field(() => [OrderSaleTransferInput])
+    order_sale_transfers: OrderSaleTransferInput[];
 
     @Field({ nullable: false })
     order_request_id: number;

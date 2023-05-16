@@ -25,6 +25,7 @@ import {
     OrderSaleStatus,
     PaginatedOrderSales,
     User,
+    Transfer,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
@@ -144,6 +145,13 @@ export class OrderSaleResolver {
         });
     }
 
+    @ResolveField(() => [Transfer])
+    async order_sale_transfers(orderSale: OrderSale): Promise<Transfer[]> {
+        return this.service.getOrderSaleTransfers({
+            order_sale_id: orderSale.id,
+        });
+    }
+
     @ResolveField(() => Account, { nullable: true })
     async account(orderSale: OrderSale): Promise<Account | null> {
         return this.service.getAccount({
@@ -193,6 +201,15 @@ export class OrderSaleResolver {
     @ResolveField(() => Float)
     async payments_total(@Parent() orderSale: OrderSale): Promise<number> {
         return this.service.getOrderSalePaymentsTotal({
+            order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => Float)
+    async order_sale_transfers_total(
+        @Parent() orderSale: OrderSale,
+    ): Promise<number> {
+        return this.service.getOrderSaleTransfersTotal({
             order_sale_id: orderSale.id,
         });
     }

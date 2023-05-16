@@ -332,6 +332,14 @@ describe('delete', () => {
                             orderSaleCollectionStatus2.id,
                     },
                 ],
+                order_sale_transfers: [
+                    {
+                        amount:
+                            product.current_kilo_price *
+                            product.current_group_weight,
+                        expected_date: getUtcDate(),
+                    },
+                ],
                 order_sale_receipt_type_id: orderSaleReceiptType1.id,
                 invoice_code: 0,
                 order_request_id: orderRequest.id,

@@ -25,11 +25,14 @@ export class TransferBase {
     @Field(() => Date, { nullable: true })
     expected_date: Date | null;
 
+    @Field(() => Boolean, { nullable: false })
+    locked: boolean;
+
     @Field(() => Date, { nullable: true })
     completed_date: Date | null;
 
-    @Field(() => Boolean, { nullable: false })
-    locked: boolean;
+    @Field(() => Int, { nullable: true })
+    order_sale_id: number | null;
 }
 
 @InputType('TransferUpsertInput')
@@ -42,6 +45,15 @@ export class TransferUpsertInput extends TransferBase {
 export class Transfer extends TransferBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field(() => Boolean, { nullable: false })
+    locked: boolean;
+
+    @Field(() => Date, { nullable: true })
+    completed_date: Date | null;
+
+    @Field(() => Int, { nullable: true })
+    order_sale_id: number | null;
 }
 
 @ObjectType()

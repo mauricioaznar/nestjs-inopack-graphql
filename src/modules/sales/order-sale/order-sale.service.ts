@@ -18,6 +18,7 @@ import {
     OrderSalesSortArgs,
     OrderSaleStatus,
     PaginatedOrderSales,
+    Transfer,
     User,
 } from '../../../common/dto/entities';
 import {
@@ -262,6 +263,29 @@ export class OrderSaleService {
         });
     }
 
+    async getOrderSaleTransfers({
+        order_sale_id,
+    }: {
+        order_sale_id: number | null;
+    }): Promise<Transfer[]> {
+        if (!order_sale_id) {
+            return [];
+        }
+
+        return this.prisma.transfers.findMany({
+            where: {
+                AND: [
+                    {
+                        order_sale_id: order_sale_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
     async getOrderSalePayments({
         order_sale_id,
     }: {
@@ -484,6 +508,31 @@ export class OrderSaleService {
         return Math.round(orderSalePaymentsTotal * 100) / 100;
     }
 
+    async getOrderSaleTransfersTotal({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<number> {
+        const transfers = await this.prisma.transfers.findMany({
+            where: {
+                AND: [
+                    {
+                        order_sale_id: order_sale_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+
+        const transfersTotal = transfers.reduce((acc, orderSale) => {
+            return acc + orderSale.amount;
+        }, 0);
+
+        return Math.round(transfersTotal * 100) / 100;
+    }
+
     async upsertOrderSale({
         input,
         current_user_id,
@@ -520,6 +569,10 @@ export class OrderSaleService {
             where: {
                 id: input.id || 0,
             },
+        });
+
+        const orderRequest = await this.getOrderRequest({
+            order_sale_id: orderSale.id,
         });
 
         const newProductItems = input.order_sale_products;
@@ -651,6 +704,69 @@ export class OrderSaleService {
                         order_sale_collection_status_id:
                             updateItem.order_sale_collection_status_id,
                         date_paid: updateItem.date_paid,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
+        }
+
+        const newTransfers = input.order_sale_transfers;
+        const oldTransfers = input.id
+            ? await this.prisma.transfers.findMany({
+                  where: {
+                      order_sale_id: input.id,
+                  },
+              })
+            : [];
+
+        const {
+            aMinusB: deleteTransfers,
+            bMinusA: createTransfers,
+            intersection: updateTransfers,
+        } = vennDiagram({
+            a: oldTransfers,
+            b: newTransfers,
+            indexProperties: ['id'],
+        });
+
+        for await (const delItem of deleteTransfers) {
+            if (delItem && delItem.id) {
+                await this.prisma.transfers.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+            }
+        }
+
+        for await (const createItem of createTransfers) {
+            await this.prisma.transfers.create({
+                data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
+                    amount: Math.round(createItem.amount * 100) / 100,
+                    from_account_id: orderRequest?.account_id,
+                    order_sale_id: orderSale.id,
+                    expected_date: createItem.expected_date,
+                },
+            });
+        }
+
+        for await (const updateItem of updateTransfers) {
+            if (updateItem && updateItem.id) {
+                await this.prisma.transfers.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        amount: Math.round(updateItem.amount * 100) / 100,
+                        from_account_id: orderRequest?.account_id,
+                        order_sale_id: orderSale.id,
+                        expected_date: updateItem.expected_date,
                     },
                     where: {
                         id: updateItem.id,
@@ -804,6 +920,34 @@ export class OrderSaleService {
             if (paymentsTotal !== productsTotal) {
                 errors.push(
                     `payments total is different from products total (payments total: ${paymentsTotal}), products total: ${productsTotal}`,
+                );
+            }
+        }
+
+        // DoTransfersTotalMatchWithProductsTotal
+        {
+            let transfersTotal = 0;
+            let productsTotal = 0;
+
+            for (const saleProduct of input.order_sale_products) {
+                const productTotal =
+                    saleProduct.kilos *
+                    saleProduct.kilo_price *
+                    (input.order_sale_receipt_type_id === 2 ? 1.16 : 1);
+                const discount = productTotal * (saleProduct.discount / 100);
+                productsTotal = productsTotal + productTotal - discount;
+            }
+
+            for (const transfer of input.order_sale_transfers) {
+                transfersTotal = transfersTotal + transfer.amount;
+            }
+
+            transfersTotal = Math.round(transfersTotal * 100) / 100;
+            productsTotal = Math.round(productsTotal * 100) / 100;
+
+            if (transfersTotal !== productsTotal) {
+                errors.push(
+                    `transfers total is different from products total (transfers total: ${transfersTotal}), products total: ${productsTotal}`,
                 );
             }
         }

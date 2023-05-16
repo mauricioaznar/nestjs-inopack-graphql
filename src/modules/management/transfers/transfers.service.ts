@@ -59,6 +59,7 @@ export class TransfersService {
                 expected_date: transferInput.expected_date,
                 completed_date: transferInput.completed_date,
                 locked: transferInput.locked,
+                order_sale_id: transferInput.order_sale_id,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -68,6 +69,7 @@ export class TransfersService {
                 expected_date: transferInput.expected_date,
                 completed_date: transferInput.completed_date,
                 locked: transferInput.locked,
+                order_sale_id: transferInput.order_sale_id,
             },
             where: {
                 id: transferInput.id || 0,
