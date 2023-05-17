@@ -612,7 +612,7 @@ model transfers {
   completed_date                               DateTime?    @db.DateTime(0)
   expected_date                                DateTime?    @db.DateTime(0)
   locked                                       Boolean      @default(false)
-  amount                                       Int          @db.UnsignedInt
+  amount                                       Float
   accounts_accountsTotransfers_from_account_id accounts?    @relation("accountsTotransfers_from_account_id", fields: [from_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_from_account_id_foreign")
   order_sales                                  order_sales? @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_order_sale_id_foreign")
   accounts_accountsTotransfers_to_account_id   accounts?    @relation("accountsTotransfers_to_account_id", fields: [to_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_to_account_id_foreign")
