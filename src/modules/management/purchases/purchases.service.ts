@@ -4,10 +4,10 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import {
-    PurchasesQueryArgs,
-    PurchasesSortArgs,
     PaginatedPurchases,
     Purchase,
+    PurchasesQueryArgs,
+    PurchasesSortArgs,
     PurchaseUpsertInput,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
@@ -16,8 +16,10 @@ import {
     getCreatedAtProperty,
     getRangesFromYearMonth,
     getUpdatedAtProperty,
+    vennDiagram,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
+import { PurchaseItem } from '../../../common/dto/entities/management/purchase-item.dto';
 
 @Injectable()
 export class PurchasesService {
@@ -44,25 +46,111 @@ export class PurchasesService {
         });
     }
 
-    async upsertPurchase(
-        purchaseInput: PurchaseUpsertInput,
-    ): Promise<Purchase> {
-        await this.validateUpsertPurchase(purchaseInput);
+    async getPurchaseItems({
+        purchase_id,
+    }: {
+        purchase_id: number | null;
+    }): Promise<PurchaseItem[]> {
+        if (!purchase_id) {
+            return [];
+        }
 
-        return this.prisma.purchases.upsert({
+        return this.prisma.purchase_items.findMany({
+            where: {
+                AND: [
+                    {
+                        purchase_id: purchase_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
+    async upsertPurchase(input: PurchaseUpsertInput): Promise<Purchase> {
+        await this.validateUpsertPurchase(input);
+
+        const purchase = await this.prisma.purchases.upsert({
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
-                locked: purchaseInput.locked,
+                date: input.date,
+                locked: input.locked,
             },
             update: {
                 ...getUpdatedAtProperty(),
-                locked: purchaseInput.locked,
+                date: input.date,
+                locked: input.locked,
             },
             where: {
-                id: purchaseInput.id || 0,
+                id: input.id || 0,
             },
         });
+
+        const newPurchaseItems = input.purchase_items;
+        const oldPurchaseItems = input.id
+            ? await this.prisma.purchase_items.findMany({
+                  where: {
+                      purchase_id: input.id,
+                  },
+              })
+            : [];
+
+        const {
+            aMinusB: deletePurchaseItems,
+            bMinusA: createPurchaseItems,
+            intersection: updatePurchaseItems,
+        } = vennDiagram({
+            a: oldPurchaseItems,
+            b: newPurchaseItems,
+            indexProperties: ['id'],
+        });
+
+        for await (const delItem of deletePurchaseItems) {
+            if (delItem && delItem.id) {
+                await this.prisma.purchase_items.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+                // await this.cacheManager.del(`product_inventory`);
+            }
+        }
+
+        for await (const createItem of createPurchaseItems) {
+            await this.prisma.purchase_items.create({
+                data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
+                    amount: createItem.amount ? createItem.amount : 0,
+                    purchase_id: purchase.id,
+                },
+            });
+            // await this.cacheManager.del(`product_inventory`);
+        }
+
+        for await (const updateItem of updatePurchaseItems) {
+            if (updateItem && updateItem.id) {
+                await this.prisma.purchase_items.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        amount: updateItem.amount ? updateItem.amount : 0,
+                        purchase_id: purchase.id,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
+        }
+
+        return purchase;
     }
 
     async paginatedPurchases({
@@ -158,6 +246,15 @@ export class PurchasesService {
             },
             where: {
                 id: purchase_id,
+            },
+        });
+
+        await this.prisma.purchase_items.updateMany({
+            data: {
+                active: -1,
+            },
+            where: {
+                purchase_id: purchase_id,
             },
         });
 

@@ -11,6 +11,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PurchasesService } from './purchases.service';
 import {
     ActivityTypeName,
+    OrderSale,
+    OrderSaleProduct,
     PaginatedPurchases,
     Purchase,
     PurchasesQueryArgs,
@@ -21,6 +23,7 @@ import {
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { PurchaseItem } from '../../../common/dto/entities/management/purchase-item.dto';
 
 @Resolver(() => Purchase)
 @Injectable()
@@ -75,6 +78,13 @@ export class PurchasesResolver {
     @Query(() => [Purchase])
     async getPurchases(): Promise<Purchase[]> {
         return this.service.getPurchases();
+    }
+
+    @ResolveField(() => [PurchaseItem])
+    async purchase_items(purchase: Purchase): Promise<PurchaseItem[]> {
+        return this.service.getPurchaseItems({
+            purchase_id: purchase.id,
+        });
     }
 
     @Query(() => PaginatedPurchases)

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/graphql';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
+import { PurchaseItemInput } from './purchase-item.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -23,6 +24,9 @@ export class PurchaseBase {
 export class PurchaseUpsertInput extends PurchaseBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
+
+    @Field(() => [PurchaseItemInput])
+    purchase_items: PurchaseItemInput[];
 }
 
 @ObjectType('Purchase')
