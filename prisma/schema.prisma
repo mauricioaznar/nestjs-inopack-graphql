@@ -656,3 +656,25 @@ model accounts {
   transfers_accountsTotransfers_from_account_id transfers[]        @relation("accountsTotransfers_from_account_id")
   transfers_accountsTotransfers_to_account_id   transfers[]        @relation("accountsTotransfers_to_account_id")
 }
+
+model purchase_items {
+  id          Int        @id @default(autoincrement()) @db.UnsignedInt
+  active      Int        @default(1)
+  created_at  DateTime?  @db.DateTime(0)
+  updated_at  DateTime?  @db.DateTime(0)
+  amount      Float
+  purchase_id Int?       @db.UnsignedInt
+  purchases   purchases? @relation(fields: [purchase_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "purchase_items_purchase_id_foreign")
+
+  @@index([purchase_id], map: "purchase_items_purchase_id_foreign")
+}
+
+model purchases {
+  id             Int              @id @default(autoincrement()) @db.UnsignedInt
+  active         Int              @default(1)
+  created_at     DateTime?        @db.DateTime(0)
+  updated_at     DateTime?        @db.DateTime(0)
+  date           DateTime?        @db.DateTime(0)
+  locked         Boolean          @default(false)
+  purchase_items purchase_items[]
+}
