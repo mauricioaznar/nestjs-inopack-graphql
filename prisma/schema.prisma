@@ -651,10 +651,14 @@ model accounts {
   zip_code                                      String             @default("") @db.VarChar(255)
   created_at                                    DateTime?          @db.DateTime(0)
   updated_at                                    DateTime?          @db.DateTime(0)
+  account_type_id                               Int?               @db.UnsignedInt
+  account_types                                 account_types?     @relation(fields: [account_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_account_type_id_foreign")
   account_contacts                              account_contacts[]
   order_requests                                order_requests[]
   transfers_accountsTotransfers_from_account_id transfers[]        @relation("accountsTotransfers_from_account_id")
   transfers_accountsTotransfers_to_account_id   transfers[]        @relation("accountsTotransfers_to_account_id")
+
+  @@index([account_type_id], map: "accounts_account_type_id_foreign")
 }
 
 model purchase_items {
@@ -677,4 +681,13 @@ model purchases {
   date           DateTime?        @db.DateTime(0)
   locked         Boolean          @default(false)
   purchase_items purchase_items[]
+}
+
+model account_types {
+  id         Int        @id @default(autoincrement()) @db.UnsignedInt
+  active     Int        @default(1)
+  created_at DateTime?  @db.DateTime(0)
+  updated_at DateTime?  @db.DateTime(0)
+  name       String     @db.VarChar(255)
+  accounts   accounts[]
 }

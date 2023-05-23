@@ -12,6 +12,7 @@ import { orderSaleReceiptTypes } from '../objects/sales/order-sale-receipt-types
 import { orderSaleCollectionStatuses } from '../objects/sales/order-sale-collection-statuses';
 import { roles } from '../objects/auth/roles';
 import { productCategories } from '../objects/production/product-categories';
+import { accountTypes } from '../objects/management/account-types';
 
 export default async function setupDatabase() {
     const app = await setupApp();
@@ -27,23 +28,26 @@ export default async function setupDatabase() {
     await prismaService.order_sale_payments.deleteMany();
     await prismaService.order_sale_products.deleteMany();
     await prismaService.transfers.deleteMany();
+    await prismaService.purchase_items.deleteMany();
 
     // level 5
     await prismaService.order_adjustments.deleteMany();
     await prismaService.order_productions.deleteMany();
     await prismaService.order_sales.deleteMany();
+    await prismaService.purchases.deleteMany();
 
     // level 4
     await prismaService.order_requests.deleteMany();
     await prismaService.products.deleteMany();
     await prismaService.user_roles.deleteMany();
+    await prismaService.account_contacts.deleteMany();
 
     // level 3
     await prismaService.machines.deleteMany();
     await prismaService.product_categories.deleteMany();
-    await prismaService.account_contacts.deleteMany();
     await prismaService.order_adjustment_type.deleteMany();
     await prismaService.employees.deleteMany();
+    await prismaService.accounts.deleteMany();
 
     //level 2
     await prismaService.order_production_type.deleteMany();
@@ -52,6 +56,7 @@ export default async function setupDatabase() {
     await prismaService.order_sale_statuses.deleteMany();
     await prismaService.order_sale_receipt_type.deleteMany();
     await prismaService.order_sale_collection_statuses.deleteMany();
+    await prismaService.account_types.deleteMany();
 
     // level 1
     await prismaService.users.deleteMany();
@@ -91,6 +96,10 @@ export default async function setupDatabase() {
     });
     await prismaService.order_sale_collection_statuses.createMany({
         data: orderSaleCollectionStatuses,
+    });
+
+    await prismaService.account_types.createMany({
+        data: accountTypes,
     });
 
     await app.close();

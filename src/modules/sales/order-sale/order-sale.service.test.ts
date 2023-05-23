@@ -10,7 +10,7 @@ import {
     orderRequestStatus1,
     orderRequestStatus2,
 } from '../../../common/__tests__/objects/sales/order-request-statuses';
-import { createAccountForTesting } from '../../../common/__tests__/helpers/entities/accounts-for-testing';
+import { createClientForTesting } from '../../../common/__tests__/helpers/entities/accounts-for-testing';
 import {
     orderSaleCollectionStatus1,
     orderSaleCollectionStatus2,
@@ -73,7 +73,7 @@ describe('upsert', () => {
         const product = await createProductForTesting({
             app,
         });
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
         const orderRequest = await orderRequestsService.upsertOrderRequest({
@@ -194,7 +194,7 @@ describe('upsert', () => {
         const product = await createProductForTesting({
             app,
         });
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
         const orderRequest = await orderRequestsService.upsertOrderRequest({
@@ -607,7 +607,7 @@ describe('upsert', () => {
         const product = await createProductForTesting({
             app,
         });
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
         const orderRequest = await orderRequestsService.upsertOrderRequest({

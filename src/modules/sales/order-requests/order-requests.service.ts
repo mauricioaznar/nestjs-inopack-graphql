@@ -591,6 +591,24 @@ export class OrderRequestsService {
             }
         }
 
+        // IsAccountClient
+
+        {
+            if (input.account_id) {
+                const account = await this.prisma.accounts.findFirst({
+                    where: {
+                        id: input.account_id,
+                    },
+                });
+
+                if (!account || account.account_type_id !== 2) {
+                    errors.push('Account is not a client');
+                }
+            } else {
+                errors.push('Account is not a client');
+            }
+        }
+
         // IsSalesUserAndIsOrderRequestPending
         // {
         //     const userRequiresMoreValidation =

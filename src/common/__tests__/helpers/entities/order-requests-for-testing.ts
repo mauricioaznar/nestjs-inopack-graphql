@@ -7,7 +7,7 @@ import {
 import { OrderRequestsService } from '../../../../modules/sales/order-requests/order-requests.service';
 import { orderRequestStatus2 } from '../../objects/sales/order-request-statuses';
 import { getUtcDate } from '../dates';
-import { createAccountForTesting } from './accounts-for-testing';
+import { createClientForTesting } from './accounts-for-testing';
 import { INestApplication } from '@nestjs/common';
 import { adminUser } from '../../objects/auth/users';
 
@@ -27,7 +27,7 @@ export async function createOrderRequestWithOneProduct({
     orderRequestProduct: OrderRequestProductInput;
 }): Promise<OrderRequestWithOneProduct> {
     const orderRequestsService = app.get(OrderRequestsService);
-    const account = await createAccountForTesting({
+    const account = await createClientForTesting({
         app,
     });
 
@@ -85,7 +85,7 @@ export async function createOrderRequestWithTwoProducts({
     orderRequestProduct2: OrderRequestProductInput;
 }): Promise<OrderRequestWithTwoProducts> {
     const orderRequestsService = app.get(OrderRequestsService);
-    const account = await createAccountForTesting({
+    const account = await createClientForTesting({
         app,
     });
 

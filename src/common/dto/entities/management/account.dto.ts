@@ -19,6 +19,9 @@ export class AccountBase {
 
     @Field()
     abbreviation: string;
+
+    @Field(() => Int, { nullable: true })
+    account_type_id: number | null;
 }
 
 @InputType('AccountUpsertInput')

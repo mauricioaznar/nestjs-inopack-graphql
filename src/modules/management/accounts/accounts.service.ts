@@ -127,11 +127,13 @@ export class AccountsService {
                 ...getUpdatedAtProperty(),
                 name: input.name,
                 abbreviation: input.abbreviation,
+                account_type_id: input.account_type_id,
             },
             update: {
                 ...getUpdatedAtProperty(),
                 name: input.name,
                 abbreviation: input.abbreviation,
+                account_type_id: input.account_type_id,
             },
             where: {
                 id: input.id || 0,

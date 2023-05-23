@@ -9,7 +9,7 @@ import {
     orderRequestStatus1,
     orderRequestStatus2,
 } from '../../../common/__tests__/objects/sales/order-request-statuses';
-import { createAccountForTesting } from '../../../common/__tests__/helpers/entities/accounts-for-testing';
+import { createClientForTesting } from '../../../common/__tests__/helpers/entities/accounts-for-testing';
 import { OrderRequestInput } from '../../../common/dto/entities';
 import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 import { OrderSaleService } from '../order-sale/order-sale.service';
@@ -21,10 +21,14 @@ import {
 } from '../../../common/__tests__/constants/unique-codes-initial-values';
 import { ColumnOrder } from '../../../common/dto/pagination';
 import { adminUser } from '../../../common/__tests__/objects/auth/users';
+import { AccountTypeService } from '../../management/account-type/account-type.service';
+import { AccountsService } from '../../management/accounts/accounts.service';
+import { ownAccountType } from '../../../common/__tests__/objects/management/account-types';
 
 let app: INestApplication;
 let orderRequestsService: OrderRequestsService;
 let orderSaleService: OrderSaleService;
+let accountsService: AccountsService;
 let currentRequestOrderCode = orderRequestsTestsOrderRequestsOrderCode;
 let currentSaleOrderCode = orderRequestsTestsOrderSalesOrderCode;
 
@@ -32,6 +36,7 @@ beforeAll(async () => {
     app = await setupApp();
     orderRequestsService = app.get(OrderRequestsService);
     orderSaleService = app.get(OrderSaleService);
+    accountsService = app.get(AccountsService);
 });
 
 afterAll(async () => {
@@ -72,7 +77,7 @@ describe('pagination', () => {
 
 describe('upsert', () => {
     it('creates', async () => {
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -132,7 +137,7 @@ describe('upsert', () => {
     });
 
     it('updates (allows to have a the same order code)', async () => {
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -233,7 +238,7 @@ describe('upsert', () => {
     it('fails when order code is occupied', async () => {
         expect.hasAssertions();
 
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -302,6 +307,51 @@ describe('upsert', () => {
         }
     });
 
+    it('fails account is not client type', async () => {
+        expect.hasAssertions();
+
+        const account = await accountsService.upsertAccount({
+            account_type_id: ownAccountType.id,
+            account_contacts: [],
+            abbreviation: '',
+            name: 'own account',
+        });
+        const product = await createProductForTesting({
+            app,
+        });
+
+        const orderRequestInput: OrderRequestInput = {
+            order_request_status_id: orderRequestStatus1.id,
+            order_code: currentRequestOrderCode,
+            account_id: account.id,
+            notes: '',
+            date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+            order_request_products: [
+                {
+                    product_id: product.id,
+                    groups: 20,
+                    kilos: product.current_group_weight * 20,
+                    group_weight: product.current_group_weight,
+                    kilo_price: 10,
+                },
+            ],
+            estimated_delivery_date: getUtcDate(),
+        };
+
+        try {
+            await orderRequestsService.upsertOrderRequest({
+                input: orderRequestInput,
+                current_user_id: adminUser.id,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(/account is not a client/i),
+                ]),
+            );
+        }
+    });
+
     it('max order code returns biggest order code', async () => {
         const product = await createProductForTesting({
             app,
@@ -332,7 +382,7 @@ describe('upsert', () => {
     });
 
     it('allows to change the order code when order code is not occupied', async () => {
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -398,7 +448,7 @@ describe('upsert', () => {
     });
 
     it('fails when products are not unique', async () => {
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -446,7 +496,7 @@ describe('upsert', () => {
     });
 
     it('fails when products array is empty', async () => {
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
         try {
@@ -478,7 +528,7 @@ describe('upsert', () => {
     });
 
     it('fails when product is incorrectly calculated', async () => {
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
         const product = await createProductForTesting({
@@ -519,7 +569,7 @@ describe('upsert', () => {
     });
 
     it('fails when current group weight doesnt match group weight', async () => {
-        const account = await createAccountForTesting({
+        const account = await createClientForTesting({
             app,
         });
 
