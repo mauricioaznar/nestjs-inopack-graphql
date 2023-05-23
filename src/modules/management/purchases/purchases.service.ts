@@ -78,11 +78,13 @@ export class PurchasesService {
                 ...getUpdatedAtProperty(),
                 date: input.date,
                 locked: input.locked,
+                account_id: input.account_id,
             },
             update: {
                 ...getUpdatedAtProperty(),
                 date: input.date,
                 locked: input.locked,
+                account_id: input.account_id,
             },
             where: {
                 id: input.id || 0,
@@ -214,14 +216,24 @@ export class PurchasesService {
         };
     }
 
-    async validateUpsertPurchase(
-        purchaseUpsertInput: PurchaseUpsertInput,
-    ): Promise<void> {
+    async validateUpsertPurchase(input: PurchaseUpsertInput): Promise<void> {
         const errors: string[] = [];
 
-        // order production type cant change
+        // account is not supplier
+        {
+            if (input.account_id) {
+                const account = await this.prisma.accounts.findFirst({
+                    where: {
+                        id: input.account_id,
+                    },
+                });
 
-        if (purchaseUpsertInput.id) {
+                if (!account || account.account_type_id !== 3) {
+                    errors.push('Account is not a supplier');
+                }
+            } else {
+                errors.push('Account is not a supplier');
+            }
         }
 
         if (errors.length > 0) {

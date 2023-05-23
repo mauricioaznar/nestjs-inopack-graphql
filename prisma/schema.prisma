@@ -655,6 +655,7 @@ model accounts {
   account_types                                 account_types?     @relation(fields: [account_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_account_type_id_foreign")
   account_contacts                              account_contacts[]
   order_requests                                order_requests[]
+  purchases                                     purchases[]
   transfers_accountsTotransfers_from_account_id transfers[]        @relation("accountsTotransfers_from_account_id")
   transfers_accountsTotransfers_to_account_id   transfers[]        @relation("accountsTotransfers_to_account_id")
 
@@ -680,7 +681,11 @@ model purchases {
   updated_at     DateTime?        @db.DateTime(0)
   date           DateTime?        @db.DateTime(0)
   locked         Boolean          @default(false)
+  account_id     Int?             @db.UnsignedInt
+  accounts       accounts?        @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "purchases_account_id_foreign")
   purchase_items purchase_items[]
+
+  @@index([account_id], map: "purchases_account_id_foreign")
 }
 
 model account_types {

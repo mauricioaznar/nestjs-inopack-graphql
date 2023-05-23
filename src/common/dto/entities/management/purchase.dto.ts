@@ -18,6 +18,9 @@ export class PurchaseBase {
 
     @Field(() => Date, { nullable: true })
     date: Date | null;
+
+    @Field(() => Int, { nullable: true })
+    account_id: number | null;
 }
 
 @InputType('PurchaseUpsertInput')
