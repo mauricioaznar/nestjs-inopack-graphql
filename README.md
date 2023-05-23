@@ -19,7 +19,7 @@
   * group by years, months, or days 
   * ex: select all days from month 1
   * ex: select all months from year
-  * ex: group sales by month where month === 1
+  * ex: group sales by month when month === 1
 * update timestamps to datetime (mysql)
 * change coalition so errors disappear (mysql console)
 * products & products testing
