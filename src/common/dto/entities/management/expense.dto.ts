@@ -8,11 +8,11 @@ import {
 } from '@nestjs/graphql';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
-import { PurchaseItemInput } from './purchase-item.dto';
+import { ExpenseItemInput } from './expense-item.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
-export class PurchaseBase {
+export class ExpenseBase {
     @Field(() => Boolean, { nullable: false })
     locked: boolean;
 
@@ -23,43 +23,43 @@ export class PurchaseBase {
     account_id: number | null;
 }
 
-@InputType('PurchaseUpsertInput')
-export class PurchaseUpsertInput extends PurchaseBase {
+@InputType('ExpenseUpsertInput')
+export class ExpenseUpsertInput extends ExpenseBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
 
-    @Field(() => [PurchaseItemInput])
-    purchase_items: PurchaseItemInput[];
+    @Field(() => [ExpenseItemInput])
+    expense_items: ExpenseItemInput[];
 }
 
-@ObjectType('Purchase')
-export class Purchase extends PurchaseBase {
+@ObjectType('Expense')
+export class Expense extends ExpenseBase {
     @Field({ nullable: false })
     id: number;
 }
 
 @ObjectType()
-export class PaginatedPurchases extends OffsetPaginatorResult(Purchase) {}
+export class PaginatedExpenses extends OffsetPaginatorResult(Expense) {}
 
 @ArgsType()
-export class PurchasesQueryArgs {
+export class ExpensesQueryArgs {
     @Field(() => String, { nullable: true })
     filter: string;
 }
 
-export enum PurchasesSortableFields {
+export enum ExpensesSortableFields {
     date = 'date',
 }
 
-registerEnumType(PurchasesSortableFields, {
-    name: 'PurchasesSortableFields',
+registerEnumType(ExpensesSortableFields, {
+    name: 'ExpensesSortableFields',
 });
 
 @ArgsType()
-export class PurchasesSortArgs {
+export class ExpensesSortArgs {
     @Field(() => ColumnOrder, { nullable: true })
     sort_order: ColumnOrder | null;
 
-    @Field(() => PurchasesSortableFields, { nullable: true })
-    sort_field: PurchasesSortableFields | null;
+    @Field(() => ExpensesSortableFields, { nullable: true })
+    sort_field: ExpensesSortableFields | null;
 }

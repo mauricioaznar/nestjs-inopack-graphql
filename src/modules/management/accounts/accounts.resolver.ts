@@ -20,6 +20,7 @@ import {
     User,
     OrderSalesQueryArgs,
     AccountsQueryArgs,
+    AccountType,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
@@ -106,6 +107,13 @@ export class AccountsResolver {
     async account_contacts(@Parent() account: Account) {
         return this.service.getAccountContacts({
             account_id: account.id,
+        });
+    }
+
+    @ResolveField(() => AccountType, { nullable: true })
+    async account_type(@Parent() account: Account) {
+        return this.service.getAccountType({
+            account_type_id: account.account_type_id,
         });
     }
 

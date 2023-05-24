@@ -7,6 +7,7 @@ import {
     Account,
     AccountContact,
     AccountsQueryArgs,
+    AccountType,
     AccountUpsertInput,
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
@@ -226,6 +227,29 @@ export class AccountsService {
                 AND: [
                     {
                         account_id: account_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
+    async getAccountType({
+        account_type_id,
+    }: {
+        account_type_id?: number | null;
+    }): Promise<AccountType | null> {
+        if (!account_type_id) {
+            return null;
+        }
+
+        return this.prisma.account_types.findFirst({
+            where: {
+                AND: [
+                    {
+                        id: account_type_id,
                     },
                     {
                         active: 1,

@@ -10,7 +10,7 @@ import {
     Product,
     Transfer,
     User,
-    Purchase,
+    Expense,
 } from '../../dto/entities';
 import { OrderProduction } from '../../dto/entities/production/order-production.dto';
 import { OrderAdjustment } from '../../dto/entities/production/order-adjustment.dto';
@@ -211,24 +211,24 @@ export class PubSubService {
         });
     }
 
-    async purchase({
-        purchase,
+    async expense({
+        expense,
         type,
         userId,
     }: {
-        purchase: Purchase;
+        expense: Expense;
         type: ActivityTypeName;
         userId: number;
     }) {
-        await this.pubSub.publish('purchase', {
-            purchase: purchase,
+        await this.pubSub.publish('expense', {
+            expense: expense,
         });
         await this.publishActivity({
-            entity_name: ActivityEntityName.PURCHASE,
+            entity_name: ActivityEntityName.EXPENSE,
             type: type,
-            entity_id: purchase.id,
+            entity_id: expense.id,
             userId,
-            description: `Compra: ${purchase.id}`,
+            description: `Compra: ${expense.id}`,
         });
     }
 
@@ -300,7 +300,7 @@ export class PubSubService {
         return this.pubSub.asyncIterator('user');
     }
 
-    async listenForPurchase() {
-        return this.pubSub.asyncIterator('purchase');
+    async listenForExpense() {
+        return this.pubSub.asyncIterator('expense');
     }
 }

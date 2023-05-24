@@ -4,11 +4,11 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import {
-    PaginatedPurchases,
-    Purchase,
-    PurchasesQueryArgs,
-    PurchasesSortArgs,
-    PurchaseUpsertInput,
+    PaginatedExpenses,
+    Expense,
+    ExpensesQueryArgs,
+    ExpensesSortArgs,
+    ExpenseUpsertInput,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -19,47 +19,47 @@ import {
     vennDiagram,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
-import { PurchaseItem } from '../../../common/dto/entities/management/purchase-item.dto';
+import { ExpenseItem } from '../../../common/dto/entities/management/expense-item.dto';
 
 @Injectable()
-export class PurchasesService {
+export class ExpensesService {
     constructor(private prisma: PrismaService) {}
 
-    async getPurchase({
-        purchase_id,
+    async getExpense({
+        expense_id,
     }: {
-        purchase_id: number;
-    }): Promise<Purchase | null> {
-        return this.prisma.purchases.findFirst({
+        expense_id: number;
+    }): Promise<Expense | null> {
+        return this.prisma.expenses.findFirst({
             where: {
-                id: purchase_id,
+                id: expense_id,
                 active: 1,
             },
         });
     }
 
-    async getPurchases(): Promise<Purchase[]> {
-        return this.prisma.purchases.findMany({
+    async getExpenses(): Promise<Expense[]> {
+        return this.prisma.expenses.findMany({
             where: {
                 active: 1,
             },
         });
     }
 
-    async getPurchaseItems({
-        purchase_id,
+    async getExpenseItems({
+        expense_id,
     }: {
-        purchase_id: number | null;
-    }): Promise<PurchaseItem[]> {
-        if (!purchase_id) {
+        expense_id: number | null;
+    }): Promise<ExpenseItem[]> {
+        if (!expense_id) {
             return [];
         }
 
-        return this.prisma.purchase_items.findMany({
+        return this.prisma.expense_items.findMany({
             where: {
                 AND: [
                     {
-                        purchase_id: purchase_id,
+                        expense_id: expense_id,
                     },
                     {
                         active: 1,
@@ -69,10 +69,10 @@ export class PurchasesService {
         });
     }
 
-    async upsertPurchase(input: PurchaseUpsertInput): Promise<Purchase> {
-        await this.validateUpsertPurchase(input);
+    async upsertExpense(input: ExpenseUpsertInput): Promise<Expense> {
+        await this.validateUpsertExpense(input);
 
-        const purchase = await this.prisma.purchases.upsert({
+        const expense = await this.prisma.expenses.upsert({
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
@@ -91,28 +91,28 @@ export class PurchasesService {
             },
         });
 
-        const newPurchaseItems = input.purchase_items;
-        const oldPurchaseItems = input.id
-            ? await this.prisma.purchase_items.findMany({
+        const newExpenseItems = input.expense_items;
+        const oldExpenseItems = input.id
+            ? await this.prisma.expense_items.findMany({
                   where: {
-                      purchase_id: input.id,
+                      expense_id: input.id,
                   },
               })
             : [];
 
         const {
-            aMinusB: deletePurchaseItems,
-            bMinusA: createPurchaseItems,
-            intersection: updatePurchaseItems,
+            aMinusB: deleteExpenseItems,
+            bMinusA: createExpenseItems,
+            intersection: updateExpenseItems,
         } = vennDiagram({
-            a: oldPurchaseItems,
-            b: newPurchaseItems,
+            a: oldExpenseItems,
+            b: newExpenseItems,
             indexProperties: ['id'],
         });
 
-        for await (const delItem of deletePurchaseItems) {
+        for await (const delItem of deleteExpenseItems) {
             if (delItem && delItem.id) {
-                await this.prisma.purchase_items.updateMany({
+                await this.prisma.expense_items.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         active: -1,
@@ -125,25 +125,25 @@ export class PurchasesService {
             }
         }
 
-        for await (const createItem of createPurchaseItems) {
-            await this.prisma.purchase_items.create({
+        for await (const createItem of createExpenseItems) {
+            await this.prisma.expense_items.create({
                 data: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
                     amount: createItem.amount ? createItem.amount : 0,
-                    purchase_id: purchase.id,
+                    expense_id: expense.id,
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
         }
 
-        for await (const updateItem of updatePurchaseItems) {
+        for await (const updateItem of updateExpenseItems) {
             if (updateItem && updateItem.id) {
-                await this.prisma.purchase_items.updateMany({
+                await this.prisma.expense_items.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         amount: updateItem.amount ? updateItem.amount : 0,
-                        purchase_id: purchase.id,
+                        expense_id: expense.id,
                     },
                     where: {
                         id: updateItem.id,
@@ -152,42 +152,42 @@ export class PurchasesService {
             }
         }
 
-        return purchase;
+        return expense;
     }
 
-    async paginatedPurchases({
+    async paginatedExpenses({
         offsetPaginatorArgs,
         datePaginator,
-        purchasesQueryArgs,
-        purchasesSortArgs,
+        expensesQueryArgs,
+        expensesSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
-        purchasesQueryArgs: PurchasesQueryArgs;
-        purchasesSortArgs: PurchasesSortArgs;
-    }): Promise<PaginatedPurchases> {
+        expensesQueryArgs: ExpensesQueryArgs;
+        expensesSortArgs: ExpensesSortArgs;
+    }): Promise<PaginatedExpenses> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
         });
 
-        const { sort_order, sort_field } = purchasesSortArgs;
+        const { sort_order, sort_field } = expensesSortArgs;
 
         const filter =
-            purchasesQueryArgs.filter !== '' && !!purchasesQueryArgs.filter
-                ? purchasesQueryArgs.filter
+            expensesQueryArgs.filter !== '' && !!expensesQueryArgs.filter
+                ? expensesQueryArgs.filter
                 : undefined;
 
         const isFilterANumber = !Number.isNaN(Number(filter));
 
-        const purchasesWhere: Prisma.purchasesWhereInput = {
+        const expensesWhere: Prisma.expensesWhereInput = {
             AND: [
                 {
                     active: 1,
                 },
             ],
         };
-        let orderBy: Prisma.purchasesOrderByWithRelationInput = {
+        let orderBy: Prisma.expensesOrderByWithRelationInput = {
             updated_at: 'desc',
         };
 
@@ -199,24 +199,24 @@ export class PurchasesService {
             }
         }
 
-        const purchasesCount = await this.prisma.purchases.count({
-            where: purchasesWhere,
+        const expensesCount = await this.prisma.expenses.count({
+            where: expensesWhere,
         });
 
-        const purchases = await this.prisma.purchases.findMany({
-            where: purchasesWhere,
+        const expenses = await this.prisma.expenses.findMany({
+            where: expensesWhere,
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,
             orderBy: orderBy,
         });
 
         return {
-            count: purchasesCount,
-            docs: purchases,
+            count: expensesCount,
+            docs: expenses,
         };
     }
 
-    async validateUpsertPurchase(input: PurchaseUpsertInput): Promise<void> {
+    async validateUpsertExpense(input: ExpenseUpsertInput): Promise<void> {
         const errors: string[] = [];
 
         // account is not supplier
@@ -241,32 +241,32 @@ export class PurchasesService {
         }
     }
 
-    async deletePurchase({
-        purchase_id,
+    async deleteExpense({
+        expense_id,
     }: {
-        purchase_id: number;
+        expense_id: number;
     }): Promise<boolean> {
-        const purchase = await this.getPurchase({ purchase_id: purchase_id });
+        const expense = await this.getExpense({ expense_id: expense_id });
 
-        if (!purchase_id) {
+        if (!expense_id) {
             throw new NotFoundException();
         }
 
-        await this.prisma.purchases.update({
+        await this.prisma.expenses.update({
             data: {
                 active: -1,
             },
             where: {
-                id: purchase_id,
+                id: expense_id,
             },
         });
 
-        await this.prisma.purchase_items.updateMany({
+        await this.prisma.expense_items.updateMany({
             data: {
                 active: -1,
             },
             where: {
-                purchase_id: purchase_id,
+                expense_id: expense_id,
             },
         });
 
@@ -274,18 +274,14 @@ export class PurchasesService {
     }
 
     async isDeletable({
-        purchase_id,
+        expense_id,
     }: {
-        purchase_id: number;
+        expense_id: number;
     }): Promise<boolean> {
         return true;
     }
 
-    async isEditable({
-        purchase_id,
-    }: {
-        purchase_id: number;
-    }): Promise<boolean> {
+    async isEditable({ expense_id }: { expense_id: number }): Promise<boolean> {
         return true;
     }
 }

@@ -5,27 +5,27 @@ import {
     supplierAccountType,
 } from '../../../common/__tests__/objects/management/account-types';
 import { AccountsService } from '../accounts/accounts.service';
-import { PurchasesService } from './purchases.service';
+import { ExpensesService } from './expenses.service';
 import { orderSaleReceiptType1 } from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
 import { orderSaleStatus2 } from '../../../common/__tests__/objects/sales/order-sale-statuses';
 import { salesUser } from '../../../common/__tests__/objects/auth/users';
 
 let app: INestApplication;
 let accountsService: AccountsService;
-let purchasesService: PurchasesService;
+let expensesService: ExpensesService;
 
 beforeAll(async () => {
     app = await setupApp();
     accountsService = app.get(AccountsService);
-    purchasesService = app.get(PurchasesService);
+    expensesService = app.get(ExpensesService);
 });
 
 afterAll(async () => {
     await app.close();
 });
 
-describe('purchase upsert', () => {
-    it('creates purchase', async () => {
+describe('expense upsert', () => {
+    it('creates expense', async () => {
         const account = await accountsService.upsertAccount({
             abbreviation: 'ADB',
             name: 'A D B',
@@ -40,26 +40,26 @@ describe('purchase upsert', () => {
             account_type_id: supplierAccountType.id,
         });
 
-        const purchase = await purchasesService.upsertPurchase({
+        const expense = await expensesService.upsertExpense({
             account_id: account.id,
             date: getUtcDate(),
             locked: false,
-            purchase_items: [
+            expense_items: [
                 {
                     amount: 200,
                 },
             ],
         });
 
-        expect(purchase.id).toBeDefined();
-        expect(purchase.locked).toBe(false);
+        expect(expense.id).toBeDefined();
+        expect(expense.locked).toBe(false);
 
-        const purchaseItems = await purchasesService.getPurchaseItems({
-            purchase_id: purchase.id,
+        const expenseItems = await expensesService.getExpenseItems({
+            expense_id: expense.id,
         });
 
-        expect(purchaseItems.length).toBe(1);
-        expect(purchaseItems).toEqual(
+        expect(expenseItems.length).toBe(1);
+        expect(expenseItems).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
                     amount: 200,
@@ -86,11 +86,11 @@ describe('purchase upsert', () => {
         });
 
         try {
-            await purchasesService.upsertPurchase({
+            await expensesService.upsertExpense({
                 account_id: account.id,
                 date: getUtcDate(),
                 locked: false,
-                purchase_items: [
+                expense_items: [
                     {
                         amount: 200,
                     },

@@ -33,7 +33,6 @@ import {
     OrderSaleInput,
     OrderSalePaymentInput,
     OrderSaleProductInput,
-    OrderSaleTransferInput,
 } from '../../../common/dto/entities';
 import {
     orderSalesTestsOrderRequestsOrderCode,
@@ -118,15 +117,6 @@ describe('upsert', () => {
             order_sale_collection_status_id: orderSaleCollectionStatus1.id,
         };
 
-        const orderSaleTransferInput: OrderSaleTransferInput = {
-            amount: 20 * 2 * product.current_group_weight,
-            expected_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-        };
-
         const orderSale = await orderSalesService.upsertOrderSale({
             input: {
                 order_code: orderCode,
@@ -141,7 +131,6 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
                 order_sale_payments: [orderSalePaymentInput],
-                order_sale_transfers: [orderSaleTransferInput],
             },
             current_user_id: adminUser.id,
         });
@@ -153,11 +142,6 @@ describe('upsert', () => {
         const orderSalePayments = await orderSalesService.getOrderSalePayments({
             order_sale_id: orderSale.id,
         });
-
-        const orderSaleTransfers =
-            await orderSalesService.getOrderSaleTransfers({
-                order_sale_id: orderSale.id,
-            });
 
         expect(orderSale).toBeDefined();
         expect(orderSale.id).toBeDefined();
@@ -180,12 +164,6 @@ describe('upsert', () => {
                 amount: orderSalePaymentInput.amount,
                 order_sale_collection_status_id:
                     orderSalePaymentInput.order_sale_collection_status_id,
-            }),
-        ]);
-
-        expect(orderSaleTransfers).toEqual([
-            expect.objectContaining({
-                amount: orderSaleTransferInput.amount,
             }),
         ]);
     });
@@ -242,15 +220,6 @@ describe('upsert', () => {
             order_sale_collection_status_id: orderSaleCollectionStatus1.id,
         };
 
-        const orderSaleTransferInput: OrderSaleTransferInput = {
-            amount: total - discount,
-            expected_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-        };
-
         let orderSale: OrderSale | undefined;
 
         try {
@@ -268,7 +237,6 @@ describe('upsert', () => {
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_products: [orderSaleProductInput],
                     order_sale_payments: [orderSalePaymentInput],
-                    order_sale_transfers: [orderSaleTransferInput],
                 },
                 current_user_id: adminUser.id,
             });
@@ -283,11 +251,6 @@ describe('upsert', () => {
         const orderSalePayments = await orderSalesService.getOrderSalePayments({
             order_sale_id: orderSale?.id || null,
         });
-
-        const orderSaleTransfers =
-            await orderSalesService.getOrderSaleTransfers({
-                order_sale_id: orderSale?.id || null,
-            });
 
         expect(orderSale).toBeDefined();
         expect(orderSale?.id).toBeDefined();
@@ -310,12 +273,6 @@ describe('upsert', () => {
                 amount: orderSalePaymentInput.amount,
                 order_sale_collection_status_id:
                     orderSalePaymentInput.order_sale_collection_status_id,
-            }),
-        ]);
-
-        expect(orderSaleTransfers).toEqual([
-            expect.objectContaining({
-                amount: orderSaleTransferInput.amount,
             }),
         ]);
     });
@@ -357,15 +314,6 @@ describe('upsert', () => {
             order_sale_collection_status_id: orderSaleCollectionStatus1.id,
         };
 
-        const orderSaleTransferInput: OrderSaleTransferInput = {
-            amount: 20 * 2 * product.current_group_weight,
-            expected_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-        };
-
         const createdOrderSale = await orderSalesService.upsertOrderSale({
             input: {
                 order_code: orderCode,
@@ -380,7 +328,6 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
                 order_sale_payments: [orderSalePaymentInput],
-                order_sale_transfers: [orderSaleTransferInput],
             },
             current_user_id: adminUser.id,
         });
@@ -404,15 +351,6 @@ describe('upsert', () => {
             order_sale_collection_status_id: orderSaleCollectionStatus2.id,
         };
 
-        const updatedOrderSaleTransferInput: OrderSaleTransferInput = {
-            amount: 20 * product.current_group_weight,
-            expected_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-        };
-
         const updatedOrderSale = await orderSalesService.upsertOrderSale({
             input: {
                 id: createdOrderSale.id,
@@ -428,7 +366,6 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus2.id,
                 order_sale_products: [updatedOrderSaleProductInput],
                 order_sale_payments: [updatedOrderSalePaymentInput],
-                order_sale_transfers: [updatedOrderSaleTransferInput],
             },
             current_user_id: adminUser.id,
         });
@@ -518,15 +455,6 @@ describe('upsert', () => {
             order_sale_collection_status_id: orderSaleCollectionStatus1.id,
         };
 
-        const orderSaleTransferInput: OrderSaleTransferInput = {
-            amount: 20 * 2 * product.current_group_weight,
-            expected_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-        };
-
         const createdOrderSale = await orderSalesService.upsertOrderSale({
             input: {
                 order_code: orderCode,
@@ -541,7 +469,6 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus2.id,
                 order_sale_products: [orderSaleProductInput],
                 order_sale_payments: [orderSalePaymentInput],
-                order_sale_transfers: [orderSaleTransferInput],
             },
             current_user_id: adminUser.id,
         });
@@ -565,15 +492,6 @@ describe('upsert', () => {
             order_sale_collection_status_id: orderSaleCollectionStatus2.id,
         };
 
-        const updatedOrderSaleTransferInput: OrderSaleTransferInput = {
-            amount: 20 * product.current_group_weight,
-            expected_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-        };
-
         try {
             await orderSalesService.upsertOrderSale({
                 input: {
@@ -590,7 +508,6 @@ describe('upsert', () => {
                     order_sale_status_id: orderSaleStatus2.id,
                     order_sale_products: [updatedOrderSaleProductInput],
                     order_sale_payments: [updatedOrderSalePaymentInput],
-                    order_sale_transfers: [updatedOrderSaleTransferInput],
                 },
                 current_user_id: salesUser.id,
             });
@@ -661,15 +578,6 @@ describe('upsert', () => {
             order_sale_collection_status_id: orderSaleCollectionStatus1.id,
         };
 
-        const orderSaleTransferInput: OrderSaleTransferInput = {
-            amount: 20 * 2 * product.current_group_weight * 1.16,
-            expected_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-        };
-
         const orderSale = await orderSalesService.upsertOrderSale({
             input: {
                 order_code: orderCode,
@@ -684,7 +592,6 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
                 order_sale_payments: [orderSalePaymentInput],
-                order_sale_transfers: [orderSaleTransferInput],
             },
             current_user_id: adminUser.id,
         });
@@ -693,20 +600,9 @@ describe('upsert', () => {
             order_sale_id: orderSale.id,
         });
 
-        const orderSaleTransfers =
-            await orderSalesService.getOrderSaleTransfers({
-                order_sale_id: orderSale.id,
-            });
-
         expect(orderSalePayments).toEqual([
             expect.objectContaining({
                 amount: Math.round(orderSalePaymentInput.amount * 100) / 100,
-            }),
-        ]);
-
-        expect(orderSaleTransfers).toEqual([
-            expect.objectContaining({
-                amount: Math.round(orderSaleTransferInput.amount * 100) / 100,
             }),
         ]);
     });
@@ -753,12 +649,6 @@ describe('upsert', () => {
                                 orderSaleCollectionStatus3.id,
                             amount: 20 * product1.current_group_weight,
                             date_paid: getUtcDate(),
-                        },
-                    ],
-                    order_sale_transfers: [
-                        {
-                            amount: 20 * product1.current_group_weight,
-                            expected_date: getUtcDate(),
                         },
                     ],
                 },
@@ -836,18 +726,7 @@ describe('upsert', () => {
                             }),
                         },
                     ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                orderSaleProduct1.kilos *
-                                orderSaleProduct1.kilo_price,
-                            expected_date: getUtcDate({
-                                year: 2022,
-                                day: 1,
-                                month: 1,
-                            }),
-                        },
-                    ],
+
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                 },
@@ -915,14 +794,7 @@ describe('upsert', () => {
                             date_paid: getUtcDate(),
                         },
                     ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                orderRequestProduct1.kilos *
-                                orderRequestProduct1.kilo_price,
-                            expected_date: getUtcDate(),
-                        },
-                    ],
+
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                 },
@@ -996,14 +868,7 @@ describe('upsert', () => {
                             date_paid: getUtcDate(),
                         },
                     ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                orderRequestProduct1.kilos *
-                                orderRequestProduct1.kilo_price,
-                            expected_date: getUtcDate(),
-                        },
-                    ],
+
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                 },
@@ -1071,14 +936,6 @@ describe('upsert', () => {
                         date_paid: getUtcDate(),
                     },
                 ],
-                order_sale_transfers: [
-                    {
-                        amount:
-                            orderRequestProduct1.kilos *
-                            orderRequestProduct1.kilo_price,
-                        expected_date: getUtcDate(),
-                    },
-                ],
                 order_sale_receipt_type_id: orderSaleReceiptType1.id,
                 order_sale_status_id: orderSaleStatus1.id,
             },
@@ -1131,14 +988,6 @@ describe('upsert', () => {
                             order_sale_collection_status_id:
                                 orderSaleCollectionStatus1.id,
                             date_paid: getUtcDate(),
-                        },
-                    ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                orderSaleProduct1.kilos *
-                                orderSaleProduct1.kilo_price,
-                            expected_date: getUtcDate(),
                         },
                     ],
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
@@ -1199,15 +1048,6 @@ describe('upsert', () => {
                             date_paid: getUtcDate(),
                         },
                     ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                orderSaleProduct1.kilos *
-                                orderSaleProduct1.kilo_price *
-                                1000,
-                            expected_date: getUtcDate(),
-                        },
-                    ],
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                 },
@@ -1218,9 +1058,6 @@ describe('upsert', () => {
                 expect.arrayContaining([
                     expect.stringMatching(
                         /payments total is different from products total/i,
-                    ),
-                    expect.stringMatching(
-                        /transfers total is different from products total/i,
                     ),
                 ]),
             );
@@ -1268,14 +1105,6 @@ describe('upsert', () => {
                     order_sale_collection_status_id:
                         orderSaleCollectionStatus1.id,
                     date_paid: getUtcDate(),
-                },
-            ],
-            order_sale_transfers: [
-                {
-                    amount:
-                        orderSaleProductInput.kilos *
-                        orderSaleProductInput.kilo_price,
-                    expected_date: getUtcDate(),
                 },
             ],
             order_sale_receipt_type_id: orderSaleReceiptType1.id,
@@ -1345,15 +1174,6 @@ describe('upsert', () => {
                     date_paid: getUtcDate(),
                 },
             ],
-            order_sale_transfers: [
-                {
-                    amount:
-                        orderSaleProductInput.kilos *
-                        orderSaleProductInput.kilo_price *
-                        1.16,
-                    expected_date: getUtcDate(),
-                },
-            ],
             order_sale_receipt_type_id: orderSaleReceiptType2.id,
             order_sale_status_id: orderSaleStatus1.id,
         };
@@ -1419,15 +1239,6 @@ describe('upsert', () => {
                     order_sale_collection_status_id:
                         orderSaleCollectionStatus1.id,
                     date_paid: getUtcDate(),
-                },
-            ],
-            order_sale_transfers: [
-                {
-                    amount:
-                        orderSaleProductInput.kilos *
-                        orderSaleProductInput.kilo_price *
-                        1.16,
-                    expected_date: getUtcDate(),
                 },
             ],
             order_sale_receipt_type_id: orderSaleReceiptType2.id,
@@ -1498,15 +1309,6 @@ describe('upsert', () => {
                     order_sale_collection_status_id:
                         orderSaleCollectionStatus1.id,
                     date_paid: getUtcDate(),
-                },
-            ],
-
-            order_sale_transfers: [
-                {
-                    amount:
-                        orderSaleProductInput.kilos *
-                        orderSaleProductInput.kilo_price,
-                    expected_date: getUtcDate(),
                 },
             ],
             order_sale_receipt_type_id: orderSaleReceiptType1.id,
@@ -1587,15 +1389,6 @@ describe('upsert', () => {
                             date_paid: getUtcDate(),
                         },
                     ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                orderSaleProductInput.kilos *
-                                orderSaleProductInput.kilo_price *
-                                1.16,
-                            expected_date: getUtcDate(),
-                        },
-                    ],
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_receipt_type_id: orderSaleReceiptType2.id,
                 },
@@ -1660,15 +1453,6 @@ describe('upsert', () => {
                             date_paid: getUtcDate(),
                             order_sale_collection_status_id:
                                 orderSaleCollectionStatus2.id,
-                        },
-                    ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                3 *
-                                product.current_group_weight *
-                                differntPriceFromOrderRequest,
-                            expected_date: getUtcDate(),
                         },
                     ],
                 },
@@ -1737,15 +1521,6 @@ describe('upsert', () => {
                                 orderSaleCollectionStatus2.id,
                         },
                     ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                3 *
-                                differentGroupWeight *
-                                orderRequestProduct.kilo_price,
-                            expected_date: getUtcDate(),
-                        },
-                    ],
                 },
                 current_user_id: adminUser.id,
             });
@@ -1801,15 +1576,6 @@ describe('delete', () => {
             order_sale_collection_status_id: orderSaleCollectionStatus1.id,
         };
 
-        const orderSaleTransferInput: OrderSaleTransferInput = {
-            amount: 20 * 2 * product.current_group_weight,
-            expected_date: getUtcDate({
-                year: 2022,
-                day: 1,
-                month: 2,
-            }),
-        };
-
         const createdOrderSale = await orderSalesService.upsertOrderSale({
             input: {
                 order_code: orderCode,
@@ -1824,7 +1590,6 @@ describe('delete', () => {
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
                 order_sale_payments: [orderSalePaymentInput],
-                order_sale_transfers: [orderSaleTransferInput],
             },
             current_user_id: adminUser.id,
         });
@@ -1889,11 +1654,6 @@ describe('delete', () => {
             order_sale_collection_status_id: orderSaleCollectionStatus1.id,
         };
 
-        const orderSaleTransferInput: OrderSaleTransferInput = {
-            amount: 20 * 2 * product.current_group_weight * 1.16,
-            expected_date: getUtcDate(),
-        };
-
         let createdOrderSale: OrderSale | undefined;
 
         try {
@@ -1907,7 +1667,6 @@ describe('delete', () => {
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_products: [orderSaleProductInput],
                     order_sale_payments: [orderSalePaymentInput],
-                    order_sale_transfers: [orderSaleTransferInput],
                 },
                 current_user_id: adminUser.id,
             });
@@ -1937,7 +1696,6 @@ describe('delete', () => {
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_products: [orderSaleProductInput],
                     order_sale_payments: [orderSalePaymentInput],
-                    order_sale_transfers: [orderSaleTransferInput],
                 },
                 current_user_id: adminUser.id,
             });

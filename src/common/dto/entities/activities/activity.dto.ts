@@ -19,7 +19,7 @@ export enum ActivityEntityName {
     EQUIPMENTS = 'equipments',
     TRANSFER = 'transfers',
 
-    PURCHASE = 'purchases',
+    EXPENSE = 'expenses',
 }
 
 registerEnumType(ActivityEntityName, {

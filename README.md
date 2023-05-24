@@ -11,9 +11,7 @@
 ## Todo
 
 
-* add clients validation (account type id = 2)
-* add suppliers validation (account type id = 3)
-* remove transactions on order_sales
+
 
 * separate select date from group date
   * group by years, months, or days 
@@ -52,10 +50,16 @@
 
 ## Done
 
+### 24/05/2023
+
+* remove transactions on order_sales
 
 ### 23/05/2023
 
 * change clients for accounts
+* add clients validation (account type id = 2)
+* add suppliers validation (account type id = 3)
+
 
 
 ### 27/04/2022

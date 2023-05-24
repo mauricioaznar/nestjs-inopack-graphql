@@ -661,14 +661,6 @@ describe('upsert', () => {
                             date_paid: getUtcDate(),
                         },
                     ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                orderRequestProduct.kilos *
-                                orderRequestProduct.kilo_price,
-                            expected_date: getUtcDate(),
-                        },
-                    ],
                 },
                 current_user_id: adminUser.id,
             });
@@ -745,14 +737,6 @@ describe('upsert', () => {
                                 orderRequestProduct.kilos *
                                 orderRequestProduct.kilo_price,
                             date_paid: getUtcDate(),
-                        },
-                    ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                orderRequestProduct.kilos *
-                                orderRequestProduct.kilo_price,
-                            expected_date: getUtcDate(),
                         },
                     ],
                 },
@@ -920,14 +904,6 @@ describe('delete', () => {
                                 orderRequestProduct.kilos *
                                 orderRequestProduct.kilo_price,
                             date_paid: getUtcDate(),
-                        },
-                    ],
-                    order_sale_transfers: [
-                        {
-                            amount:
-                                orderRequestProduct.kilos *
-                                orderRequestProduct.kilo_price,
-                            expected_date: getUtcDate(),
                         },
                     ],
                 },

@@ -50,14 +50,6 @@ export async function createOrderSaleWithOneProductTypeOne({
                             orderSaleProduct.kilo_price,
                     },
                 ],
-                order_sale_transfers: [
-                    {
-                        expected_date: getUtcDate(),
-                        amount:
-                            orderSaleProduct.kilos *
-                            orderSaleProduct.kilo_price,
-                    },
-                ],
             },
             current_user_id: adminUser.id,
         });

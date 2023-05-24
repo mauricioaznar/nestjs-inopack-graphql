@@ -654,38 +654,38 @@ model accounts {
   account_type_id                               Int?               @db.UnsignedInt
   account_types                                 account_types?     @relation(fields: [account_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_account_type_id_foreign")
   account_contacts                              account_contacts[]
+  expenses                                      expenses[]
   order_requests                                order_requests[]
-  purchases                                     purchases[]
   transfers_accountsTotransfers_from_account_id transfers[]        @relation("accountsTotransfers_from_account_id")
   transfers_accountsTotransfers_to_account_id   transfers[]        @relation("accountsTotransfers_to_account_id")
 
   @@index([account_type_id], map: "accounts_account_type_id_foreign")
 }
 
-model purchase_items {
-  id          Int        @id @default(autoincrement()) @db.UnsignedInt
-  active      Int        @default(1)
-  created_at  DateTime?  @db.DateTime(0)
-  updated_at  DateTime?  @db.DateTime(0)
-  amount      Float
-  purchase_id Int?       @db.UnsignedInt
-  purchases   purchases? @relation(fields: [purchase_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "purchase_items_purchase_id_foreign")
+model expense_items {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  active     Int       @default(1)
+  created_at DateTime? @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  amount     Float
+  expense_id Int?      @db.UnsignedInt
+  expenses   expenses? @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_items_expense_id_foreign")
 
-  @@index([purchase_id], map: "purchase_items_purchase_id_foreign")
+  @@index([expense_id], map: "expense_items_expense_id_foreign")
 }
 
-model purchases {
-  id             Int              @id @default(autoincrement()) @db.UnsignedInt
-  active         Int              @default(1)
-  created_at     DateTime?        @db.DateTime(0)
-  updated_at     DateTime?        @db.DateTime(0)
-  date           DateTime?        @db.DateTime(0)
-  locked         Boolean          @default(false)
-  account_id     Int?             @db.UnsignedInt
-  accounts       accounts?        @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "purchases_account_id_foreign")
-  purchase_items purchase_items[]
+model expenses {
+  id            Int             @id @default(autoincrement()) @db.UnsignedInt
+  active        Int             @default(1)
+  created_at    DateTime?       @db.DateTime(0)
+  updated_at    DateTime?       @db.DateTime(0)
+  date          DateTime?       @db.DateTime(0)
+  locked        Boolean         @default(false)
+  account_id    Int?            @db.UnsignedInt
+  accounts      accounts?       @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
+  expense_items expense_items[]
 
-  @@index([account_id], map: "purchases_account_id_foreign")
+  @@index([account_id], map: "expenses_account_id_foreign")
 }
 
 model account_types {
