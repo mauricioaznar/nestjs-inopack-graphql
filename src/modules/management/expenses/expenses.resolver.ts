@@ -79,7 +79,7 @@ export class ExpensesResolver {
     }
 
     @ResolveField(() => [ExpenseResource])
-    async expense_resource(expense: Expense): Promise<ExpenseResource[]> {
+    async expense_resources(expense: Expense): Promise<ExpenseResource[]> {
         return this.service.getExpenseResources({
             expense_id: expense.id,
         });
