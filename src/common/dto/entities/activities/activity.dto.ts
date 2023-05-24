@@ -19,6 +19,8 @@ export enum ActivityEntityName {
     EQUIPMENTS = 'equipments',
     TRANSFER = 'transfers',
 
+    RESOURCE = 'resource',
+
     EXPENSE = 'expenses',
 }
 

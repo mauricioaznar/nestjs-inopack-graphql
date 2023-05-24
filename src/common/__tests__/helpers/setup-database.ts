@@ -28,7 +28,7 @@ export default async function setupDatabase() {
     await prismaService.order_sale_payments.deleteMany();
     await prismaService.order_sale_products.deleteMany();
     await prismaService.transfers.deleteMany();
-    await prismaService.expense_items.deleteMany();
+    await prismaService.expense_resource.deleteMany();
 
     // level 5
     await prismaService.order_adjustments.deleteMany();

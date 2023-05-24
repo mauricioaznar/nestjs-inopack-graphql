@@ -19,7 +19,7 @@ import {
     vennDiagram,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
-import { ExpenseItem } from '../../../common/dto/entities/management/expense-item.dto';
+import { ExpenseResource } from '../../../common/dto/entities/management/expense-resource.dto';
 
 @Injectable()
 export class ExpensesService {
@@ -46,16 +46,16 @@ export class ExpensesService {
         });
     }
 
-    async getExpenseItems({
+    async getExpenseResources({
         expense_id,
     }: {
         expense_id: number | null;
-    }): Promise<ExpenseItem[]> {
+    }): Promise<ExpenseResource[]> {
         if (!expense_id) {
             return [];
         }
 
-        return this.prisma.expense_items.findMany({
+        return this.prisma.expense_resource.findMany({
             where: {
                 AND: [
                     {
@@ -91,9 +91,9 @@ export class ExpensesService {
             },
         });
 
-        const newExpenseItems = input.expense_items;
-        const oldExpenseItems = input.id
-            ? await this.prisma.expense_items.findMany({
+        const newExpenseResources = input.expense_resource;
+        const oldExpenseResources = input.id
+            ? await this.prisma.expense_resource.findMany({
                   where: {
                       expense_id: input.id,
                   },
@@ -101,18 +101,18 @@ export class ExpensesService {
             : [];
 
         const {
-            aMinusB: deleteExpenseItems,
-            bMinusA: createExpenseItems,
-            intersection: updateExpenseItems,
+            aMinusB: deleteExpenseResources,
+            bMinusA: createExpenseResources,
+            intersection: updateExpenseResources,
         } = vennDiagram({
-            a: oldExpenseItems,
-            b: newExpenseItems,
+            a: oldExpenseResources,
+            b: newExpenseResources,
             indexProperties: ['id'],
         });
 
-        for await (const delItem of deleteExpenseItems) {
+        for await (const delItem of deleteExpenseResources) {
             if (delItem && delItem.id) {
-                await this.prisma.expense_items.updateMany({
+                await this.prisma.expense_resource.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         active: -1,
@@ -125,8 +125,8 @@ export class ExpensesService {
             }
         }
 
-        for await (const createItem of createExpenseItems) {
-            await this.prisma.expense_items.create({
+        for await (const createItem of createExpenseResources) {
+            await this.prisma.expense_resource.create({
                 data: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
@@ -137,9 +137,9 @@ export class ExpensesService {
             // await this.cacheManager.del(`product_inventory`);
         }
 
-        for await (const updateItem of updateExpenseItems) {
+        for await (const updateItem of updateExpenseResources) {
             if (updateItem && updateItem.id) {
-                await this.prisma.expense_items.updateMany({
+                await this.prisma.expense_resource.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         amount: updateItem.amount ? updateItem.amount : 0,
@@ -261,7 +261,7 @@ export class ExpensesService {
             },
         });
 
-        await this.prisma.expense_items.updateMany({
+        await this.prisma.expense_resource.updateMany({
             data: {
                 active: -1,
             },

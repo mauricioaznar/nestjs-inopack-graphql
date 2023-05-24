@@ -11,6 +11,7 @@ import {
     Transfer,
     User,
     Expense,
+    Resource,
 } from '../../dto/entities';
 import { OrderProduction } from '../../dto/entities/production/order-production.dto';
 import { OrderAdjustment } from '../../dto/entities/production/order-adjustment.dto';
@@ -211,6 +212,27 @@ export class PubSubService {
         });
     }
 
+    async resource({
+        resource,
+        type,
+        userId,
+    }: {
+        resource: Resource;
+        type: ActivityTypeName;
+        userId: number;
+    }) {
+        await this.pubSub.publish('resource', {
+            resource: resource,
+        });
+        await this.publishActivity({
+            entity_name: ActivityEntityName.RESOURCE,
+            type: type,
+            entity_id: resource.id,
+            userId,
+            description: `Recurso: ${resource.id}`,
+        });
+    }
+
     async expense({
         expense,
         type,
@@ -282,6 +304,10 @@ export class PubSubService {
 
     async listenForTransfer() {
         return this.pubSub.asyncIterator('transfer');
+    }
+
+    async listenForResource() {
+        return this.pubSub.asyncIterator('resource');
     }
 
     async listenForAccount() {

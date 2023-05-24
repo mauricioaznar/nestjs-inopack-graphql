@@ -23,7 +23,7 @@ import {
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
-import { ExpenseItem } from '../../../common/dto/entities/management/expense-item.dto';
+import { ExpenseResource } from '../../../common/dto/entities/management/expense-resource.dto';
 
 @Resolver(() => Expense)
 @Injectable()
@@ -78,9 +78,9 @@ export class ExpensesResolver {
         return this.service.getExpenses();
     }
 
-    @ResolveField(() => [ExpenseItem])
-    async expense_items(expense: Expense): Promise<ExpenseItem[]> {
-        return this.service.getExpenseItems({
+    @ResolveField(() => [ExpenseResource])
+    async expense_resource(expense: Expense): Promise<ExpenseResource[]> {
+        return this.service.getExpenseResources({
             expense_id: expense.id,
         });
     }

@@ -2,19 +2,19 @@ import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
-export class ExpenseItemBase {
+export class ExpenseResourceBase {
     @Field(() => Float, { nullable: false })
     amount: number;
 }
 
-@InputType('ExpenseItemInput')
-export class ExpenseItemInput extends ExpenseItemBase {
+@InputType('ExpenseResourceInput')
+export class ExpenseResourceInput extends ExpenseResourceBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
 }
 
-@ObjectType('ExpenseItem')
-export class ExpenseItem extends ExpenseItemBase {
+@ObjectType('ExpenseResource')
+export class ExpenseResource extends ExpenseResourceBase {
     @Field({ nullable: false })
     id: number;
 

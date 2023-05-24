@@ -44,7 +44,7 @@ describe('expense upsert', () => {
             account_id: account.id,
             date: getUtcDate(),
             locked: false,
-            expense_items: [
+            expense_resource: [
                 {
                     amount: 200,
                 },
@@ -54,7 +54,7 @@ describe('expense upsert', () => {
         expect(expense.id).toBeDefined();
         expect(expense.locked).toBe(false);
 
-        const expenseItems = await expensesService.getExpenseItems({
+        const expenseItems = await expensesService.getExpenseResources({
             expense_id: expense.id,
         });
 
@@ -90,7 +90,7 @@ describe('expense upsert', () => {
                 account_id: account.id,
                 date: getUtcDate(),
                 locked: false,
-                expense_items: [
+                expense_resource: [
                     {
                         amount: 200,
                     },
