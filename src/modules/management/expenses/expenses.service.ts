@@ -55,7 +55,7 @@ export class ExpensesService {
             return [];
         }
 
-        return this.prisma.expense_resource.findMany({
+        return this.prisma.expense_resources.findMany({
             where: {
                 AND: [
                     {
@@ -91,9 +91,9 @@ export class ExpensesService {
             },
         });
 
-        const newExpenseResources = input.expense_resource;
+        const newExpenseResources = input.expense_resources;
         const oldExpenseResources = input.id
-            ? await this.prisma.expense_resource.findMany({
+            ? await this.prisma.expense_resources.findMany({
                   where: {
                       expense_id: input.id,
                   },
@@ -112,7 +112,7 @@ export class ExpensesService {
 
         for await (const delItem of deleteExpenseResources) {
             if (delItem && delItem.id) {
-                await this.prisma.expense_resource.updateMany({
+                await this.prisma.expense_resources.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         active: -1,
@@ -126,7 +126,7 @@ export class ExpensesService {
         }
 
         for await (const createItem of createExpenseResources) {
-            await this.prisma.expense_resource.create({
+            await this.prisma.expense_resources.create({
                 data: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
@@ -139,7 +139,7 @@ export class ExpensesService {
 
         for await (const updateItem of updateExpenseResources) {
             if (updateItem && updateItem.id) {
-                await this.prisma.expense_resource.updateMany({
+                await this.prisma.expense_resources.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         amount: updateItem.amount ? updateItem.amount : 0,
@@ -261,7 +261,7 @@ export class ExpensesService {
             },
         });
 
-        await this.prisma.expense_resource.updateMany({
+        await this.prisma.expense_resources.updateMany({
             data: {
                 active: -1,
             },

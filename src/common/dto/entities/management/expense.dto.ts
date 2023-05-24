@@ -29,7 +29,7 @@ export class ExpenseUpsertInput extends ExpenseBase {
     id?: number | null;
 
     @Field(() => [ExpenseResourceInput])
-    expense_resource: ExpenseResourceInput[];
+    expense_resources: ExpenseResourceInput[];
 }
 
 @ObjectType('Expense')

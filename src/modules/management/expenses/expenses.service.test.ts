@@ -44,7 +44,7 @@ describe('expense upsert', () => {
             account_id: account.id,
             date: getUtcDate(),
             locked: false,
-            expense_resource: [
+            expense_resources: [
                 {
                     amount: 200,
                 },
@@ -90,7 +90,7 @@ describe('expense upsert', () => {
                 account_id: account.id,
                 date: getUtcDate(),
                 locked: false,
-                expense_resource: [
+                expense_resources: [
                     {
                         amount: 200,
                     },
