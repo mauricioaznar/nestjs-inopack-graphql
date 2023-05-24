@@ -6,6 +6,7 @@ import {
 import {
     Account,
     AccountContact,
+    AccountsQueryArgs,
     AccountUpsertInput,
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
@@ -24,10 +25,16 @@ import { Prisma } from '@prisma/client';
 export class AccountsService {
     constructor(private prisma: PrismaService) {}
 
-    async getAccounts(): Promise<Account[]> {
+    async getAccounts({
+        accountsQueryArgs,
+    }: {
+        accountsQueryArgs: AccountsQueryArgs;
+    }): Promise<Account[]> {
+        const { account_type_id } = accountsQueryArgs;
         return this.prisma.accounts.findMany({
             where: {
                 active: 1,
+                account_type_id: account_type_id || undefined,
             },
             orderBy: {
                 name: 'asc',

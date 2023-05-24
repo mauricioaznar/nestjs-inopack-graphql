@@ -23,7 +23,11 @@ afterAll(async () => {
 
 describe('account list', () => {
     it('returns list', async () => {
-        const accounts = await accountsService.getAccounts();
+        const accounts = await accountsService.getAccounts({
+            accountsQueryArgs: {
+                account_type_id: null,
+            },
+        });
         expect(Array.isArray(accounts)).toBe(true);
     });
 });

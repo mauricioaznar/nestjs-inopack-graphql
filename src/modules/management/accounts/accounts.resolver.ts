@@ -18,6 +18,8 @@ import {
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
     User,
+    OrderSalesQueryArgs,
+    AccountsQueryArgs,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
@@ -35,8 +37,13 @@ export class AccountsResolver {
     ) {}
 
     @Query(() => [Account])
-    async getAccounts(): Promise<Account[]> {
-        return this.service.getAccounts();
+    async getAccounts(
+        @Args({ nullable: false })
+        accountsQueryArgs: AccountsQueryArgs,
+    ): Promise<Account[]> {
+        return this.service.getAccounts({
+            accountsQueryArgs: accountsQueryArgs,
+        });
     }
 
     @Query(() => Account, { nullable: true })
