@@ -17,9 +17,7 @@ export class ExpenseResourcesResolver {
     }
 
     @ResolveField(() => Resource, { nullable: true })
-    async expense_resources(
-        expenseResource: ExpenseResource,
-    ): Promise<Resource | null> {
+    async resource(expenseResource: ExpenseResource): Promise<Resource | null> {
         return this.service.getResource({
             resource_id: expenseResource.resource_id,
         });
