@@ -54,10 +54,12 @@ export class ResourcesService {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
                 name: resourceInput.name,
+                resource_category_id: resourceInput.resource_category_id,
             },
             update: {
                 ...getUpdatedAtProperty(),
                 name: resourceInput.name,
+                resource_category_id: resourceInput.resource_category_id,
             },
             where: {
                 id: resourceInput.id || 0,

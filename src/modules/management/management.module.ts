@@ -6,6 +6,7 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { AccountTypeModule } from './account-type/account-type.module';
 import { ResourcesModule } from './resources/resources.module';
 import { ExpenseResourcesModule } from './expense-resources/expense-resources.module';
+import { ResourceCategoriesModule } from './resource-categories/resource-categories.module';
 
 @Module({
     imports: [
@@ -16,6 +17,7 @@ import { ExpenseResourcesModule } from './expense-resources/expense-resources.mo
         ExpensesModule,
         ExpenseResourcesModule,
         ResourcesModule,
+        ResourceCategoriesModule,
     ],
 })
 export class ManagementModule {}

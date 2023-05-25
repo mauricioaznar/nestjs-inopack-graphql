@@ -701,10 +701,23 @@ model expense_resources {
 }
 
 model resources {
-  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
-  active            Int                 @default(1)
-  created_at        DateTime?           @db.DateTime(0)
-  updated_at        DateTime?           @db.DateTime(0)
-  name              String              @db.VarChar(255)
-  expense_resources expense_resources[]
+  id                   Int                  @id @default(autoincrement()) @db.UnsignedInt
+  active               Int                  @default(1)
+  created_at           DateTime?            @db.DateTime(0)
+  updated_at           DateTime?            @db.DateTime(0)
+  name                 String               @db.VarChar(255)
+  resource_category_id Int?                 @db.UnsignedInt
+  resource_categories  resource_categories? @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
+  expense_resources    expense_resources[]
+
+  @@index([resource_category_id], map: "resources_resource_category_id_foreign")
+}
+
+model resource_categories {
+  id         Int         @id @default(autoincrement()) @db.UnsignedInt
+  active     Int         @default(1)
+  created_at DateTime?   @db.DateTime(0)
+  updated_at DateTime?   @db.DateTime(0)
+  name       String      @db.VarChar(255)
+  resources  resources[]
 }

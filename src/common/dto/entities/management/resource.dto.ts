@@ -14,6 +14,9 @@ import { ColumnOrder } from '../../pagination';
 export class ResourceBase {
     @Field()
     name: string;
+
+    @Field(() => Int, { nullable: true })
+    resource_category_id: number | null;
 }
 
 @InputType('ResourceUpsertInput')

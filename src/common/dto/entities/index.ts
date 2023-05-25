@@ -42,4 +42,5 @@ export * from './management/account-type.dto';
 export * from './management/account-contact.dto';
 export * from './management/expense.dto';
 export * from './management/resource.dto';
+export * from './management/resource-category.dto';
 export * from './management/expense-resource.dto';
