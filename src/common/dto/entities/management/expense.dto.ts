@@ -8,7 +8,7 @@ import {
 } from '@nestjs/graphql';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
-import { ExpenseResourceInput } from './expense-resource.dto';
+import { ExpensesExpenseResourceInput } from './expense-resource.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -28,8 +28,8 @@ export class ExpenseUpsertInput extends ExpenseBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
 
-    @Field(() => [ExpenseResourceInput])
-    expense_resources: ExpenseResourceInput[];
+    @Field(() => [ExpensesExpenseResourceInput])
+    expense_resources: ExpensesExpenseResourceInput[];
 }
 
 @ObjectType('Expense')

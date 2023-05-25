@@ -5,6 +5,7 @@ import { AccountContactsModule } from './account-contacts/account-contacts.modul
 import { ExpensesModule } from './expenses/expenses.module';
 import { AccountTypeModule } from './account-type/account-type.module';
 import { ResourcesModule } from './resources/resources.module';
+import { ExpenseResourcesModule } from './expense-resources/expense-resources.module';
 
 @Module({
     imports: [
@@ -13,6 +14,7 @@ import { ResourcesModule } from './resources/resources.module';
         AccountContactsModule,
         AccountTypeModule,
         ExpensesModule,
+        ExpenseResourcesModule,
         ResourcesModule,
     ],
 })

@@ -7,10 +7,13 @@ export class ExpenseResourceBase {
     amount: number;
 }
 
-@InputType('ExpenseResourceInput')
-export class ExpenseResourceInput extends ExpenseResourceBase {
+@InputType('ExpensesExpenseResourceInput')
+export class ExpensesExpenseResourceInput extends ExpenseResourceBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
+
+    @Field(() => Int, { nullable: true })
+    resource_id?: number | null;
 }
 
 @ObjectType('ExpenseResource')
@@ -20,4 +23,7 @@ export class ExpenseResource extends ExpenseResourceBase {
 
     @Field(() => Int, { nullable: true })
     expense_id?: number | null;
+
+    @Field(() => Int, { nullable: true })
+    resource_id?: number | null;
 }

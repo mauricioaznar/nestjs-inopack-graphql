@@ -132,6 +132,7 @@ export class ExpensesService {
                     ...getUpdatedAtProperty(),
                     amount: createItem.amount ? createItem.amount : 0,
                     expense_id: expense.id,
+                    resource_id: createItem.resource_id || null,
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
@@ -144,6 +145,7 @@ export class ExpensesService {
                         ...getUpdatedAtProperty(),
                         amount: updateItem.amount ? updateItem.amount : 0,
                         expense_id: expense.id,
+                        resource_id: updateItem.resource_id || null,
                     },
                     where: {
                         id: updateItem.id,
