@@ -19,6 +19,7 @@ import {
     ExpensesSortArgs,
     ExpenseUpsertInput,
     User,
+    Account,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -109,6 +110,13 @@ export class ExpensesResolver {
     ): Promise<boolean> {
         return this.service.isDeletable({
             expense_id: expense.id,
+        });
+    }
+
+    @ResolveField(() => Account, { nullable: true })
+    async account(@Parent() expense: Expense): Promise<Account | null> {
+        return this.service.getAccount({
+            account_id: expense.account_id,
         });
     }
 

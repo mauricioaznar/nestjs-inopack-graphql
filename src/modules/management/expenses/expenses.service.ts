@@ -9,6 +9,7 @@ import {
     ExpensesQueryArgs,
     ExpensesSortArgs,
     ExpenseUpsertInput,
+    Account,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -42,6 +43,22 @@ export class ExpensesService {
         return this.prisma.expenses.findMany({
             where: {
                 active: 1,
+            },
+        });
+    }
+
+    async getAccount({
+        account_id,
+    }: {
+        account_id: number | null;
+    }): Promise<Account | null> {
+        if (!account_id) {
+            return null;
+        }
+
+        return this.prisma.accounts.findFirst({
+            where: {
+                id: account_id,
             },
         });
     }
