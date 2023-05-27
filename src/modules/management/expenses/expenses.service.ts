@@ -4,12 +4,13 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import {
-    PaginatedExpenses,
+    Account,
     Expense,
+    ExpenseResource,
     ExpensesQueryArgs,
     ExpensesSortArgs,
     ExpenseUpsertInput,
-    Account,
+    PaginatedExpenses,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -20,7 +21,6 @@ import {
     vennDiagram,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
-import { ExpenseResource } from '../../../common/dto/entities/management/expense-resource.dto';
 
 @Injectable()
 export class ExpensesService {
@@ -150,6 +150,7 @@ export class ExpensesService {
                     amount: createItem.amount ? createItem.amount : 0,
                     expense_id: expense.id,
                     resource_id: createItem.resource_id || null,
+                    branch_id: createItem.branch_id || null,
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
@@ -163,6 +164,7 @@ export class ExpensesService {
                         amount: updateItem.amount ? updateItem.amount : 0,
                         expense_id: expense.id,
                         resource_id: updateItem.resource_id || null,
+                        branch_id: updateItem.branch_id || null,
                     },
                     where: {
                         id: updateItem.id,
@@ -267,7 +269,7 @@ export class ExpensesService {
     }): Promise<boolean> {
         const expense = await this.getExpense({ expense_id: expense_id });
 
-        if (!expense_id) {
+        if (!expense) {
             throw new NotFoundException();
         }
 

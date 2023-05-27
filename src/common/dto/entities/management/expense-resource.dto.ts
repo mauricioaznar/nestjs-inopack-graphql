@@ -5,15 +5,18 @@ import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 export class ExpenseResourceBase {
     @Field(() => Float, { nullable: false })
     amount: number;
+
+    @Field(() => Int, { nullable: true })
+    resource_id?: number | null;
+
+    @Field(() => Int, { nullable: true })
+    branch_id?: number | null;
 }
 
 @InputType('ExpensesExpenseResourceInput')
 export class ExpensesExpenseResourceInput extends ExpenseResourceBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
-
-    @Field(() => Int, { nullable: true })
-    resource_id?: number | null;
 }
 
 @ObjectType('ExpenseResource')
@@ -23,7 +26,4 @@ export class ExpenseResource extends ExpenseResourceBase {
 
     @Field(() => Int, { nullable: true })
     expense_id?: number | null;
-
-    @Field(() => Int, { nullable: true })
-    resource_id?: number | null;
 }

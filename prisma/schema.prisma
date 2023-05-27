@@ -36,6 +36,7 @@ model branches {
   updated_at        DateTime?           @db.DateTime(0)
   activities        activities[]
   employees         employees[]
+  expense_resources expense_resources[]
   machines          machines[]
   order_productions order_productions[]
   user_branches     user_branches[]
@@ -658,11 +659,14 @@ model expense_resources {
   amount      Float
   expense_id  Int?       @db.UnsignedInt
   resource_id Int?       @db.UnsignedInt
+  branch_id   Int?       @db.UnsignedInt
+  branches    branches?  @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfer_receipts_branch_id_foreign")
   expenses    expenses?  @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_resources_expense_id_foreign")
   resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_resources_resource_id_foreign")
 
   @@index([expense_id], map: "expense_resources_expense_id_foreign")
   @@index([resource_id], map: "expense_resources_resource_id_foreign")
+  @@index([branch_id], map: "transfer_receipts_branch_id_foreign")
 }
 
 model expenses {

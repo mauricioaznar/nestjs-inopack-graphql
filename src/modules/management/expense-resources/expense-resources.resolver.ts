@@ -1,7 +1,11 @@
 import { Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { ExpenseResourcesService } from './expense-resources.service';
-import { ExpenseResource, Resource } from '../../../common/dto/entities';
+import {
+    Branch,
+    ExpenseResource,
+    Resource,
+} from '../../../common/dto/entities';
 import { Public } from '../../auth/decorators/public.decorator';
 
 @Resolver(() => ExpenseResource)
@@ -20,6 +24,13 @@ export class ExpenseResourcesResolver {
     async resource(expenseResource: ExpenseResource): Promise<Resource | null> {
         return this.service.getResource({
             resource_id: expenseResource.resource_id,
+        });
+    }
+
+    @ResolveField(() => Branch, { nullable: true })
+    async branch(expenseResource: ExpenseResource): Promise<Branch | null> {
+        return this.service.getBranch({
+            branch_id: expenseResource.branch_id,
         });
     }
 }
