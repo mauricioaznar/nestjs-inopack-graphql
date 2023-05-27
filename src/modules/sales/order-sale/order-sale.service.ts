@@ -182,6 +182,9 @@ export class OrderSaleService {
             where: {
                 active: 1,
             },
+            orderBy: {
+                order_code: 'desc',
+            },
         });
     }
 
