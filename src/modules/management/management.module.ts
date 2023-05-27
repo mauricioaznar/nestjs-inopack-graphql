@@ -7,6 +7,7 @@ import { AccountTypeModule } from './account-type/account-type.module';
 import { ResourcesModule } from './resources/resources.module';
 import { ExpenseResourcesModule } from './expense-resources/expense-resources.module';
 import { ResourceCategoriesModule } from './resource-categories/resource-categories.module';
+import { TransferReceiptsModule } from './transfer-receipts/transfer-receipts.module';
 
 @Module({
     imports: [
@@ -18,6 +19,7 @@ import { ResourceCategoriesModule } from './resource-categories/resource-categor
         ExpenseResourcesModule,
         ResourcesModule,
         ResourceCategoriesModule,
+        TransferReceiptsModule,
     ],
 })
 export class ManagementModule {}

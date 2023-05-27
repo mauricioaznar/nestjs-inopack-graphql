@@ -9,6 +9,7 @@ import {
 } from '@nestjs/graphql';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
+import { TransferReceiptInput } from './transfer-receipt.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -26,19 +27,19 @@ export class TransferBase {
     expected_date: Date | null;
 
     @Field(() => Boolean, { nullable: false })
-    locked: boolean;
+    transferred: boolean;
 
     @Field(() => Date, { nullable: true })
-    completed_date: Date | null;
-
-    @Field(() => Int, { nullable: true })
-    order_sale_id: number | null;
+    transferred_date: Date | null;
 }
 
 @InputType('TransferUpsertInput')
 export class TransferUpsertInput extends TransferBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
+
+    @Field(() => [TransferReceiptInput], { nullable: true })
+    transfer_receipts: TransferReceiptInput[];
 }
 
 @ObjectType('Transfer')
@@ -47,13 +48,10 @@ export class Transfer extends TransferBase {
     id: number;
 
     @Field(() => Boolean, { nullable: false })
-    locked: boolean;
+    transferred: boolean;
 
     @Field(() => Date, { nullable: true })
-    completed_date: Date | null;
-
-    @Field(() => Int, { nullable: true })
-    order_sale_id: number | null;
+    transferred_date: Date | null;
 }
 
 @ObjectType()

@@ -177,6 +177,14 @@ export class OrderSaleService {
         });
     }
 
+    async getOrderSales(): Promise<OrderSale[]> {
+        return this.prisma.order_sales.findMany({
+            where: {
+                active: 1,
+            },
+        });
+    }
+
     async getOrderSaleMaxOrderCode(): Promise<number> {
         const {
             _max: { order_code },

@@ -16,6 +16,7 @@ import {
     Resource,
     ResourceCategory,
     Transfer,
+    TransferReceipt,
     TransfersQueryArgs,
     TransfersSortArgs,
     TransferUpsertInput,
@@ -128,6 +129,15 @@ export class TransfersResolver {
     async from_account(@Parent() transfer: Transfer): Promise<Account | null> {
         return this.service.getAccount({
             account_id: transfer.from_account_id,
+        });
+    }
+
+    @ResolveField(() => [TransferReceipt], { nullable: false })
+    async transfer_receipts(
+        @Parent() transfer: Transfer,
+    ): Promise<TransferReceipt[]> {
+        return this.service.getTransferReceipts({
+            transfer_id: transfer.id,
         });
     }
 

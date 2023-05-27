@@ -10,6 +10,7 @@ import {
     Transfer,
     TransferUpsertInput,
     Account,
+    TransferReceipt,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -17,6 +18,7 @@ import {
     getCreatedAtProperty,
     getRangesFromYearMonth,
     getUpdatedAtProperty,
+    vennDiagram,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
 
@@ -45,6 +47,23 @@ export class TransfersService {
         });
     }
 
+    async getTransferReceipts({
+        transfer_id,
+    }: {
+        transfer_id: number | null;
+    }): Promise<TransferReceipt[]> {
+        if (!transfer_id) {
+            return [];
+        }
+
+        return this.prisma.transfer_receipts.findMany({
+            where: {
+                active: 1,
+                transfer_id: transfer_id,
+            },
+        });
+    }
+
     async getAccount({
         account_id,
     }: {
@@ -67,7 +86,7 @@ export class TransfersService {
     ): Promise<Transfer> {
         await this.validateUpsertTransfer(transferInput);
 
-        return this.prisma.transfers.upsert({
+        const transfer = await this.prisma.transfers.upsert({
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
@@ -75,9 +94,8 @@ export class TransfersService {
                 from_account_id: transferInput.from_account_id,
                 to_account_id: transferInput.to_account_id,
                 expected_date: transferInput.expected_date,
-                completed_date: transferInput.completed_date,
-                locked: transferInput.locked,
-                order_sale_id: transferInput.order_sale_id,
+                transferred_date: transferInput.transferred_date,
+                transferred: transferInput.transferred,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -85,14 +103,78 @@ export class TransfersService {
                 from_account_id: transferInput.from_account_id,
                 to_account_id: transferInput.to_account_id,
                 expected_date: transferInput.expected_date,
-                completed_date: transferInput.completed_date,
-                locked: transferInput.locked,
-                order_sale_id: transferInput.order_sale_id,
+                transferred_date: transferInput.transferred_date,
+                transferred: transferInput.transferred,
             },
             where: {
                 id: transferInput.id || 0,
             },
         });
+
+        const newTransferReceipts = transferInput.transfer_receipts;
+        const oldTransferReceipts = transferInput.id
+            ? await this.prisma.transfer_receipts.findMany({
+                  where: {
+                      transfer_id: transferInput.id,
+                  },
+              })
+            : [];
+
+        const {
+            aMinusB: deleteTransferReceipts,
+            bMinusA: createTransferReceipts,
+            intersection: updateTransferReceipts,
+        } = vennDiagram({
+            a: oldTransferReceipts,
+            b: newTransferReceipts,
+            indexProperties: ['id'],
+        });
+
+        for await (const delItem of deleteTransferReceipts) {
+            if (delItem && delItem.id) {
+                await this.prisma.transfer_receipts.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+                // await this.cacheManager.del(`product_inventory`);
+            }
+        }
+
+        for await (const createItem of createTransferReceipts) {
+            await this.prisma.transfer_receipts.create({
+                data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
+                    transfer_id: transfer.id,
+                    order_sale_id: createItem.order_sale_id,
+                    expense_id: createItem.expense_id,
+                },
+            });
+            // await this.cacheManager.del(`product_inventory`);
+        }
+
+        for await (const updateItem of updateTransferReceipts) {
+            if (updateItem && updateItem.id) {
+                await this.prisma.transfer_receipts.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        transfer_id: transfer.id,
+                        order_sale_id: updateItem.order_sale_id,
+                        expense_id: updateItem.expense_id,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
+        }
+
+        return transfer;
     }
 
     async paginatedTransfers({

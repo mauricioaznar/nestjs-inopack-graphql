@@ -50,6 +50,11 @@ export class OrderSaleResolver {
         });
     }
 
+    @Query(() => [OrderSale])
+    async getOrderSales(): Promise<OrderSale[]> {
+        return this.service.getOrderSales();
+    }
+
     @Query(() => PaginatedOrderSales)
     async paginatedOrderSales(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
@@ -196,6 +201,15 @@ export class OrderSaleResolver {
         return this.service.getOrderSalePaymentsTotal({
             order_sale_id: orderSale.id,
         });
+    }
+
+    @ResolveField(() => String)
+    async compound_order_code(@Parent() orderSale: OrderSale): Promise<string> {
+        return `${orderSale.order_code}${
+            orderSale && orderSale.invoice_code
+                ? ' (' + orderSale.invoice_code + ')'
+                : ''
+        } `;
     }
 
     @ResolveField(() => Boolean)

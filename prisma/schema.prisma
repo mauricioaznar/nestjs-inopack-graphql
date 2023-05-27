@@ -378,7 +378,7 @@ model order_sales {
   order_sale_statuses             order_sale_statuses?            @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
   order_sale_payments             order_sale_payments[]
   order_sale_products             order_sale_products[]
-  transfers                       transfers[]
+  transfer_receipts               transfer_receipts[]
 
   @@index([order_request_id], map: "order_sales_order_request_id_foreign")
   @@index([order_sale_collection_status_id], map: "order_sales_order_sale_collection_status_id_foreign")
@@ -675,6 +675,7 @@ model expenses {
   account_id        Int?                @db.UnsignedInt
   accounts          accounts?           @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
   expense_resources expense_resources[]
+  transfer_receipts transfer_receipts[]
 
   @@index([account_id], map: "expenses_account_id_foreign")
 }
@@ -702,22 +703,37 @@ model resources {
 }
 
 model transfers {
-  id                                           Int          @id @default(autoincrement()) @db.UnsignedInt
-  active                                       Int          @default(1)
-  created_at                                   DateTime?    @db.DateTime(0)
-  updated_at                                   DateTime?    @db.DateTime(0)
-  from_account_id                              Int?         @db.UnsignedInt
-  to_account_id                                Int?         @db.UnsignedInt
-  order_sale_id                                Int?         @db.UnsignedInt
-  completed_date                               DateTime?    @db.DateTime(0)
-  expected_date                                DateTime?    @db.DateTime(0)
-  locked                                       Boolean      @default(false)
+  id                                           Int                 @id @default(autoincrement()) @db.UnsignedInt
+  active                                       Int                 @default(1)
+  created_at                                   DateTime?           @db.DateTime(0)
+  updated_at                                   DateTime?           @db.DateTime(0)
+  from_account_id                              Int?                @db.UnsignedInt
+  to_account_id                                Int?                @db.UnsignedInt
+  expected_date                                DateTime?           @db.DateTime(0)
+  transferred                                  Boolean             @default(false)
+  transferred_date                             DateTime?           @db.DateTime(0)
   amount                                       Float
-  accounts_accountsTotransfers_from_account_id accounts?    @relation("accountsTotransfers_from_account_id", fields: [from_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_from_account_id_foreign")
-  order_sales                                  order_sales? @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_order_sale_id_foreign")
-  accounts_accountsTotransfers_to_account_id   accounts?    @relation("accountsTotransfers_to_account_id", fields: [to_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_to_account_id_foreign")
+  accounts_accountsTotransfers_from_account_id accounts?           @relation("accountsTotransfers_from_account_id", fields: [from_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_from_account_id_foreign")
+  accounts_accountsTotransfers_to_account_id   accounts?           @relation("accountsTotransfers_to_account_id", fields: [to_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_to_account_id_foreign")
+  transfer_receipts                            transfer_receipts[]
 
   @@index([from_account_id], map: "transfers_from_account_id_foreign")
-  @@index([order_sale_id], map: "transfers_order_sale_id_foreign")
   @@index([to_account_id], map: "transfers_to_account_id_foreign")
+}
+
+model transfer_receipts {
+  id            Int          @id @default(autoincrement()) @db.UnsignedInt
+  active        Int          @default(1)
+  created_at    DateTime?    @db.DateTime(0)
+  updated_at    DateTime?    @db.DateTime(0)
+  order_sale_id Int?         @db.UnsignedInt
+  expense_id    Int?         @db.UnsignedInt
+  transfer_id   Int?         @db.UnsignedInt
+  expenses      expenses?    @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfer_receipts_expense_id_foreign")
+  order_sales   order_sales? @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfer_receipts_order_sale_id_foreign")
+  transfers     transfers?   @relation(fields: [transfer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfer_receipts_transfer_id_foreign")
+
+  @@index([expense_id], map: "transfer_receipts_expense_id_foreign")
+  @@index([order_sale_id], map: "transfer_receipts_order_sale_id_foreign")
+  @@index([transfer_id], map: "transfer_receipts_transfer_id_foreign")
 }

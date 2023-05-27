@@ -37,6 +37,7 @@ export * from './activities/activity.dto';
 
 // management
 export * from './management/transfer.dto';
+export * from './management/transfer-receipt.dto';
 export * from './management/account.dto';
 export * from './management/account-type.dto';
 export * from './management/account-contact.dto';
