@@ -67,8 +67,6 @@ export class TransfersService {
     ): Promise<Transfer> {
         await this.validateUpsertTransfer(transferInput);
 
-        console.log(transferInput);
-
         return this.prisma.transfers.upsert({
             create: {
                 ...getCreatedAtProperty(),
