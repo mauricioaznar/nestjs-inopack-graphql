@@ -13,6 +13,7 @@ import {
     ActivityTypeName,
     PaginatedResources,
     Resource,
+    ResourceCategory,
     ResourcesQueryArgs,
     ResourcesSortArgs,
     ResourceUpsertInput,
@@ -111,6 +112,15 @@ export class ResourcesResolver {
     ): Promise<boolean> {
         return this.service.isEditable({
             resource_id: resource.id,
+        });
+    }
+
+    @ResolveField(() => ResourceCategory, { nullable: true })
+    async resource_category(
+        @Parent() resource: Resource,
+    ): Promise<ResourceCategory | null> {
+        return this.service.getResourceCategory({
+            resource_category_id: resource.resource_category_id,
         });
     }
 

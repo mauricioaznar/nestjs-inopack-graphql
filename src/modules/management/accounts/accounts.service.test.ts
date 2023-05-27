@@ -25,7 +25,7 @@ describe('account list', () => {
     it('returns list', async () => {
         const accounts = await accountsService.getAccounts({
             accountsQueryArgs: {
-                account_type_id: null,
+                account_type_ids: null,
             },
         });
         expect(Array.isArray(accounts)).toBe(true);

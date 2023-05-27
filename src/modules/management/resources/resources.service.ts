@@ -9,6 +9,7 @@ import {
     PaginatedResources,
     Resource,
     ResourceUpsertInput,
+    ResourceCategory,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -42,6 +43,24 @@ export class ResourcesService {
                 active: 1,
             },
         });
+    }
+
+    async getResourceCategory({
+        resource_category_id,
+    }: {
+        resource_category_id: number | null;
+    }): Promise<ResourceCategory | null> {
+        if (!resource_category_id) {
+            return null;
+        }
+
+        const resourceCategory =
+            await this.prisma.resource_categories.findFirst({
+                where: {
+                    id: resource_category_id,
+                },
+            });
+        return resourceCategory;
     }
 
     async upsertResource(

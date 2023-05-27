@@ -9,6 +9,7 @@ import {
     PaginatedTransfers,
     Transfer,
     TransferUpsertInput,
+    Account,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -44,10 +45,29 @@ export class TransfersService {
         });
     }
 
+    async getAccount({
+        account_id,
+    }: {
+        account_id: number | null;
+    }): Promise<Account | null> {
+        if (!account_id) {
+            return null;
+        }
+
+        return this.prisma.accounts.findFirst({
+            where: {
+                active: 1,
+                id: account_id,
+            },
+        });
+    }
+
     async upsertTransfer(
         transferInput: TransferUpsertInput,
     ): Promise<Transfer> {
         await this.validateUpsertTransfer(transferInput);
+
+        console.log(transferInput);
 
         return this.prisma.transfers.upsert({
             create: {

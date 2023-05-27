@@ -31,11 +31,14 @@ export class AccountsService {
     }: {
         accountsQueryArgs: AccountsQueryArgs;
     }): Promise<Account[]> {
-        const { account_type_id } = accountsQueryArgs;
+        const { account_type_ids } = accountsQueryArgs;
+
         return this.prisma.accounts.findMany({
             where: {
                 active: 1,
-                account_type_id: account_type_id || undefined,
+                account_type_id: {
+                    in: account_type_ids,
+                },
             },
             orderBy: {
                 name: 'asc',

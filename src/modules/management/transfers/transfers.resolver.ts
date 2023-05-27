@@ -10,8 +10,11 @@ import {
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { TransfersService } from './transfers.service';
 import {
+    Account,
     ActivityTypeName,
     PaginatedTransfers,
+    Resource,
+    ResourceCategory,
     Transfer,
     TransfersQueryArgs,
     TransfersSortArgs,
@@ -111,6 +114,20 @@ export class TransfersResolver {
     ): Promise<boolean> {
         return this.service.isEditable({
             transfer_id: transfer.id,
+        });
+    }
+
+    @ResolveField(() => Account, { nullable: true })
+    async to_account(@Parent() transfer: Transfer): Promise<Account | null> {
+        return this.service.getAccount({
+            account_id: transfer.to_account_id,
+        });
+    }
+
+    @ResolveField(() => Account, { nullable: true })
+    async from_account(@Parent() transfer: Transfer): Promise<Account | null> {
+        return this.service.getAccount({
+            account_id: transfer.from_account_id,
         });
     }
 

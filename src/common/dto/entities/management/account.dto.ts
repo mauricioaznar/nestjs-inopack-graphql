@@ -68,6 +68,6 @@ export class PaginatedAccountsSortArgs {
 
 @ArgsType()
 export class AccountsQueryArgs {
-    @Field(() => Int, { nullable: true })
-    account_type_id: number | null;
+    @Field(() => [Int], { nullable: true })
+    account_type_ids: number[] | null;
 }
