@@ -1,5 +1,6 @@
 import {
     Args,
+    Float,
     Mutation,
     Parent,
     Query,
@@ -80,13 +81,6 @@ export class ExpensesResolver {
         return this.service.getExpenses({ getExpensesQueryArgs: args });
     }
 
-    @ResolveField(() => [ExpenseResource])
-    async expense_resources(expense: Expense): Promise<ExpenseResource[]> {
-        return this.service.getExpenseResources({
-            expense_id: expense.id,
-        });
-    }
-
     @Query(() => PaginatedExpenses)
     async paginatedExpenses(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
@@ -118,6 +112,20 @@ export class ExpensesResolver {
     async account(@Parent() expense: Expense): Promise<Account | null> {
         return this.service.getAccount({
             account_id: expense.account_id,
+        });
+    }
+
+    @ResolveField(() => Float, { nullable: false })
+    async resources_total(@Parent() expense: Expense): Promise<number> {
+        return this.service.getExpenseResourcesTotal({
+            expense_id: expense.id,
+        });
+    }
+
+    @ResolveField(() => [ExpenseResource])
+    async expense_resources(expense: Expense): Promise<ExpenseResource[]> {
+        return this.service.getExpenseResources({
+            expense_id: expense.id,
         });
     }
 

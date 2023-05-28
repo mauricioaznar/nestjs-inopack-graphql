@@ -93,6 +93,33 @@ export class ExpensesService {
         });
     }
 
+    async getExpenseResourcesTotal({
+        expense_id,
+    }: {
+        expense_id: number | null;
+    }): Promise<number> {
+        const expenseTotals = await this.prisma.expense_resources.aggregate({
+            _sum: {
+                amount: true,
+            },
+            where: {
+                AND: [
+                    {
+                        expense_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+        const {
+            _sum: { amount },
+        } = expenseTotals;
+
+        return Math.round((amount || 0) * 100) / 100;
+    }
+
     async upsertExpense(input: ExpenseUpsertInput): Promise<Expense> {
         await this.validateUpsertExpense(input);
 
