@@ -12,20 +12,20 @@ import {
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { OrderSaleService } from './order-sale.service';
 import {
-    ActivityTypeName,
     Account,
+    ActivityTypeName,
+    GetOrderSalesQueryArgs,
     OrderRequest,
     OrderSale,
     OrderSaleInput,
     OrderSalePayment,
     OrderSaleProduct,
     OrderSaleReceiptType,
-    OrderSalesQueryArgs,
     OrderSalesSortArgs,
     OrderSaleStatus,
     PaginatedOrderSales,
+    PaginatedOrderSalesQueryArgs,
     User,
-    Transfer,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
@@ -51,8 +51,12 @@ export class OrderSaleResolver {
     }
 
     @Query(() => [OrderSale])
-    async getOrderSales(): Promise<OrderSale[]> {
-        return this.service.getOrderSales();
+    async getOrderSales(
+        @Args({ nullable: false }) args: GetOrderSalesQueryArgs,
+    ): Promise<OrderSale[]> {
+        return this.service.getOrderSales({
+            getOrderSalesQueryArgs: args,
+        });
     }
 
     @Query(() => PaginatedOrderSales)
@@ -60,7 +64,7 @@ export class OrderSaleResolver {
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) datePaginator: YearMonth,
         @Args({ nullable: false })
-        orderSalesQueryArgs: OrderSalesQueryArgs,
+        orderSalesQueryArgs: PaginatedOrderSalesQueryArgs,
         @Args({ nullable: false })
         orderSalesSortArgs: OrderSalesSortArgs,
     ): Promise<PaginatedOrderSales> {

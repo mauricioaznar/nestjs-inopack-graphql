@@ -14,12 +14,13 @@ import {
     OrderSalePayment,
     OrderSaleProduct,
     OrderSaleReceiptType,
-    OrderSalesQueryArgs,
+    PaginatedOrderSalesQueryArgs,
     OrderSalesSortArgs,
     OrderSaleStatus,
     PaginatedOrderSales,
     Transfer,
     User,
+    GetOrderSalesQueryArgs,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -48,7 +49,7 @@ export class OrderSaleService {
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         datePaginator: YearMonth;
-        orderSalesQueryArgs: OrderSalesQueryArgs;
+        orderSalesQueryArgs: PaginatedOrderSalesQueryArgs;
         orderSalesSortArgs: OrderSalesSortArgs;
     }): Promise<PaginatedOrderSales> {
         const { startDate, endDate } = getRangesFromYearMonth({
@@ -177,10 +178,18 @@ export class OrderSaleService {
         });
     }
 
-    async getOrderSales(): Promise<OrderSale[]> {
+    async getOrderSales({
+        getOrderSalesQueryArgs,
+    }: {
+        getOrderSalesQueryArgs: GetOrderSalesQueryArgs;
+    }): Promise<OrderSale[]> {
+        const { account_id } = getOrderSalesQueryArgs;
         return this.prisma.order_sales.findMany({
             where: {
                 active: 1,
+                order_requests: {
+                    account_id: account_id || undefined,
+                },
             },
             orderBy: {
                 order_code: 'desc',

@@ -10,6 +10,7 @@ import {
     ExpensesQueryArgs,
     ExpensesSortArgs,
     ExpenseUpsertInput,
+    GetExpensesQueryArgs,
     PaginatedExpenses,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
@@ -39,10 +40,16 @@ export class ExpensesService {
         });
     }
 
-    async getExpenses(): Promise<Expense[]> {
+    async getExpenses({
+        getExpensesQueryArgs,
+    }: {
+        getExpensesQueryArgs: GetExpensesQueryArgs;
+    }): Promise<Expense[]> {
+        const { account_id } = getExpensesQueryArgs;
         return this.prisma.expenses.findMany({
             where: {
                 active: 1,
+                account_id: account_id || undefined,
             },
         });
     }

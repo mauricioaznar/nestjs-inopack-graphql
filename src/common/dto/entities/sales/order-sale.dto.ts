@@ -65,7 +65,7 @@ export class OrderSale extends OrderSaleBase {
 export class PaginatedOrderSales extends OffsetPaginatorResult(OrderSale) {}
 
 @ArgsType()
-export class OrderSalesQueryArgs {
+export class PaginatedOrderSalesQueryArgs {
     @Field(() => String, { nullable: true })
     filter: string;
 
@@ -77,6 +77,12 @@ export class OrderSalesQueryArgs {
 
     @Field(() => Int, { nullable: true })
     order_sale_status_id: number | null;
+}
+
+@ArgsType()
+export class GetOrderSalesQueryArgs {
+    @Field(() => Int, { nullable: true })
+    account_id: number | null;
 }
 
 export enum OrderSalesSortableFields {

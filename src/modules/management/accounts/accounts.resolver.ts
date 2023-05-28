@@ -18,7 +18,7 @@ import {
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
     User,
-    OrderSalesQueryArgs,
+    PaginatedOrderSalesQueryArgs,
     AccountsQueryArgs,
     AccountType,
 } from '../../../common/dto/entities';

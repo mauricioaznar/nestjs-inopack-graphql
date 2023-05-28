@@ -10,21 +10,20 @@ import {
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ExpensesService } from './expenses.service';
 import {
+    Account,
     ActivityTypeName,
-    OrderSale,
-    OrderSaleProduct,
-    PaginatedExpenses,
     Expense,
     ExpensesQueryArgs,
     ExpensesSortArgs,
     ExpenseUpsertInput,
+    GetExpensesQueryArgs,
+    PaginatedExpenses,
     User,
-    Account,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
-import { ExpenseResource } from '../../../common/dto/entities/management/expense-resource.dto';
+import { ExpenseResource } from '../../../common/dto/entities';
 
 @Resolver(() => Expense)
 @Injectable()
@@ -75,8 +74,10 @@ export class ExpensesResolver {
     }
 
     @Query(() => [Expense])
-    async getExpenses(): Promise<Expense[]> {
-        return this.service.getExpenses();
+    async getExpenses(
+        @Args({ nullable: false }) args: GetExpensesQueryArgs,
+    ): Promise<Expense[]> {
+        return this.service.getExpenses({ getExpensesQueryArgs: args });
     }
 
     @ResolveField(() => [ExpenseResource])

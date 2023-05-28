@@ -38,6 +38,12 @@ export class Expense extends ExpenseBase {
     id: number;
 }
 
+@ArgsType()
+export class GetExpensesQueryArgs {
+    @Field(() => Int, { nullable: true })
+    account_id: number | null;
+}
+
 @ObjectType()
 export class PaginatedExpenses extends OffsetPaginatorResult(Expense) {}
 
