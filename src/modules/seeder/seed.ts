@@ -13,7 +13,7 @@ async function bootstrap() {
             const logger = appContext.get(Logger);
             const seeder = appContext.get(SeederService);
             seeder
-                .seed()
+                .transfersSeed()
                 .then(() => {
                     logger.debug('Seeding complete!');
                 })
