@@ -8,6 +8,7 @@ import { ResourcesModule } from './resources/resources.module';
 import { ExpenseResourcesModule } from './expense-resources/expense-resources.module';
 import { ResourceCategoriesModule } from './resource-categories/resource-categories.module';
 import { TransferReceiptsModule } from './transfer-receipts/transfer-receipts.module';
+import { AccountTransferSummariesModule } from './account-transfer-summaries/account-transfer-summaries.module';
 
 @Module({
     imports: [
@@ -15,6 +16,7 @@ import { TransferReceiptsModule } from './transfer-receipts/transfer-receipts.mo
         AccountsModule,
         AccountContactsModule,
         AccountTypeModule,
+        AccountTransferSummariesModule,
         ExpensesModule,
         ExpenseResourcesModule,
         ResourcesModule,
