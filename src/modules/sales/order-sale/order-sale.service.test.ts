@@ -131,6 +131,7 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
                 order_sale_payments: [orderSalePaymentInput],
+                expected_payment_date: getUtcDate(),
             },
             current_user_id: adminUser.id,
         });
@@ -237,6 +238,7 @@ describe('upsert', () => {
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_products: [orderSaleProductInput],
                     order_sale_payments: [orderSalePaymentInput],
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -328,6 +330,7 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
                 order_sale_payments: [orderSalePaymentInput],
+                expected_payment_date: getUtcDate(),
             },
             current_user_id: adminUser.id,
         });
@@ -366,6 +369,7 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus2.id,
                 order_sale_products: [updatedOrderSaleProductInput],
                 order_sale_payments: [updatedOrderSalePaymentInput],
+                expected_payment_date: getUtcDate(),
             },
             current_user_id: adminUser.id,
         });
@@ -469,6 +473,7 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus2.id,
                 order_sale_products: [orderSaleProductInput],
                 order_sale_payments: [orderSalePaymentInput],
+                expected_payment_date: getUtcDate(),
             },
             current_user_id: adminUser.id,
         });
@@ -508,6 +513,7 @@ describe('upsert', () => {
                     order_sale_status_id: orderSaleStatus2.id,
                     order_sale_products: [updatedOrderSaleProductInput],
                     order_sale_payments: [updatedOrderSalePaymentInput],
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: salesUser.id,
             });
@@ -592,6 +598,7 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
                 order_sale_payments: [orderSalePaymentInput],
+                expected_payment_date: getUtcDate(),
             },
             current_user_id: adminUser.id,
         });
@@ -651,6 +658,7 @@ describe('upsert', () => {
                             date_paid: getUtcDate(),
                         },
                     ],
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -729,6 +737,7 @@ describe('upsert', () => {
 
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -797,6 +806,7 @@ describe('upsert', () => {
 
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -871,6 +881,7 @@ describe('upsert', () => {
 
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: salesUser.id,
             });
@@ -938,6 +949,7 @@ describe('upsert', () => {
                 ],
                 order_sale_receipt_type_id: orderSaleReceiptType1.id,
                 order_sale_status_id: orderSaleStatus1.id,
+                expected_payment_date: getUtcDate(),
             },
             current_user_id: adminUser.id,
         });
@@ -992,6 +1004,7 @@ describe('upsert', () => {
                     ],
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -1050,6 +1063,7 @@ describe('upsert', () => {
                     ],
                     order_sale_receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -1109,6 +1123,7 @@ describe('upsert', () => {
             ],
             order_sale_receipt_type_id: orderSaleReceiptType1.id,
             order_sale_status_id: orderSaleStatus1.id,
+            expected_payment_date: getUtcDate(),
         };
 
         await orderSalesService.upsertOrderSale({
@@ -1176,6 +1191,7 @@ describe('upsert', () => {
             ],
             order_sale_receipt_type_id: orderSaleReceiptType2.id,
             order_sale_status_id: orderSaleStatus1.id,
+            expected_payment_date: getUtcDate(),
         };
 
         await orderSalesService.upsertOrderSale({
@@ -1243,6 +1259,7 @@ describe('upsert', () => {
             ],
             order_sale_receipt_type_id: orderSaleReceiptType2.id,
             order_sale_status_id: orderSaleStatus1.id,
+            expected_payment_date: getUtcDate(),
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
@@ -1313,6 +1330,7 @@ describe('upsert', () => {
             ],
             order_sale_receipt_type_id: orderSaleReceiptType1.id,
             order_sale_status_id: orderSaleStatus1.id,
+            expected_payment_date: getUtcDate(),
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
@@ -1391,6 +1409,7 @@ describe('upsert', () => {
                     ],
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_receipt_type_id: orderSaleReceiptType2.id,
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -1455,6 +1474,7 @@ describe('upsert', () => {
                                 orderSaleCollectionStatus2.id,
                         },
                     ],
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -1521,6 +1541,7 @@ describe('upsert', () => {
                                 orderSaleCollectionStatus2.id,
                         },
                     ],
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -1590,6 +1611,7 @@ describe('delete', () => {
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
                 order_sale_payments: [orderSalePaymentInput],
+                expected_payment_date: getUtcDate(),
             },
             current_user_id: adminUser.id,
         });
@@ -1667,6 +1689,7 @@ describe('delete', () => {
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_products: [orderSaleProductInput],
                     order_sale_payments: [orderSalePaymentInput],
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -1696,6 +1719,7 @@ describe('delete', () => {
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_products: [orderSaleProductInput],
                     order_sale_payments: [orderSalePaymentInput],
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });

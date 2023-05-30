@@ -18,6 +18,9 @@ export class OrderSaleBase {
     @Field()
     date: Date;
 
+    @Field(() => Date, { nullable: true })
+    expected_payment_date: Date | null;
+
     @Field(() => Int, { nullable: true })
     order_sale_status_id?: number | null;
 

@@ -661,6 +661,7 @@ describe('upsert', () => {
                             date_paid: getUtcDate(),
                         },
                     ],
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -739,6 +740,7 @@ describe('upsert', () => {
                             date_paid: getUtcDate(),
                         },
                     ],
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -906,6 +908,7 @@ describe('delete', () => {
                             date_paid: getUtcDate(),
                         },
                     ],
+                    expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });

@@ -172,12 +172,16 @@ export class ExpensesService {
                 date: input.date,
                 locked: input.locked,
                 account_id: input.account_id,
+                expected_payment_date: input.expected_payment_date,
+                order_code: input.order_code,
             },
             update: {
                 ...getUpdatedAtProperty(),
                 date: input.date,
                 locked: input.locked,
                 account_id: input.account_id,
+                expected_payment_date: input.expected_payment_date,
+                order_code: input.order_code,
             },
             where: {
                 id: input.id || 0,
@@ -250,6 +254,47 @@ export class ExpensesService {
         }
 
         return expense;
+    }
+
+    async getExpenseTransferReceiptsTotal({
+        expense_id,
+    }: {
+        expense_id: number;
+    }): Promise<number> {
+        const transferReceipts = await this.prisma.transfer_receipts.findMany({
+            where: {
+                AND: [
+                    {
+                        expense_id: expense_id,
+                        active: 1,
+                    },
+                    {
+                        transfers: {
+                            active: 1,
+                        },
+                    },
+                    {
+                        order_sales: {
+                            active: 1,
+                        },
+                    },
+                ],
+            },
+        });
+
+        const expense = await this.prisma.expenses.findUnique({
+            where: {
+                id: expense_id,
+            },
+        });
+
+        if (!expense) return 0;
+
+        const total = transferReceipts.reduce((acc, tr) => {
+            return acc + tr.amount;
+        }, 0);
+
+        return Math.round(total * 100) / 100;
     }
 
     async paginatedExpenses({

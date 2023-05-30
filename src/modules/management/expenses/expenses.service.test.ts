@@ -49,6 +49,8 @@ describe('expense upsert', () => {
                     amount: 200,
                 },
             ],
+            expected_payment_date: getUtcDate(),
+            order_code: '',
         });
 
         expect(expense.id).toBeDefined();
@@ -95,6 +97,8 @@ describe('expense upsert', () => {
                         amount: 200,
                     },
                 ],
+                order_code: '',
+                expected_payment_date: getUtcDate(),
             });
         } catch (e) {
             expect(e.response.message).toEqual(

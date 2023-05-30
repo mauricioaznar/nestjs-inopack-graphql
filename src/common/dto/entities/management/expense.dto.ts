@@ -16,6 +16,12 @@ export class ExpenseBase {
     @Field(() => Boolean, { nullable: false })
     locked: boolean;
 
+    @Field(() => String, { nullable: false })
+    order_code: string;
+
+    @Field(() => Date, { nullable: true })
+    expected_payment_date: Date | null;
+
     @Field(() => Date, { nullable: true })
     date: Date | null;
 

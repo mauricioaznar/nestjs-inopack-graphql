@@ -482,6 +482,47 @@ export class OrderSaleService {
         return Math.round(orderSaleProductsTotal * 100) / 100;
     }
 
+    async getOrderSaleTransferReceiptsTotal({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<number> {
+        const transferReceipts = await this.prisma.transfer_receipts.findMany({
+            where: {
+                AND: [
+                    {
+                        order_sale_id: order_sale_id,
+                        active: 1,
+                    },
+                    {
+                        transfers: {
+                            active: 1,
+                        },
+                    },
+                    {
+                        order_sales: {
+                            active: 1,
+                        },
+                    },
+                ],
+            },
+        });
+
+        const orderSale = await this.prisma.order_sales.findUnique({
+            where: {
+                id: order_sale_id,
+            },
+        });
+
+        if (!orderSale) return 0;
+
+        const total = transferReceipts.reduce((acc, tr) => {
+            return acc + tr.amount;
+        }, 0);
+
+        return Math.round(total * 100) / 100;
+    }
+
     async getOrderSaleTaxTotal({
         order_sale_id,
     }: {
@@ -566,6 +607,7 @@ export class OrderSaleService {
                 ...getUpdatedAtProperty(),
                 date: input.date,
                 order_code: input.order_code,
+                expected_payment_date: input.expected_payment_date,
                 invoice_code:
                     input.order_sale_receipt_type_id === 2
                         ? input.invoice_code
@@ -577,6 +619,7 @@ export class OrderSaleService {
             update: {
                 ...getUpdatedAtProperty(),
                 date: input.date,
+                expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code,
                 invoice_code:
                     input.order_sale_receipt_type_id === 2

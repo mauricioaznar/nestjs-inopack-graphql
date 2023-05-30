@@ -134,6 +134,13 @@ export class ExpensesResolver {
         });
     }
 
+    @ResolveField(() => Float)
+    async transfer_receipts_total(expense: Expense): Promise<number> {
+        return this.service.getExpenseTransferReceiptsTotal({
+            expense_id: expense.id,
+        });
+    }
+
     @ResolveField(() => Boolean)
     async is_editable(
         @Parent() expense: Expense,

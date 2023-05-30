@@ -50,6 +50,7 @@ export async function createOrderSaleWithOneProductTypeOne({
                             orderSaleProduct.kilo_price,
                     },
                 ],
+                expected_payment_date: getUtcDate(),
             },
             current_user_id: adminUser.id,
         });
