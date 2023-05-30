@@ -197,6 +197,52 @@ export class OrderSaleService {
         });
     }
 
+    async getOrderSalesWithDisparities(): Promise<OrderSale[]> {
+        return this.prisma.$queryRawUnsafe(`
+            SELECT 
+                order_sales.*,
+                wtv.total_with_tax as order_sales_total,
+                otv.total as transfer_receipts_total
+            FROM order_sales
+            JOIN
+                (
+                    SELECT 
+                        ztv.order_sale_id AS order_sale_id,
+                        round(SUM(ztv.total), 2) total,
+                        round(SUM(ztv.tax), 2) tax,
+                        round(SUM(ztv.total_with_tax), 2) total_with_tax
+                    FROM
+                        (
+                            SELECT 
+                            order_sales.id AS order_sale_id,
+                                ((order_sale_products.kilos * order_sale_products.kilo_price) - (order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) total,
+                                ((order_sale_products.kilos * order_sale_products.kilo_price) - (order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 0.16, 0) tax,
+                                ((order_sale_products.kilos * order_sale_products.kilo_price) - (order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 1.16, 1) total_with_tax
+                            FROM order_sale_products
+                            JOIN order_sales ON order_sales.id = order_sale_products.order_sale_id
+                            WHERE order_sales.active = 1
+                            AND order_sale_products.active = 1
+                        ) AS ztv
+                    GROUP BY ztv.order_sale_id
+                ) AS wtv
+            on wtv.order_sale_id = order_sales.id
+            join 
+                (
+                    select 
+                    transfer_receipts.order_sale_id,
+                    round(sum(transfer_receipts.amount), 2) as total 
+                    from transfers
+                    join transfer_receipts
+                    on transfers.id = transfer_receipts.transfer_id
+                    where transfers.active = 1
+                    and transfer_receipts.active = 1
+                    group by order_sale_id
+                ) as otv
+            on otv.order_sale_id = order_sales.id
+            where (otv.total - wtv.total_with_tax) != 0
+        `);
+    }
+
     async getOrderSaleMaxOrderCode(): Promise<number> {
         const {
             _max: { order_code },
