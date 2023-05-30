@@ -153,6 +153,7 @@ export class TransfersService {
                     transfer_id: transfer.id,
                     order_sale_id: createItem.order_sale_id,
                     expense_id: createItem.expense_id,
+                    amount: createItem.amount,
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
@@ -166,6 +167,7 @@ export class TransfersService {
                         transfer_id: transfer.id,
                         order_sale_id: updateItem.order_sale_id,
                         expense_id: updateItem.expense_id,
+                        amount: updateItem.amount,
                     },
                     where: {
                         id: updateItem.id,

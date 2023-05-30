@@ -730,6 +730,7 @@ model transfer_receipts {
   active        Int          @default(1)
   created_at    DateTime?    @db.DateTime(0)
   updated_at    DateTime?    @db.DateTime(0)
+  amount        Float
   order_sale_id Int?         @db.UnsignedInt
   expense_id    Int?         @db.UnsignedInt
   transfer_id   Int?         @db.UnsignedInt

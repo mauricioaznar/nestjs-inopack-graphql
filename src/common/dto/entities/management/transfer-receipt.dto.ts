@@ -1,4 +1,4 @@
-import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
+import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -8,6 +8,9 @@ export class TransferReceiptBase {
 
     @Field(() => Int, { nullable: true })
     expense_id?: number | null;
+
+    @Field(() => Float, { nullable: false })
+    amount: number;
 }
 
 @InputType('TransferReceiptInput')
