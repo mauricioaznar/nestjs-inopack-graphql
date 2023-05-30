@@ -226,7 +226,7 @@ export class OrderSaleService {
                     GROUP BY ztv.order_sale_id
                 ) AS wtv
             on wtv.order_sale_id = order_sales.id
-            join 
+            left join 
                 (
                     select 
                     transfer_receipts.order_sale_id,
@@ -239,7 +239,7 @@ export class OrderSaleService {
                     group by order_sale_id
                 ) as otv
             on otv.order_sale_id = order_sales.id
-            where (otv.total - wtv.total_with_tax) != 0
+            where ((otv.total - wtv.total_with_tax) != 0 or isnull(otv.total))
         `);
     }
 

@@ -262,7 +262,7 @@ export class TransfersService {
     }): Promise<boolean> {
         const transfer = await this.getTransfer({ transfer_id: transfer_id });
 
-        if (!transfer_id) {
+        if (!transfer) {
             throw new NotFoundException();
         }
 
@@ -272,6 +272,15 @@ export class TransfersService {
             },
             where: {
                 id: transfer_id,
+            },
+        });
+
+        await this.prisma.transfer_receipts.updateMany({
+            data: {
+                active: -1,
+            },
+            where: {
+                transfer_id: transfer_id,
             },
         });
 

@@ -81,6 +81,11 @@ export class ExpensesResolver {
         return this.service.getExpenses({ getExpensesQueryArgs: args });
     }
 
+    @Query(() => [Expense])
+    async getExpensesWithDisparities(): Promise<Expense[]> {
+        return this.service.getExpensesWithDisparities();
+    }
+
     @Query(() => PaginatedExpenses)
     async paginatedExpenses(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,

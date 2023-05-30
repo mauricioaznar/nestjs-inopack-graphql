@@ -54,6 +54,48 @@ export class ExpensesService {
         });
     }
 
+    async getExpensesWithDisparities(): Promise<Expense[]> {
+        return this.prisma.$queryRawUnsafe(`
+            SELECT 
+                expenses.*,
+                wtv.total as expenses_total,
+                otv.total as transfer_receipts_total
+            FROM expenses
+            JOIN
+                (
+                              SELECT 
+                        ztv.expense_id AS expense_id,
+                        round(SUM(ztv.total), 2) total
+                    FROM
+                        (
+                            SELECT 
+                            expenses.id AS expense_id,
+                            expense_resources.amount as total
+                            FROM expense_resources
+                            JOIN expenses ON expenses.id = expense_resources.expense_id
+                            WHERE expenses.active = 1
+                            AND expense_resources.active = 1
+                        ) AS ztv
+                    GROUP BY ztv.expense_id
+                ) AS wtv
+            on wtv.expense_id = expenses.id
+            left join 
+                (
+                    select 
+                    transfer_receipts.expense_id,
+                    round(sum(transfer_receipts.amount), 2) as total 
+                    from transfers
+                    join transfer_receipts
+                    on transfers.id = transfer_receipts.transfer_id
+                    where transfers.active = 1
+                    and transfer_receipts.active = 1
+                    group by expense_id
+                ) as otv
+            on otv.expense_id = expenses.id
+            where ((otv.total - wtv.total) != 0  or isnull(otv.total))
+        `);
+    }
+
     async getAccount({
         account_id,
     }: {
