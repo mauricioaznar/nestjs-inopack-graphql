@@ -238,15 +238,16 @@ export class TransfersService {
                         },
                         {
                             transfer_receipts: {
-                                some: isFilterANumber
-                                    ? {
-                                          expenses: {
-                                              order_code: {
-                                                  in: filter,
+                                some:
+                                    filter && filter !== ''
+                                        ? {
+                                              expenses: {
+                                                  order_code: {
+                                                      in: filter,
+                                                  },
                                               },
-                                          },
-                                      }
-                                    : undefined,
+                                          }
+                                        : undefined,
                             },
                         },
                         {
