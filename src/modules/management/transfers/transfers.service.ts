@@ -211,7 +211,7 @@ export class TransfersService {
                 },
                 {
                     transferred_date: {
-                        gte: startDate,
+                        gte: startDate || undefined,
                     },
                 },
                 {
@@ -220,55 +220,52 @@ export class TransfersService {
                     },
                 },
                 {
-                    to_account_id:
-                        transfersQueryArgs.to_account_id || undefined,
-                },
-                {
-                    from_account_id:
-                        transfersQueryArgs.from_account_id || undefined,
-                },
-                {
                     OR: [
                         {
                             transfer_receipts: {
-                                some: {
-                                    order_sales: {
-                                        order_code: {
-                                            in: isFilterANumber
-                                                ? Number(filter)
-                                                : undefined,
-                                        },
-                                    },
-                                },
+                                some: isFilterANumber
+                                    ? {
+                                          order_sales: {
+                                              invoice_code: {
+                                                  in: isFilterANumber
+                                                      ? Number(filter)
+                                                      : undefined,
+                                              },
+                                          },
+                                      }
+                                    : undefined,
                             },
                         },
                         {
                             transfer_receipts: {
-                                some: {
-                                    order_sales: {
-                                        invoice_code: {
-                                            in: isFilterANumber
-                                                ? Number(filter)
-                                                : undefined,
-                                        },
-                                    },
-                                },
+                                some: isFilterANumber
+                                    ? {
+                                          expenses: {
+                                              order_code: {
+                                                  in: filter,
+                                              },
+                                          },
+                                      }
+                                    : undefined,
                             },
+                        },
+                        {
+                            to_account_id:
+                                transfersQueryArgs.to_account_id || undefined,
+                        },
+                        {
+                            from_account_id:
+                                transfersQueryArgs.from_account_id || undefined,
                         },
                     ],
                 },
             ],
         };
-        let orderBy: Prisma.transfersOrderByWithRelationInput = {
-            transferred_date: 'desc',
+        const orderBy: Prisma.transfersOrderByWithRelationInput = {
+            updated_at: 'desc',
         };
 
         if (sort_order && sort_field) {
-            if (sort_field === 'amount') {
-                orderBy = {
-                    amount: sort_order,
-                };
-            }
         }
 
         const transfersCount = await this.prisma.transfers.count({
