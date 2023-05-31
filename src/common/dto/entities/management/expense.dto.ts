@@ -22,8 +22,8 @@ export class ExpenseBase {
     @Field(() => Date, { nullable: true })
     expected_payment_date: Date | null;
 
-    @Field(() => Date, { nullable: true })
-    date: Date | null;
+    @Field(() => Date, { nullable: false })
+    date: Date;
 
     @Field(() => Int, { nullable: true })
     account_id: number | null;

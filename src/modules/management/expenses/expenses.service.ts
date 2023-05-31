@@ -102,7 +102,7 @@ export class ExpensesService {
                 expected_payment_date: ex.expected_payment_date
                     ? new Date(ex.expected_payment_date)
                     : null,
-                date: ex.date ? new Date(ex.date) : null,
+                date: new Date(ex.date),
             };
         });
     }

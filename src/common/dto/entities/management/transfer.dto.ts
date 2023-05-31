@@ -29,8 +29,8 @@ export class TransferBase {
     @Field(() => Boolean, { nullable: false })
     transferred: boolean;
 
-    @Field(() => Date, { nullable: true })
-    transferred_date: Date | null;
+    @Field(() => Date, { nullable: false })
+    transferred_date: Date;
 }
 
 @InputType('TransferUpsertInput')
@@ -46,12 +46,6 @@ export class TransferUpsertInput extends TransferBase {
 export class Transfer extends TransferBase {
     @Field({ nullable: false })
     id: number;
-
-    @Field(() => Boolean, { nullable: false })
-    transferred: boolean;
-
-    @Field(() => Date, { nullable: true })
-    transferred_date: Date | null;
 }
 
 @ObjectType()
