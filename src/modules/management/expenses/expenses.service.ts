@@ -285,7 +285,7 @@ export class ExpensesService {
                         },
                     },
                     {
-                        order_sales: {
+                        expenses: {
                             active: 1,
                         },
                     },
