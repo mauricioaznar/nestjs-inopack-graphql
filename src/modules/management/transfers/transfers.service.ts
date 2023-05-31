@@ -209,10 +209,58 @@ export class TransfersService {
                 {
                     active: 1,
                 },
+                {
+                    transferred_date: {
+                        gte: startDate,
+                    },
+                },
+                {
+                    transferred_date: {
+                        lt: datePaginator.year ? endDate : undefined,
+                    },
+                },
+                {
+                    to_account_id:
+                        transfersQueryArgs.to_account_id || undefined,
+                },
+                {
+                    from_account_id:
+                        transfersQueryArgs.from_account_id || undefined,
+                },
+                {
+                    OR: [
+                        {
+                            transfer_receipts: {
+                                some: {
+                                    order_sales: {
+                                        order_code: {
+                                            in: isFilterANumber
+                                                ? Number(filter)
+                                                : undefined,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            transfer_receipts: {
+                                some: {
+                                    order_sales: {
+                                        invoice_code: {
+                                            in: isFilterANumber
+                                                ? Number(filter)
+                                                : undefined,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                },
             ],
         };
         let orderBy: Prisma.transfersOrderByWithRelationInput = {
-            updated_at: 'desc',
+            transferred_date: 'desc',
         };
 
         if (sort_order && sort_field) {

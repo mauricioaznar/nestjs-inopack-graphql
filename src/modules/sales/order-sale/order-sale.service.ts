@@ -198,7 +198,7 @@ export class OrderSaleService {
     }
 
     async getOrderSalesWithDisparities(): Promise<OrderSale[]> {
-        return this.prisma.$queryRawUnsafe(`
+        const res = await this.prisma.$queryRawUnsafe<OrderSale[]>(`
             SELECT 
                 order_sales.*,
                 wtv.total_with_tax as order_sales_total,
@@ -240,7 +240,17 @@ export class OrderSaleService {
                 ) as otv
             on otv.order_sale_id = order_sales.id
             where ((otv.total - wtv.total_with_tax) != 0 or isnull(otv.total))
+            order by order_sales.expected_payment_date desc
         `);
+
+        return res.map((os) => {
+            return {
+                ...os,
+                expected_payment_date: os.expected_payment_date
+                    ? new Date(os.expected_payment_date)
+                    : null,
+            };
+        });
     }
 
     async getOrderSaleMaxOrderCode(): Promise<number> {

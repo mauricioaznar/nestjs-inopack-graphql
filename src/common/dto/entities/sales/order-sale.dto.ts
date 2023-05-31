@@ -15,7 +15,7 @@ import { ColumnOrder } from '../../pagination';
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
 export class OrderSaleBase {
-    @Field()
+    @Field(() => Date, { nullable: false })
     date: Date;
 
     @Field(() => Date, { nullable: true })

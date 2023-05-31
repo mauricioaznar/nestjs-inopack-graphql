@@ -55,7 +55,7 @@ export class ExpensesService {
     }
 
     async getExpensesWithDisparities(): Promise<Expense[]> {
-        return this.prisma.$queryRawUnsafe(`
+        const res = await this.prisma.$queryRawUnsafe<Expense[]>(`
             SELECT 
                 expenses.*,
                 wtv.total as expenses_total,
@@ -63,7 +63,7 @@ export class ExpensesService {
             FROM expenses
             JOIN
                 (
-                              SELECT 
+                        SELECT 
                         ztv.expense_id AS expense_id,
                         round(SUM(ztv.total), 2) total
                     FROM
@@ -93,7 +93,18 @@ export class ExpensesService {
                 ) as otv
             on otv.expense_id = expenses.id
             where ((otv.total - wtv.total) != 0  or isnull(otv.total))
+            order by expenses.expected_payment_date desc
         `);
+
+        return res.map((ex) => {
+            return {
+                ...ex,
+                expected_payment_date: ex.expected_payment_date
+                    ? new Date(ex.expected_payment_date)
+                    : null,
+                date: ex.date ? new Date(ex.date) : null,
+            };
+        });
     }
 
     async getAccount({
