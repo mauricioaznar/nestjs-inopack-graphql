@@ -93,7 +93,7 @@ export class ExpensesService {
                 ) as otv
             on otv.expense_id = expenses.id
             where ((otv.total - wtv.total) != 0  or isnull(otv.total))
-            order by expenses.expected_payment_date desc
+            order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
         `);
 
         return res.map((ex) => {

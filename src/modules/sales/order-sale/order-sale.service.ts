@@ -240,7 +240,7 @@ export class OrderSaleService {
                 ) as otv
             on otv.order_sale_id = order_sales.id
             where ((otv.total - wtv.total_with_tax) != 0 or isnull(otv.total))
-            order by order_sales.expected_payment_date desc
+            order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
         `);
 
         return res.map((os) => {
