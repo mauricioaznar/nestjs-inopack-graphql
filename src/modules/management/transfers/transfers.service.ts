@@ -262,9 +262,15 @@ export class TransfersService {
                 },
             ],
         };
-        const orderBy: Prisma.transfersOrderByWithRelationInput = {
-            updated_at: 'desc',
-        };
+
+        const orderBy: Prisma.transfersOrderByWithRelationInput[] = [
+            {
+                updated_at: 'desc',
+            },
+            {
+                transferred_date: 'desc',
+            },
+        ];
 
         if (sort_order && sort_field) {
         }
