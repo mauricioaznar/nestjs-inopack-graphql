@@ -246,6 +246,7 @@ export class OrderSaleService {
         return res.map((os) => {
             return {
                 ...os,
+                date: new Date(os.date),
                 expected_payment_date: os.expected_payment_date
                     ? new Date(os.expected_payment_date)
                     : null,
