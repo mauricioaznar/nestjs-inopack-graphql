@@ -11,12 +11,11 @@
 ## Todo
 
 * functionality:
-  * cash transfers. What to do?
-    * show them as the same balances table but only cash sales and cash expenses
-    * expenses add order sale receipt type
   * increase security
     * transfers
     * expenses
+  * improve transfers ui
+  * improve expenses ui
 * validations / testing:
   * sales testing (delete)
   * transfers
@@ -28,11 +27,18 @@
   * expenses  (delete)
 
 * functionality
-  * expenses
+  * eliminate payments from order sales
+  * improve order sales ui
+  * cash transfers. What to do?
+    * show them as the same balances table but only cash sales and cash expenses
+    * expenses add order sale receipt type
+  * expenses invoices
 * refactor
   * change order sale receipt type for receipt type
 * increase security
   * rethink order sales
+* testing 
+  * expenses
 
 
 
