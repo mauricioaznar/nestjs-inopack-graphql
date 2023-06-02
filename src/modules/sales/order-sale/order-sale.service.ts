@@ -33,6 +33,11 @@ import { OrderRequestRemainingProductsService } from '../../../common/services/e
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
+type SoftValidation = {
+    is_order_request_in_production: boolean;
+    is_order_sale_delivered: boolean;
+};
+
 @Injectable()
 export class OrderSaleService {
     constructor(
@@ -1082,8 +1087,31 @@ export class OrderSaleService {
         if (!isDeletable) {
             const errors: string[] = [];
 
-            if (orderSale.order_sale_status_id === 2) {
+            const { is_order_sale_delivered, is_order_request_in_production } =
+                await this.softValidate({
+                    order_sale_id,
+                    current_user_id,
+                    order_request_id: orderSale.order_request_id!,
+                });
+
+            if (is_order_sale_delivered) {
                 errors.push(`sale is already delivered`);
+            }
+
+            if (is_order_request_in_production) {
+                errors.push(`order request is production`);
+            }
+
+            const { transfer_receipts_count } = await this.getDependenciesCount(
+                {
+                    order_sale_id,
+                },
+            );
+
+            if (transfer_receipts_count > 0) {
+                errors.push(
+                    `transfer receipts count = ${transfer_receipts_count}`,
+                );
             }
 
             throw new BadRequestException(errors);
@@ -1142,11 +1170,21 @@ export class OrderSaleService {
         order_request_id: number;
         current_user_id: number;
     }): Promise<boolean> {
-        return this.isEditable({
-            order_sale_id: order_sale_id,
-            current_user_id: current_user_id,
-            order_request_id: order_request_id,
+        const { is_order_request_in_production, is_order_sale_delivered } =
+            await this.softValidate({
+                order_sale_id: order_sale_id,
+                current_user_id: current_user_id,
+                order_request_id: order_request_id,
+            });
+        const { transfer_receipts_count } = await this.getDependenciesCount({
+            order_sale_id,
         });
+
+        return (
+            !is_order_sale_delivered &&
+            !is_order_request_in_production &&
+            transfer_receipts_count === 0
+        );
     }
 
     async isEditable({
@@ -1158,6 +1196,29 @@ export class OrderSaleService {
         order_request_id: number;
         current_user_id: number;
     }): Promise<boolean> {
+        const { is_order_request_in_production, is_order_sale_delivered } =
+            await this.softValidate({
+                current_user_id,
+                order_sale_id,
+                order_request_id,
+            });
+        return !is_order_sale_delivered && !is_order_request_in_production;
+    }
+
+    async softValidate({
+        current_user_id,
+        order_sale_id,
+        order_request_id,
+    }: {
+        order_sale_id?: number | null;
+        order_request_id: number;
+        current_user_id: number;
+    }): Promise<SoftValidation> {
+        const res = {
+            is_order_request_in_production: false,
+            is_order_sale_delivered: false,
+        };
+
         let wasOrderSaleDelivered = false;
 
         if (!!order_sale_id) {
@@ -1176,13 +1237,13 @@ export class OrderSaleService {
 
         if (userRequiresMoreValidation) {
             if (wasOrderSaleDelivered) {
-                return false;
+                res.is_order_sale_delivered = true;
             } else if (!isOrderRequestInProduction) {
-                return false;
+                res.is_order_request_in_production = true;
             }
         }
 
-        return true;
+        return res;
     }
 
     async wasOrderSaleDelivered({
@@ -1242,5 +1303,35 @@ export class OrderSaleService {
         }
 
         return orderRequest.order_request_status_id === 2;
+    }
+
+    async getDependenciesCount({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<{
+        transfer_receipts_count: number;
+    }> {
+        const {
+            _count: { id: transferReceiptsCount },
+        } = await this.prisma.transfer_receipts.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        order_sale_id,
+                    },
+                ],
+            },
+        });
+
+        return {
+            transfer_receipts_count: transferReceiptsCount,
+        };
     }
 }

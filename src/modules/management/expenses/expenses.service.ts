@@ -405,6 +405,21 @@ export class ExpensesService {
             throw new NotFoundException();
         }
 
+        const isDeletable = await this.isDeletable({ expense_id });
+        if (!isDeletable) {
+            const errors: string[] = [];
+
+            const { transfer_receipts } = await this.getDependenciesCount({
+                expense_id,
+            });
+
+            if (transfer_receipts > 0) {
+                errors.push(`transfer receipts count ${transfer_receipts}`);
+            }
+
+            throw new BadRequestException(errors);
+        }
+
         await this.prisma.expenses.update({
             data: {
                 active: -1,
@@ -426,12 +441,46 @@ export class ExpensesService {
         return true;
     }
 
+    async getDependenciesCount({
+        expense_id,
+    }: {
+        expense_id: number;
+    }): Promise<{
+        transfer_receipts: number;
+    }> {
+        const {
+            _count: { id: transfersCount },
+        } = await this.prisma.transfer_receipts.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        expense_id,
+                    },
+                ],
+            },
+        });
+
+        return {
+            transfer_receipts: transfersCount,
+        };
+    }
+
     async isDeletable({
         expense_id,
     }: {
         expense_id: number;
     }): Promise<boolean> {
-        return true;
+        const { transfer_receipts } = await this.getDependenciesCount({
+            expense_id,
+        });
+
+        return transfer_receipts === 0;
     }
 
     async isEditable({ expense_id }: { expense_id: number }): Promise<boolean> {
