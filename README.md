@@ -10,7 +10,27 @@
 
 ## Todo
 
+* functionality:
+  * cash transfers. What to do?
+    * show them as the same balances table but only cash sales and cash expenses
+  * expenses add order sale receipt type
+  * increase security
+    * transfers
+    * expenses
+* validations / testing:
+  * sales testing (delete)
+  * transfers
+    * same amount transfer receipts
+    * delete
+    * cash sales
+    * if withdrawl account is client, then order sale id != null and transfer receipts length > 0
+    * if payment account is provider, then expense id != null and transfer receipts length > 0
+  * expenses  (delete)
 
+
+* increase security
+  * order sales
+* change order sale receipt type for receipt type
 
 
 * separate select date from group date
@@ -20,6 +40,9 @@
   * ex: group sales by month when month === 1
 * update timestamps to datetime (mysql)
 * change coalition so errors disappear (mysql console)
+
+
+
 * products & products testing
 * server validation ( date, numbers, emails  (static properties) )
 * maybe class inheritance with part operations (part_operations => part_transactions, part_costs)
