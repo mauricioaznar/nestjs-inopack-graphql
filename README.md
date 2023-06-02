@@ -12,8 +12,6 @@
 
 * functionality:
   * eliminate payments from order sales
-  * create sales without products, add amount column on sales 
-    * validate orde sales amount  == order sales products amount total
   * improve order sales ui
   * improve transfers ui
   * improve expenses ui
