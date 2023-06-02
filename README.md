@@ -13,7 +13,7 @@
 * functionality:
   * cash transfers. What to do?
     * show them as the same balances table but only cash sales and cash expenses
-  * expenses add order sale receipt type
+    * expenses add order sale receipt type
   * increase security
     * transfers
     * expenses
@@ -23,14 +23,17 @@
     * same amount transfer receipts
     * delete
     * cash sales
-    * if withdrawl account is client, then order sale id != null and transfer receipts length > 0
-    * if payment account is provider, then expense id != null and transfer receipts length > 0
+    * if withdrawl account is client, then order sale id != null and transfer receipts length > 0 has to be
+    * if payment account is provider, then expense id != null and transfer receipts length > 0 has to be
   * expenses  (delete)
 
-
+* functionality
+  * expenses
+* refactor
+  * change order sale receipt type for receipt type
 * increase security
-  * order sales
-* change order sale receipt type for receipt type
+  * rethink order sales
+
 
 
 * separate select date from group date
