@@ -11,9 +11,6 @@
 ## Todo
 
 * functionality:
-  * increase security
-    * transfers
-    * expenses
   * improve transfers ui
   * improve expenses ui
 * validations / testing:
@@ -82,6 +79,12 @@
 
 
 ## Done
+
+### 02/06/2023
+
+* increase security
+  * transfers
+  * expenses
 
 ### 24/05/2023
 
