@@ -4,6 +4,8 @@ import { AccountTransferSummariesService } from './account-transfer-summaries.se
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { AccountTransferSummary } from '../../../common/dto/entities/management/account-transfer-summary.dto';
 import { Account } from '../../../common/dto/entities';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => AccountTransferSummary)
 @UseGuards(GqlAuthGuard)
@@ -13,6 +15,8 @@ export class AccountTransferSummariesResolver {
     constructor(private service: AccountTransferSummariesService) {}
 
     @Query(() => [AccountTransferSummary])
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async getAccountTransferSummary(): Promise<AccountTransferSummary[]> {
         return this.service.getAccountTransferSummary();
     }

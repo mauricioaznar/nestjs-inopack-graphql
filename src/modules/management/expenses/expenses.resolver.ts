@@ -8,7 +8,7 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { ExpensesService } from './expenses.service';
 import {
     Account,
@@ -25,6 +25,9 @@ import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { ExpenseResource } from '../../../common/dto/entities';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => Expense)
 @Injectable()
@@ -35,6 +38,8 @@ export class ExpensesResolver {
     ) {}
 
     @Mutation(() => Expense)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async upsertExpense(
         @Args('ExpenseUpsertInput') input: ExpenseUpsertInput,
         @CurrentUser() currentUser: User,
@@ -50,6 +55,8 @@ export class ExpensesResolver {
     }
 
     @Mutation(() => Boolean)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async deleteExpense(
         @Args('ExpenseId') expenseId: number,
         @CurrentUser() currentUser: User,
@@ -70,11 +77,15 @@ export class ExpensesResolver {
     @Query(() => Expense, {
         nullable: true,
     })
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async getExpense(@Args('ExpenseId') id: number): Promise<Expense | null> {
         return this.service.getExpense({ expense_id: id });
     }
 
     @Query(() => [Expense])
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async getExpenses(
         @Args({ nullable: false }) args: GetExpensesQueryArgs,
     ): Promise<Expense[]> {
@@ -82,11 +93,15 @@ export class ExpensesResolver {
     }
 
     @Query(() => [Expense])
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async getExpensesWithDisparities(): Promise<Expense[]> {
         return this.service.getExpensesWithDisparities();
     }
 
     @Query(() => PaginatedExpenses)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async paginatedExpenses(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) datePaginator: YearMonth,

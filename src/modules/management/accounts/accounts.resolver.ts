@@ -7,29 +7,25 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { AccountsService } from './accounts.service';
 import {
-    ActivityTypeName,
     Account,
     AccountContact,
+    AccountsQueryArgs,
+    AccountType,
     AccountUpsertInput,
+    ActivityTypeName,
     PaginatedAccounts,
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
     User,
-    PaginatedOrderSalesQueryArgs,
-    AccountsQueryArgs,
-    AccountType,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
-import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 
 @Resolver(() => Account)
-@UseGuards(GqlAuthGuard)
-// @Role('super')
 @Injectable()
 export class AccountsResolver {
     constructor(

@@ -8,7 +8,7 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { TransfersService } from './transfers.service';
 import {
     Account,
@@ -26,6 +26,9 @@ import {
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => Transfer)
 @Injectable()
@@ -36,6 +39,8 @@ export class TransfersResolver {
     ) {}
 
     @Mutation(() => Transfer)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async upsertTransfer(
         @Args('TransferUpsertInput') input: TransferUpsertInput,
         @CurrentUser() currentUser: User,
@@ -51,6 +56,8 @@ export class TransfersResolver {
     }
 
     @Mutation(() => Boolean)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async deleteTransfer(
         @Args('TransferId') transferId: number,
         @CurrentUser() currentUser: User,
@@ -71,6 +78,8 @@ export class TransfersResolver {
     @Query(() => Transfer, {
         nullable: true,
     })
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async getTransfer(
         @Args('TransferId') id: number,
     ): Promise<Transfer | null> {
@@ -83,6 +92,8 @@ export class TransfersResolver {
     }
 
     @Query(() => PaginatedTransfers)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async paginatedTransfers(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) datePaginator: YearMonth,
