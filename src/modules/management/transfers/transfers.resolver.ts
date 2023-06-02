@@ -1,5 +1,6 @@
 import {
     Args,
+    Float,
     Mutation,
     Parent,
     Query,
@@ -137,6 +138,15 @@ export class TransfersResolver {
         @Parent() transfer: Transfer,
     ): Promise<TransferReceipt[]> {
         return this.service.getTransferReceipts({
+            transfer_id: transfer.id,
+        });
+    }
+
+    @ResolveField(() => Float, { nullable: false })
+    async transfer_receipts_total(
+        @Parent() transfer: Transfer,
+    ): Promise<number> {
+        return this.service.getTransferReceiptsTotal({
             transfer_id: transfer.id,
         });
     }

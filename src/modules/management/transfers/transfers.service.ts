@@ -64,6 +64,27 @@ export class TransfersService {
         });
     }
 
+    async getTransferReceiptsTotal({
+        transfer_id,
+    }: {
+        transfer_id: number | null;
+    }): Promise<number> {
+        if (!transfer_id) {
+            return 0;
+        }
+
+        const transfer_receipts = await this.prisma.transfer_receipts.findMany({
+            where: {
+                active: 1,
+                transfer_id: transfer_id,
+            },
+        });
+
+        return transfer_receipts.reduce((acc, curr) => {
+            return acc + curr.amount;
+        }, 0);
+    }
+
     async getAccount({
         account_id,
     }: {
