@@ -11,6 +11,10 @@
 ## Todo
 
 * functionality:
+  * eliminate payments from order sales
+  * create sales without products, add amount column on sales 
+    * validate orde sales amount  == order sales products amount total
+  * improve order sales ui
   * improve transfers ui
   * improve expenses ui
 * validations / testing:
@@ -25,8 +29,6 @@
   * expenses  (delete)
 
 * functionality
-  * eliminate payments from order sales
-  * improve order sales ui
   * cash transfers. What to do?
     * show them as the same balances table but only cash sales and cash expenses
     * expenses add order sale receipt type
