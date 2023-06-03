@@ -381,6 +381,187 @@ export class TransfersService {
             });
         }
 
+        //  either one has to be own account (to and from accounts)
+        {
+            if (
+                input.to_account_id !== null &&
+                input.from_account_id !== null
+            ) {
+                const fromAccount = await this.prisma.accounts.findFirst({
+                    where: {
+                        id: input.from_account_id,
+                    },
+                });
+                const toAccount = await this.prisma.accounts.findFirst({
+                    where: {
+                        id: input.to_account_id,
+                    },
+                });
+
+                if (toAccount && fromAccount) {
+                    if (
+                        toAccount.account_type_id !== 1 &&
+                        fromAccount.account_type_id !== 1
+                    ) {
+                        errors.push(
+                            `either from account or to account have to be own account type`,
+                        );
+                    }
+                }
+            }
+        }
+
+        // either one has to be different than null
+        {
+            if (
+                input.to_account_id === null &&
+                input.from_account_id === null
+            ) {
+                errors.push(
+                    `either one of to or from account has to be different than null`,
+                );
+            }
+        }
+
+        // if to and from are selected one of them has to be own account
+        // {
+        //     if (
+        //         input.to_account_id !== null ||
+        //         input.from_account_id !== null
+        //     ) {
+        //         if (
+        //             input.to_account_id !== null &&
+        //             input.from_account_id === null
+        //         ) {
+        //             const toAccount = await this.prisma.accounts.findFirst({
+        //                 where: {
+        //                     id: input.to_account_id,
+        //                 },
+        //             });
+        //             if (toAccount?.account_type_id !== 1) {
+        //                 errors.push(`only own accounts can be adjusted`);
+        //             }
+        //         }
+        //         if (
+        //             input.from_account_id !== null &&
+        //             input.to_account_id === null
+        //         ) {
+        //             const fromAccount = await this.prisma.accounts.findFirst({
+        //                 where: {
+        //                     id: input.from_account_id,
+        //                 },
+        //             });
+        //             if (fromAccount?.account_type_id !== 1) {
+        //                 errors.push(`only own accounts can be adjusted`);
+        //             }
+        //         }
+        //     }
+        // }
+
+        // if withdrawl account is client, then order sale id != null and transfer receipts length > 0 has to be
+        {
+            if (input.from_account_id) {
+                const account = await this.prisma.accounts.findFirst({
+                    where: {
+                        id: input.from_account_id,
+                    },
+                });
+                if (
+                    account &&
+                    account.account_type_id === 2 &&
+                    input.to_account_id !== null
+                ) {
+                    const receipts = input.transfer_receipts;
+                    if (receipts.length === 0) {
+                        errors.push(`withdrawal requires to select a sale`);
+                    }
+                    for await (const [index, receipt] of receipts.entries()) {
+                        if (receipt.order_sale_id === null) {
+                            errors.push(
+                                `withdrawal item[${index}] order sale id has to be defined`,
+                            );
+                        }
+                        if (receipt.order_sale_id !== null) {
+                            const orderSale =
+                                await this.prisma.order_sales.findFirst({
+                                    where: {
+                                        id: receipt.order_sale_id,
+                                    },
+                                    include: {
+                                        order_requests: {
+                                            include: {
+                                                accounts: true,
+                                            },
+                                        },
+                                    },
+                                });
+
+                            if (orderSale) {
+                                const orderSaleAccount =
+                                    orderSale?.order_requests?.accounts?.id ||
+                                    null;
+
+                                if (
+                                    orderSaleAccount !== input.from_account_id
+                                ) {
+                                    errors.push(
+                                        `order sale account is different than from account `,
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // if payment account is provider, then expense id != null and transfer receipts length > 0 has to be
+        {
+            if (input.to_account_id) {
+                const account = await this.prisma.accounts.findFirst({
+                    where: {
+                        id: input.to_account_id,
+                    },
+                });
+                if (
+                    account &&
+                    account.account_type_id === 3 &&
+                    input.from_account_id !== null
+                ) {
+                    const receipts = input.transfer_receipts;
+                    if (receipts.length === 0) {
+                        errors.push(`payment requires to select an expense`);
+                    }
+                    for await (const [index, receipt] of receipts.entries()) {
+                        if (receipt.expense_id === null) {
+                            errors.push(
+                                `payment item[${index}] expense id has to be defined`,
+                            );
+                        }
+                        if (receipt.expense_id !== null) {
+                            const expense =
+                                await this.prisma.expenses.findFirst({
+                                    where: {
+                                        id: receipt.expense_id,
+                                    },
+                                });
+
+                            if (expense) {
+                                const expenseAccount =
+                                    expense?.account_id || null;
+
+                                if (expenseAccount !== input.to_account_id) {
+                                    errors.push(
+                                        `expense account is different than to account `,
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
