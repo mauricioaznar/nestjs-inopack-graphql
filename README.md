@@ -16,14 +16,15 @@
   * improve transfers ui
   * improve expenses ui
 * validations / testing:
-  * sales testing (delete)
   * transfers
     * same amount transfer receipts
+    * not bigger than receipt
     * delete
     * cash sales
     * if withdrawl account is client, then order sale id != null and transfer receipts length > 0 has to be
     * if payment account is provider, then expense id != null and transfer receipts length > 0 has to be
   * accounts (dont delete account when it has order sales or expenses or transfers)
+  * sales testing (delete)
   * expenses  (delete)
 
 * functionality

@@ -15,6 +15,7 @@ import {
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import {
+    formatFloat,
     getCreatedAtProperty,
     getRangesFromYearMonth,
     getUpdatedAtProperty,
@@ -313,14 +314,71 @@ export class TransfersService {
         };
     }
 
-    async validateUpsertTransfer(
-        transferUpsertInput: TransferUpsertInput,
-    ): Promise<void> {
+    async validateUpsertTransfer(input: TransferUpsertInput): Promise<void> {
         const errors: string[] = [];
 
-        // order production type cant change
+        // transfer amount is different than receipt amount
+        {
+            const hasReceipts = input.transfer_receipts.length > 0;
+            const receiptsAmountTotal = input.transfer_receipts.reduce(
+                (acc, curr) => {
+                    return acc + curr.amount;
+                },
+                0,
+            );
+            if (hasReceipts && input.amount != receiptsAmountTotal) {
+                errors.push(
+                    `transfer amount (${formatFloat(
+                        input.amount,
+                    )}) is different than receipts amount (${formatFloat(
+                        receiptsAmountTotal,
+                    )})`,
+                );
+            }
+        }
 
-        if (transferUpsertInput.id) {
+        // order sale is not unique
+        {
+            const receipts = input.transfer_receipts;
+            receipts.forEach(({ order_sale_id: order_sale_id_1 }) => {
+                let count = 0;
+                receipts.forEach(({ order_sale_id: order_sale_id_2 }) => {
+                    if (
+                        order_sale_id_1 !== null &&
+                        order_sale_id_2 !== null &&
+                        order_sale_id_1 === order_sale_id_2
+                    ) {
+                        count = count + 1;
+                    }
+                });
+                if (count >= 2) {
+                    errors.push(
+                        `order sale is not unique (order_sale_id: ${order_sale_id_1}`,
+                    );
+                }
+            });
+        }
+
+        // expense is not unique
+        {
+            const receipts = input.transfer_receipts;
+            receipts.forEach(({ expense_id: expense_id_1 }) => {
+                let count = 0;
+                receipts.forEach(({ expense_id: expense_id_2 }) => {
+                    if (
+                        expense_id_1 !== null &&
+                        expense_id_2 !== null &&
+                        expense_id_1 === expense_id_2
+                    ) {
+                        count = count + 1;
+                    }
+                });
+                if (count >= 2) {
+                    errors.push(
+                        `expense is not unique (expense_id: ${expense_id_1}`,
+                    );
+                }
+            });
         }
 
         if (errors.length > 0) {
