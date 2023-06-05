@@ -318,24 +318,24 @@ export class TransfersService {
         const errors: string[] = [];
 
         // transfer amount is different than receipt amount
-        {
-            const hasReceipts = input.transfer_receipts.length > 0;
-            const receiptsAmountTotal = input.transfer_receipts.reduce(
-                (acc, curr) => {
-                    return acc + curr.amount;
-                },
-                0,
-            );
-            if (hasReceipts && input.amount != receiptsAmountTotal) {
-                errors.push(
-                    `transfer amount (${formatFloat(
-                        input.amount,
-                    )}) is different than receipts amount (${formatFloat(
-                        receiptsAmountTotal,
-                    )})`,
-                );
-            }
-        }
+        // {
+        //     const hasReceipts = input.transfer_receipts.length > 0;
+        //     const receiptsAmountTotal = input.transfer_receipts.reduce(
+        //         (acc, curr) => {
+        //             return acc + curr.amount;
+        //         },
+        //         0,
+        //     );
+        //     if (hasReceipts && input.amount != receiptsAmountTotal) {
+        //         errors.push(
+        //             `transfer amount (${formatFloat(
+        //                 input.amount,
+        //             )}) is different than receipts amount (${formatFloat(
+        //                 receiptsAmountTotal,
+        //             )})`,
+        //         );
+        //     }
+        // }
 
         // order sale is not unique
         {
