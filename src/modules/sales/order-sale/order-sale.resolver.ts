@@ -18,7 +18,6 @@ import {
     OrderRequest,
     OrderSale,
     OrderSaleInput,
-    OrderSalePayment,
     OrderSaleProduct,
     OrderSaleReceiptType,
     OrderSalesSortArgs,
@@ -150,15 +149,6 @@ export class OrderSaleResolver {
         });
     }
 
-    @ResolveField(() => [OrderSalePayment])
-    async order_sale_payments(
-        orderSale: OrderSale,
-    ): Promise<OrderSalePayment[]> {
-        return this.service.getOrderSalePayments({
-            order_sale_id: orderSale.id,
-        });
-    }
-
     @ResolveField(() => Account, { nullable: true })
     async account(orderSale: OrderSale): Promise<Account | null> {
         return this.service.getAccount({
@@ -211,13 +201,6 @@ export class OrderSaleResolver {
     ): Promise<OrderSaleStatus | null> {
         return this.service.getOrderSaleStatus({
             order_sale_status_id: orderSale.order_sale_status_id,
-        });
-    }
-
-    @ResolveField(() => Float)
-    async payments_total(@Parent() orderSale: OrderSale): Promise<number> {
-        return this.service.getOrderSalePaymentsTotal({
-            order_sale_id: orderSale.id,
         });
     }
 

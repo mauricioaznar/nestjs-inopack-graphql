@@ -14,14 +14,12 @@ import { OrderRequestInput } from '../../../common/dto/entities';
 import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 import { OrderSaleService } from '../order-sale/order-sale.service';
 import { orderSaleReceiptType1 } from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
-import { orderSaleCollectionStatus1 } from '../../../common/__tests__/objects/sales/order-sale-collection-statuses';
 import {
     orderRequestsTestsOrderRequestsOrderCode,
     orderRequestsTestsOrderSalesOrderCode,
 } from '../../../common/__tests__/constants/unique-codes-initial-values';
 import { ColumnOrder } from '../../../common/dto/pagination';
 import { adminUser } from '../../../common/__tests__/objects/auth/users';
-import { AccountTypeService } from '../../management/account-type/account-type.service';
 import { AccountsService } from '../../management/accounts/accounts.service';
 import { ownAccountType } from '../../../common/__tests__/objects/management/account-types';
 
@@ -651,16 +649,6 @@ describe('upsert', () => {
                             discount: 0,
                         },
                     ],
-                    order_sale_payments: [
-                        {
-                            order_sale_collection_status_id:
-                                orderSaleCollectionStatus1.id,
-                            amount:
-                                orderRequestProduct.kilos *
-                                orderRequestProduct.kilo_price,
-                            date_paid: getUtcDate(),
-                        },
-                    ],
                     expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
@@ -728,16 +716,6 @@ describe('upsert', () => {
                             group_weight: orderRequestProduct.group_weight,
                             kilo_price: orderRequestProduct.kilo_price,
                             discount: 0,
-                        },
-                    ],
-                    order_sale_payments: [
-                        {
-                            order_sale_collection_status_id:
-                                orderSaleCollectionStatus1.id,
-                            amount:
-                                orderRequestProduct.kilos *
-                                orderRequestProduct.kilo_price,
-                            date_paid: getUtcDate(),
                         },
                     ],
                     expected_payment_date: getUtcDate(),
@@ -896,16 +874,6 @@ describe('delete', () => {
                             group_weight: orderRequestProduct.group_weight,
                             kilo_price: orderRequestProduct.kilo_price,
                             discount: 0,
-                        },
-                    ],
-                    order_sale_payments: [
-                        {
-                            order_sale_collection_status_id:
-                                orderSaleCollectionStatus1.id,
-                            amount:
-                                orderRequestProduct.kilos *
-                                orderRequestProduct.kilo_price,
-                            date_paid: getUtcDate(),
                         },
                     ],
                     expected_payment_date: getUtcDate(),

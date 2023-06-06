@@ -9,7 +9,6 @@ import { orderAdjustmentTypes } from '../objects/production/order-adjustment-typ
 import { orderRequestStatuses } from '../objects/sales/order-request-statuses';
 import { orderSaleStatuses } from '../objects/sales/order-sale-statuses';
 import { orderSaleReceiptTypes } from '../objects/sales/order-sale-receipt-types';
-import { orderSaleCollectionStatuses } from '../objects/sales/order-sale-collection-statuses';
 import { roles } from '../objects/auth/roles';
 import { productCategories } from '../objects/production/product-categories';
 import { accountTypes } from '../objects/management/account-types';
@@ -25,7 +24,6 @@ export default async function setupDatabase() {
     await prismaService.order_production_products.deleteMany();
     await prismaService.order_production_employees.deleteMany();
     await prismaService.order_request_products.deleteMany();
-    await prismaService.order_sale_payments.deleteMany();
     await prismaService.order_sale_products.deleteMany();
     await prismaService.transfers.deleteMany();
     await prismaService.expense_resources.deleteMany();
@@ -55,7 +53,6 @@ export default async function setupDatabase() {
     await prismaService.order_request_statuses.deleteMany();
     await prismaService.order_sale_statuses.deleteMany();
     await prismaService.order_sale_receipt_type.deleteMany();
-    await prismaService.order_sale_collection_statuses.deleteMany();
     await prismaService.account_types.deleteMany();
 
     // level 1
@@ -94,10 +91,6 @@ export default async function setupDatabase() {
     await prismaService.order_sale_receipt_type.createMany({
         data: orderSaleReceiptTypes,
     });
-    await prismaService.order_sale_collection_statuses.createMany({
-        data: orderSaleCollectionStatuses,
-    });
-
     await prismaService.account_types.createMany({
         data: accountTypes,
     });

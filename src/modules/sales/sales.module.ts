@@ -6,8 +6,6 @@ import { OrderSaleModule } from './order-sale/order-sale.module';
 import { OrderSaleProductsModule } from './order-sale-products/order-sale-products.module';
 import { OrderSaleStatusesModule } from './order-sale-statuses/order-sale-statuses.module';
 import { OrderSaleReceiptTypeModule } from './order-sale-receipt-type/order-sale-receipt-type.module';
-import { OrderSalePaymentModule } from './order-sale-payment/order-sale-payment.module';
-import { OrderSaleCollectionStatusModule } from './order-sale-collection-status/order-sale-collection-status.module';
 
 @Module({
     imports: [
@@ -18,8 +16,6 @@ import { OrderSaleCollectionStatusModule } from './order-sale-collection-status/
         OrderSaleProductsModule,
         OrderSaleStatusesModule,
         OrderSaleReceiptTypeModule,
-        OrderSalePaymentModule,
-        OrderSaleCollectionStatusModule,
     ],
 })
 export class SalesModule {}

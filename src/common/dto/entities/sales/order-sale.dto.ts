@@ -1,14 +1,12 @@
 import {
     ArgsType,
     Field,
-    Float,
     InputType,
     Int,
     ObjectType,
     registerEnumType,
 } from '@nestjs/graphql';
 import { OrderSaleProductInput } from './order-sale-product.dto';
-import { OrderSalePaymentInput } from './order-sale-payment.dto';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
 
@@ -44,9 +42,6 @@ export class OrderSaleInput extends OrderSaleBase {
 
     @Field(() => [OrderSaleProductInput])
     order_sale_products: OrderSaleProductInput[];
-
-    @Field(() => [OrderSalePaymentInput])
-    order_sale_payments: OrderSalePaymentInput[];
 
     @Field({ nullable: false })
     order_request_id: number;

@@ -19,7 +19,6 @@ import { branch1 } from '../../../common/__tests__/objects/maintenance/branches'
 import { orderAdjustmentType1 } from '../../../common/__tests__/objects/production/order-adjustment-types';
 import { OrderSaleService } from '../../sales/order-sale/order-sale.service';
 import { orderSaleStatus1 } from '../../../common/__tests__/objects/sales/order-sale-statuses';
-import { orderSaleCollectionStatus2 } from '../../../common/__tests__/objects/sales/order-sale-collection-statuses';
 import { orderSaleReceiptType1 } from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
 import {
     productsTestsOrderRequestsOrderCode,
@@ -320,16 +319,6 @@ describe('delete', () => {
                         kilo_price: product.current_kilo_price,
                         kilos: product.current_group_weight,
                         discount: 0,
-                    },
-                ],
-                order_sale_payments: [
-                    {
-                        amount:
-                            product.current_kilo_price *
-                            product.current_group_weight,
-                        date_paid: getUtcDate(),
-                        order_sale_collection_status_id:
-                            orderSaleCollectionStatus2.id,
                     },
                 ],
                 order_sale_receipt_type_id: orderSaleReceiptType1.id,

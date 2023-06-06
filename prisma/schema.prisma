@@ -285,41 +285,6 @@ model order_requests {
   @@index([order_request_status_id], map: "order_requests_order_request_status_id_foreign")
 }
 
-model order_sale_collection_statuses {
-  id                  Int                   @id @default(autoincrement()) @db.UnsignedInt
-  active              Int                   @default(1)
-  name                String                @db.VarChar(255)
-  created_at          DateTime?             @db.DateTime(0)
-  updated_at          DateTime?             @db.DateTime(0)
-  order_sale_payments order_sale_payments[]
-  order_sales         order_sales[]
-}
-
-model order_sale_payment_type {
-  id          Int           @id @default(autoincrement()) @db.UnsignedInt
-  name        String        @db.VarChar(255)
-  active      Int           @default(1)
-  created_at  DateTime?     @db.DateTime(0)
-  updated_at  DateTime?     @db.DateTime(0)
-  order_sales order_sales[]
-}
-
-model order_sale_payments {
-  id                              Int                             @id @default(autoincrement()) @db.UnsignedInt
-  active                          Int                             @default(1)
-  date_paid                       DateTime                        @db.DateTime(0)
-  amount                          Float
-  created_at                      DateTime?                       @db.DateTime(0)
-  updated_at                      DateTime?                       @db.DateTime(0)
-  order_sale_id                   Int?                            @db.UnsignedInt
-  order_sale_collection_status_id Int?                            @db.UnsignedInt
-  order_sale_collection_statuses  order_sale_collection_statuses? @relation(fields: [order_sale_collection_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_payments_order_sale_collection_status_id_foreign")
-  order_sales                     order_sales?                    @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_payments_order_sale_id_foreign")
-
-  @@index([order_sale_collection_status_id], map: "order_sale_payments_order_sale_collection_status_id_foreign")
-  @@index([order_sale_id], map: "order_sale_payments_order_sale_id_foreign")
-}
-
 model order_sale_products {
   id            Int          @id @default(autoincrement()) @db.UnsignedInt
   active        Int          @default(1)
@@ -358,33 +323,24 @@ model order_sale_statuses {
 }
 
 model order_sales {
-  id                              Int                             @id @default(autoincrement()) @db.UnsignedInt
-  order_code                      Int
-  active                          Int                             @default(1)
-  date                            DateTime                        @db.DateTime(0)
-  created_at                      DateTime?                       @db.DateTime(0)
-  updated_at                      DateTime?                       @db.DateTime(0)
-  order_sale_status_id            Int?                            @db.UnsignedInt
-  order_request_id                Int?                            @db.UnsignedInt
-  order_sale_receipt_type_id      Int?                            @db.UnsignedInt
-  order_sale_payment_type_id      Int?                            @db.UnsignedInt
-  amount_collected                Float                           @default(0.00)
-  order_sale_collection_status_id Int?                            @db.UnsignedInt
-  date_collected                  DateTime?                       @db.Date
-  invoice_code                    Int                             @default(0)
-  expected_payment_date           DateTime?                       @db.DateTime(0)
-  order_requests                  order_requests?                 @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_request_id_foreign")
-  order_sale_collection_statuses  order_sale_collection_statuses? @relation(fields: [order_sale_collection_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_collection_status_id_foreign")
-  order_sale_payment_type         order_sale_payment_type?        @relation(fields: [order_sale_payment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_payment_type_id_foreign")
-  order_sale_receipt_type         order_sale_receipt_type?        @relation(fields: [order_sale_receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_receipt_type_id_foreign")
-  order_sale_statuses             order_sale_statuses?            @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
-  order_sale_payments             order_sale_payments[]
-  order_sale_products             order_sale_products[]
-  transfer_receipts               transfer_receipts[]
+  id                         Int                      @id @default(autoincrement()) @db.UnsignedInt
+  order_code                 Int
+  active                     Int                      @default(1)
+  date                       DateTime                 @db.DateTime(0)
+  created_at                 DateTime?                @db.DateTime(0)
+  updated_at                 DateTime?                @db.DateTime(0)
+  order_sale_status_id       Int?                     @db.UnsignedInt
+  order_request_id           Int?                     @db.UnsignedInt
+  order_sale_receipt_type_id Int?                     @db.UnsignedInt
+  invoice_code               Int                      @default(0)
+  expected_payment_date      DateTime?                @db.DateTime(0)
+  order_requests             order_requests?          @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_request_id_foreign")
+  order_sale_receipt_type    order_sale_receipt_type? @relation(fields: [order_sale_receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_receipt_type_id_foreign")
+  order_sale_statuses        order_sale_statuses?     @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
+  order_sale_products        order_sale_products[]
+  transfer_receipts          transfer_receipts[]
 
   @@index([order_request_id], map: "order_sales_order_request_id_foreign")
-  @@index([order_sale_collection_status_id], map: "order_sales_order_sale_collection_status_id_foreign")
-  @@index([order_sale_payment_type_id], map: "order_sales_order_sale_payment_type_id_foreign")
   @@index([order_sale_receipt_type_id], map: "order_sales_order_sale_receipt_type_id_foreign")
   @@index([order_sale_status_id], map: "order_sales_order_sale_status_id_foreign")
 }

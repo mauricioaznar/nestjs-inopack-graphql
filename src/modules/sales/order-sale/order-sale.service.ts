@@ -8,19 +8,17 @@ import {
 import { Prisma } from '@prisma/client';
 import {
     Account,
+    GetOrderSalesQueryArgs,
     OrderRequest,
     OrderSale,
     OrderSaleInput,
-    OrderSalePayment,
     OrderSaleProduct,
     OrderSaleReceiptType,
-    PaginatedOrderSalesQueryArgs,
     OrderSalesSortArgs,
     OrderSaleStatus,
     PaginatedOrderSales,
-    Transfer,
+    PaginatedOrderSalesQueryArgs,
     User,
-    GetOrderSalesQueryArgs,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -345,29 +343,6 @@ export class OrderSaleService {
         });
     }
 
-    async getOrderSalePayments({
-        order_sale_id,
-    }: {
-        order_sale_id: number | null;
-    }): Promise<OrderSalePayment[]> {
-        if (!order_sale_id) {
-            return [];
-        }
-
-        return this.prisma.order_sale_payments.findMany({
-            where: {
-                AND: [
-                    {
-                        order_sale_id: order_sale_id,
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
-            },
-        });
-    }
-
     async getAccount({
         order_sale_id,
     }: {
@@ -580,34 +555,6 @@ export class OrderSaleService {
         });
     }
 
-    async getOrderSalePaymentsTotal({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<number> {
-        const orderSaleTotals = await this.prisma.order_sale_payments.findMany({
-            where: {
-                AND: [
-                    {
-                        order_sale_id: order_sale_id,
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
-            },
-        });
-
-        const orderSalePaymentsTotal = orderSaleTotals.reduce(
-            (acc, orderSale) => {
-                return acc + orderSale.amount;
-            },
-            0,
-        );
-
-        return Math.round(orderSalePaymentsTotal * 100) / 100;
-    }
-
     async upsertOrderSale({
         input,
         current_user_id,
@@ -722,70 +669,6 @@ export class OrderSaleService {
                     },
                 });
                 // await this.cacheManager.del(`product_inventory`);
-            }
-        }
-
-        const newPaymentItems = input.order_sale_payments;
-        const oldPaymentItems = input.id
-            ? await this.prisma.order_sale_payments.findMany({
-                  where: {
-                      order_sale_id: input.id,
-                  },
-              })
-            : [];
-
-        const {
-            aMinusB: deletePaymentItems,
-            bMinusA: createPaymentItems,
-            intersection: updatePaymentItems,
-        } = vennDiagram({
-            a: oldPaymentItems,
-            b: newPaymentItems,
-            indexProperties: ['id'],
-        });
-
-        for await (const delItem of deletePaymentItems) {
-            if (delItem && delItem.id) {
-                await this.prisma.order_sale_payments.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        active: -1,
-                    },
-                    where: {
-                        id: delItem.id,
-                    },
-                });
-            }
-        }
-
-        for await (const createItem of createPaymentItems) {
-            await this.prisma.order_sale_payments.create({
-                data: {
-                    ...getCreatedAtProperty(),
-                    ...getUpdatedAtProperty(),
-                    amount: Math.round(createItem.amount * 100) / 100,
-                    order_sale_collection_status_id:
-                        createItem.order_sale_collection_status_id,
-                    date_paid: createItem.date_paid,
-                    order_sale_id: orderSale.id,
-                },
-            });
-        }
-
-        for await (const updateItem of updatePaymentItems) {
-            if (updateItem && updateItem.id) {
-                await this.prisma.order_sale_payments.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        amount: Math.round(updateItem.amount * 100) / 100,
-                        order_sale_collection_status_id:
-                            updateItem.order_sale_collection_status_id,
-                        date_paid: updateItem.date_paid,
-                    },
-                    where: {
-                        id: updateItem.id,
-                    },
-                });
             }
         }
 
@@ -907,34 +790,6 @@ export class OrderSaleService {
                         `product is not in order request (product_id: ${inputOrderSaleProduct.product_id}) )`,
                     );
                 }
-            }
-        }
-
-        // DoPaymentsTotalMatchWithProductsTotal
-        {
-            let paymentsTotal = 0;
-            let productsTotal = 0;
-
-            for (const saleProduct of input.order_sale_products) {
-                const productTotal =
-                    saleProduct.kilos *
-                    saleProduct.kilo_price *
-                    (input.order_sale_receipt_type_id === 2 ? 1.16 : 1);
-                const discount = productTotal * (saleProduct.discount / 100);
-                productsTotal = productsTotal + productTotal - discount;
-            }
-
-            for (const payment of input.order_sale_payments) {
-                paymentsTotal = paymentsTotal + payment.amount;
-            }
-
-            paymentsTotal = Math.round(paymentsTotal * 100) / 100;
-            productsTotal = Math.round(productsTotal * 100) / 100;
-
-            if (paymentsTotal !== productsTotal) {
-                errors.push(
-                    `payments total is different from products total (payments total: ${paymentsTotal}), products total: ${productsTotal}`,
-                );
             }
         }
 
@@ -1117,24 +972,9 @@ export class OrderSaleService {
             throw new BadRequestException(errors);
         }
 
-        const orderSalePayments = await this.getOrderSalePayments({
-            order_sale_id,
-        });
         const orderSaleProducts = await this.getOrderSaleProducts({
             order_sale_id,
         });
-
-        for await (const orderSalePayment of orderSalePayments) {
-            await this.prisma.order_sale_payments.update({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    active: -1,
-                },
-                where: {
-                    id: orderSalePayment.id,
-                },
-            });
-        }
 
         for await (const orderSaleProduct of orderSaleProducts) {
             await this.prisma.order_sale_products.update({
