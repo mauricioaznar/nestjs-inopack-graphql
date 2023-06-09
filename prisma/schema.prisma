@@ -364,6 +364,7 @@ model products {
   internal_description      String                      @db.VarChar(255)
   external_description      String                      @db.VarChar(255)
   discontinued              Boolean                     @default(false)
+  current_group_price       Float                       @default(0.00)
   order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_order_production_type_id_foreign")
   product_categories        product_categories?         @relation(fields: [product_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_category_id")
   product_materials         product_materials?          @relation(fields: [product_material_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_material_id")

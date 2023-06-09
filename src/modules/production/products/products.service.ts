@@ -249,6 +249,7 @@ export class ProductsService {
                 order_production_type_id: input.order_production_type_id,
                 product_category_id: input.product_category_id,
                 product_material_id: input.product_material_id,
+                current_group_price: input.current_group_price,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -265,6 +266,7 @@ export class ProductsService {
                 order_production_type_id: input.order_production_type_id,
                 product_category_id: input.product_category_id,
                 product_material_id: input.product_material_id,
+                current_group_price: input.current_group_price,
             },
             where: {
                 id: input.id || 0,

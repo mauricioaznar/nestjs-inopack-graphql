@@ -29,6 +29,9 @@ export class ProductBase {
     current_kilo_price: number;
 
     @Field(() => Float, { nullable: false })
+    current_group_price: number;
+
+    @Field(() => Float, { nullable: false })
     width: number;
 
     @Field(() => Float, { nullable: true })

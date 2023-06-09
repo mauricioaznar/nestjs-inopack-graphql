@@ -31,6 +31,7 @@ export async function createProductForTesting({
             discontinued: false,
             internal_description: '',
             external_description: '',
+            current_group_price: 0,
         });
     } catch (e) {
         console.error(e);

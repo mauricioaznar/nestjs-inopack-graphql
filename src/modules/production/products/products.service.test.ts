@@ -77,6 +77,7 @@ describe('upsert', () => {
             internal_description: 'P1',
             external_description: 'product 1',
             discontinued: false,
+            current_group_price: 0,
         });
 
         expect(product.id).toBeDefined();
@@ -107,6 +108,7 @@ describe('upsert', () => {
             discontinued: false,
             internal_description: '',
             external_description: '',
+            current_group_price: 0,
         });
 
         expect(product.id).toBeDefined();
@@ -134,6 +136,7 @@ describe('upsert', () => {
             discontinued: false,
             external_description: '',
             internal_description: '',
+            current_group_price: 0,
         });
 
         expect(product.id).toBeDefined();
@@ -164,6 +167,7 @@ describe('upsert', () => {
                 discontinued: false,
                 internal_description: '',
                 external_description: '',
+                current_group_price: 0,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
