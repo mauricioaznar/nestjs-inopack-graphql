@@ -208,6 +208,64 @@ describe('upsert', () => {
             );
         }
     });
+
+    it('fails when a product kilo price and group price are different than 0', async () => {
+        expect.hasAssertions();
+        try {
+            await productsService.upsertInput({
+                order_production_type_id: orderProductionType1.id,
+                width: 10,
+                calibre: 1,
+                length: 1,
+                current_group_weight: 10,
+                code: 'codigo del producto 1',
+                product_category_id: productCategory2.id,
+                product_material_id: null,
+                discontinued: false,
+                internal_description: '',
+                external_description: '',
+                current_kilo_price: 1,
+                current_group_price: 1,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(
+                        /only one price can be different than 0/i,
+                    ),
+                ]),
+            );
+        }
+    });
+
+    it('fails when a product kilo price and group price are 0', async () => {
+        expect.hasAssertions();
+        try {
+            await productsService.upsertInput({
+                order_production_type_id: orderProductionType1.id,
+                width: 10,
+                calibre: 1,
+                length: 1,
+                current_group_weight: 10,
+                code: 'codigo del producto 1',
+                product_category_id: productCategory2.id,
+                product_material_id: null,
+                discontinued: false,
+                internal_description: '',
+                external_description: '',
+                current_kilo_price: 0,
+                current_group_price: 0,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(
+                        /one of the prices has to be different than 0/i,
+                    ),
+                ]),
+            );
+        }
+    });
 });
 
 describe('delete', () => {

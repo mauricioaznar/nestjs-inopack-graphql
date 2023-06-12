@@ -383,6 +383,16 @@ export class ProductsService {
             }
         }
 
+        // kilo price and group price different than 0
+        if (input.current_group_price !== 0 && input.current_kilo_price !== 0) {
+            errors.push(`Only one price can be different than 0`);
+        }
+
+        // kilo price and group price different than 0
+        if (input.current_group_price === 0 && input.current_kilo_price === 0) {
+            errors.push(`One of the prices has to be different than 0`);
+        }
+
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
