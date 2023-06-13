@@ -383,6 +383,7 @@ describe('delete', () => {
                         kilo_price: product.current_kilo_price,
                         kilos: product.current_group_weight,
                         discount: 0,
+                        group_price: 0,
                     },
                 ],
                 order_sale_receipt_type_id: orderSaleReceiptType1.id,

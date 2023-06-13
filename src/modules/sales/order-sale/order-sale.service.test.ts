@@ -100,6 +100,7 @@ describe('upsert', () => {
             kilo_price: 20,
             product_id: product.id,
             discount: 0,
+            group_price: 0,
         };
         const orderSale = await orderSalesService.upsertOrderSale({
             input: {
@@ -182,6 +183,8 @@ describe('upsert', () => {
             kilo_price: 20,
             product_id: product.id,
             discount: 2,
+
+            group_price: 0,
         };
 
         let orderSale: OrderSale | undefined;
@@ -259,6 +262,7 @@ describe('upsert', () => {
             kilo_price: 20,
             product_id: product.id,
             discount: 0,
+            group_price: 0,
         };
 
         const createdOrderSale = await orderSalesService.upsertOrderSale({
@@ -283,6 +287,7 @@ describe('upsert', () => {
             kilo_price: 20,
             product_id: product.id,
             discount: 0,
+            group_price: 0,
         };
 
         const updatedOrderSale = await orderSalesService.upsertOrderSale({
@@ -359,6 +364,7 @@ describe('upsert', () => {
             kilo_price: 20,
             product_id: product.id,
             discount: 0,
+            group_price: 0,
         };
 
         const createdOrderSale = await orderSalesService.upsertOrderSale({
@@ -382,6 +388,7 @@ describe('upsert', () => {
             kilo_price: 20,
             product_id: product.id,
             discount: 0,
+            group_price: 0,
         };
 
         try {
@@ -452,6 +459,7 @@ describe('upsert', () => {
             kilo_price: 20,
             product_id: product.id,
             discount: 0,
+            group_price: 0,
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
@@ -505,6 +513,7 @@ describe('upsert', () => {
                             kilo_price: 20,
                             product_id: product1.id,
                             discount: 0,
+                            group_price: 0,
                         },
                     ],
                     expected_payment_date: getUtcDate(),
@@ -557,6 +566,7 @@ describe('upsert', () => {
             group_weight: orderRequestProduct1.group_weight,
             kilo_price: 20,
             discount: 0,
+            group_price: 0,
         };
 
         try {
@@ -622,6 +632,7 @@ describe('upsert', () => {
             group_weight: orderRequestProduct1.group_weight,
             kilo_price: 20,
             discount: 0,
+            group_price: 0,
         };
 
         try {
@@ -688,6 +699,7 @@ describe('upsert', () => {
             group_weight: orderRequestProduct1.group_weight,
             kilo_price: 20,
             discount: 0,
+            group_price: 0,
         };
 
         try {
@@ -750,6 +762,7 @@ describe('upsert', () => {
             group_weight: orderRequestProduct1.group_weight,
             kilo_price: 20,
             discount: 0,
+            group_price: 0,
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
@@ -795,6 +808,7 @@ describe('upsert', () => {
             group_weight: product2.current_group_weight,
             kilo_price: 20,
             discount: 0,
+            group_price: 0,
         };
 
         try {
@@ -847,6 +861,7 @@ describe('upsert', () => {
             group_weight: orderRequestProduct.group_weight,
             kilo_price: 20,
             discount: 0,
+            group_price: 0,
         };
 
         const orderSaleInput: OrderSaleInput = {
@@ -905,6 +920,7 @@ describe('upsert', () => {
             group_weight: orderRequestProduct.group_weight,
             kilo_price: 20,
             discount: 0,
+            group_price: 0,
         };
 
         const orderSaleInput: OrderSaleInput = {
@@ -963,6 +979,7 @@ describe('upsert', () => {
             group_weight: orderRequestProduct.group_weight,
             kilo_price: 20,
             discount: 0,
+            group_price: 0,
         };
 
         const orderSaleInput: OrderSaleInput = {
@@ -1025,6 +1042,7 @@ describe('upsert', () => {
             group_weight: orderRequestProduct.group_weight,
             kilo_price: 20,
             discount: 0,
+            group_price: 0,
         };
 
         const orderSaleInput: OrderSaleInput = {
@@ -1092,6 +1110,7 @@ describe('upsert', () => {
             group_weight: orderRequestProduct.group_weight,
             kilo_price: 20,
             discount: 0,
+            group_price: 0,
         };
 
         try {
@@ -1157,6 +1176,7 @@ describe('upsert', () => {
                             group_weight: orderRequestProduct.group_weight,
                             kilo_price: differntPriceFromOrderRequest,
                             discount: 0,
+                            group_price: 0,
                         },
                     ],
                     expected_payment_date: getUtcDate(),
@@ -1214,6 +1234,7 @@ describe('upsert', () => {
                             group_weight: differentGroupWeight,
                             kilo_price: orderRequestProduct.kilo_price,
                             discount: 0,
+                            group_price: 0,
                         },
                     ],
                     expected_payment_date: getUtcDate(),
@@ -1261,6 +1282,7 @@ describe('delete', () => {
             kilo_price: orderRequestProduct.kilo_price,
             product_id: product.id,
             discount: 0,
+            group_price: 0,
         };
 
         const createdOrderSale = await orderSalesService.upsertOrderSale({
@@ -1331,6 +1353,7 @@ describe('delete', () => {
             kilo_price: orderRequestProduct.kilo_price,
             product_id: product.id,
             discount: 0,
+            group_price: 0,
         };
 
         let createdOrderSale: OrderSale | undefined;
