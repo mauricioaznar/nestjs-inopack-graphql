@@ -646,6 +646,7 @@ export class OrderSaleService {
                     group_weight: createItem.group_weight,
                     groups: createItem.groups,
                     discount: createItem.discount,
+                    group_price: createItem.group_price,
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
@@ -663,6 +664,7 @@ export class OrderSaleService {
                         groups: updateItem.groups,
                         kilo_price: updateItem.kilo_price,
                         discount: updateItem.discount,
+                        group_price: updateItem.group_price,
                     },
                     where: {
                         id: updateItem.id,
@@ -876,7 +878,17 @@ export class OrderSaleService {
                         orderSaleProduct.group_weight
                 ) {
                     errors.push(
-                        `order sale product group weight doesnt match with order request product group weight (sale: ${orderSaleProduct.kilo_price}, request: ${foundOrderRequestProduct.kilo_price})`,
+                        `order sale product group weight doesnt match with order request product group weight (sale: ${orderSaleProduct.group_weight}, request: ${foundOrderRequestProduct.group_weight})`,
+                    );
+                }
+
+                if (
+                    foundOrderRequestProduct &&
+                    foundOrderRequestProduct.group_price !==
+                        orderSaleProduct.group_price
+                ) {
+                    errors.push(
+                        `order sale product group price doesnt match with order request product group price (sale: ${orderSaleProduct.group_price}, request: ${foundOrderRequestProduct.group_price})`,
                     );
                 }
             }
@@ -911,6 +923,17 @@ export class OrderSaleService {
                     errors.push(`Order sale receipt type cant be changed`);
                 }
             }
+        }
+
+        // One of kilo price and group price have to be different than 0
+        {
+            input.order_sale_products.forEach((osp, index) => {
+                if (osp.group_price !== 0 && osp.kilo_price !== 0) {
+                    errors.push(
+                        `Only one of kilo price and group price can be different than 0 (index: ${index}, product id: ${osp.product_id}, kilo price: ${osp.kilo_price}, group price: ${osp.group_price})`,
+                    );
+                }
+            });
         }
 
         if (errors.length > 0) {

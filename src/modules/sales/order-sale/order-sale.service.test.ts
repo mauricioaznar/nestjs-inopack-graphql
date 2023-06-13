@@ -1251,6 +1251,123 @@ describe('upsert', () => {
             );
         }
     });
+
+    it('fails when order sale product group price doesnt match order request product group price', async () => {
+        expect.hasAssertions();
+
+        const product = await createProductForTesting({
+            app,
+        });
+
+        const groupPrice = 10;
+
+        const { orderRequest, orderRequestProduct } =
+            await createOrderRequestWithOneProduct({
+                app,
+                orderRequestCode: currentRequestOrderCode,
+                orderRequestProduct: {
+                    product_id: product.id,
+                    kilos: 3 * product.current_group_weight,
+                    groups: 3,
+                    group_weight: product.current_group_weight,
+                    kilo_price: 0,
+                    group_price: groupPrice,
+                },
+            });
+
+        try {
+            await orderSalesService.upsertOrderSale({
+                input: {
+                    order_code: currentSaleOrderCode,
+                    invoice_code: 0,
+                    order_request_id: orderRequest.id,
+                    date: getUtcDate(),
+                    order_sale_status_id: orderSaleStatus1.id,
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_products: [
+                        {
+                            product_id: product.id,
+                            kilos: 3 * product.current_group_weight,
+                            groups: 3,
+                            group_weight: product.current_group_weight,
+                            kilo_price: orderRequestProduct.kilo_price,
+                            discount: 0,
+                            group_price: groupPrice + 10,
+                        },
+                    ],
+                    expected_payment_date: getUtcDate(),
+                },
+                current_user_id: adminUser.id,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(
+                        /group price doesnt match with order request product group price/i,
+                    ),
+                ]),
+            );
+        }
+    });
+
+    it('fails when kilo price and group price are different than 0', async () => {
+        expect.hasAssertions();
+
+        const account = await createClientForTesting({
+            app,
+        });
+        const product = await createProductForTesting({
+            app,
+        });
+
+        const { orderRequest, orderRequestProduct } =
+            await createOrderRequestWithOneProduct({
+                app,
+                orderRequestCode: currentRequestOrderCode,
+                orderRequestProduct: {
+                    product_id: product.id,
+                    kilos: 3 * product.current_group_weight,
+                    groups: 3,
+                    group_weight: product.current_group_weight,
+                    kilo_price: 0,
+                    group_price: 10,
+                },
+            });
+
+        try {
+            await orderSalesService.upsertOrderSale({
+                input: {
+                    order_code: currentSaleOrderCode,
+                    invoice_code: 0,
+                    order_request_id: orderRequest.id,
+                    date: getUtcDate(),
+                    order_sale_status_id: orderSaleStatus1.id,
+                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    order_sale_products: [
+                        {
+                            product_id: product.id,
+                            kilos: 3 * product.current_group_weight,
+                            groups: 3,
+                            group_weight: product.current_group_weight,
+                            kilo_price: 10,
+                            discount: 0,
+                            group_price: 10,
+                        },
+                    ],
+                    expected_payment_date: getUtcDate(),
+                },
+                current_user_id: adminUser.id,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(
+                        /only one of kilo price and group price can be different than 0/i,
+                    ),
+                ]),
+            );
+        }
+    });
 });
 
 describe('delete', () => {
