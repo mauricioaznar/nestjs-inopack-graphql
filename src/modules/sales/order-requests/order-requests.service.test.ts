@@ -88,7 +88,7 @@ describe('upsert', () => {
                 order_code: orderRequestCode,
                 account_id: account.id,
                 notes: '',
-                date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                date: getUtcDate(),
                 order_request_products: [
                     {
                         product_id: product.id,
@@ -96,6 +96,7 @@ describe('upsert', () => {
                         kilos: product.current_group_weight * 20,
                         group_weight: product.current_group_weight,
                         kilo_price: 10,
+                        group_price: 0,
                     },
                 ],
                 estimated_delivery_date: getUtcDate({
@@ -148,7 +149,7 @@ describe('upsert', () => {
             order_code: orderRequestCode,
             account_id: account.id,
             notes: '',
-            date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+            date: getUtcDate(),
             order_request_products: [
                 {
                     product_id: product.id,
@@ -156,6 +157,7 @@ describe('upsert', () => {
                     kilos: product.current_group_weight * 20,
                     group_weight: product.current_group_weight,
                     kilo_price: 10,
+                    group_price: 0,
                 },
             ],
             estimated_delivery_date: getUtcDate({
@@ -184,7 +186,11 @@ describe('upsert', () => {
                     order_code: orderRequestCode,
                     account_id: account.id,
                     notes: '',
-                    date: getUtcDate({ year: 2022, month: 2, day: 1 }),
+                    date: getUtcDate({
+                        year: 2022,
+                        month: 2,
+                        day: 1,
+                    }),
                     order_request_products: [
                         {
                             id: createdOrderRequestProducts[0].id,
@@ -193,6 +199,7 @@ describe('upsert', () => {
                             kilos: product.current_group_weight * 30,
                             group_weight: product.current_group_weight,
                             kilo_price: 10,
+                            group_price: 0,
                         },
                     ],
                     estimated_delivery_date: getUtcDate({
@@ -249,7 +256,7 @@ describe('upsert', () => {
             order_code: orderRequestCode,
             account_id: account.id,
             notes: '',
-            date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+            date: getUtcDate(),
             order_request_products: [
                 {
                     product_id: product.id,
@@ -257,13 +264,10 @@ describe('upsert', () => {
                     kilos: product.current_group_weight * 20,
                     group_weight: product.current_group_weight,
                     kilo_price: 10,
+                    group_price: 0,
                 },
             ],
-            estimated_delivery_date: getUtcDate({
-                year: 2022,
-                month: 1,
-                day: 1,
-            }),
+            estimated_delivery_date: getUtcDate(),
         };
 
         await orderRequestsService.upsertOrderRequest({
@@ -278,7 +282,7 @@ describe('upsert', () => {
                     order_code: orderRequestCode,
                     account_id: account.id,
                     notes: '',
-                    date: getUtcDate({ year: 2022, month: 2, day: 1 }),
+                    date: getUtcDate(),
                     order_request_products: [
                         {
                             product_id: product.id,
@@ -286,6 +290,7 @@ describe('upsert', () => {
                             kilos: product.current_group_weight * 30,
                             group_weight: product.current_group_weight,
                             kilo_price: 10,
+                            group_price: 0,
                         },
                     ],
                     estimated_delivery_date: getUtcDate({
@@ -331,6 +336,7 @@ describe('upsert', () => {
                     kilos: product.current_group_weight * 20,
                     group_weight: product.current_group_weight,
                     kilo_price: 10,
+                    group_price: 0,
                 },
             ],
             estimated_delivery_date: getUtcDate(),
@@ -367,6 +373,7 @@ describe('upsert', () => {
                     kilo_price: product.current_kilo_price,
                     kilos: product.current_group_weight,
                     group_weight: product.current_group_weight,
+                    group_price: 0,
                 },
             });
         } catch (e) {
@@ -392,7 +399,7 @@ describe('upsert', () => {
             order_code: currentRequestOrderCode,
             account_id: account.id,
             notes: '',
-            date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+            date: getUtcDate(),
             order_request_products: [
                 {
                     product_id: product.id,
@@ -400,13 +407,10 @@ describe('upsert', () => {
                     kilos: product.current_group_weight * 20,
                     group_weight: product.current_group_weight,
                     kilo_price: 10,
+                    group_price: 0,
                 },
             ],
-            estimated_delivery_date: getUtcDate({
-                year: 2022,
-                month: 1,
-                day: 1,
-            }),
+            estimated_delivery_date: getUtcDate(),
         };
 
         const createdOrderRequest =
@@ -423,7 +427,7 @@ describe('upsert', () => {
                     order_code: 900000,
                     account_id: account.id,
                     notes: '',
-                    date: getUtcDate({ year: 2022, month: 2, day: 1 }),
+                    date: getUtcDate(),
                     order_request_products: [
                         {
                             product_id: product.id,
@@ -431,6 +435,7 @@ describe('upsert', () => {
                             kilos: product.current_group_weight * 30,
                             group_weight: product.current_group_weight,
                             kilo_price: 10,
+                            group_price: 0,
                         },
                     ],
                     estimated_delivery_date: getUtcDate({
@@ -467,6 +472,7 @@ describe('upsert', () => {
                             kilos: product.current_group_weight * 20,
                             group_weight: product.current_group_weight,
                             kilo_price: 10,
+                            group_price: 0,
                         },
                         {
                             product_id: product.id,
@@ -474,6 +480,7 @@ describe('upsert', () => {
                             kilos: product.current_group_weight * 20,
                             group_weight: product.current_group_weight,
                             kilo_price: 10,
+                            group_price: 0,
                         },
                     ],
                     estimated_delivery_date: getUtcDate({
@@ -493,6 +500,48 @@ describe('upsert', () => {
         }
     });
 
+    it('fails when kilo price and group price are different than 0', async () => {
+        expect.hasAssertions();
+
+        const account = await createClientForTesting({
+            app,
+        });
+        const product = await createProductForTesting({
+            app,
+        });
+        try {
+            await orderRequestsService.upsertOrderRequest({
+                input: {
+                    order_request_status_id: orderRequestStatus1.id,
+                    order_code: currentRequestOrderCode,
+                    account_id: account.id,
+                    date: getUtcDate(),
+                    notes: '',
+                    order_request_products: [
+                        {
+                            product_id: product.id,
+                            groups: 20,
+                            kilos: product.current_group_weight * 20,
+                            group_weight: product.current_group_weight,
+                            kilo_price: 10,
+                            group_price: 10,
+                        },
+                    ],
+                    estimated_delivery_date: getUtcDate(),
+                },
+                current_user_id: adminUser.id,
+            });
+        } catch (e) {
+            expect(e.response.message).toEqual(
+                expect.arrayContaining([
+                    expect.stringMatching(
+                        /only one of kilo price and group price can be different than 0/i,
+                    ),
+                ]),
+            );
+        }
+    });
+
     it('fails when products array is empty', async () => {
         const account = await createClientForTesting({
             app,
@@ -504,13 +553,9 @@ describe('upsert', () => {
                     order_code: currentRequestOrderCode,
                     account_id: account.id,
                     notes: '',
-                    date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                    date: getUtcDate(),
                     order_request_products: [],
-                    estimated_delivery_date: getUtcDate({
-                        year: 2022,
-                        month: 1,
-                        day: 1,
-                    }),
+                    estimated_delivery_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -547,6 +592,7 @@ describe('upsert', () => {
                             kilos: product.current_group_weight * 53,
                             group_weight: product.current_group_weight,
                             kilo_price: 10,
+                            group_price: 0,
                         },
                     ],
                     estimated_delivery_date: getUtcDate({
@@ -584,7 +630,7 @@ describe('upsert', () => {
                     order_code: currentRequestOrderCode,
                     account_id: account.id,
                     notes: '',
-                    date: getUtcDate({ year: 2022, month: 1, day: 1 }),
+                    date: getUtcDate(),
                     order_request_products: [
                         {
                             product_id: product.id,
@@ -592,13 +638,10 @@ describe('upsert', () => {
                             group_weight: groupWeight,
                             kilos: groupWeight * 20,
                             kilo_price: 10,
+                            group_price: 0,
                         },
                     ],
-                    estimated_delivery_date: getUtcDate({
-                        year: 2022,
-                        month: 1,
-                        day: 1,
-                    }),
+                    estimated_delivery_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
             });
@@ -627,6 +670,7 @@ describe('upsert', () => {
                     groups: 2,
                     group_weight: product.current_group_weight,
                     kilo_price: product.current_kilo_price,
+                    group_price: 0,
                 },
             });
 
@@ -669,6 +713,7 @@ describe('upsert', () => {
                             groups: 1,
                             group_weight: product.current_group_weight,
                             kilo_price: product.current_kilo_price,
+                            group_price: 0,
                         },
                     ],
                 },
@@ -696,6 +741,7 @@ describe('upsert', () => {
                     groups: 2,
                     group_weight: product.current_group_weight,
                     kilo_price: product.current_kilo_price,
+                    group_price: 0,
                 },
             });
 
@@ -742,6 +788,7 @@ describe('upsert', () => {
                             groups: 1,
                             group_weight: product2.current_group_weight,
                             kilo_price: product2.current_kilo_price,
+                            group_price: 0,
                         },
                     ],
                 },
@@ -773,6 +820,7 @@ describe('delete', () => {
                     kilo_price: product.current_kilo_price,
                     groups: 1,
                     group_weight: product.current_group_weight,
+                    group_price: 0,
                 },
             });
 
@@ -813,6 +861,7 @@ describe('delete', () => {
                     kilo_price: product.current_kilo_price,
                     groups: 1,
                     group_weight: product.current_group_weight,
+                    group_price: 0,
                 },
             });
 
@@ -834,6 +883,7 @@ describe('delete', () => {
                 kilo_price: product.current_kilo_price,
                 groups: 1,
                 group_weight: product.current_group_weight,
+                group_price: 0,
             },
         });
 
@@ -854,6 +904,7 @@ describe('delete', () => {
                     groups: 2,
                     group_weight: product.current_group_weight,
                     kilo_price: product.current_kilo_price,
+                    group_price: 0,
                 },
             });
 

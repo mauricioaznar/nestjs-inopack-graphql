@@ -37,6 +37,7 @@ it('create order request for testing with its default values', async () => {
                 kilos: 2 * product.current_group_weight,
                 kilo_price: 20,
                 product_id: product.id,
+                group_price: 0,
             },
         });
 
@@ -67,6 +68,7 @@ it('create order request with two products for testing with its default values',
                 kilos: 2 * product1.current_group_weight,
                 kilo_price: 20,
                 product_id: product1.id,
+                group_price: 0,
             },
             orderRequestProduct2: {
                 group_weight: product2.current_group_weight,
@@ -74,6 +76,7 @@ it('create order request with two products for testing with its default values',
                 kilos: 4 * product2.current_group_weight,
                 kilo_price: 20,
                 product_id: product2.id,
+                group_price: 0,
             },
         });
 

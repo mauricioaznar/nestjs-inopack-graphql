@@ -335,6 +335,7 @@ describe('delete', () => {
                 group_weight: product.current_group_weight,
                 kilo_price: product.current_kilo_price,
                 kilos: product.current_group_weight,
+                group_price: 0,
             },
         });
 
@@ -365,6 +366,7 @@ describe('delete', () => {
                 group_weight: product.current_group_weight,
                 kilo_price: product.current_kilo_price,
                 kilos: product.current_group_weight,
+                group_price: 0,
             },
         });
 

@@ -273,7 +273,11 @@ export class OrderRequestsService {
             });
 
         const total = orderRequestProducts.reduce((acc, orderRequest) => {
-            return acc + orderRequest.kilo_price * orderRequest.kilos;
+            return (
+                acc +
+                orderRequest.kilo_price * orderRequest.kilos +
+                orderRequest.group_price * orderRequest.groups
+            );
         }, 0);
 
         return Math.round(total * 100) / 100;
@@ -355,6 +359,7 @@ export class OrderRequestsService {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
                     kilo_price: createItem.kilo_price,
+                    group_price: createItem.group_price,
                     order_request_id: orderRequest.id,
                     product_id: createItem.product_id,
                     kilos: createItem.kilos,
@@ -377,6 +382,7 @@ export class OrderRequestsService {
                         group_weight: updateItem.group_weight,
                         groups: updateItem.groups,
                         kilo_price: updateItem.kilo_price,
+                        group_price: updateItem.group_price,
                     },
                     where: {
                         id: updateItem.id,
@@ -607,6 +613,22 @@ export class OrderRequestsService {
             } else {
                 errors.push('Account is not a client');
             }
+        }
+
+        // One of kilo price and group price have to be different than 0
+        {
+            input.order_request_products.forEach(
+                (orderRequestProduct, index) => {
+                    if (
+                        orderRequestProduct.group_price !== 0 &&
+                        orderRequestProduct.kilo_price !== 0
+                    ) {
+                        errors.push(
+                            `Only one of kilo price and group price can be different than 0 (index: ${index}, product id: ${orderRequestProduct.product_id}, kilo price: ${orderRequestProduct.kilo_price}, group price: ${orderRequestProduct.group_price})`,
+                        );
+                    }
+                },
+            );
         }
 
         // IsSalesUserAndIsOrderRequestPending
