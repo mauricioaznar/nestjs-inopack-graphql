@@ -18,6 +18,7 @@ import {
     ExpensesSortArgs,
     ExpenseUpsertInput,
     GetExpensesQueryArgs,
+    OrderSaleReceiptType,
     PaginatedExpenses,
     User,
 } from '../../../common/dto/entities';
@@ -132,6 +133,15 @@ export class ExpensesResolver {
     async account(@Parent() expense: Expense): Promise<Account | null> {
         return this.service.getAccount({
             account_id: expense.account_id,
+        });
+    }
+
+    @ResolveField(() => OrderSaleReceiptType, { nullable: true })
+    async receipt_type(
+        @Parent() expense: Expense,
+    ): Promise<OrderSaleReceiptType | null> {
+        return this.service.getReceiptType({
+            receipt_type_id: expense.receipt_type_id,
         });
     }
 
