@@ -45,7 +45,10 @@ export class OrderSaleProductsService {
     async getOrderSaleProductTotal(
         orderSaleProduct: OrderSaleProduct,
     ): Promise<number> {
-        const total = orderSaleProduct.kilo_price * orderSaleProduct.kilos;
+        const kilosTotal = orderSaleProduct.kilo_price * orderSaleProduct.kilos;
+        const groupsTotal =
+            orderSaleProduct.group_price * orderSaleProduct.groups;
+        const total = kilosTotal + groupsTotal;
         const discount = total * (orderSaleProduct.discount / 100);
         const totalMinusDiscount = total - discount;
         return Math.round(totalMinusDiscount * 100) / 100;

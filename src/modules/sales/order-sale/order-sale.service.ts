@@ -454,10 +454,17 @@ export class OrderSaleService {
 
         const orderSaleProductsTotal = orderSaleProducts.reduce(
             (acc, product) => {
-                const productTotal =
+                const kiloProductTotal =
                     product.kilo_price *
                     product.kilos *
                     (orderSale.order_sale_receipt_type_id === 2 ? 1.16 : 1);
+
+                const groupProductTotal =
+                    product.group_price *
+                    product.groups *
+                    (orderSale.order_sale_receipt_type_id === 2 ? 1.16 : 1);
+
+                const productTotal = kiloProductTotal + groupProductTotal;
 
                 const discountTotal =
                     productTotal -
