@@ -73,8 +73,6 @@ export class SalesSummaryService {
 
         const sales = await this.prisma.$queryRawUnsafe<SalesSummary['sales']>(`
             select sum(ctc.kilos_sold)                  as               kilos_sold,
-                   sum(ctc.total) / sum(ctc.kilos_sold) as               kilo_price,
-                   (sum(ctc.total) + sum(ctc.tax)) / sum(ctc.kilos_sold) kilo_price_with_tax,
                    sum(ctc.total)                       as               total,
                    sum(ctc.tax)                         as               tax,
                    sum(ctc.total_with_tax)              as               total_with_tax,
@@ -98,20 +96,17 @@ export class SalesSummaryService {
                  order_sale_receipt_type.name receipt_type_name,
                  order_sale_statuses.id status_id,
                  order_sale_statuses.name status_name,
-                 order_sale_products.kilos kilos_sold,
-                 order_sale_products.kilo_price kilo_price,
-                 ((order_sale_products.kilos * order_sale_products.kilo_price) -(order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) total,
-                 ((order_sale_products.kilos * order_sale_products.kilo_price) - (order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) *
-                 if(order_sales.order_sale_receipt_type_id = 2, 0.16, 0)    tax,
-                 ((order_sale_products.kilos * order_sale_products.kilo_price) - (order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) *
-                 if(order_sales.order_sale_receipt_type_id = 2, 1.16, 1)    total_with_tax
+                 osp.kilos kilos_sold,
+                 ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) total,
+                 ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 0.16, 0) tax,
+                 ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 1.16, 1) total_with_tax
             from order_sales
-                join order_sale_products
-                on order_sale_products.order_sale_id = order_sales.id
+                join order_sale_products as osp
+                on osp.order_sale_id = order_sales.id
                 left join order_requests
                 on order_requests.id = order_sales.order_request_id
                 left join products
-                on order_sale_products.product_id = products.id
+                on osp.product_id = products.id
                 left join order_production_type
                 on order_production_type.id = products.order_production_type_id
                 left join product_categories
@@ -122,7 +117,7 @@ export class SalesSummaryService {
                 on order_sale_statuses.id = order_sales.order_sale_status_id
                 left join order_sale_receipt_type
                 on order_sale_receipt_type.id = order_sales.order_sale_receipt_type_id
-            where order_sale_products.active = 1
+            where osp.active = 1
               and order_sales.active = 1
                 ) as ctc
             where ctc.start_date >= '${startDate}'

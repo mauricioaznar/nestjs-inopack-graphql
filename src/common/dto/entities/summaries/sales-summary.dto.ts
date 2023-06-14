@@ -40,12 +40,6 @@ export class SalesRecord {
     kilos_sold: number;
 
     @Field(() => Float, { nullable: false })
-    kilo_price: number;
-
-    @Field(() => Float, { nullable: false })
-    kilo_price_with_tax: number;
-
-    @Field(() => Float, { nullable: false })
     total: number;
 
     @Field(() => Float, { nullable: false })

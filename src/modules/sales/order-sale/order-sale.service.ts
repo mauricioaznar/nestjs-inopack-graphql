@@ -218,13 +218,13 @@ export class OrderSaleService {
                         (
                             SELECT 
                             order_sales.id AS order_sale_id,
-                                ((order_sale_products.kilos * order_sale_products.kilo_price) - (order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) total,
-                                ((order_sale_products.kilos * order_sale_products.kilo_price) - (order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 0.16, 0) tax,
-                                ((order_sale_products.kilos * order_sale_products.kilo_price) - (order_sale_products.kilos * order_sale_products.kilo_price * order_sale_products.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 1.16, 1) total_with_tax
-                            FROM order_sale_products
-                            JOIN order_sales ON order_sales.id = order_sale_products.order_sale_id
+                                ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) total,
+                                ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 0.16, 0) tax,
+                                ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 1.16, 1) total_with_tax
+                            FROM order_sale_products as osp
+                            JOIN order_sales ON order_sales.id = osp.order_sale_id
                             WHERE order_sales.active = 1
-                            AND order_sale_products.active = 1
+                            AND osp.active = 1
                         ) AS ztv
                     GROUP BY ztv.order_sale_id
                 ) AS wtv
