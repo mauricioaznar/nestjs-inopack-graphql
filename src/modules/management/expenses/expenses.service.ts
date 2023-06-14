@@ -11,6 +11,7 @@ import {
     ExpensesSortArgs,
     ExpenseUpsertInput,
     GetExpensesQueryArgs,
+    OrderSaleReceiptType,
     PaginatedExpenses,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
@@ -123,6 +124,22 @@ export class ExpensesService {
         });
     }
 
+    async getReceiptType({
+        receipt_type_id,
+    }: {
+        receipt_type_id: number | null;
+    }): Promise<OrderSaleReceiptType | null> {
+        if (!receipt_type_id) {
+            return null;
+        }
+
+        return this.prisma.order_sale_receipt_type.findFirst({
+            where: {
+                id: receipt_type_id,
+            },
+        });
+    }
+
     async getExpenseResources({
         expense_id,
     }: {
@@ -185,6 +202,7 @@ export class ExpensesService {
                 account_id: input.account_id,
                 expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code,
+                receipt_type_id: input.receipt_type_id,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -193,6 +211,7 @@ export class ExpensesService {
                 account_id: input.account_id,
                 expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code,
+                receipt_type_id: input.receipt_type_id,
             },
             where: {
                 id: input.id || 0,

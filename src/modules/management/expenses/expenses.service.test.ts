@@ -51,6 +51,7 @@ describe('expense upsert', () => {
             ],
             expected_payment_date: getUtcDate(),
             order_code: '',
+            receipt_type_id: orderSaleReceiptType1.id,
         });
 
         expect(expense.id).toBeDefined();
@@ -99,6 +100,7 @@ describe('expense upsert', () => {
                 ],
                 order_code: '',
                 expected_payment_date: getUtcDate(),
+                receipt_type_id: orderSaleReceiptType1.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(

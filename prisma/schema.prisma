@@ -312,6 +312,7 @@ model order_sale_receipt_type {
   active      Int           @default(1)
   created_at  DateTime?     @db.DateTime(0)
   updated_at  DateTime?     @db.DateTime(0)
+  expenses    expenses[]
   order_sales order_sales[]
 }
 
@@ -630,20 +631,23 @@ model expense_resources {
 }
 
 model expenses {
-  id                    Int                 @id @default(autoincrement()) @db.UnsignedInt
-  active                Int                 @default(1)
-  created_at            DateTime?           @db.DateTime(0)
-  updated_at            DateTime?           @db.DateTime(0)
-  date                  DateTime            @db.DateTime(0)
-  expected_payment_date DateTime?           @db.DateTime(0)
-  locked                Boolean             @default(false)
-  order_code            String              @default("") @db.VarChar(255)
-  account_id            Int?                @db.UnsignedInt
-  accounts              accounts?           @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
-  expense_resources     expense_resources[]
-  transfer_receipts     transfer_receipts[]
+  id                      Int                      @id @default(autoincrement()) @db.UnsignedInt
+  active                  Int                      @default(1)
+  created_at              DateTime?                @db.DateTime(0)
+  updated_at              DateTime?                @db.DateTime(0)
+  date                    DateTime                 @db.DateTime(0)
+  expected_payment_date   DateTime?                @db.DateTime(0)
+  locked                  Boolean                  @default(false)
+  order_code              String                   @default("") @db.VarChar(255)
+  account_id              Int?                     @db.UnsignedInt
+  receipt_type_id         Int?                     @db.UnsignedInt
+  accounts                accounts?                @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
+  order_sale_receipt_type order_sale_receipt_type? @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")
+  expense_resources       expense_resources[]
+  transfer_receipts       transfer_receipts[]
 
   @@index([account_id], map: "expenses_account_id_foreign")
+  @@index([receipt_type_id], map: "expenses_receipt_type_foreign")
 }
 
 model resource_categories {

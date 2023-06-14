@@ -27,6 +27,9 @@ export class ExpenseBase {
 
     @Field(() => Int, { nullable: true })
     account_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    receipt_type_id: number | null;
 }
 
 @InputType('ExpenseUpsertInput')
