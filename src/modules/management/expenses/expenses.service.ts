@@ -133,7 +133,7 @@ export class ExpensesService {
             return null;
         }
 
-        return this.prisma.order_sale_receipt_type.findFirst({
+        return this.prisma.receipt_types.findFirst({
             where: {
                 id: receipt_type_id,
             },

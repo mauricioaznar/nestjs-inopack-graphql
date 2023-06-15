@@ -386,7 +386,7 @@ describe('delete', () => {
                         group_price: 0,
                     },
                 ],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: orderSaleReceiptType1.id,
                 invoice_code: 0,
                 order_request_id: orderRequest.id,
                 expected_payment_date: getUtcDate(),

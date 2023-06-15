@@ -29,7 +29,7 @@ export class OrderSaleBase {
     invoice_code: number;
 
     @Field(() => Int, { nullable: true })
-    order_sale_receipt_type_id?: number | null;
+    receipt_type_id?: number | null;
 
     @Field(() => Int, { nullable: true })
     order_request_id?: number | null;
@@ -47,7 +47,7 @@ export class OrderSaleInput extends OrderSaleBase {
     order_request_id: number;
 
     @Field({ nullable: false })
-    order_sale_receipt_type_id: number;
+    receipt_type_id: number;
 
     @Field({ nullable: false })
     order_sale_status_id: number;
@@ -71,7 +71,7 @@ export class PaginatedOrderSalesQueryArgs {
     account_id: number | null;
 
     @Field(() => Int, { nullable: true })
-    order_sale_receipt_type_id: number | null;
+    receipt_type_id: number | null;
 
     @Field(() => Int, { nullable: true })
     order_sale_status_id: number | null;

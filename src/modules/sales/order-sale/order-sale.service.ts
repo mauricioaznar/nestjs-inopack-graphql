@@ -80,9 +80,8 @@ export class OrderSaleService {
                     },
                 },
                 {
-                    order_sale_receipt_type_id:
-                        orderSalesQueryArgs.order_sale_receipt_type_id ||
-                        undefined,
+                    receipt_type_id:
+                        orderSalesQueryArgs.receipt_type_id || undefined,
                 },
                 {
                     order_sale_status_id:
@@ -219,8 +218,8 @@ export class OrderSaleService {
                             SELECT 
                             order_sales.id AS order_sale_id,
                                 ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) total,
-                                ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 0.16, 0) tax,
-                                ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 1.16, 1) total_with_tax
+                                ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.receipt_type_id = 2, 0.16, 0) tax,
+                                ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.receipt_type_id = 2, 1.16, 1) total_with_tax
                             FROM order_sale_products as osp
                             JOIN order_sales ON order_sales.id = osp.order_sale_id
                             WHERE order_sales.active = 1
@@ -394,13 +393,13 @@ export class OrderSaleService {
     }
 
     async getOrderSaleReceiptType({
-        order_sale_receipt_type_id,
+        receipt_type_id,
     }: {
-        order_sale_receipt_type_id?: number | null;
+        receipt_type_id?: number | null;
     }): Promise<OrderSaleReceiptType | null> {
-        return this.prisma.order_sale_receipt_type.findFirst({
+        return this.prisma.receipt_types.findFirst({
             where: {
-                id: order_sale_receipt_type_id || 0,
+                id: receipt_type_id || 0,
             },
         });
     }
@@ -457,12 +456,12 @@ export class OrderSaleService {
                 const kiloProductTotal =
                     product.kilo_price *
                     product.kilos *
-                    (orderSale.order_sale_receipt_type_id === 2 ? 1.16 : 1);
+                    (orderSale.receipt_type_id === 2 ? 1.16 : 1);
 
                 const groupProductTotal =
                     product.group_price *
                     product.groups *
-                    (orderSale.order_sale_receipt_type_id === 2 ? 1.16 : 1);
+                    (orderSale.receipt_type_id === 2 ? 1.16 : 1);
 
                 const productTotal = kiloProductTotal + groupProductTotal;
 
@@ -538,7 +537,7 @@ export class OrderSaleService {
             order_sale_id,
         });
 
-        if (orderSale.order_sale_receipt_type_id !== 2) {
+        if (orderSale.receipt_type_id !== 2) {
             return 0;
         }
 
@@ -579,11 +578,9 @@ export class OrderSaleService {
                 order_code: input.order_code,
                 expected_payment_date: input.expected_payment_date,
                 invoice_code:
-                    input.order_sale_receipt_type_id === 2
-                        ? input.invoice_code
-                        : 0,
+                    input.receipt_type_id === 2 ? input.invoice_code : 0,
                 order_sale_status_id: input.order_sale_status_id,
-                order_sale_receipt_type_id: input.order_sale_receipt_type_id,
+                receipt_type_id: input.receipt_type_id,
                 order_request_id: input.order_request_id,
             },
             update: {
@@ -592,9 +589,7 @@ export class OrderSaleService {
                 expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code,
                 invoice_code:
-                    input.order_sale_receipt_type_id === 2
-                        ? input.invoice_code
-                        : 0,
+                    input.receipt_type_id === 2 ? input.invoice_code : 0,
                 order_sale_status_id: input.order_sale_status_id,
             },
             where: {
@@ -818,7 +813,7 @@ export class OrderSaleService {
 
         // IsInvoiceCodeOccupied
         {
-            if (input.order_sale_receipt_type_id === 2) {
+            if (input.receipt_type_id === 2) {
                 const isInvoiceCodeOccupied = await this.isInvoiceCodeOccupied({
                     invoice_code: input.invoice_code,
                     order_sale_id: input.id ? input.id : null,
@@ -833,10 +828,7 @@ export class OrderSaleService {
 
         // IsInvoiceCodeValid
         {
-            if (
-                input.order_sale_receipt_type_id === 2 &&
-                input.invoice_code === 0
-            ) {
+            if (input.receipt_type_id === 2 && input.invoice_code === 0) {
                 errors.push(
                     `invoice code is invalid (Invoice code has to be different than 0)`,
                 );
@@ -924,8 +916,7 @@ export class OrderSaleService {
                 });
                 if (
                     !!orderSale &&
-                    orderSale.order_sale_receipt_type_id !==
-                        input.order_sale_receipt_type_id
+                    orderSale.receipt_type_id !== input.receipt_type_id
                 ) {
                     errors.push(`Order sale receipt type cant be changed`);
                 }

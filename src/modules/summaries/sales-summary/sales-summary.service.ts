@@ -92,14 +92,14 @@ export class SalesSummaryService {
                  accounts.id account_id,
                  accounts.name account_name,
                  accounts.abbreviation account_abbreviation,
-                 order_sale_receipt_type.id receipt_type_id,
-                 order_sale_receipt_type.name receipt_type_name,
+                 receipt_types.id receipt_type_id,
+                 receipt_types.name receipt_type_name,
                  order_sale_statuses.id status_id,
                  order_sale_statuses.name status_name,
                  osp.kilos kilos_sold,
                  ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) total,
-                 ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 0.16, 0) tax,
-                 ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.order_sale_receipt_type_id = 2, 1.16, 1) total_with_tax
+                 ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.receipt_type_id = 2, 0.16, 0) tax,
+                 ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.receipt_type_id = 2, 1.16, 1) total_with_tax
             from order_sales
                 join order_sale_products as osp
                 on osp.order_sale_id = order_sales.id
@@ -115,8 +115,8 @@ export class SalesSummaryService {
                 on accounts.id = order_requests.account_id
                 left join order_sale_statuses
                 on order_sale_statuses.id = order_sales.order_sale_status_id
-                left join order_sale_receipt_type
-                on order_sale_receipt_type.id = order_sales.order_sale_receipt_type_id
+                left join receipt_types
+                on receipt_types.id = order_sales.receipt_type_id
             where osp.active = 1
               and order_sales.active = 1
                 ) as ctc

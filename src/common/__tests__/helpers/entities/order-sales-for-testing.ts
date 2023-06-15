@@ -37,7 +37,7 @@ export async function createOrderSaleWithOneProductTypeOne({
                 order_code: orderSaleCode,
                 date: getUtcDate(),
                 order_sale_products: [orderSaleProduct],
-                order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: orderSaleReceiptType1.id,
                 order_request_id: orderRequest.id,
                 expected_payment_date: getUtcDate(),
             },

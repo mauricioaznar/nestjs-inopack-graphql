@@ -52,7 +52,7 @@ export default async function setupDatabase() {
     await prismaService.employee_statuses.deleteMany();
     await prismaService.order_request_statuses.deleteMany();
     await prismaService.order_sale_statuses.deleteMany();
-    await prismaService.order_sale_receipt_type.deleteMany();
+    await prismaService.receipt_types.deleteMany();
     await prismaService.account_types.deleteMany();
 
     // level 1
@@ -88,7 +88,7 @@ export default async function setupDatabase() {
     await prismaService.order_sale_statuses.createMany({
         data: orderSaleStatuses,
     });
-    await prismaService.order_sale_receipt_type.createMany({
+    await prismaService.receipt_types.createMany({
         data: orderSaleReceiptTypes,
     });
     await prismaService.account_types.createMany({

@@ -681,7 +681,7 @@ describe('upsert', () => {
                     order_request_id: orderRequest.id,
                     date: getUtcDate(),
                     invoice_code: 0,
-                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderRequestStatus1.id,
                     order_sale_products: [
                         {
@@ -753,7 +753,7 @@ describe('upsert', () => {
                     order_request_id: orderRequest.id,
                     date: getUtcDate(),
                     invoice_code: 0,
-                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderRequestStatus1.id,
                     order_sale_products: [
                         {
@@ -917,7 +917,7 @@ describe('delete', () => {
                     order_request_id: orderRequest.id,
                     date: getUtcDate(),
                     invoice_code: 0,
-                    order_sale_receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: orderSaleReceiptType1.id,
                     order_sale_status_id: orderRequestStatus1.id,
                     order_sale_products: [
                         {

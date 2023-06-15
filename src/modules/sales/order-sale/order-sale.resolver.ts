@@ -164,11 +164,11 @@ export class OrderSaleResolver {
     }
 
     @ResolveField(() => OrderSaleReceiptType, { nullable: true })
-    async order_sale_receipt_type(
+    async receipt_types(
         @Parent() orderSale: OrderSale,
     ): Promise<OrderSaleReceiptType | null> {
         return this.service.getOrderSaleReceiptType({
-            order_sale_receipt_type_id: orderSale.order_sale_receipt_type_id,
+            receipt_type_id: orderSale.receipt_type_id,
         });
     }
 
