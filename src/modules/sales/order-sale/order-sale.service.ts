@@ -392,7 +392,7 @@ export class OrderSaleService {
         return orderRequest.account_id;
     }
 
-    async getOrderSaleReceiptType({
+    async getReceiptType({
         receipt_type_id,
     }: {
         receipt_type_id?: number | null;
