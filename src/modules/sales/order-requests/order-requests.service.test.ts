@@ -13,7 +13,7 @@ import { createClientForTesting } from '../../../common/__tests__/helpers/entiti
 import { OrderRequestInput } from '../../../common/dto/entities';
 import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 import { OrderSaleService } from '../order-sale/order-sale.service';
-import { orderSaleReceiptType1 } from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
+import { receiptType1 } from '../../../common/__tests__/objects/sales/receipt-types';
 import {
     orderRequestsTestsOrderRequestsOrderCode,
     orderRequestsTestsOrderSalesOrderCode,
@@ -681,7 +681,7 @@ describe('upsert', () => {
                     order_request_id: orderRequest.id,
                     date: getUtcDate(),
                     invoice_code: 0,
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderRequestStatus1.id,
                     order_sale_products: [
                         {
@@ -753,7 +753,7 @@ describe('upsert', () => {
                     order_request_id: orderRequest.id,
                     date: getUtcDate(),
                     invoice_code: 0,
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderRequestStatus1.id,
                     order_sale_products: [
                         {
@@ -917,7 +917,7 @@ describe('delete', () => {
                     order_request_id: orderRequest.id,
                     date: getUtcDate(),
                     invoice_code: 0,
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderRequestStatus1.id,
                     order_sale_products: [
                         {

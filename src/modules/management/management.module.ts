@@ -9,6 +9,7 @@ import { ExpenseResourcesModule } from './expense-resources/expense-resources.mo
 import { ResourceCategoriesModule } from './resource-categories/resource-categories.module';
 import { TransferReceiptsModule } from './transfer-receipts/transfer-receipts.module';
 import { AccountTransferSummariesModule } from './account-transfer-summaries/account-transfer-summaries.module';
+import { ReceiptTypeModule } from './receipt-type/receipt-type.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { AccountTransferSummariesModule } from './account-transfer-summaries/acc
         ResourcesModule,
         ResourceCategoriesModule,
         TransferReceiptsModule,
+        ReceiptTypeModule,
     ],
 })
 export class ManagementModule {}

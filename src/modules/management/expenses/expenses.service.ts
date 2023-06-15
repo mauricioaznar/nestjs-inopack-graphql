@@ -11,7 +11,7 @@ import {
     ExpensesSortArgs,
     ExpenseUpsertInput,
     GetExpensesQueryArgs,
-    OrderSaleReceiptType,
+    ReceiptType,
     PaginatedExpenses,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
@@ -128,7 +128,7 @@ export class ExpensesService {
         receipt_type_id,
     }: {
         receipt_type_id: number | null;
-    }): Promise<OrderSaleReceiptType | null> {
+    }): Promise<ReceiptType | null> {
         if (!receipt_type_id) {
             return null;
         }

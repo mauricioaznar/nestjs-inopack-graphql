@@ -5,7 +5,6 @@ import { OrderRequestProductsModule } from './order-request-products/order-reque
 import { OrderSaleModule } from './order-sale/order-sale.module';
 import { OrderSaleProductsModule } from './order-sale-products/order-sale-products.module';
 import { OrderSaleStatusesModule } from './order-sale-statuses/order-sale-statuses.module';
-import { OrderSaleReceiptTypeModule } from './order-sale-receipt-type/order-sale-receipt-type.module';
 
 @Module({
     imports: [
@@ -15,7 +14,6 @@ import { OrderSaleReceiptTypeModule } from './order-sale-receipt-type/order-sale
         OrderSaleModule,
         OrderSaleProductsModule,
         OrderSaleStatusesModule,
-        OrderSaleReceiptTypeModule,
     ],
 })
 export class SalesModule {}

@@ -19,7 +19,7 @@ import { branch1 } from '../../../common/__tests__/objects/maintenance/branches'
 import { orderAdjustmentType1 } from '../../../common/__tests__/objects/production/order-adjustment-types';
 import { OrderSaleService } from '../../sales/order-sale/order-sale.service';
 import { orderSaleStatus1 } from '../../../common/__tests__/objects/sales/order-sale-statuses';
-import { orderSaleReceiptType1 } from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
+import { receiptType1 } from '../../../common/__tests__/objects/sales/receipt-types';
 import {
     productsTestsOrderRequestsOrderCode,
     productsTestsOrderSalesOrderCode,
@@ -386,7 +386,7 @@ describe('delete', () => {
                         group_price: 0,
                     },
                 ],
-                receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: receiptType1.id,
                 invoice_code: 0,
                 order_request_id: orderRequest.id,
                 expected_payment_date: getUtcDate(),

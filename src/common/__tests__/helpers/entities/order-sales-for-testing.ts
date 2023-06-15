@@ -8,7 +8,7 @@ import { getUtcDate } from '../dates';
 import { INestApplication } from '@nestjs/common';
 import { OrderSaleService } from '../../../../modules/sales/order-sale/order-sale.service';
 import { orderSaleStatus1 } from '../../objects/sales/order-sale-statuses';
-import { orderSaleReceiptType1 } from '../../objects/sales/order-sale-receipt-types';
+import { receiptType1 } from '../../objects/sales/receipt-types';
 import { adminUser } from '../../objects/auth/users';
 
 type OrderSaleWithOneProduct = {
@@ -37,7 +37,7 @@ export async function createOrderSaleWithOneProductTypeOne({
                 order_code: orderSaleCode,
                 date: getUtcDate(),
                 order_sale_products: [orderSaleProduct],
-                receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: receiptType1.id,
                 order_request_id: orderRequest.id,
                 expected_payment_date: getUtcDate(),
             },

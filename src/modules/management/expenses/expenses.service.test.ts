@@ -6,7 +6,7 @@ import {
 } from '../../../common/__tests__/objects/management/account-types';
 import { AccountsService } from '../accounts/accounts.service';
 import { ExpensesService } from './expenses.service';
-import { orderSaleReceiptType1 } from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
+import { receiptType1 } from '../../../common/__tests__/objects/sales/receipt-types';
 import { orderSaleStatus2 } from '../../../common/__tests__/objects/sales/order-sale-statuses';
 import { salesUser } from '../../../common/__tests__/objects/auth/users';
 
@@ -51,7 +51,7 @@ describe('expense upsert', () => {
             ],
             expected_payment_date: getUtcDate(),
             order_code: '',
-            receipt_type_id: orderSaleReceiptType1.id,
+            receipt_type_id: receiptType1.id,
         });
 
         expect(expense.id).toBeDefined();
@@ -100,7 +100,7 @@ describe('expense upsert', () => {
                 ],
                 order_code: '',
                 expected_payment_date: getUtcDate(),
-                receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: receiptType1.id,
             });
         } catch (e) {
             expect(e.response.message).toEqual(

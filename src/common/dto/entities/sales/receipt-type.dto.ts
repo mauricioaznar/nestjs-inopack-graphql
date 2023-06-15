@@ -7,8 +7,8 @@ export class OrderSaleReceiptTypeBase {
     name: string;
 }
 
-@ObjectType('OrderSaleReceiptType')
-export class OrderSaleReceiptType extends OrderSaleReceiptTypeBase {
+@ObjectType('ReceiptType')
+export class ReceiptType extends OrderSaleReceiptTypeBase {
     @Field({ nullable: false })
     id: number;
 }

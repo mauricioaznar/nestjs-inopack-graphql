@@ -12,9 +12,9 @@ import {
 } from '../../../common/__tests__/objects/sales/order-request-statuses';
 import { createClientForTesting } from '../../../common/__tests__/helpers/entities/accounts-for-testing';
 import {
-    orderSaleReceiptType1,
-    orderSaleReceiptType2,
-} from '../../../common/__tests__/objects/sales/order-sale-receipt-types';
+    receiptType1,
+    receiptType2,
+} from '../../../common/__tests__/objects/sales/receipt-types';
 import {
     orderSaleStatus1,
     orderSaleStatus2,
@@ -107,7 +107,7 @@ describe('upsert', () => {
                 order_code: orderCode,
                 order_request_id: orderRequest.id,
                 invoice_code: 0,
-                receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: receiptType1.id,
                 date: getUtcDate({
                     year: 2022,
                     day: 1,
@@ -133,7 +133,7 @@ describe('upsert', () => {
         expect(orderSale.order_code).toBe(orderCode);
         expect(orderSale.order_request_id).toBe(orderRequest.id);
         expect(orderSale.invoice_code).toBe(0);
-        expect(orderSale.receipt_type_id).toBe(orderSaleReceiptType1.id);
+        expect(orderSale.receipt_type_id).toBe(receiptType1.id);
         expect(orderSale.date.toISOString()).toMatch(/2022-03-01/i);
         expect(orderSale.order_sale_status_id).toBe(orderSaleStatus1.id);
         expect(orderSaleProducts).toEqual(
@@ -193,7 +193,7 @@ describe('upsert', () => {
                     order_code: orderCode,
                     order_request_id: orderRequest.id,
                     invoice_code: 0,
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     date: getUtcDate({
                         year: 2022,
                         day: 1,
@@ -222,7 +222,7 @@ describe('upsert', () => {
         expect(orderSale?.order_code).toBe(orderCode);
         expect(orderSale?.order_request_id).toBe(orderRequest.id);
         expect(orderSale?.invoice_code).toBe(0);
-        expect(orderSale?.receipt_type_id).toBe(orderSaleReceiptType1.id);
+        expect(orderSale?.receipt_type_id).toBe(receiptType1.id);
         expect(orderSale?.date.toISOString()).toMatch(/2022-03-01/i);
         expect(orderSale?.order_sale_status_id).toBe(orderSaleStatus1.id);
         expect(orderSaleProducts).toEqual(
@@ -266,7 +266,7 @@ describe('upsert', () => {
                 order_code: orderCode,
                 order_request_id: orderRequest.id,
                 invoice_code: 0,
-                receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: receiptType1.id,
                 date: getUtcDate(),
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
@@ -292,7 +292,7 @@ describe('upsert', () => {
                 order_code: orderCode,
                 order_request_id: orderRequest.id,
                 invoice_code: 0,
-                receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: receiptType1.id,
                 date: getUtcDate({
                     year: 2022,
                     day: 1,
@@ -320,7 +320,7 @@ describe('upsert', () => {
         expect(updatedOrderSale.order_code).toBe(orderCode);
         expect(updatedOrderSale.order_request_id).toBe(orderRequest.id);
         expect(updatedOrderSale.invoice_code).toBe(0);
-        expect(updatedOrderSale.receipt_type_id).toBe(orderSaleReceiptType1.id);
+        expect(updatedOrderSale.receipt_type_id).toBe(receiptType1.id);
         expect(updatedOrderSale.date.toISOString()).toMatch(/2022-03-01/i);
         expect(updatedOrderSale.order_sale_status_id).toBe(orderSaleStatus2.id);
         expect(updatedOrderSaleProducts).toEqual(
@@ -366,7 +366,7 @@ describe('upsert', () => {
                 order_code: orderCode,
                 order_request_id: orderRequest.id,
                 invoice_code: 0,
-                receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: receiptType1.id,
                 date: getUtcDate(),
                 order_sale_status_id: orderSaleStatus2.id,
                 order_sale_products: [orderSaleProductInput],
@@ -392,7 +392,7 @@ describe('upsert', () => {
                     order_code: orderCode,
                     order_request_id: orderRequest.id,
                     invoice_code: 0,
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     date: getUtcDate(),
                     order_sale_status_id: orderSaleStatus2.id,
                     order_sale_products: [updatedOrderSaleProductInput],
@@ -461,7 +461,7 @@ describe('upsert', () => {
                 order_code: orderCode,
                 order_request_id: orderRequest.id,
                 invoice_code: invoiceCode,
-                receipt_type_id: orderSaleReceiptType2.id,
+                receipt_type_id: receiptType2.id,
                 date: getUtcDate(),
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
@@ -497,7 +497,7 @@ describe('upsert', () => {
                     order_request_id: orderRequest.id,
                     invoice_code: 0,
                     order_sale_status_id: orderSaleStatus1.id,
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     date: getUtcDate(),
                     order_sale_products: [
                         {
@@ -576,7 +576,7 @@ describe('upsert', () => {
                     }),
                     order_sale_products: [orderSaleProduct1, orderSaleProduct1],
 
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                     expected_payment_date: getUtcDate(),
                 },
@@ -637,7 +637,7 @@ describe('upsert', () => {
                     invoice_code: 0,
                     date: getUtcDate(),
                     order_sale_products: [orderSaleProduct1],
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                     expected_payment_date: getUtcDate(),
                 },
@@ -705,7 +705,7 @@ describe('upsert', () => {
                     date: getUtcDate(),
                     order_sale_products: [orderSaleProduct1],
 
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                     expected_payment_date: getUtcDate(),
                 },
@@ -766,7 +766,7 @@ describe('upsert', () => {
                 invoice_code: 0,
                 date: getUtcDate(),
                 order_sale_products: [orderSaleProduct1],
-                receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: receiptType1.id,
                 order_sale_status_id: orderSaleStatus1.id,
                 expected_payment_date: getUtcDate(),
             },
@@ -814,7 +814,7 @@ describe('upsert', () => {
                     date: getUtcDate(),
                     order_sale_products: [orderSaleProduct1],
 
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                     expected_payment_date: getUtcDate(),
                 },
@@ -864,7 +864,7 @@ describe('upsert', () => {
             invoice_code: 0,
             date: getUtcDate(),
             order_sale_products: [orderSaleProductInput],
-            receipt_type_id: orderSaleReceiptType1.id,
+            receipt_type_id: receiptType1.id,
             order_sale_status_id: orderSaleStatus1.id,
             expected_payment_date: getUtcDate(),
         };
@@ -923,7 +923,7 @@ describe('upsert', () => {
             invoice_code: currentSaleInvoiceCode,
             date: getUtcDate(),
             order_sale_products: [orderSaleProductInput],
-            receipt_type_id: orderSaleReceiptType2.id,
+            receipt_type_id: receiptType2.id,
             order_sale_status_id: orderSaleStatus1.id,
             expected_payment_date: getUtcDate(),
         };
@@ -982,7 +982,7 @@ describe('upsert', () => {
             invoice_code: currentSaleInvoiceCode,
             date: getUtcDate(),
             order_sale_products: [orderSaleProductInput],
-            receipt_type_id: orderSaleReceiptType2.id,
+            receipt_type_id: receiptType2.id,
             order_sale_status_id: orderSaleStatus1.id,
             expected_payment_date: getUtcDate(),
         };
@@ -1045,7 +1045,7 @@ describe('upsert', () => {
             invoice_code: currentSaleInvoiceCode,
             date: getUtcDate(),
             order_sale_products: [orderSaleProductInput],
-            receipt_type_id: orderSaleReceiptType1.id,
+            receipt_type_id: receiptType1.id,
             order_sale_status_id: orderSaleStatus1.id,
             expected_payment_date: getUtcDate(),
         };
@@ -1053,7 +1053,7 @@ describe('upsert', () => {
         const orderSale = await orderSalesService.upsertOrderSale({
             input: {
                 ...orderSaleInput,
-                receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: receiptType1.id,
             },
             current_user_id: adminUser.id,
         });
@@ -1063,7 +1063,7 @@ describe('upsert', () => {
                 input: {
                     ...orderSaleInput,
                     id: orderSale.id,
-                    receipt_type_id: orderSaleReceiptType2.id,
+                    receipt_type_id: receiptType2.id,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1116,7 +1116,7 @@ describe('upsert', () => {
                     date: getUtcDate(),
                     order_sale_products: [orderSaleProductInput],
                     order_sale_status_id: orderSaleStatus1.id,
-                    receipt_type_id: orderSaleReceiptType2.id,
+                    receipt_type_id: receiptType2.id,
                     expected_payment_date: getUtcDate(),
                 },
                 current_user_id: adminUser.id,
@@ -1161,7 +1161,7 @@ describe('upsert', () => {
                     order_request_id: orderRequest.id,
                     date: getUtcDate(),
                     order_sale_status_id: orderSaleStatus1.id,
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_products: [
                         {
                             product_id: product.id,
@@ -1219,7 +1219,7 @@ describe('upsert', () => {
                     order_request_id: orderRequest.id,
                     date: getUtcDate(),
                     order_sale_status_id: orderSaleStatus1.id,
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_products: [
                         {
                             product_id: product.id,
@@ -1277,7 +1277,7 @@ describe('upsert', () => {
                     order_request_id: orderRequest.id,
                     date: getUtcDate(),
                     order_sale_status_id: orderSaleStatus1.id,
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_products: [
                         {
                             product_id: product.id,
@@ -1336,7 +1336,7 @@ describe('upsert', () => {
                     order_request_id: orderRequest.id,
                     date: getUtcDate(),
                     order_sale_status_id: orderSaleStatus1.id,
-                    receipt_type_id: orderSaleReceiptType1.id,
+                    receipt_type_id: receiptType1.id,
                     order_sale_products: [
                         {
                             product_id: product.id,
@@ -1401,7 +1401,7 @@ describe('delete', () => {
                 order_code: orderCode,
                 order_request_id: orderRequest.id,
                 invoice_code: 0,
-                receipt_type_id: orderSaleReceiptType1.id,
+                receipt_type_id: receiptType1.id,
                 date: getUtcDate({
                     year: 2022,
                     day: 1,
@@ -1475,7 +1475,7 @@ describe('delete', () => {
                     order_code: orderCode,
                     order_request_id: orderRequest.id,
                     invoice_code: currentSaleInvoiceCode,
-                    receipt_type_id: orderSaleReceiptType2.id,
+                    receipt_type_id: receiptType2.id,
                     date: getUtcDate(),
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_products: [orderSaleProductInput],
@@ -1504,7 +1504,7 @@ describe('delete', () => {
                     order_code: orderCode,
                     invoice_code: currentSaleInvoiceCode,
                     order_request_id: orderRequest.id,
-                    receipt_type_id: orderSaleReceiptType2.id,
+                    receipt_type_id: receiptType2.id,
                     date: getUtcDate(),
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_products: [orderSaleProductInput],

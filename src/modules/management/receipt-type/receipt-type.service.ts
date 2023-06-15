@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { OrderSaleReceiptType } from '../../../common/dto/entities';
+import { ReceiptType } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
 @Injectable()
-export class OrderSaleReceiptTypeService {
+export class ReceiptTypeService {
     constructor(private prisma: PrismaService) {}
 
-    async getOrderSaleReceiptTypes(): Promise<OrderSaleReceiptType[]> {
+    async getReceiptTypes(): Promise<ReceiptType[]> {
         return this.prisma.receipt_types.findMany();
     }
 }

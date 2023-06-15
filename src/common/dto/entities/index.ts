@@ -26,7 +26,7 @@ export * from './sales/order-request-status.dto';
 export * from './sales/order-request.dto';
 export * from './sales/order-request-product.dto';
 export * from './sales/order-sale.dto';
-export * from './sales/order-sale-receipt-type.dto';
+export * from './sales/receipt-type.dto';
 export * from './sales/order-sale-status.dto';
 export * from './sales/order-sale-product.dto';
 

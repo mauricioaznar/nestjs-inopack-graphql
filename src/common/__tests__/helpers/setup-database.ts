@@ -8,7 +8,7 @@ import { branches } from '../objects/maintenance/branches';
 import { orderAdjustmentTypes } from '../objects/production/order-adjustment-types';
 import { orderRequestStatuses } from '../objects/sales/order-request-statuses';
 import { orderSaleStatuses } from '../objects/sales/order-sale-statuses';
-import { orderSaleReceiptTypes } from '../objects/sales/order-sale-receipt-types';
+import { receiptTypes } from '../objects/sales/receipt-types';
 import { roles } from '../objects/auth/roles';
 import { productCategories } from '../objects/production/product-categories';
 import { accountTypes } from '../objects/management/account-types';
@@ -89,7 +89,7 @@ export default async function setupDatabase() {
         data: orderSaleStatuses,
     });
     await prismaService.receipt_types.createMany({
-        data: orderSaleReceiptTypes,
+        data: receiptTypes,
     });
     await prismaService.account_types.createMany({
         data: accountTypes,
