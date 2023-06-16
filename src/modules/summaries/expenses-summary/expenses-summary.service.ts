@@ -65,32 +65,39 @@ export class ExpensesSummaryService {
             }
         }
 
-        const sales = await this.prisma.$queryRawUnsafe<
-            ExpensesSummary['expenses']
-        >(`
+        const queryString = `
             select sum(ctc.total)                       as               total,
                    sum(ctc.tax)                         as               tax,
                    sum(ctc.total_with_tax)              as               total_with_tax,
                    ${selectEntityGroup}
                    ${selectDateGroup}
             from (
-             select 
-                 date (date_add(order_sales.date, interval -WEEKDAY(order_sales.date) - 1 day)) first_day_of_the_week,
-                 date(date_add(date_add(order_sales.date, interval -WEEKDAY(order_sales.date) - 1 day), interval 6 day)) last_day_of_the_week,
+             select
+                 date (date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day)) first_day_of_the_week,
+                 date(date_add(date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day), interval 6 day)) last_day_of_the_week,
                  expenses.date start_date,
                  accounts.id account_id,
                  accounts.name account_name,
                  accounts.abbreviation account_abbreviation,
                  receipt_types.id receipt_type_id,
-                 receipt_types.name receipt_type_name
+                 receipt_types.name receipt_type_name,
                  expense_resources.resource_id resource_id,
                  resources.name resource_name,
-                 expenses.total,
-                 expenses.tax,
-                 (expenses.total + expenses.tax) total_with_tax
+                 expense_resources.amount as total,
+                 ((expenses.tax / ztv.total) * expense_resources.amount)  as tax,
+                 (((expenses.tax / ztv.total) * expense_resources.amount) + expense_resources.amount) as total_with_tax
             from expenses
                 join expense_resources
                 on expense_resources.expense_id = expenses.id
+                join (
+                    select
+                    expense_resources.expense_id,
+                    sum(expense_resources.amount) total
+                    from expense_resources
+                    where expense_resources.active = 1
+                    group by expense_resources.expense_id
+                ) as ztv
+                on ztv.expense_id = expenses.id
                 join resources
                 on resources.id = expense_resources.resource_id
                 left join accounts
@@ -98,17 +105,24 @@ export class ExpensesSummaryService {
                 left join receipt_types
                 on receipt_types.id = expenses.receipt_type_id
             where expenses.active = 1
-              and order_sales.active = 1
+              and expense_resources.active = 1
                 ) as ctc
             where ctc.start_date >= '${startDate}'
               and ctc.start_date
                 < '${endDate}'
             group by ${groupByEntityGroup} ${groupByDateGroup}
             order by ${orderByDateGroup}
-        `);
+        `;
 
+        console.log(queryString);
+
+        const expenses = await this.prisma.$queryRawUnsafe<
+            ExpensesSummary['expenses']
+        >(queryString);
+
+        console.log(expenses);
         return {
-            expenses: sales,
+            expenses: expenses,
         };
     }
 }
