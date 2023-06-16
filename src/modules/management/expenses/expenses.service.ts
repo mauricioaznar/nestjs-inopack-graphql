@@ -203,6 +203,7 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code,
                 receipt_type_id: input.receipt_type_id,
+                notes: input.notes,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -212,6 +213,7 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code,
                 receipt_type_id: input.receipt_type_id,
+                notes: input.notes,
             },
             where: {
                 id: input.id || 0,

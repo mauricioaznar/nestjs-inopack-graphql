@@ -7,8 +7,6 @@ import {
 import { AccountsService } from '../accounts/accounts.service';
 import { ExpensesService } from './expenses.service';
 import { receiptType1 } from '../../../common/__tests__/objects/sales/receipt-types';
-import { orderSaleStatus2 } from '../../../common/__tests__/objects/sales/order-sale-statuses';
-import { salesUser } from '../../../common/__tests__/objects/auth/users';
 
 let app: INestApplication;
 let accountsService: AccountsService;
@@ -44,6 +42,7 @@ describe('expense upsert', () => {
             account_id: account.id,
             date: getUtcDate(),
             locked: false,
+            notes: '',
             expense_resources: [
                 {
                     amount: 200,
@@ -93,6 +92,7 @@ describe('expense upsert', () => {
                 account_id: account.id,
                 date: getUtcDate(),
                 locked: false,
+                notes: '',
                 expense_resources: [
                     {
                         amount: 200,
