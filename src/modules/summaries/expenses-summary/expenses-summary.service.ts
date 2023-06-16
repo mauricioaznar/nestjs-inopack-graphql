@@ -114,13 +114,10 @@ export class ExpensesSummaryService {
             order by ${orderByDateGroup}
         `;
 
-        console.log(queryString);
-
         const expenses = await this.prisma.$queryRawUnsafe<
             ExpensesSummary['expenses']
         >(queryString);
 
-        console.log(expenses);
         return {
             expenses: expenses,
         };
