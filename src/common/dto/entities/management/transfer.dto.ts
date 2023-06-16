@@ -64,7 +64,7 @@ export class TransfersQueryArgs {
 }
 
 export enum TransfersSortableFields {
-    amount = 'amount',
+    transferred_date = 'transferred_date',
 }
 
 registerEnumType(TransfersSortableFields, {

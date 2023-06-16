@@ -289,12 +289,14 @@ export class TransfersService {
             {
                 updated_at: 'desc',
             },
-            {
-                transferred_date: 'desc',
-            },
         ];
 
         if (sort_order && sort_field) {
+            if (sort_field === 'transferred_date') {
+                orderBy.unshift({
+                    transferred_date: sort_order,
+                });
+            }
         }
 
         const transfersCount = await this.prisma.transfers.count({
