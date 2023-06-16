@@ -19,6 +19,7 @@ import {
     PaginatedAccounts,
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
+    Product,
     User,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
@@ -116,6 +117,13 @@ export class AccountsResolver {
     @ResolveField(() => Boolean, { nullable: false })
     async is_deletable(@Parent() account: Account) {
         return this.service.isDeletable({ account_id: account.id });
+    }
+
+    @ResolveField(() => String, { nullable: false })
+    async compound_name(@Parent() account: Account): Promise<string> {
+        return account.abbreviation !== ''
+            ? `${account.name} (${account.abbreviation})`
+            : account.name;
     }
 
     @Subscription(() => Account)
