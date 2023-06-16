@@ -1,6 +1,7 @@
 import {
     ArgsType,
     Field,
+    Float,
     InputType,
     Int,
     ObjectType,
@@ -24,6 +25,9 @@ export class ExpenseBase {
 
     @Field(() => Date, { nullable: false })
     date: Date;
+
+    @Field(() => Float, { nullable: false })
+    tax: number;
 
     @Field(() => Int, { nullable: true })
     account_id: number | null;

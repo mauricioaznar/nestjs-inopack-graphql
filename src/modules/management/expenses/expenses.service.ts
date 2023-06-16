@@ -203,6 +203,7 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code,
                 receipt_type_id: input.receipt_type_id,
+                tax: input.tax,
                 notes: input.notes,
             },
             update: {
@@ -212,6 +213,7 @@ export class ExpensesService {
                 account_id: input.account_id,
                 expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code,
+                tax: input.tax,
                 receipt_type_id: input.receipt_type_id,
                 notes: input.notes,
             },

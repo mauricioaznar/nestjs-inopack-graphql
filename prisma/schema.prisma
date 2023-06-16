@@ -632,6 +632,10 @@ model expenses {
   account_id            Int?                @db.UnsignedInt
   receipt_type_id       Int?                @db.UnsignedInt
   notes                 String              @default("") @db.VarChar(255)
+  tax                   Float               @default(0.00)
+  tax_retained          Float               @default(0.00)
+  non_tax_retained      Float               @default(0.00)
+  non_tax               Float               @default(0.00)
   accounts              accounts?           @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
   receipt_types         receipt_types?      @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")
   expense_resources     expense_resources[]

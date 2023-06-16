@@ -48,6 +48,7 @@ describe('expense upsert', () => {
                     amount: 200,
                 },
             ],
+            tax: 0,
             expected_payment_date: getUtcDate(),
             order_code: '',
             receipt_type_id: receiptType1.id,
@@ -93,6 +94,7 @@ describe('expense upsert', () => {
                 date: getUtcDate(),
                 locked: false,
                 notes: '',
+                tax: 0,
                 expense_resources: [
                     {
                         amount: 200,
