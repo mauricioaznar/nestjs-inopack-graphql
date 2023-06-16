@@ -67,6 +67,9 @@ export class PaginatedExpenses extends OffsetPaginatorResult(Expense) {}
 export class ExpensesQueryArgs {
     @Field(() => String, { nullable: true })
     filter: string;
+
+    @Field(() => Int, { nullable: true })
+    account_id: number;
 }
 
 export enum ExpensesSortableFields {

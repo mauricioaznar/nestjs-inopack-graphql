@@ -160,6 +160,13 @@ export class ExpensesResolver {
     }
 
     @ResolveField(() => Float)
+    async expense_resources_total(expense: Expense): Promise<number> {
+        return this.service.getExpenseResourcesTotal({
+            expense_id: expense.id,
+        });
+    }
+
+    @ResolveField(() => Float)
     async transfer_receipts_total(expense: Expense): Promise<number> {
         return this.service.getExpenseTransferReceiptsTotal({
             expense_id: expense.id,

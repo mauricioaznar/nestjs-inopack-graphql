@@ -55,6 +55,94 @@ export class ExpensesService {
         });
     }
 
+    async paginatedExpenses({
+        offsetPaginatorArgs,
+        datePaginator,
+        expensesQueryArgs,
+        expensesSortArgs,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+        datePaginator: YearMonth;
+        expensesQueryArgs: ExpensesQueryArgs;
+        expensesSortArgs: ExpensesSortArgs;
+    }): Promise<PaginatedExpenses> {
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+        });
+
+        const { sort_order, sort_field } = expensesSortArgs;
+
+        const filter =
+            expensesQueryArgs.filter !== '' && !!expensesQueryArgs.filter
+                ? expensesQueryArgs.filter
+                : undefined;
+
+        const isFilterANumber = !Number.isNaN(Number(filter));
+
+        const expensesWhere: Prisma.expensesWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+                {
+                    date: {
+                        gte: startDate,
+                    },
+                },
+                {
+                    date: {
+                        lt: endDate,
+                    },
+                },
+                {
+                    account_id: expensesQueryArgs.account_id || undefined,
+                },
+                {
+                    OR: [
+                        {
+                            notes: {
+                                contains: filter,
+                            },
+                        },
+                        {
+                            order_code: {
+                                contains: filter,
+                            },
+                        },
+                    ],
+                },
+            ],
+        };
+        let orderBy: Prisma.expensesOrderByWithRelationInput = {
+            updated_at: 'desc',
+        };
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'date') {
+                orderBy = {
+                    date: sort_order,
+                };
+            }
+        }
+
+        const expensesCount = await this.prisma.expenses.count({
+            where: expensesWhere,
+        });
+
+        const expenses = await this.prisma.expenses.findMany({
+            where: expensesWhere,
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+            orderBy: orderBy,
+        });
+
+        return {
+            count: expensesCount,
+            docs: expenses,
+        };
+    }
+
     async getExpensesWithDisparities(): Promise<Expense[]> {
         const res = await this.prisma.$queryRawUnsafe<Expense[]>(`
             SELECT 
@@ -163,33 +251,6 @@ export class ExpensesService {
         });
     }
 
-    async getExpenseResourcesTotal({
-        expense_id,
-    }: {
-        expense_id: number | null;
-    }): Promise<number> {
-        const expenseTotals = await this.prisma.expense_resources.aggregate({
-            _sum: {
-                amount: true,
-            },
-            where: {
-                AND: [
-                    {
-                        expense_id,
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
-            },
-        });
-        const {
-            _sum: { amount },
-        } = expenseTotals;
-
-        return Math.round((amount || 0) * 100) / 100;
-    }
-
     async upsertExpense(input: ExpenseUpsertInput): Promise<Expense> {
         await this.validateUpsertExpense(input);
 
@@ -201,7 +262,7 @@ export class ExpensesService {
                 locked: input.locked,
                 account_id: input.account_id,
                 expected_payment_date: input.expected_payment_date,
-                order_code: input.order_code,
+                order_code: input.order_code.replace(' ', ''),
                 receipt_type_id: input.receipt_type_id,
                 tax: input.tax,
                 notes: input.notes,
@@ -212,7 +273,7 @@ export class ExpensesService {
                 locked: input.locked,
                 account_id: input.account_id,
                 expected_payment_date: input.expected_payment_date,
-                order_code: input.order_code,
+                order_code: input.order_code.replace(' ', ''),
                 tax: input.tax,
                 receipt_type_id: input.receipt_type_id,
                 notes: input.notes,
@@ -331,65 +392,33 @@ export class ExpensesService {
         return Math.round(total * 100) / 100;
     }
 
-    async paginatedExpenses({
-        offsetPaginatorArgs,
-        datePaginator,
-        expensesQueryArgs,
-        expensesSortArgs,
+    async getExpenseResourcesTotal({
+        expense_id,
     }: {
-        offsetPaginatorArgs: OffsetPaginatorArgs;
-        datePaginator: YearMonth;
-        expensesQueryArgs: ExpensesQueryArgs;
-        expensesSortArgs: ExpensesSortArgs;
-    }): Promise<PaginatedExpenses> {
-        const { startDate, endDate } = getRangesFromYearMonth({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
-
-        const { sort_order, sort_field } = expensesSortArgs;
-
-        const filter =
-            expensesQueryArgs.filter !== '' && !!expensesQueryArgs.filter
-                ? expensesQueryArgs.filter
-                : undefined;
-
-        const isFilterANumber = !Number.isNaN(Number(filter));
-
-        const expensesWhere: Prisma.expensesWhereInput = {
-            AND: [
-                {
-                    active: 1,
-                },
-            ],
-        };
-        let orderBy: Prisma.expensesOrderByWithRelationInput = {
-            updated_at: 'desc',
-        };
-
-        if (sort_order && sort_field) {
-            if (sort_field === 'date') {
-                orderBy = {
-                    date: sort_order,
-                };
-            }
+        expense_id: number | null;
+    }): Promise<number> {
+        if (!expense_id) {
+            return 0;
         }
 
-        const expensesCount = await this.prisma.expenses.count({
-            where: expensesWhere,
+        const expenseResources = await this.prisma.expense_resources.findMany({
+            where: {
+                AND: [
+                    {
+                        expense_id: expense_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
         });
 
-        const expenses = await this.prisma.expenses.findMany({
-            where: expensesWhere,
-            take: offsetPaginatorArgs.take,
-            skip: offsetPaginatorArgs.skip,
-            orderBy: orderBy,
-        });
+        const total = expenseResources.reduce((acc, curr) => {
+            return acc + curr.amount;
+        }, 0);
 
-        return {
-            count: expensesCount,
-            docs: expenses,
-        };
+        return Math.round(total * 100) / 100;
     }
 
     async validateUpsertExpense(input: ExpenseUpsertInput): Promise<void> {
