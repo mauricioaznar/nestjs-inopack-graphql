@@ -81,9 +81,11 @@ export class TransfersService {
             },
         });
 
-        return transfer_receipts.reduce((acc, curr) => {
+        const total = transfer_receipts.reduce((acc, curr) => {
             return acc + curr.amount;
         }, 0);
+
+        return Math.round(total * 100) / 100;
     }
 
     async getAccount({
