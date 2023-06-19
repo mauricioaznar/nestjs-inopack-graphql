@@ -322,12 +322,12 @@ export class TransfersService {
         // transfer amount is different than receipt amount
         {
             const hasReceipts = input.transfer_receipts.length > 0;
-            const receiptsAmountTotal = input.transfer_receipts.reduce(
-                (acc, curr) => {
-                    return acc + curr.amount;
-                },
-                0,
-            );
+            const receiptsAmountTotal =
+                Math.round(
+                    input.transfer_receipts.reduce((acc, curr) => {
+                        return acc + curr.amount;
+                    }, 0) * 100,
+                ) / 100;
             if (hasReceipts && input.amount != receiptsAmountTotal) {
                 errors.push(
                     `transfer amount (${formatFloat(
