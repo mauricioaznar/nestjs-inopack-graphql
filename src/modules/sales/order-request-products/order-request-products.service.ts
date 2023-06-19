@@ -46,7 +46,10 @@ export class OrderRequestProductsService {
     async getOrderRequestProductTotal(
         orderRequestProduct: OrderRequestProduct,
     ): Promise<number> {
-        return orderRequestProduct.kilo_price * orderRequestProduct.kilos;
+        return (
+            orderRequestProduct.kilo_price * orderRequestProduct.kilos +
+            orderRequestProduct.group_price * orderRequestProduct.groups
+        );
     }
 
     async getOptimizedRequestProducts(): Promise<OptimizedRequestProduct[]> {
