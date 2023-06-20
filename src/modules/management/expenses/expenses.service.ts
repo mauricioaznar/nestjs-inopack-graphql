@@ -78,41 +78,51 @@ export class ExpensesService {
                 ? expensesQueryArgs.filter
                 : undefined;
 
+        const noReceipt = expensesQueryArgs.no_receipt;
+
         const isFilterANumber = !Number.isNaN(Number(filter));
 
+        const expensesAndWhere: Prisma.Enumerable<Prisma.expensesWhereInput> = [
+            {
+                active: 1,
+            },
+            {
+                date: {
+                    gte: startDate,
+                },
+            },
+            {
+                date: {
+                    lt: endDate,
+                },
+            },
+            {
+                account_id: expensesQueryArgs.account_id || undefined,
+            },
+            {
+                OR: [
+                    {
+                        notes: {
+                            contains: filter,
+                        },
+                    },
+                    {
+                        order_code: {
+                            contains: filter,
+                        },
+                    },
+                ],
+            },
+        ];
+
+        if (noReceipt) {
+            expensesAndWhere.push({
+                order_code: '',
+            });
+        }
+
         const expensesWhere: Prisma.expensesWhereInput = {
-            AND: [
-                {
-                    active: 1,
-                },
-                {
-                    date: {
-                        gte: startDate,
-                    },
-                },
-                {
-                    date: {
-                        lt: endDate,
-                    },
-                },
-                {
-                    account_id: expensesQueryArgs.account_id || undefined,
-                },
-                {
-                    OR: [
-                        {
-                            notes: {
-                                contains: filter,
-                            },
-                        },
-                        {
-                            order_code: {
-                                contains: filter,
-                            },
-                        },
-                    ],
-                },
-            ],
+            AND: expensesAndWhere,
         };
         let orderBy: Prisma.expensesOrderByWithRelationInput = {
             updated_at: 'desc',

@@ -70,6 +70,9 @@ export class ExpensesQueryArgs {
 
     @Field(() => Int, { nullable: true })
     account_id: number;
+
+    @Field(() => Boolean, { nullable: true })
+    no_receipt: boolean;
 }
 
 export enum ExpensesSortableFields {
