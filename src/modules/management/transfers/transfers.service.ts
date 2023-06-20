@@ -330,7 +330,27 @@ export class TransfersService {
                         return acc + curr.amount;
                     }, 0) * 100,
                 ) / 100;
-            if (hasReceipts && input.amount != receiptsAmountTotal) {
+            const fromAccount = input.from_account_id
+                ? await this.prisma.accounts.findFirst({
+                      where: {
+                          id: input.from_account_id,
+                      },
+                  })
+                : null;
+            const toAccount = input.to_account_id
+                ? await this.prisma.accounts.findFirst({
+                      where: {
+                          id: input.to_account_id,
+                      },
+                  })
+                : null;
+
+            if (
+                (toAccount?.account_type_id !== 1 ||
+                    fromAccount?.account_type_id !== 1) &&
+                hasReceipts &&
+                input.amount != receiptsAmountTotal
+            ) {
                 errors.push(
                     `transfer amount (${formatFloat(
                         input.amount,
