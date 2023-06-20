@@ -415,7 +415,7 @@ export class ExpensesService {
         return Math.round(total * 100) / 100;
     }
 
-    async getExpenseResourcesTotal({
+    async getExpenseResourcesTotalWithTax({
         expense_id,
     }: {
         expense_id: number | null;
@@ -450,6 +450,35 @@ export class ExpensesService {
         return Math.round(totalWithTax * 100) / 100;
     }
 
+    async getExpenseResourcesTotal({
+        expense_id,
+    }: {
+        expense_id: number | null;
+    }): Promise<number> {
+        if (!expense_id) {
+            return 0;
+        }
+
+        const expenseResources = await this.prisma.expense_resources.findMany({
+            where: {
+                AND: [
+                    {
+                        expense_id: expense_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+
+        const total = expenseResources.reduce((acc, curr) => {
+            return acc + curr.amount;
+        }, 0);
+
+        return Math.round(total * 100) / 100;
+    }
+
     async validateUpsertExpense(input: ExpenseUpsertInput): Promise<void> {
         const errors: string[] = [];
 
@@ -467,6 +496,17 @@ export class ExpensesService {
                 }
             } else {
                 errors.push('Account is not a supplier');
+            }
+        }
+
+        // tax can only be set when order receipt type id = 2
+        {
+            if (input.receipt_type_id !== 2) {
+                if (input.tax > 0) {
+                    errors.push(
+                        'Tax can only be set when expense has order receipt type id = 2',
+                    );
+                }
             }
         }
 

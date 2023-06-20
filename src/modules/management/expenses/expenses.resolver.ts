@@ -145,13 +145,6 @@ export class ExpensesResolver {
         });
     }
 
-    @ResolveField(() => Float, { nullable: false })
-    async resources_total(@Parent() expense: Expense): Promise<number> {
-        return this.service.getExpenseResourcesTotal({
-            expense_id: expense.id,
-        });
-    }
-
     @ResolveField(() => [ExpenseResource])
     async expense_resources(expense: Expense): Promise<ExpenseResource[]> {
         return this.service.getExpenseResources({
@@ -162,6 +155,13 @@ export class ExpensesResolver {
     @ResolveField(() => Float)
     async expense_resources_total(expense: Expense): Promise<number> {
         return this.service.getExpenseResourcesTotal({
+            expense_id: expense.id,
+        });
+    }
+
+    @ResolveField(() => Float)
+    async expense_resources_total_with_tax(expense: Expense): Promise<number> {
+        return this.service.getExpenseResourcesTotalWithTax({
             expense_id: expense.id,
         });
     }
