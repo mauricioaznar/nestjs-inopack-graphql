@@ -147,21 +147,34 @@ export class ExpensesService {
         const res = await this.prisma.$queryRawUnsafe<Expense[]>(`
             SELECT 
                 expenses.*,
-                wtv.total as expenses_total,
+                wtv.total_with_tax as expenses_total,
                 otv.total as transfer_receipts_total
             FROM expenses
             JOIN
                 (
                         SELECT 
                         ztv.expense_id AS expense_id,
+                        round(SUM(ztv.total_with_tax), 2) total_with_tax,
+                        round(SUM(ztv.tax), 2) tax,
                         round(SUM(ztv.total), 2) total
                     FROM
                         (
                             SELECT 
                             expenses.id AS expense_id,
-                            expense_resources.amount as total
+                            expense_resources.amount as total,
+                            ((expenses.tax / ztv.total) * expense_resources.amount)  as tax,
+                            (((expenses.tax / ztv.total) * expense_resources.amount) + expense_resources.amount) as total_with_tax
                             FROM expense_resources
                             JOIN expenses ON expenses.id = expense_resources.expense_id
+                            join (
+                                select
+                                expense_resources.expense_id,
+                                sum(expense_resources.amount) total
+                                from expense_resources
+                                where expense_resources.active = 1
+                                group by expense_resources.expense_id
+                            ) as ztv
+                            on ztv.expense_id = expenses.id
                             WHERE expenses.active = 1
                             AND expense_resources.active = 1
                         ) AS ztv
@@ -181,7 +194,7 @@ export class ExpensesService {
                     group by expense_id
                 ) as otv
             on otv.expense_id = expenses.id
-            where ((otv.total - wtv.total) != 0  or isnull(otv.total))
+            where ((otv.total - wtv.total_with_tax) != 0  or isnull(otv.total))
             order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
         `);
 
@@ -414,11 +427,17 @@ export class ExpensesService {
             },
         });
 
+        const expense = await this.getExpense({ expense_id });
+
         const total = expenseResources.reduce((acc, curr) => {
             return acc + curr.amount;
         }, 0);
 
-        return Math.round(total * 100) / 100;
+        const tax = expense?.tax || 0;
+
+        const totalWithTax = total + tax;
+
+        return Math.round(totalWithTax * 100) / 100;
     }
 
     async validateUpsertExpense(input: ExpenseUpsertInput): Promise<void> {
