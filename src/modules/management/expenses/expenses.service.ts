@@ -100,6 +100,9 @@ export class ExpensesService {
                 account_id: expensesQueryArgs.account_id || undefined,
             },
             {
+                receipt_type_id: expensesQueryArgs.receipt_type_id || undefined,
+            },
+            {
                 OR: [
                     {
                         notes: {
