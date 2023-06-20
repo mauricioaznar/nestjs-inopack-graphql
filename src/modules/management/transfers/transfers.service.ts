@@ -388,28 +388,44 @@ export class TransfersService {
         //  either one has to be own account (to and from accounts)
         {
             if (
-                input.to_account_id !== null &&
+                input.to_account_id !== null ||
                 input.from_account_id !== null
             ) {
-                const fromAccount = await this.prisma.accounts.findFirst({
-                    where: {
-                        id: input.from_account_id,
-                    },
-                });
-                const toAccount = await this.prisma.accounts.findFirst({
-                    where: {
-                        id: input.to_account_id,
-                    },
-                });
+                if (
+                    input.to_account_id !== null &&
+                    input.from_account_id === null
+                ) {
+                    const toAccount = await this.prisma.accounts.findFirst({
+                        where: {
+                            id: input.to_account_id,
+                        },
+                    });
 
-                if (toAccount && fromAccount) {
-                    if (
-                        toAccount.account_type_id !== 1 &&
-                        fromAccount.account_type_id !== 1
-                    ) {
-                        errors.push(
-                            `either from account or to account have to be own account type`,
-                        );
+                    if (toAccount) {
+                        if (toAccount.account_type_id !== 1) {
+                            errors.push(
+                                `either from account or to account have to be own account type`,
+                            );
+                        }
+                    }
+                }
+
+                if (
+                    input.from_account_id !== null &&
+                    input.to_account_id === null
+                ) {
+                    const fromAccount = await this.prisma.accounts.findFirst({
+                        where: {
+                            id: input.from_account_id,
+                        },
+                    });
+
+                    if (fromAccount) {
+                        if (fromAccount.account_type_id !== 1) {
+                            errors.push(
+                                `either from account or to account have to be own account type`,
+                            );
+                        }
                     }
                 }
             }
