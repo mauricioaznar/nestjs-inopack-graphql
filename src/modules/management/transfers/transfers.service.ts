@@ -360,6 +360,22 @@ export class TransfersService {
                     )})`,
                 );
             }
+
+            if (
+                toAccount !== null &&
+                toAccount?.account_type_id === 1 &&
+                fromAccount === null
+            ) {
+                input.transfer_receipts = [];
+            }
+
+            if (
+                fromAccount !== null &&
+                fromAccount?.account_type_id === 1 &&
+                toAccount === null
+            ) {
+                input.transfer_receipts = [];
+            }
         }
 
         // order sale is not unique
