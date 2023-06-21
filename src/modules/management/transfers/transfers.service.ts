@@ -346,8 +346,9 @@ export class TransfersService {
                 : null;
 
             if (
-                (toAccount?.account_type_id !== 1 ||
-                    fromAccount?.account_type_id !== 1) &&
+                ((toAccount !== null && toAccount?.account_type_id !== 1) ||
+                    (fromAccount !== null &&
+                        fromAccount?.account_type_id !== 1)) &&
                 hasReceipts &&
                 input.amount != receiptsAmountTotal
             ) {
