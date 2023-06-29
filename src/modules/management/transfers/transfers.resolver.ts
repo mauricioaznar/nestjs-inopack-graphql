@@ -87,8 +87,10 @@ export class TransfersResolver {
     }
 
     @Query(() => [Transfer])
-    async getTransfers(): Promise<Transfer[]> {
-        return this.service.getTransfers();
+    async getTransfers(
+        @Args({ nullable: false }) datePaginator: YearMonth,
+    ): Promise<Transfer[]> {
+        return this.service.getTransfers({ datePaginator });
     }
 
     @Query(() => PaginatedTransfers)

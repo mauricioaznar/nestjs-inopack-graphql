@@ -40,12 +40,167 @@ export class TransfersService {
         });
     }
 
-    async getTransfers(): Promise<Transfer[]> {
+    async getTransfers({
+        datePaginator,
+    }: {
+        datePaginator: YearMonth;
+    }): Promise<Transfer[]> {
+        if (!datePaginator.year) {
+            return [];
+        }
+
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+        });
+
+        const transfersWhere: Prisma.transfersWhereInput[] = [
+            {
+                active: 1,
+            },
+            {
+                transferred_date: {
+                    gte: startDate || undefined,
+                },
+            },
+            {
+                transferred_date: {
+                    lt: datePaginator.year ? endDate : undefined,
+                },
+            },
+            {
+                from_account_id: {
+                    not: null,
+                },
+            },
+            {
+                to_account_id: {
+                    not: null,
+                },
+            },
+        ];
+
         return this.prisma.transfers.findMany({
             where: {
                 active: 1,
+                AND: transfersWhere,
             },
         });
+    }
+
+    async paginatedTransfers({
+        offsetPaginatorArgs,
+        datePaginator,
+        transfersQueryArgs,
+        transfersSortArgs,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+        datePaginator: YearMonth;
+        transfersQueryArgs: TransfersQueryArgs;
+        transfersSortArgs: TransfersSortArgs;
+    }): Promise<PaginatedTransfers> {
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+        });
+
+        const { sort_order, sort_field } = transfersSortArgs;
+
+        const filter =
+            transfersQueryArgs.filter !== '' && !!transfersQueryArgs.filter
+                ? transfersQueryArgs.filter
+                : undefined;
+
+        const isFilterANumber = !Number.isNaN(Number(filter));
+
+        const transfersWhere: Prisma.transfersWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+                {
+                    transferred_date: {
+                        gte: startDate || undefined,
+                    },
+                },
+                {
+                    transferred_date: {
+                        lt: datePaginator.year ? endDate : undefined,
+                    },
+                },
+                {
+                    OR: [
+                        {
+                            transfer_receipts: {
+                                some: isFilterANumber
+                                    ? {
+                                          order_sales: {
+                                              invoice_code: {
+                                                  in: isFilterANumber
+                                                      ? Number(filter)
+                                                      : undefined,
+                                              },
+                                          },
+                                      }
+                                    : undefined,
+                            },
+                        },
+                        {
+                            transfer_receipts: {
+                                some:
+                                    filter && filter !== ''
+                                        ? {
+                                              expenses: {
+                                                  order_code: {
+                                                      in: filter,
+                                                  },
+                                              },
+                                          }
+                                        : undefined,
+                            },
+                        },
+                        {
+                            to_account_id:
+                                transfersQueryArgs.to_account_id || undefined,
+                        },
+                        {
+                            from_account_id:
+                                transfersQueryArgs.from_account_id || undefined,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        const orderBy: Prisma.transfersOrderByWithRelationInput[] = [
+            {
+                updated_at: 'desc',
+            },
+        ];
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'transferred_date') {
+                orderBy.unshift({
+                    transferred_date: sort_order,
+                });
+            }
+        }
+
+        const transfersCount = await this.prisma.transfers.count({
+            where: transfersWhere,
+        });
+
+        const transfers = await this.prisma.transfers.findMany({
+            where: transfersWhere,
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+            orderBy: orderBy,
+        });
+
+        return {
+            count: transfersCount,
+            docs: transfers,
+        };
     }
 
     async getTransferReceipts({
@@ -201,121 +356,6 @@ export class TransfersService {
         }
 
         return transfer;
-    }
-
-    async paginatedTransfers({
-        offsetPaginatorArgs,
-        datePaginator,
-        transfersQueryArgs,
-        transfersSortArgs,
-    }: {
-        offsetPaginatorArgs: OffsetPaginatorArgs;
-        datePaginator: YearMonth;
-        transfersQueryArgs: TransfersQueryArgs;
-        transfersSortArgs: TransfersSortArgs;
-    }): Promise<PaginatedTransfers> {
-        const { startDate, endDate } = getRangesFromYearMonth({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
-
-        const { sort_order, sort_field } = transfersSortArgs;
-
-        const filter =
-            transfersQueryArgs.filter !== '' && !!transfersQueryArgs.filter
-                ? transfersQueryArgs.filter
-                : undefined;
-
-        const isFilterANumber = !Number.isNaN(Number(filter));
-
-        const transfersWhere: Prisma.transfersWhereInput = {
-            AND: [
-                {
-                    active: 1,
-                },
-                {
-                    transferred_date: {
-                        gte: startDate || undefined,
-                    },
-                },
-                {
-                    transferred_date: {
-                        lt: datePaginator.year ? endDate : undefined,
-                    },
-                },
-                {
-                    OR: [
-                        {
-                            transfer_receipts: {
-                                some: isFilterANumber
-                                    ? {
-                                          order_sales: {
-                                              invoice_code: {
-                                                  in: isFilterANumber
-                                                      ? Number(filter)
-                                                      : undefined,
-                                              },
-                                          },
-                                      }
-                                    : undefined,
-                            },
-                        },
-                        {
-                            transfer_receipts: {
-                                some:
-                                    filter && filter !== ''
-                                        ? {
-                                              expenses: {
-                                                  order_code: {
-                                                      in: filter,
-                                                  },
-                                              },
-                                          }
-                                        : undefined,
-                            },
-                        },
-                        {
-                            to_account_id:
-                                transfersQueryArgs.to_account_id || undefined,
-                        },
-                        {
-                            from_account_id:
-                                transfersQueryArgs.from_account_id || undefined,
-                        },
-                    ],
-                },
-            ],
-        };
-
-        const orderBy: Prisma.transfersOrderByWithRelationInput[] = [
-            {
-                updated_at: 'desc',
-            },
-        ];
-
-        if (sort_order && sort_field) {
-            if (sort_field === 'transferred_date') {
-                orderBy.unshift({
-                    transferred_date: sort_order,
-                });
-            }
-        }
-
-        const transfersCount = await this.prisma.transfers.count({
-            where: transfersWhere,
-        });
-
-        const transfers = await this.prisma.transfers.findMany({
-            where: transfersWhere,
-            take: offsetPaginatorArgs.take,
-            skip: offsetPaginatorArgs.skip,
-            orderBy: orderBy,
-        });
-
-        return {
-            count: transfersCount,
-            docs: transfers,
-        };
     }
 
     async validateUpsertTransfer(input: TransferUpsertInput): Promise<void> {
