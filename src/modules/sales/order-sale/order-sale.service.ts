@@ -182,16 +182,44 @@ export class OrderSaleService {
 
     async getOrderSales({
         getOrderSalesQueryArgs,
+        datePaginator,
     }: {
         getOrderSalesQueryArgs: GetOrderSalesQueryArgs;
+        datePaginator: YearMonth;
     }): Promise<OrderSale[]> {
-        const { account_id } = getOrderSalesQueryArgs;
-        return this.prisma.order_sales.findMany({
-            where: {
-                active: 1,
+        const { account_id, receipt_type_id } = getOrderSalesQueryArgs;
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+        });
+
+        const andTransfersWhere: Prisma.order_salesWhereInput[] = [
+            {
                 order_requests: {
                     account_id: account_id || undefined,
                 },
+            },
+            {
+                receipt_type_id: receipt_type_id || undefined,
+            },
+            {
+                active: 1,
+            },
+            {
+                date: {
+                    lt: datePaginator.year ? endDate : undefined,
+                },
+            },
+            {
+                date: {
+                    gte: startDate || undefined,
+                },
+            },
+        ];
+
+        return this.prisma.order_sales.findMany({
+            where: {
+                AND: andTransfersWhere,
             },
             orderBy: {
                 order_code: 'desc',

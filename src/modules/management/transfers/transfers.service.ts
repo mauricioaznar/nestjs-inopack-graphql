@@ -113,63 +113,64 @@ export class TransfersService {
 
         const isFilterANumber = !Number.isNaN(Number(filter));
 
-        const transfersWhere: Prisma.transfersWhereInput = {
-            AND: [
-                {
-                    active: 1,
+        const andTransfersWhere: Prisma.transfersWhereInput[] = [
+            {
+                active: 1,
+            },
+            {
+                transferred_date: {
+                    gte: startDate || undefined,
                 },
-                {
-                    transferred_date: {
-                        gte: startDate || undefined,
+            },
+            {
+                transferred_date: {
+                    lt: datePaginator.year ? endDate : undefined,
+                },
+            },
+            {
+                to_account_id: transfersQueryArgs.to_account_id || undefined,
+            },
+            {
+                from_account_id:
+                    transfersQueryArgs.from_account_id || undefined,
+            },
+            {
+                OR: [
+                    {
+                        transfer_receipts: {
+                            some: isFilterANumber
+                                ? {
+                                      order_sales: {
+                                          invoice_code: {
+                                              in: isFilterANumber
+                                                  ? Number(filter)
+                                                  : undefined,
+                                          },
+                                      },
+                                  }
+                                : undefined,
+                        },
                     },
-                },
-                {
-                    transferred_date: {
-                        lt: datePaginator.year ? endDate : undefined,
-                    },
-                },
-                {
-                    OR: [
-                        {
-                            transfer_receipts: {
-                                some: isFilterANumber
+                    {
+                        transfer_receipts: {
+                            some:
+                                filter && filter !== ''
                                     ? {
-                                          order_sales: {
-                                              invoice_code: {
-                                                  in: isFilterANumber
-                                                      ? Number(filter)
-                                                      : undefined,
+                                          expenses: {
+                                              order_code: {
+                                                  in: filter,
                                               },
                                           },
                                       }
                                     : undefined,
-                            },
                         },
-                        {
-                            transfer_receipts: {
-                                some:
-                                    filter && filter !== ''
-                                        ? {
-                                              expenses: {
-                                                  order_code: {
-                                                      in: filter,
-                                                  },
-                                              },
-                                          }
-                                        : undefined,
-                            },
-                        },
-                        {
-                            to_account_id:
-                                transfersQueryArgs.to_account_id || undefined,
-                        },
-                        {
-                            from_account_id:
-                                transfersQueryArgs.from_account_id || undefined,
-                        },
-                    ],
-                },
-            ],
+                    },
+                ],
+            },
+        ];
+
+        const transfersWhere: Prisma.transfersWhereInput = {
+            AND: andTransfersWhere,
         };
 
         const orderBy: Prisma.transfersOrderByWithRelationInput[] = [
@@ -413,6 +414,14 @@ export class TransfersService {
                 fromAccount !== null &&
                 fromAccount?.account_type_id === 1 &&
                 toAccount === null
+            ) {
+                input.transfer_receipts = [];
+            }
+            if (
+                fromAccount !== null &&
+                fromAccount?.account_type_id === 1 &&
+                toAccount !== null &&
+                toAccount?.account_type_id === 1
             ) {
                 input.transfer_receipts = [];
             }

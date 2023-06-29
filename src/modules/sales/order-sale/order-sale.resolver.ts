@@ -52,9 +52,11 @@ export class OrderSaleResolver {
     @Query(() => [OrderSale])
     async getOrderSales(
         @Args({ nullable: false }) args: GetOrderSalesQueryArgs,
+        @Args({ nullable: false }) datePaginator: YearMonth,
     ): Promise<OrderSale[]> {
         return this.service.getOrderSales({
             getOrderSalesQueryArgs: args,
+            datePaginator: datePaginator,
         });
     }
 
