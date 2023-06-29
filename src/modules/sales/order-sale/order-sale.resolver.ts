@@ -25,6 +25,7 @@ import {
     PaginatedOrderSales,
     PaginatedOrderSalesQueryArgs,
     User,
+    TransferReceipt,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
@@ -177,6 +178,15 @@ export class OrderSaleResolver {
     @ResolveField(() => Float)
     async products_total(@Parent() orderSale: OrderSale): Promise<number> {
         return this.service.getOrderSaleProductsTotal({
+            order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => [TransferReceipt])
+    async transfer_receipts(
+        @Parent() orderSale: OrderSale,
+    ): Promise<TransferReceipt[]> {
+        return this.service.getOrderSaleTransferReceipts({
             order_sale_id: orderSale.id,
         });
     }

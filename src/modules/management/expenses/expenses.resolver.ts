@@ -21,6 +21,8 @@ import {
     ReceiptType,
     PaginatedExpenses,
     User,
+    TransferReceipt,
+    OrderSale,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -89,8 +91,12 @@ export class ExpensesResolver {
     @RolesDecorator(RoleId.ADMIN)
     async getExpenses(
         @Args({ nullable: false }) args: GetExpensesQueryArgs,
+        @Args({ nullable: false }) datePaginator: YearMonth,
     ): Promise<Expense[]> {
-        return this.service.getExpenses({ getExpensesQueryArgs: args });
+        return this.service.getExpenses({
+            getExpensesQueryArgs: args,
+            datePaginator: datePaginator,
+        });
     }
 
     @Query(() => [Expense])
@@ -162,6 +168,15 @@ export class ExpensesResolver {
     @ResolveField(() => Float)
     async expense_resources_total_with_tax(expense: Expense): Promise<number> {
         return this.service.getExpenseResourcesTotalWithTax({
+            expense_id: expense.id,
+        });
+    }
+
+    @ResolveField(() => [TransferReceipt])
+    async transfer_receipts(
+        @Parent() expense: Expense,
+    ): Promise<TransferReceipt[]> {
+        return this.service.getExpenseTransferReceipts({
             expense_id: expense.id,
         });
     }

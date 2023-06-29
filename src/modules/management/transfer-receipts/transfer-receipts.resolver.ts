@@ -6,6 +6,7 @@ import {
     Resource,
     OrderSale,
     Expense,
+    Transfer,
 } from '../../../common/dto/entities';
 import { Public } from '../../auth/decorators/public.decorator';
 
@@ -34,6 +35,13 @@ export class TransferReceiptsResolver {
     async expense(transferReceipt: TransferReceipt): Promise<Expense | null> {
         return this.service.getExpense({
             expense_id: transferReceipt.expense_id,
+        });
+    }
+
+    @ResolveField(() => Transfer, { nullable: true })
+    async transfer(transferReceipt: TransferReceipt): Promise<Transfer | null> {
+        return this.service.getTransfer({
+            transfer_id: transferReceipt.transfer_id,
         });
     }
 }

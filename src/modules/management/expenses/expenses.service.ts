@@ -13,6 +13,7 @@ import {
     GetExpensesQueryArgs,
     ReceiptType,
     PaginatedExpenses,
+    TransferReceipt,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -43,14 +44,44 @@ export class ExpensesService {
 
     async getExpenses({
         getExpensesQueryArgs,
+        datePaginator,
     }: {
         getExpensesQueryArgs: GetExpensesQueryArgs;
+        datePaginator: YearMonth;
     }): Promise<Expense[]> {
-        const { account_id } = getExpensesQueryArgs;
+        const { account_id, receipt_type_id } = getExpensesQueryArgs;
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+        });
+
+        const andExpensesWhere: Prisma.expensesWhereInput[] = [
+            {
+                account_id: account_id || undefined,
+            },
+            {
+                receipt_type_id: receipt_type_id || undefined,
+            },
+            {
+                active: 1,
+            },
+            {
+                date: {
+                    lt: datePaginator.year ? endDate : undefined,
+                },
+            },
+            {
+                date: {
+                    gte: startDate || undefined,
+                },
+            },
+        ];
         return this.prisma.expenses.findMany({
             where: {
-                active: 1,
-                account_id: account_id || undefined,
+                AND: andExpensesWhere,
+            },
+            orderBy: {
+                date: 'desc',
             },
         });
     }
@@ -416,6 +447,35 @@ export class ExpensesService {
         }, 0);
 
         return Math.round(total * 100) / 100;
+    }
+
+    async getExpenseTransferReceipts({
+        expense_id,
+    }: {
+        expense_id: number;
+    }): Promise<TransferReceipt[]> {
+        return this.prisma.transfer_receipts.findMany({
+            where: {
+                AND: [
+                    {
+                        expenses: {
+                            id: expense_id,
+                        },
+                        active: 1,
+                    },
+                    {
+                        transfers: {
+                            active: 1,
+                        },
+                    },
+                    {
+                        expenses: {
+                            active: 1,
+                        },
+                    },
+                ],
+            },
+        });
     }
 
     async getExpenseResourcesTotalWithTax({

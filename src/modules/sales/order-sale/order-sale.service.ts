@@ -19,6 +19,7 @@ import {
     PaginatedOrderSales,
     PaginatedOrderSalesQueryArgs,
     User,
+    TransferReceipt,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -505,6 +506,33 @@ export class OrderSaleService {
         );
 
         return Math.round(orderSaleProductsTotal * 100) / 100;
+    }
+
+    async getOrderSaleTransferReceipts({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<TransferReceipt[]> {
+        return this.prisma.transfer_receipts.findMany({
+            where: {
+                AND: [
+                    {
+                        order_sale_id: order_sale_id,
+                        active: 1,
+                    },
+                    {
+                        transfers: {
+                            active: 1,
+                        },
+                    },
+                    {
+                        order_sales: {
+                            active: 1,
+                        },
+                    },
+                ],
+            },
+        });
     }
 
     async getOrderSaleTransferReceiptsTotal({

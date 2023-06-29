@@ -3,6 +3,7 @@ import {
     TransferReceipt,
     Expense,
     OrderSale,
+    Transfer,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
@@ -42,6 +43,22 @@ export class TransferReceiptsService {
         return this.prisma.expenses.findFirst({
             where: {
                 id: expense_id,
+            },
+        });
+    }
+
+    async getTransfer({
+        transfer_id,
+    }: {
+        transfer_id?: number | null;
+    }): Promise<Transfer | null> {
+        if (!transfer_id) {
+            return null;
+        }
+
+        return this.prisma.transfers.findFirst({
+            where: {
+                id: transfer_id,
             },
         });
     }
