@@ -29,6 +29,15 @@ export class ExpenseBase {
     @Field(() => Float, { nullable: false })
     tax: number;
 
+    @Field(() => Float, { nullable: false })
+    tax_retained: number;
+
+    @Field(() => Float, { nullable: false })
+    non_tax_retained: number;
+
+    @Field(() => Float, { nullable: false })
+    non_tax: number;
+
     @Field(() => Int, { nullable: true })
     account_id: number | null;
 

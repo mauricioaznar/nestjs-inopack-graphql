@@ -22,7 +22,6 @@ import {
     PaginatedExpenses,
     User,
     TransferReceipt,
-    OrderSale,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';

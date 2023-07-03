@@ -191,29 +191,25 @@ export class ExpensesService {
         const res = await this.prisma.$queryRawUnsafe<Expense[]>(`
             SELECT 
                 expenses.*,
-                wtv.total_with_tax as expenses_total,
+                wtv.total as expenses_total,
                 otv.total as transfer_receipts_total
             FROM expenses
             JOIN
                 (
                         SELECT 
                         ztv.expense_id AS expense_id,
-                        round(SUM(ztv.total_with_tax), 2) total_with_tax,
-                        round(SUM(ztv.tax), 2) tax,
                         round(SUM(ztv.total), 2) total
                     FROM
                         (
                             SELECT 
                             expenses.id AS expense_id,
-                            expense_resources.amount as total,
-                            ((expenses.tax / ztv.total) * expense_resources.amount)  as tax,
-                            (((expenses.tax / ztv.total) * expense_resources.amount) + expense_resources.amount) as total_with_tax
+                            (((expenses.tax / ztv.expense_total) * expense_resources.amount) + expense_resources.amount) as total
                             FROM expense_resources
                             JOIN expenses ON expenses.id = expense_resources.expense_id
                             join (
                                 select
                                 expense_resources.expense_id,
-                                sum(expense_resources.amount) total
+                                sum(expense_resources.amount) expense_total
                                 from expense_resources
                                 where expense_resources.active = 1
                                 group by expense_resources.expense_id
@@ -238,7 +234,7 @@ export class ExpensesService {
                     group by expense_id
                 ) as otv
             on otv.expense_id = expenses.id
-            where ((otv.total - wtv.total_with_tax) != 0  or isnull(otv.total))
+            where ((otv.total - wtv.total) != 0  or isnull(otv.total))
             order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
         `);
 
@@ -321,8 +317,11 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code.replace(' ', ''),
                 receipt_type_id: input.receipt_type_id,
-                tax: input.tax,
                 notes: input.notes,
+                tax: input.tax,
+                tax_retained: input.tax_retained,
+                non_tax: input.non_tax,
+                non_tax_retained: input.non_tax_retained,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -331,9 +330,12 @@ export class ExpensesService {
                 account_id: input.account_id,
                 expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code.replace(' ', ''),
-                tax: input.tax,
                 receipt_type_id: input.receipt_type_id,
                 notes: input.notes,
+                tax: input.tax,
+                tax_retained: input.tax_retained,
+                non_tax: input.non_tax,
+                non_tax_retained: input.non_tax_retained,
             },
             where: {
                 id: input.id || 0,
@@ -406,6 +408,42 @@ export class ExpensesService {
         }
 
         return expense;
+    }
+
+    async validateUpsertExpense(input: ExpenseUpsertInput): Promise<void> {
+        const errors: string[] = [];
+
+        // account is not supplier
+        {
+            if (input.account_id) {
+                const account = await this.prisma.accounts.findFirst({
+                    where: {
+                        id: input.account_id,
+                    },
+                });
+
+                if (!account || account.account_type_id !== 3) {
+                    errors.push('Account is not a supplier');
+                }
+            } else {
+                errors.push('Account is not a supplier');
+            }
+        }
+
+        // tax can only be set when order receipt type id = 2
+        {
+            if (input.receipt_type_id !== 2) {
+                if (input.tax > 0) {
+                    errors.push(
+                        'Tax can only be set when expense has order receipt type id = 2',
+                    );
+                }
+            }
+        }
+
+        if (errors.length > 0) {
+            throw new BadRequestException(errors);
+        }
     }
 
     async getExpenseTransferReceiptsTotal({
@@ -540,42 +578,6 @@ export class ExpensesService {
         }, 0);
 
         return Math.round(total * 100) / 100;
-    }
-
-    async validateUpsertExpense(input: ExpenseUpsertInput): Promise<void> {
-        const errors: string[] = [];
-
-        // account is not supplier
-        {
-            if (input.account_id) {
-                const account = await this.prisma.accounts.findFirst({
-                    where: {
-                        id: input.account_id,
-                    },
-                });
-
-                if (!account || account.account_type_id !== 3) {
-                    errors.push('Account is not a supplier');
-                }
-            } else {
-                errors.push('Account is not a supplier');
-            }
-        }
-
-        // tax can only be set when order receipt type id = 2
-        {
-            if (input.receipt_type_id !== 2) {
-                if (input.tax > 0) {
-                    errors.push(
-                        'Tax can only be set when expense has order receipt type id = 2',
-                    );
-                }
-            }
-        }
-
-        if (errors.length > 0) {
-            throw new BadRequestException(errors);
-        }
     }
 
     async deleteExpense({
