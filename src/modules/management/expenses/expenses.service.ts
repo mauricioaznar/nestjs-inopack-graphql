@@ -189,43 +189,35 @@ export class ExpensesService {
 
     async getExpensesWithDisparities(): Promise<Expense[]> {
         const res = await this.prisma.$queryRawUnsafe<Expense[]>(`
-            SELECT 
+                               SELECT
                 expenses.*,
                 wtv.total as expenses_total,
                 otv.total as transfer_receipts_total
             FROM expenses
             JOIN
                 (
-                        SELECT 
+                        SELECT
                         ztv.expense_id AS expense_id,
-                        round(SUM(ztv.total), 2) total
-                    FROM
-                        (
-                            SELECT 
-                            expenses.id AS expense_id,
-                            (((expenses.tax / ztv.expense_total) * expense_resources.amount) + expense_resources.amount) as total
-                            FROM expense_resources
-                            JOIN expenses ON expenses.id = expense_resources.expense_id
-                            join (
+                        round(SUM(ztv.expense_subtotal + expenses.tax - expenses.tax_retained), 2) total
+                        FROM expenses
+                        JOIN (
                                 select
                                 expense_resources.expense_id,
-                                sum(expense_resources.amount) expense_total
+                                sum(expense_resources.amount) expense_subtotal
                                 from expense_resources
                                 where expense_resources.active = 1
                                 group by expense_resources.expense_id
-                            ) as ztv
-                            on ztv.expense_id = expenses.id
-                            WHERE expenses.active = 1
-                            AND expense_resources.active = 1
-                        ) AS ztv
-                    GROUP BY ztv.expense_id
+                            ) AS ztv
+                        ON ztv.expense_id = expenses.id
+                        WHERE expenses.active = 1
+                        GROUP BY ztv.expense_id
                 ) AS wtv
             on wtv.expense_id = expenses.id
-            left join 
+            left join
                 (
-                    select 
+                    select
                     transfer_receipts.expense_id,
-                    round(sum(transfer_receipts.amount), 2) as total 
+                    round(sum(transfer_receipts.amount), 2) as total
                     from transfers
                     join transfer_receipts
                     on transfers.id = transfer_receipts.transfer_id
@@ -238,7 +230,61 @@ export class ExpensesService {
             order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
         `);
 
+        // const res = await this.prisma.$queryRawUnsafe<Expense[]>(`
+        //     SELECT
+        //         expenses.*,
+        //         wtv.total as expenses_total,
+        //         otv.total as transfer_receipts_total
+        //     FROM expenses
+        //     JOIN
+        //         (
+        //                 SELECT
+        //                 ztv.expense_id AS expense_id,
+        //                 round(SUM(ztv.total), 2) total
+        //             FROM
+        //                 (
+        //                     SELECT
+        //                     expenses.id AS expense_id,
+        //                     (((expenses.tax / ztv.expense_total) * expense_resources.amount) + expense_resources.amount) as total
+        //                     FROM expense_resources
+        //                     JOIN expenses ON expenses.id = expense_resources.expense_id
+        //                     join (
+        //                         select
+        //                         expense_resources.expense_id,
+        //                         sum(expense_resources.amount) expense_total
+        //                         from expense_resources
+        //                         where expense_resources.active = 1
+        //                         group by expense_resources.expense_id
+        //                     ) as ztv
+        //                     on ztv.expense_id = expenses.id
+        //                     WHERE expenses.active = 1
+        //                     AND expense_resources.active = 1
+        //                 ) AS ztv
+        //             GROUP BY ztv.expense_id
+        //         ) AS wtv
+        //     on wtv.expense_id = expenses.id
+        //     left join
+        //         (
+        //             select
+        //             transfer_receipts.expense_id,
+        //             round(sum(transfer_receipts.amount), 2) as total
+        //             from transfers
+        //             join transfer_receipts
+        //             on transfers.id = transfer_receipts.transfer_id
+        //             where transfers.active = 1
+        //             and transfer_receipts.active = 1
+        //             group by expense_id
+        //         ) as otv
+        //     on otv.expense_id = expenses.id
+        //     where ((otv.total - wtv.total) != 0  or isnull(otv.total))
+        //     order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
+        // `);
+
         return res.map((ex) => {
+            if (ex.order_code === '56' || ex.order_code === '57') {
+                console.log(ex);
+            }
+
             return {
                 ...ex,
                 expected_payment_date: ex.expected_payment_date
@@ -545,8 +591,9 @@ export class ExpensesService {
         }, 0);
 
         const tax = expense?.tax || 0;
+        const tax_retained = expense?.tax_retained || 0;
 
-        const totalWithTax = total + tax;
+        const totalWithTax = total + tax - tax_retained;
 
         return Math.round(totalWithTax * 100) / 100;
     }
