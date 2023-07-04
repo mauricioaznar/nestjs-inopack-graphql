@@ -26,6 +26,7 @@ export class ExpensesSummaryArgs {
 export enum ExpensesSummaryEntitiesGroup {
     account = 'account',
     resource = 'resource',
+    accountResource = 'accountResource',
     receipt = 'receipt',
 }
 

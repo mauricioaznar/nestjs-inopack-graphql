@@ -55,6 +55,16 @@ export class ExpensesSummaryService {
                     selectEntityGroup += 'resource_id, resource_name';
                     groupByEntityGroup += 'resource_id, resource_name';
                     break;
+                case 'accountResource':
+                    selectEntityGroup +=
+                        'account_id, account_name, account_abbreviation';
+                    groupByEntityGroup +=
+                        'account_id, account_name, account_abbreviation';
+                    selectEntityGroup += ', ';
+                    groupByEntityGroup += ', ';
+                    selectEntityGroup += 'resource_id, resource_name';
+                    groupByEntityGroup += 'resource_id, resource_name';
+                    break;
                 default:
                     break;
             }
