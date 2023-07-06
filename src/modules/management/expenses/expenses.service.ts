@@ -368,6 +368,8 @@ export class ExpensesService {
                 tax_retained: input.tax_retained,
                 non_tax: input.non_tax,
                 non_tax_retained: input.non_tax_retained,
+                require_supplement: input.require_supplement,
+                supplement_code: input.supplement_code,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -382,6 +384,8 @@ export class ExpensesService {
                 tax_retained: input.tax_retained,
                 non_tax: input.non_tax,
                 non_tax_retained: input.non_tax_retained,
+                require_supplement: input.require_supplement,
+                supplement_code: input.supplement_code,
             },
             where: {
                 id: input.id || 0,

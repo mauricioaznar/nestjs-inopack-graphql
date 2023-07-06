@@ -55,6 +55,8 @@ describe('expense upsert', () => {
             expected_payment_date: getUtcDate(),
             order_code: '',
             receipt_type_id: receiptType1.id,
+            require_supplement: false,
+            supplement_code: '',
         });
 
         expect(expense.id).toBeDefined();
@@ -109,6 +111,8 @@ describe('expense upsert', () => {
                 non_tax_retained: 0,
                 expected_payment_date: getUtcDate(),
                 receipt_type_id: receiptType1.id,
+                require_supplement: false,
+                supplement_code: '',
             });
         } catch (e) {
             expect(e.response.message).toEqual(

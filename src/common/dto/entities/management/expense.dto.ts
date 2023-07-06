@@ -17,6 +17,12 @@ export class ExpenseBase {
     @Field(() => Boolean, { nullable: false })
     locked: boolean;
 
+    @Field(() => Boolean, { nullable: false })
+    require_supplement: boolean;
+
+    @Field(() => String, { nullable: false })
+    supplement_code: string;
+
     @Field(() => String, { nullable: false })
     order_code: string;
 
