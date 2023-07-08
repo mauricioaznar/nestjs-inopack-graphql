@@ -92,6 +92,9 @@ export class ExpensesQueryArgs {
     @Field(() => Boolean, { nullable: true })
     no_receipt: boolean;
 
+    @Field(() => Boolean, { nullable: true })
+    no_supplement: boolean;
+
     @Field(() => Int, { nullable: true })
     receipt_type_id: number;
 }

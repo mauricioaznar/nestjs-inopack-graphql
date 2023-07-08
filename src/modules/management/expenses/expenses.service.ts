@@ -155,6 +155,13 @@ export class ExpensesService {
             });
         }
 
+        if (expensesQueryArgs.no_supplement) {
+            expensesAndWhere.push({
+                require_supplement: true,
+                supplement_code: '',
+            });
+        }
+
         const expensesWhere: Prisma.expensesWhereInput = {
             AND: expensesAndWhere,
         };
