@@ -123,6 +123,11 @@ export class OrderSaleService {
                                     : undefined,
                             },
                         },
+                        {
+                            notes: {
+                                contains: filter,
+                            },
+                        },
                     ],
                 },
             ];
@@ -661,6 +666,7 @@ export class OrderSaleService {
                 supplement_code: input.supplement_code,
                 credit_note_code: input.credit_note_code,
                 credit_note_amount: input.credit_note_amount,
+                notes: input.notes,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -675,6 +681,7 @@ export class OrderSaleService {
                 supplement_code: input.supplement_code,
                 credit_note_code: input.credit_note_code,
                 credit_note_amount: input.credit_note_amount,
+                notes: input.notes,
             },
             where: {
                 id: input.id || 0,

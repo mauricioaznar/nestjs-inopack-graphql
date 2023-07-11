@@ -332,6 +332,7 @@ model order_sales {
   require_credit_note   Boolean               @default(false)
   supplement_code       String                @default("") @db.VarChar(255)
   require_supplement    Boolean               @default(false)
+  notes                 String                @default("") @db.VarChar(255)
   order_requests        order_requests?       @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_request_id_foreign")
   order_sale_statuses   order_sale_statuses?  @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
   receipt_types         receipt_types?        @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_receipt_type_foreign")

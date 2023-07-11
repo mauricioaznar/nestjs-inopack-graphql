@@ -49,6 +49,9 @@ export class OrderSaleBase {
 
     @Field(() => Float, { nullable: false })
     credit_note_amount: number;
+
+    @Field(() => String, { nullable: false })
+    notes: string;
 }
 
 @InputType('OrderSaleInput')

@@ -145,6 +145,11 @@ export class ExpensesService {
                             contains: filter,
                         },
                     },
+                    {
+                        notes: {
+                            contains: filter,
+                        },
+                    },
                 ],
             },
         ];

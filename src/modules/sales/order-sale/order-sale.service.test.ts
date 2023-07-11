@@ -125,6 +125,7 @@ describe('upsert', () => {
                 supplement_code: '',
                 credit_note_code: '',
                 credit_note_amount: 0,
+                notes: '',
             },
             current_user_id: adminUser.id,
         });
@@ -216,6 +217,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -287,6 +289,7 @@ describe('upsert', () => {
                 supplement_code: '',
                 credit_note_code: '',
                 credit_note_amount: 0,
+                notes: '',
             },
             current_user_id: adminUser.id,
         });
@@ -326,6 +329,7 @@ describe('upsert', () => {
                 supplement_code: '',
                 credit_note_code: '',
                 credit_note_amount: 0,
+                notes: '',
             },
             current_user_id: adminUser.id,
         });
@@ -396,6 +400,7 @@ describe('upsert', () => {
                 supplement_code: '',
                 credit_note_code: '',
                 credit_note_amount: 0,
+                notes: '',
             },
             current_user_id: adminUser.id,
         });
@@ -428,6 +433,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: salesUser.id,
             });
@@ -502,6 +508,7 @@ describe('upsert', () => {
                 supplement_code: '',
                 credit_note_code: '',
                 credit_note_amount: 0,
+                notes: '',
             },
             current_user_id: adminUser.id,
         });
@@ -551,6 +558,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -624,6 +632,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -690,6 +699,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -763,6 +773,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: salesUser.id,
             });
@@ -829,6 +840,7 @@ describe('upsert', () => {
                 supplement_code: '',
                 credit_note_code: '',
                 credit_note_amount: 0,
+                notes: '',
             },
             current_user_id: adminUser.id,
         });
@@ -882,6 +894,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -937,6 +950,7 @@ describe('upsert', () => {
             supplement_code: '',
             credit_note_code: '',
             credit_note_amount: 0,
+            notes: '',
         };
 
         await orderSalesService.upsertOrderSale({
@@ -1001,6 +1015,7 @@ describe('upsert', () => {
             supplement_code: '',
             credit_note_code: '',
             credit_note_amount: 0,
+            notes: '',
         };
 
         await orderSalesService.upsertOrderSale({
@@ -1065,6 +1080,7 @@ describe('upsert', () => {
             supplement_code: '',
             credit_note_code: '',
             credit_note_amount: 0,
+            notes: '',
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
@@ -1133,6 +1149,7 @@ describe('upsert', () => {
             supplement_code: '',
             credit_note_code: '',
             credit_note_amount: 0,
+            notes: '',
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
@@ -1208,6 +1225,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -1269,6 +1287,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -1332,6 +1351,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -1395,6 +1415,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -1459,6 +1480,7 @@ describe('upsert', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -1525,6 +1547,7 @@ describe('delete', () => {
                 supplement_code: '',
                 credit_note_code: '',
                 credit_note_amount: 0,
+                notes: '',
             },
             current_user_id: adminUser.id,
         });
@@ -1600,6 +1623,7 @@ describe('delete', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });
@@ -1634,6 +1658,7 @@ describe('delete', () => {
                     supplement_code: '',
                     credit_note_code: '',
                     credit_note_amount: 0,
+                    notes: '',
                 },
                 current_user_id: adminUser.id,
             });

@@ -45,6 +45,7 @@ export async function createOrderSaleWithOneProductTypeOne({
                 supplement_code: '',
                 credit_note_code: '',
                 credit_note_amount: 0,
+                notes: '',
             },
             current_user_id: adminUser.id,
         });
