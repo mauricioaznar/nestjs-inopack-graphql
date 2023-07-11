@@ -70,8 +70,8 @@ export class OrderSaleService {
 
         const isFilterANumber = !Number.isNaN(Number(filter));
 
-        const orderSalesWhere: Prisma.order_salesWhereInput = {
-            AND: [
+        const orderSalesAndWhere: Prisma.Enumerable<Prisma.order_salesWhereInput> =
+            [
                 {
                     active: 1,
                 },
@@ -125,8 +125,26 @@ export class OrderSaleService {
                         },
                     ],
                 },
-            ],
+            ];
+
+        if (orderSalesQueryArgs.no_supplement) {
+            orderSalesAndWhere.push({
+                require_supplement: true,
+                supplement_code: '',
+            });
+        }
+
+        if (orderSalesQueryArgs.no_credit_note) {
+            orderSalesAndWhere.push({
+                require_credit_note: true,
+                credit_note_code: '',
+            });
+        }
+
+        const orderSalesWhere: Prisma.order_salesWhereInput = {
+            AND: orderSalesAndWhere,
         };
+
         let orderBy: Prisma.order_salesOrderByWithRelationInput = {
             updated_at: 'desc',
         };
@@ -638,6 +656,11 @@ export class OrderSaleService {
                 order_sale_status_id: input.order_sale_status_id,
                 receipt_type_id: input.receipt_type_id,
                 order_request_id: input.order_request_id,
+                require_supplement: input.require_supplement,
+                require_credit_note: input.require_credit_note,
+                supplement_code: input.supplement_code,
+                credit_note_code: input.credit_note_code,
+                credit_note_amount: input.credit_note_amount,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -647,6 +670,11 @@ export class OrderSaleService {
                 invoice_code:
                     input.receipt_type_id === 2 ? input.invoice_code : 0,
                 order_sale_status_id: input.order_sale_status_id,
+                require_supplement: input.require_supplement,
+                require_credit_note: input.require_credit_note,
+                supplement_code: input.supplement_code,
+                credit_note_code: input.credit_note_code,
+                credit_note_amount: input.credit_note_amount,
             },
             where: {
                 id: input.id || 0,

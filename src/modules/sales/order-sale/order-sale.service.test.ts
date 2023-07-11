@@ -120,6 +120,11 @@ describe('upsert', () => {
                     day: 1,
                     month: 2,
                 }),
+                require_credit_note: false,
+                require_supplement: false,
+                supplement_code: '',
+                credit_note_code: '',
+                credit_note_amount: 0,
             },
             current_user_id: adminUser.id,
         });
@@ -206,6 +211,11 @@ describe('upsert', () => {
                         day: 1,
                         month: 2,
                     }),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -272,6 +282,11 @@ describe('upsert', () => {
                 order_sale_products: [orderSaleProductInput],
 
                 expected_payment_date: getUtcDate(),
+                require_credit_note: false,
+                require_supplement: false,
+                supplement_code: '',
+                credit_note_code: '',
+                credit_note_amount: 0,
             },
             current_user_id: adminUser.id,
         });
@@ -306,6 +321,11 @@ describe('upsert', () => {
                     day: 1,
                     month: 3,
                 }),
+                require_credit_note: false,
+                require_supplement: false,
+                supplement_code: '',
+                credit_note_code: '',
+                credit_note_amount: 0,
             },
             current_user_id: adminUser.id,
         });
@@ -371,6 +391,11 @@ describe('upsert', () => {
                 order_sale_status_id: orderSaleStatus2.id,
                 order_sale_products: [orderSaleProductInput],
                 expected_payment_date: getUtcDate(),
+                require_credit_note: false,
+                require_supplement: false,
+                supplement_code: '',
+                credit_note_code: '',
+                credit_note_amount: 0,
             },
             current_user_id: adminUser.id,
         });
@@ -398,6 +423,11 @@ describe('upsert', () => {
                     order_sale_products: [updatedOrderSaleProductInput],
 
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: salesUser.id,
             });
@@ -467,6 +497,11 @@ describe('upsert', () => {
                 order_sale_products: [orderSaleProductInput],
 
                 expected_payment_date: getUtcDate(),
+                require_credit_note: false,
+                require_supplement: false,
+                supplement_code: '',
+                credit_note_code: '',
+                credit_note_amount: 0,
             },
             current_user_id: adminUser.id,
         });
@@ -511,6 +546,11 @@ describe('upsert', () => {
                         },
                     ],
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -579,6 +619,11 @@ describe('upsert', () => {
                     receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -640,6 +685,11 @@ describe('upsert', () => {
                     receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -708,6 +758,11 @@ describe('upsert', () => {
                     receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: salesUser.id,
             });
@@ -769,6 +824,11 @@ describe('upsert', () => {
                 receipt_type_id: receiptType1.id,
                 order_sale_status_id: orderSaleStatus1.id,
                 expected_payment_date: getUtcDate(),
+                require_credit_note: false,
+                require_supplement: false,
+                supplement_code: '',
+                credit_note_code: '',
+                credit_note_amount: 0,
             },
             current_user_id: adminUser.id,
         });
@@ -817,6 +877,11 @@ describe('upsert', () => {
                     receipt_type_id: receiptType1.id,
                     order_sale_status_id: orderSaleStatus1.id,
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -867,6 +932,11 @@ describe('upsert', () => {
             receipt_type_id: receiptType1.id,
             order_sale_status_id: orderSaleStatus1.id,
             expected_payment_date: getUtcDate(),
+            require_credit_note: false,
+            require_supplement: false,
+            supplement_code: '',
+            credit_note_code: '',
+            credit_note_amount: 0,
         };
 
         await orderSalesService.upsertOrderSale({
@@ -926,6 +996,11 @@ describe('upsert', () => {
             receipt_type_id: receiptType2.id,
             order_sale_status_id: orderSaleStatus1.id,
             expected_payment_date: getUtcDate(),
+            require_credit_note: false,
+            require_supplement: false,
+            supplement_code: '',
+            credit_note_code: '',
+            credit_note_amount: 0,
         };
 
         await orderSalesService.upsertOrderSale({
@@ -985,6 +1060,11 @@ describe('upsert', () => {
             receipt_type_id: receiptType2.id,
             order_sale_status_id: orderSaleStatus1.id,
             expected_payment_date: getUtcDate(),
+            require_credit_note: false,
+            require_supplement: false,
+            supplement_code: '',
+            credit_note_code: '',
+            credit_note_amount: 0,
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
@@ -1048,6 +1128,11 @@ describe('upsert', () => {
             receipt_type_id: receiptType1.id,
             order_sale_status_id: orderSaleStatus1.id,
             expected_payment_date: getUtcDate(),
+            require_credit_note: false,
+            require_supplement: false,
+            supplement_code: '',
+            credit_note_code: '',
+            credit_note_amount: 0,
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
@@ -1118,6 +1203,11 @@ describe('upsert', () => {
                     order_sale_status_id: orderSaleStatus1.id,
                     receipt_type_id: receiptType2.id,
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1174,6 +1264,11 @@ describe('upsert', () => {
                         },
                     ],
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1232,6 +1327,11 @@ describe('upsert', () => {
                         },
                     ],
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1290,6 +1390,11 @@ describe('upsert', () => {
                         },
                     ],
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1349,6 +1454,11 @@ describe('upsert', () => {
                         },
                     ],
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1410,6 +1520,11 @@ describe('delete', () => {
                 order_sale_status_id: orderSaleStatus1.id,
                 order_sale_products: [orderSaleProductInput],
                 expected_payment_date: getUtcDate(),
+                require_credit_note: false,
+                require_supplement: false,
+                supplement_code: '',
+                credit_note_code: '',
+                credit_note_amount: 0,
             },
             current_user_id: adminUser.id,
         });
@@ -1480,6 +1595,11 @@ describe('delete', () => {
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_products: [orderSaleProductInput],
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1509,6 +1629,11 @@ describe('delete', () => {
                     order_sale_status_id: orderSaleStatus1.id,
                     order_sale_products: [orderSaleProductInput],
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });

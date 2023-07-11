@@ -7,7 +7,6 @@ import { INestApplication } from '@nestjs/common';
 import { OrderSaleService } from '../../sales/order-sale/order-sale.service';
 import { TransfersService } from './transfers.service';
 import { ownAccount } from '../../../common/__tests__/objects/management/accounts';
-import { createOrderSaleWithOneProductTypeOne } from '../../../common/__tests__/helpers/entities/order-sales-for-testing';
 import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
 import { orderSaleStatus1 } from '../../../common/__tests__/objects/sales/order-sale-statuses';
 import { receiptType1 } from '../../../common/__tests__/objects/sales/receipt-types';
@@ -78,6 +77,11 @@ describe('upsert', () => {
                     invoice_code: 0,
                     order_request_id: orderRequest.id,
                     expected_payment_date: getUtcDate(),
+                    require_credit_note: false,
+                    require_supplement: false,
+                    supplement_code: '',
+                    credit_note_code: '',
+                    credit_note_amount: 0,
                 },
                 current_user_id: adminUser.id,
             });

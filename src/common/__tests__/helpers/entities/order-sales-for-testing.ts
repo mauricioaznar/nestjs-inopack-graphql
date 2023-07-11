@@ -40,6 +40,11 @@ export async function createOrderSaleWithOneProductTypeOne({
                 receipt_type_id: receiptType1.id,
                 order_request_id: orderRequest.id,
                 expected_payment_date: getUtcDate(),
+                require_credit_note: false,
+                require_supplement: false,
+                supplement_code: '',
+                credit_note_code: '',
+                credit_note_amount: 0,
             },
             current_user_id: adminUser.id,
         });

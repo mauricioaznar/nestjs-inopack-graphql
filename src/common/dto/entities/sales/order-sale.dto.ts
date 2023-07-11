@@ -1,6 +1,7 @@
 import {
     ArgsType,
     Field,
+    Float,
     InputType,
     Int,
     ObjectType,
@@ -33,6 +34,21 @@ export class OrderSaleBase {
 
     @Field(() => Int, { nullable: true })
     order_request_id?: number | null;
+
+    @Field(() => Boolean, { nullable: false })
+    require_supplement: boolean;
+
+    @Field(() => String, { nullable: false })
+    supplement_code: string;
+
+    @Field(() => Boolean, { nullable: false })
+    require_credit_note: boolean;
+
+    @Field(() => String, { nullable: false })
+    credit_note_code: string;
+
+    @Field(() => Float, { nullable: false })
+    credit_note_amount: number;
 }
 
 @InputType('OrderSaleInput')
@@ -75,6 +91,12 @@ export class PaginatedOrderSalesQueryArgs {
 
     @Field(() => Int, { nullable: true })
     order_sale_status_id: number | null;
+
+    @Field(() => Boolean, { nullable: true })
+    no_supplement: boolean;
+
+    @Field(() => Boolean, { nullable: true })
+    no_credit_note: boolean;
 }
 
 @ArgsType()
