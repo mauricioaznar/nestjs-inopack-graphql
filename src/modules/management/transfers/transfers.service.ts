@@ -85,6 +85,9 @@ export class TransfersService {
                 active: 1,
                 AND: transfersWhere,
             },
+            orderBy: {
+                transferred_date: 'asc',
+            },
         });
     }
 

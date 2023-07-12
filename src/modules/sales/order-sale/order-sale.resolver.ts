@@ -182,6 +182,13 @@ export class OrderSaleResolver {
         });
     }
 
+    @ResolveField(() => Float)
+    async invoice_total(@Parent() orderSale: OrderSale): Promise<number> {
+        return this.service.getOrderSaleInvoiceTotal({
+            order_sale_id: orderSale.id,
+        });
+    }
+
     @ResolveField(() => [TransferReceipt])
     async transfer_receipts(
         @Parent() orderSale: OrderSale,

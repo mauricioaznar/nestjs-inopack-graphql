@@ -531,6 +531,55 @@ export class OrderSaleService {
         return Math.round(orderSaleProductsTotal * 100) / 100;
     }
 
+    async getOrderSaleInvoiceTotal({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<number> {
+        const orderSaleProducts =
+            await this.prisma.order_sale_products.findMany({
+                where: {
+                    AND: [
+                        {
+                            order_sale_id: order_sale_id,
+                        },
+                        {
+                            active: 1,
+                        },
+                    ],
+                },
+            });
+
+        const orderSale = await this.prisma.order_sales.findUnique({
+            where: {
+                id: order_sale_id,
+            },
+        });
+
+        if (!orderSale) return 0;
+
+        const orderSaleProductsTotal = orderSaleProducts.reduce(
+            (acc, product) => {
+                const kiloProductTotal =
+                    product.kilo_price *
+                    product.kilos *
+                    (orderSale.receipt_type_id === 2 ? 1.16 : 1);
+
+                const groupProductTotal =
+                    product.group_price *
+                    product.groups *
+                    (orderSale.receipt_type_id === 2 ? 1.16 : 1);
+
+                const productTotal = kiloProductTotal + groupProductTotal;
+
+                return acc + productTotal;
+            },
+            0,
+        );
+
+        return Math.round(orderSaleProductsTotal * 100) / 100;
+    }
+
     async getOrderSaleTransferReceipts({
         order_sale_id,
     }: {
