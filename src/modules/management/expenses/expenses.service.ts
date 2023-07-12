@@ -45,11 +45,14 @@ export class ExpensesService {
     async getExpenses({
         getExpensesQueryArgs,
         datePaginator,
+        expensesSortArgs,
     }: {
         getExpensesQueryArgs: GetExpensesQueryArgs;
         datePaginator: YearMonth;
+        expensesSortArgs: ExpensesSortArgs;
     }): Promise<Expense[]> {
         const { account_id, receipt_type_id } = getExpensesQueryArgs;
+        const { sort_order, sort_field } = expensesSortArgs;
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
@@ -76,13 +79,23 @@ export class ExpensesService {
                 },
             },
         ];
+
+        let orderBy: Prisma.expensesOrderByWithRelationInput = {
+            updated_at: 'desc',
+        };
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'date') {
+                orderBy = {
+                    date: sort_order,
+                };
+            }
+        }
         return this.prisma.expenses.findMany({
             where: {
                 AND: andExpensesWhere,
             },
-            orderBy: {
-                date: 'desc',
-            },
+            orderBy: orderBy,
         });
     }
 

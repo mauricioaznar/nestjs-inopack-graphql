@@ -207,11 +207,14 @@ export class OrderSaleService {
     async getOrderSales({
         getOrderSalesQueryArgs,
         datePaginator,
+        orderSalesSortArgs,
     }: {
         getOrderSalesQueryArgs: GetOrderSalesQueryArgs;
         datePaginator: YearMonth;
+        orderSalesSortArgs: OrderSalesSortArgs;
     }): Promise<OrderSale[]> {
         const { account_id, receipt_type_id } = getOrderSalesQueryArgs;
+        const { sort_order, sort_field } = orderSalesSortArgs;
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
@@ -241,13 +244,33 @@ export class OrderSaleService {
             },
         ];
 
+        let orderBy: Prisma.order_salesOrderByWithRelationInput = {
+            updated_at: 'desc',
+        };
+
+        if (sort_order && sort_field) {
+            if (sort_field === 'order_request') {
+                orderBy = {
+                    order_requests: {
+                        order_code: sort_order,
+                    },
+                };
+            } else if (sort_field === 'order_code') {
+                orderBy = {
+                    order_code: sort_order,
+                };
+            } else if (sort_field === 'date') {
+                orderBy = {
+                    date: sort_order,
+                };
+            }
+        }
+
         return this.prisma.order_sales.findMany({
             where: {
                 AND: andTransfersWhere,
             },
-            orderBy: {
-                order_code: 'desc',
-            },
+            orderBy: orderBy,
         });
     }
 

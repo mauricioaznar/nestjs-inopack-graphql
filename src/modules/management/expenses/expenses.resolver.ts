@@ -91,10 +91,13 @@ export class ExpensesResolver {
     async getExpenses(
         @Args({ nullable: false }) args: GetExpensesQueryArgs,
         @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false })
+        expensesSortArgs: ExpensesSortArgs,
     ): Promise<Expense[]> {
         return this.service.getExpenses({
             getExpensesQueryArgs: args,
             datePaginator: datePaginator,
+            expensesSortArgs,
         });
     }
 
