@@ -19,6 +19,7 @@ export class SalesSummaryService {
         month,
         entity_groups,
         date_group_by,
+        only_own_products,
     }: SalesSummaryArgs): Promise<SalesSummary> {
         if (year === null || year === undefined) {
             return {
@@ -71,6 +72,11 @@ export class SalesSummaryService {
             }
         }
 
+        let ownProductWhere = '';
+        if (only_own_products) {
+            ownProductWhere = 'and ctc.order_production_type_id IS NOT NULL';
+        }
+
         const sales = await this.prisma.$queryRawUnsafe<SalesSummary['sales']>(`
             select sum(ctc.kilos_sold)                  as               kilos_sold,
                    sum(ctc.total)                       as               total,
@@ -121,8 +127,8 @@ export class SalesSummaryService {
               and order_sales.active = 1
                 ) as ctc
             where ctc.start_date >= '${startDate}'
-              and ctc.start_date
-                < '${endDate}'
+              and ctc.start_date < '${endDate}'
+              ${ownProductWhere}
             group by ${groupByEntityGroup} ${groupByDateGroup}
             order by ${orderByDateGroup}
         `);
