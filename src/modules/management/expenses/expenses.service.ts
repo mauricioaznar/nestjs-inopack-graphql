@@ -223,7 +223,7 @@ export class ExpensesService {
                 (
                         SELECT
                         ztv.expense_id AS expense_id,
-                        round(SUM(ztv.expense_subtotal + expenses.tax - expenses.tax_retained), 2) total
+                        round(SUM(ztv.expense_subtotal + expenses.tax - expenses.tax_retained + expenses.non_tax_retained), 2) total
                         FROM expenses
                         JOIN (
                                 select
@@ -621,8 +621,9 @@ export class ExpensesService {
 
         const tax = expense?.tax || 0;
         const tax_retained = expense?.tax_retained || 0;
+        const non_tax_retained = expense?.non_tax_retained || 0;
 
-        const totalWithTax = total + tax - tax_retained;
+        const totalWithTax = total + tax - tax_retained + non_tax_retained;
 
         return Math.round(totalWithTax * 100) / 100;
     }
