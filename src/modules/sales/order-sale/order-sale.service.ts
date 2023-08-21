@@ -739,6 +739,7 @@ export class OrderSaleService {
                 credit_note_code: input.credit_note_code,
                 credit_note_amount: input.credit_note_amount,
                 notes: input.notes,
+                canceled: input.canceled,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -754,6 +755,7 @@ export class OrderSaleService {
                 credit_note_code: input.credit_note_code,
                 credit_note_amount: input.credit_note_amount,
                 notes: input.notes,
+                canceled: input.canceled,
             },
             where: {
                 id: input.id || 0,

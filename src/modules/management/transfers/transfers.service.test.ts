@@ -83,6 +83,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });

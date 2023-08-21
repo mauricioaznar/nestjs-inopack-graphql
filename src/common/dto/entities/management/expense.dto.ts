@@ -52,6 +52,9 @@ export class ExpenseBase {
 
     @Field(() => String, { nullable: false })
     notes: string;
+
+    @Field(() => Boolean, { nullable: false })
+    canceled: boolean;
 }
 
 @InputType('ExpenseUpsertInput')

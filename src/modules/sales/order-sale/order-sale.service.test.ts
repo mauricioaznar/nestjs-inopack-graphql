@@ -126,6 +126,7 @@ describe('upsert', () => {
                 credit_note_code: '',
                 credit_note_amount: 0,
                 notes: '',
+                canceled: false,
             },
             current_user_id: adminUser.id,
         });
@@ -218,6 +219,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -290,6 +292,7 @@ describe('upsert', () => {
                 credit_note_code: '',
                 credit_note_amount: 0,
                 notes: '',
+                canceled: false,
             },
             current_user_id: adminUser.id,
         });
@@ -330,6 +333,7 @@ describe('upsert', () => {
                 credit_note_code: '',
                 credit_note_amount: 0,
                 notes: '',
+                canceled: false,
             },
             current_user_id: adminUser.id,
         });
@@ -401,6 +405,7 @@ describe('upsert', () => {
                 credit_note_code: '',
                 credit_note_amount: 0,
                 notes: '',
+                canceled: false,
             },
             current_user_id: adminUser.id,
         });
@@ -434,6 +439,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: salesUser.id,
             });
@@ -509,6 +515,7 @@ describe('upsert', () => {
                 credit_note_code: '',
                 credit_note_amount: 0,
                 notes: '',
+                canceled: false,
             },
             current_user_id: adminUser.id,
         });
@@ -559,6 +566,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -633,6 +641,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -700,6 +709,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -774,6 +784,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: salesUser.id,
             });
@@ -841,6 +852,7 @@ describe('upsert', () => {
                 credit_note_code: '',
                 credit_note_amount: 0,
                 notes: '',
+                canceled: false,
             },
             current_user_id: adminUser.id,
         });
@@ -895,6 +907,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -951,6 +964,7 @@ describe('upsert', () => {
             credit_note_code: '',
             credit_note_amount: 0,
             notes: '',
+            canceled: false,
         };
 
         await orderSalesService.upsertOrderSale({
@@ -1016,6 +1030,7 @@ describe('upsert', () => {
             credit_note_code: '',
             credit_note_amount: 0,
             notes: '',
+            canceled: false,
         };
 
         await orderSalesService.upsertOrderSale({
@@ -1081,6 +1096,7 @@ describe('upsert', () => {
             credit_note_code: '',
             credit_note_amount: 0,
             notes: '',
+            canceled: false,
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
@@ -1150,6 +1166,7 @@ describe('upsert', () => {
             credit_note_code: '',
             credit_note_amount: 0,
             notes: '',
+            canceled: false,
         };
 
         const orderSale = await orderSalesService.upsertOrderSale({
@@ -1226,6 +1243,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1288,6 +1306,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1352,6 +1371,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1416,6 +1436,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1481,6 +1502,7 @@ describe('upsert', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1548,6 +1570,7 @@ describe('delete', () => {
                 credit_note_code: '',
                 credit_note_amount: 0,
                 notes: '',
+                canceled: false,
             },
             current_user_id: adminUser.id,
         });
@@ -1624,6 +1647,7 @@ describe('delete', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });
@@ -1659,6 +1683,7 @@ describe('delete', () => {
                     credit_note_code: '',
                     credit_note_amount: 0,
                     notes: '',
+                    canceled: false,
                 },
                 current_user_id: adminUser.id,
             });

@@ -333,6 +333,7 @@ model order_sales {
   supplement_code       String                @default("") @db.VarChar(255)
   require_supplement    Boolean               @default(false)
   notes                 String                @default("") @db.VarChar(255)
+  canceled              Boolean               @default(false)
   order_requests        order_requests?       @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_request_id_foreign")
   order_sale_statuses   order_sale_statuses?  @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
   receipt_types         receipt_types?        @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_receipt_type_foreign")
@@ -644,6 +645,7 @@ model expenses {
   non_tax               Float               @default(0.00)
   supplement_code       String              @default("") @db.VarChar(255)
   require_supplement    Boolean             @default(false)
+  canceled              Boolean             @default(false)
   accounts              accounts?           @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
   receipt_types         receipt_types?      @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")
   expense_resources     expense_resources[]

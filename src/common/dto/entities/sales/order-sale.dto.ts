@@ -52,6 +52,9 @@ export class OrderSaleBase {
 
     @Field(() => String, { nullable: false })
     notes: string;
+
+    @Field(() => Boolean, { nullable: false })
+    canceled: boolean;
 }
 
 @InputType('OrderSaleInput')

@@ -57,6 +57,7 @@ describe('expense upsert', () => {
             receipt_type_id: receiptType1.id,
             require_supplement: false,
             supplement_code: '',
+            canceled: false,
         });
 
         expect(expense.id).toBeDefined();
@@ -113,6 +114,7 @@ describe('expense upsert', () => {
                 receipt_type_id: receiptType1.id,
                 require_supplement: false,
                 supplement_code: '',
+                canceled: false,
             });
         } catch (e) {
             expect(e.response.message).toEqual(
