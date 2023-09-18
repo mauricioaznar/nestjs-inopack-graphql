@@ -599,6 +599,9 @@ model accounts {
   created_at                                    DateTime?          @db.DateTime(0)
   updated_at                                    DateTime?          @db.DateTime(0)
   account_type_id                               Int?               @db.UnsignedInt
+  is_supplier                                   Boolean            @default(false)
+  is_client                                     Boolean            @default(false)
+  is_own                                        Boolean            @default(false)
   account_types                                 account_types?     @relation(fields: [account_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_account_type_id_foreign")
   account_contacts                              account_contacts[]
   expenses                                      expenses[]

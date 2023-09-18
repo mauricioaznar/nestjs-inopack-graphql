@@ -22,6 +22,15 @@ export class AccountBase {
 
     @Field(() => Int, { nullable: true })
     account_type_id: number | null;
+
+    @Field(() => Boolean, { nullable: false })
+    is_supplier: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    is_client: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    is_own: boolean;
 }
 
 @InputType('AccountUpsertInput')

@@ -318,6 +318,9 @@ describe('upsert', () => {
             account_contacts: [],
             abbreviation: '',
             name: 'own account',
+            is_supplier: false,
+            is_client: true,
+            is_own: false,
         });
         const product = await createProductForTesting({
             app,

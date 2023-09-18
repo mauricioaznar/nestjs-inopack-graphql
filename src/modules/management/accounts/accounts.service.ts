@@ -139,12 +139,18 @@ export class AccountsService {
                 name: input.name,
                 abbreviation: input.abbreviation,
                 account_type_id: input.account_type_id,
+                is_supplier: input.is_supplier,
+                is_client: input.is_client,
+                is_own: input.is_own,
             },
             update: {
                 ...getUpdatedAtProperty(),
                 name: input.name,
                 abbreviation: input.abbreviation,
                 account_type_id: input.account_type_id,
+                is_supplier: input.is_supplier,
+                is_client: input.is_client,
+                is_own: input.is_own,
             },
             where: {
                 id: input.id || 0,

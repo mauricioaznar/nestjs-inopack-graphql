@@ -36,6 +36,9 @@ describe('expense upsert', () => {
                 },
             ],
             account_type_id: supplierAccountType.id,
+            is_supplier: true,
+            is_client: false,
+            is_own: false,
         });
 
         const expense = await expensesService.upsertExpense({
@@ -92,6 +95,9 @@ describe('expense upsert', () => {
                 },
             ],
             account_type_id: ownAccountType.id,
+            is_supplier: true,
+            is_client: false,
+            is_own: false,
         });
 
         try {

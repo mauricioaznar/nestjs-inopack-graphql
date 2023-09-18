@@ -15,6 +15,9 @@ export async function createClientForTesting({
             abbreviation: 'abbr',
             account_contacts: [],
             account_type_id: clientAccountType.id,
+            is_supplier: false,
+            is_client: false,
+            is_own: false,
         });
     } catch (e) {
         console.error(e);

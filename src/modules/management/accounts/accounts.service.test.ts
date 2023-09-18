@@ -46,6 +46,9 @@ describe('account upsert', () => {
                 },
             ],
             account_type_id: clientAccountType.id,
+            is_supplier: false,
+            is_client: true,
+            is_own: false,
         });
 
         expect(account.id).toBeDefined();
@@ -79,6 +82,9 @@ describe('account upsert', () => {
                 },
             ],
             account_type_id: clientAccountType.id,
+            is_supplier: false,
+            is_client: true,
+            is_own: false,
         });
 
         const updatedAccount = await accountsService.upsertAccount({
@@ -87,6 +93,9 @@ describe('account upsert', () => {
             abbreviation: 'New abbr',
             account_contacts: [],
             account_type_id: clientAccountType.id,
+            is_supplier: false,
+            is_client: true,
+            is_own: false,
         });
         expect(updatedAccount.name).toBe('New name');
         expect(updatedAccount.abbreviation).toBe('New abbr');
@@ -106,6 +115,9 @@ describe('gets account', () => {
             abbreviation: 'Abbr',
             account_contacts: [],
             account_type_id: clientAccountType.id,
+            is_supplier: false,
+            is_client: true,
+            is_own: false,
         });
 
         const account = await accountsService.getAccount({
@@ -131,6 +143,9 @@ describe('deletes account', () => {
                 },
             ],
             account_type_id: clientAccountType.id,
+            is_supplier: false,
+            is_client: true,
+            is_own: false,
         });
 
         await accountsService.deletesAccount({
