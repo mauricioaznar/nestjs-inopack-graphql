@@ -77,6 +77,12 @@ export class PaginatedAccountsSortArgs {
 
 @ArgsType()
 export class AccountsQueryArgs {
-    @Field(() => [Int], { nullable: true })
-    account_type_ids: number[] | null;
+    @Field(() => Boolean, { nullable: true })
+    is_client: boolean | null;
+
+    @Field(() => Boolean, { nullable: true })
+    is_own: boolean | null;
+
+    @Field(() => Boolean, { nullable: true })
+    is_supplier: boolean | null;
 }
