@@ -32,11 +32,10 @@ export class AccountsService {
         accountsQueryArgs: AccountsQueryArgs;
     }): Promise<Account[]> {
         const { is_own, is_client, is_supplier } = accountsQueryArgs;
-
-        return this.prisma.accounts.findMany({
-            where: {
-                active: 1,
-                OR: [
+        const accountsOr: Prisma.accountsWhereInput[] = [];
+        if (is_supplier || is_own || is_client) {
+            accountsOr.push(
+                ...[
                     {
                         is_client: is_client || undefined,
                     },
@@ -47,6 +46,13 @@ export class AccountsService {
                         is_own: is_own || undefined,
                     },
                 ],
+            );
+        }
+
+        return this.prisma.accounts.findMany({
+            where: {
+                active: 1,
+                OR: accountsOr.length === 0 ? undefined : accountsOr,
             },
             orderBy: {
                 name: 'asc',
