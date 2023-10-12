@@ -390,9 +390,8 @@ export class TransfersService {
                 : null;
 
             if (
-                ((toAccount !== null && toAccount?.account_type_id !== 1) ||
-                    (fromAccount !== null &&
-                        fromAccount?.account_type_id !== 1)) &&
+                ((toAccount !== null && toAccount?.is_own) ||
+                    (fromAccount !== null && fromAccount?.is_own)) &&
                 hasReceipts &&
                 input.amount != receiptsAmountTotal
             ) {
@@ -407,7 +406,7 @@ export class TransfersService {
 
             if (
                 toAccount !== null &&
-                toAccount?.account_type_id === 1 &&
+                toAccount?.is_own &&
                 fromAccount === null
             ) {
                 input.transfer_receipts = [];
@@ -415,16 +414,16 @@ export class TransfersService {
 
             if (
                 fromAccount !== null &&
-                fromAccount?.account_type_id === 1 &&
+                fromAccount?.is_own &&
                 toAccount === null
             ) {
                 input.transfer_receipts = [];
             }
             if (
                 fromAccount !== null &&
-                fromAccount?.account_type_id === 1 &&
+                fromAccount?.is_own &&
                 toAccount !== null &&
-                toAccount?.account_type_id === 1
+                toAccount?.is_own
             ) {
                 input.transfer_receipts = [];
             }
@@ -577,7 +576,7 @@ export class TransfersService {
                 });
                 if (
                     account &&
-                    account.account_type_id === 2 &&
+                    account.is_client &&
                     input.to_account_id !== null
                 ) {
                     const receipts = input.transfer_receipts;
@@ -634,7 +633,7 @@ export class TransfersService {
                 });
                 if (
                     account &&
-                    account.account_type_id === 3 &&
+                    account.is_supplier &&
                     input.from_account_id !== null
                 ) {
                     const receipts = input.transfer_receipts;

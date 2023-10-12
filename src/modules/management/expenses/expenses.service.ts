@@ -500,7 +500,7 @@ export class ExpensesService {
                     },
                 });
 
-                if (!account || account.account_type_id !== 3) {
+                if (!account || !account.is_supplier) {
                     errors.push('Account is not a supplier');
                 }
             } else {

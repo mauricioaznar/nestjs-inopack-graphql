@@ -11,7 +11,6 @@ import { orderSaleStatuses } from '../objects/sales/order-sale-statuses';
 import { receiptTypes } from '../objects/sales/receipt-types';
 import { roles } from '../objects/auth/roles';
 import { productCategories } from '../objects/production/product-categories';
-import { accountTypes } from '../objects/management/account-types';
 import { accounts } from '../objects/management/accounts';
 
 export default async function setupDatabase() {
@@ -54,7 +53,6 @@ export default async function setupDatabase() {
     await prismaService.order_request_statuses.deleteMany();
     await prismaService.order_sale_statuses.deleteMany();
     await prismaService.receipt_types.deleteMany();
-    await prismaService.account_types.deleteMany();
 
     // level 1
     await prismaService.users.deleteMany();
@@ -91,9 +89,6 @@ export default async function setupDatabase() {
     });
     await prismaService.receipt_types.createMany({
         data: receiptTypes,
-    });
-    await prismaService.account_types.createMany({
-        data: accountTypes,
     });
     await prismaService.accounts.createMany({
         data: accounts,

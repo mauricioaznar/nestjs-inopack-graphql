@@ -28,7 +28,7 @@ export class AccountTransferSummariesService {
                         group by transfers.to_account_id
                     ) as to_transfers
                 on to_transfers.to_account_id = accounts.id
-                where accounts.account_type_id = 1
+                where accounts.is_own = 1
         `);
     }
 

@@ -107,13 +107,6 @@ export class AccountsResolver {
         });
     }
 
-    @ResolveField(() => AccountType, { nullable: true })
-    async account_type(@Parent() account: Account) {
-        return this.service.getAccountType({
-            account_type_id: account.account_type_id,
-        });
-    }
-
     @ResolveField(() => Boolean, { nullable: false })
     async is_deletable(@Parent() account: Account) {
         return this.service.isDeletable({ account_id: account.id });

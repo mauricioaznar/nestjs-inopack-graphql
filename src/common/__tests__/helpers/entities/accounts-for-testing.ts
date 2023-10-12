@@ -1,7 +1,6 @@
 import { AccountsService } from '../../../../modules/management/accounts/accounts.service';
 import { Account } from '../../../dto/entities';
 import { INestApplication } from '@nestjs/common';
-import { clientAccountType } from '../../objects/management/account-types';
 
 export async function createClientForTesting({
     app,
@@ -14,7 +13,6 @@ export async function createClientForTesting({
             name: 'Name',
             abbreviation: 'abbr',
             account_contacts: [],
-            account_type_id: clientAccountType.id,
             is_supplier: false,
             is_client: false,
             is_own: false,

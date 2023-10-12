@@ -576,15 +576,6 @@ model account_contacts {
   @@index([account_id], map: "clients_company_id_foreign")
 }
 
-model account_types {
-  id         Int        @id @default(autoincrement()) @db.UnsignedInt
-  active     Int        @default(1)
-  created_at DateTime?  @db.DateTime(0)
-  updated_at DateTime?  @db.DateTime(0)
-  name       String     @db.VarChar(255)
-  accounts   accounts[]
-}
-
 model accounts {
   id                                            Int                @id @default(autoincrement()) @db.UnsignedInt
   active                                        Int                @default(1)
@@ -598,18 +589,14 @@ model accounts {
   zip_code                                      String             @default("") @db.VarChar(255)
   created_at                                    DateTime?          @db.DateTime(0)
   updated_at                                    DateTime?          @db.DateTime(0)
-  account_type_id                               Int?               @db.UnsignedInt
   is_supplier                                   Boolean            @default(false)
   is_client                                     Boolean            @default(false)
   is_own                                        Boolean            @default(false)
-  account_types                                 account_types?     @relation(fields: [account_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_account_type_id_foreign")
   account_contacts                              account_contacts[]
   expenses                                      expenses[]
   order_requests                                order_requests[]
   transfers_accountsTotransfers_from_account_id transfers[]        @relation("accountsTotransfers_from_account_id")
   transfers_accountsTotransfers_to_account_id   transfers[]        @relation("accountsTotransfers_to_account_id")
-
-  @@index([account_type_id], map: "accounts_account_type_id_foreign")
 }
 
 model expense_resources {

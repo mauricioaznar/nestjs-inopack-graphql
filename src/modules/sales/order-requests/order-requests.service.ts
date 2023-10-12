@@ -607,7 +607,7 @@ export class OrderRequestsService {
                     },
                 });
 
-                if (!account || account.account_type_id !== 2) {
+                if (!account || !account.is_client) {
                     errors.push('Account is not a client');
                 }
             } else {

@@ -5,7 +5,6 @@ import {
 import { INestApplication } from '@nestjs/common';
 import { AccountsService } from './accounts.service';
 import { createOrderRequestWithOneProduct } from '../../../common/__tests__/helpers/entities/order-requests-for-testing';
-import { clientAccountType } from '../../../common/__tests__/objects/management/account-types';
 
 let app: INestApplication;
 let accountsService: AccountsService;
@@ -47,7 +46,6 @@ describe('account upsert', () => {
                     last_name: 'second name',
                 },
             ],
-            account_type_id: clientAccountType.id,
             is_supplier: false,
             is_client: true,
             is_own: false,
@@ -83,7 +81,6 @@ describe('account upsert', () => {
                     last_name: 'second name',
                 },
             ],
-            account_type_id: clientAccountType.id,
             is_supplier: false,
             is_client: true,
             is_own: false,
@@ -94,7 +91,6 @@ describe('account upsert', () => {
             name: 'New name',
             abbreviation: 'New abbr',
             account_contacts: [],
-            account_type_id: clientAccountType.id,
             is_supplier: false,
             is_client: true,
             is_own: false,
@@ -116,7 +112,6 @@ describe('gets account', () => {
             name: 'Name',
             abbreviation: 'Abbr',
             account_contacts: [],
-            account_type_id: clientAccountType.id,
             is_supplier: false,
             is_client: true,
             is_own: false,
@@ -144,7 +139,6 @@ describe('deletes account', () => {
                     cellphone: '9999884433',
                 },
             ],
-            account_type_id: clientAccountType.id,
             is_supplier: false,
             is_client: true,
             is_own: false,

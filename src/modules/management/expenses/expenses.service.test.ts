@@ -1,9 +1,5 @@
 import { getUtcDate, setupApp } from '../../../common/__tests__/helpers';
 import { INestApplication } from '@nestjs/common';
-import {
-    ownAccountType,
-    supplierAccountType,
-} from '../../../common/__tests__/objects/management/account-types';
 import { AccountsService } from '../accounts/accounts.service';
 import { ExpensesService } from './expenses.service';
 import { receiptType1 } from '../../../common/__tests__/objects/sales/receipt-types';
@@ -35,7 +31,6 @@ describe('expense upsert', () => {
                     last_name: 'second name',
                 },
             ],
-            account_type_id: supplierAccountType.id,
             is_supplier: true,
             is_client: false,
             is_own: false,
@@ -94,7 +89,6 @@ describe('expense upsert', () => {
                     last_name: 'second name',
                 },
             ],
-            account_type_id: ownAccountType.id,
             is_supplier: true,
             is_client: false,
             is_own: false,

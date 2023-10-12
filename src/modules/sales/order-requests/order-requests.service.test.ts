@@ -21,7 +21,6 @@ import {
 import { ColumnOrder } from '../../../common/dto/pagination';
 import { adminUser } from '../../../common/__tests__/objects/auth/users';
 import { AccountsService } from '../../management/accounts/accounts.service';
-import { ownAccountType } from '../../../common/__tests__/objects/management/account-types';
 
 let app: INestApplication;
 let orderRequestsService: OrderRequestsService;
@@ -314,7 +313,6 @@ describe('upsert', () => {
         expect.hasAssertions();
 
         const account = await accountsService.upsertAccount({
-            account_type_id: ownAccountType.id,
             account_contacts: [],
             abbreviation: '',
             name: 'own account',
