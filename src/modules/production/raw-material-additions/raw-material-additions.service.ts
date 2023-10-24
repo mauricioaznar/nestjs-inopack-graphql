@@ -7,6 +7,7 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
     getCreatedAtProperty,
     getUpdatedAtProperty,
+    vennDiagram,
 } from '../../../common/helpers';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
@@ -15,8 +16,10 @@ import {
     PaginatedRawMaterialAdditionsQueryArgs,
     PaginatedRawMaterialAdditionsSortArgs,
     RawMaterialAddition,
+    RawMaterialAdditionItem,
     RawMaterialAdditionUpsertInput,
 } from '../../../common/dto/entities';
+import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 
 @Injectable()
 export class RawMaterialAdditionsService {
@@ -99,18 +102,97 @@ export class RawMaterialAdditionsService {
     ): Promise<RawMaterialAddition> {
         await this.validateRawMaterialAdditionUpsert(input);
 
-        return this.prisma.raw_material_additions.upsert({
-            create: {
-                ...getCreatedAtProperty(),
-                ...getUpdatedAtProperty(),
-                date: input.date,
-            },
-            update: {
-                ...getUpdatedAtProperty(),
-                date: input.date,
-            },
+        const rawMaterialAddition =
+            await this.prisma.raw_material_additions.upsert({
+                create: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
+                    date: input.date,
+                },
+                update: {
+                    ...getUpdatedAtProperty(),
+                    date: input.date,
+                },
+                where: {
+                    id: input.id || 0,
+                },
+            });
+
+        const newItems = input.raw_material_addition_items;
+        const oldItems = input.id
+            ? await this.prisma.raw_material_addition_items.findMany({
+                  where: {
+                      raw_material_addition_id: input.id,
+                  },
+              })
+            : [];
+
+        const {
+            aMinusB: deleteItems,
+            bMinusA: createItems,
+            intersection: updateItems,
+        } = vennDiagram({
+            a: oldItems,
+            b: newItems,
+            indexProperties: ['id'],
+        });
+
+        for await (const delItem of deleteItems) {
+            await this.prisma.raw_material_addition_items.updateMany({
+                data: {
+                    ...getUpdatedAtProperty(),
+                    active: -1,
+                },
+                where: {
+                    raw_material_addition_id: delItem.id,
+                },
+            });
+            // await this.cacheManager.del(`product_inventory`);
+        }
+
+        for await (const createItem of createItems) {
+            await this.prisma.raw_material_addition_items.create({
+                data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
+                    raw_material_addition_id: rawMaterialAddition.id,
+                    amount: createItem.amount,
+                },
+            });
+            // await this.cacheManager.del(`product_inventory`);
+        }
+
+        for await (const updateItem of updateItems) {
+            await this.prisma.raw_material_addition_items.updateMany({
+                data: {
+                    ...getUpdatedAtProperty(),
+                    raw_material_addition_id: rawMaterialAddition.id,
+                    amount: updateItem.amount,
+                },
+                where: {
+                    id: updateItem.id!,
+                },
+            });
+            // await this.cacheManager.del(`product_inventory`);
+        }
+        return rawMaterialAddition;
+    }
+
+    async getRawMaterialAdditionItems({
+        raw_material_addition_id,
+    }: {
+        raw_material_addition_id: number;
+    }): Promise<RawMaterialAdditionItem[]> {
+        return this.prisma.raw_material_addition_items.findMany({
             where: {
-                id: input.id || 0,
+                AND: [
+                    {
+                        raw_material_addition_id: raw_material_addition_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
             },
         });
     }

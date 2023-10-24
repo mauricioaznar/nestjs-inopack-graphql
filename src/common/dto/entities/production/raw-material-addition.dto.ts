@@ -8,6 +8,8 @@ import {
 } from '@nestjs/graphql';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
+import { OrderProductionProductInput } from './order-production-product.dto';
+import { RawMaterialAdditionItemInput } from './raw-material-addition-item.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -20,6 +22,9 @@ export class RawMaterialAdditionBase {
 export class RawMaterialAdditionUpsertInput extends RawMaterialAdditionBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
+
+    @Field(() => [RawMaterialAdditionItemInput])
+    raw_material_addition_items: RawMaterialAdditionItemInput[];
 }
 
 @ObjectType('RawMaterialAddition')

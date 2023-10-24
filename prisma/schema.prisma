@@ -718,6 +718,8 @@ model raw_material_addition_items {
   id                       Int                     @id @default(autoincrement()) @db.UnsignedInt
   active                   Int                     @default(1)
   amount                   Float
+  created_at               DateTime?               @db.DateTime(0)
+  updated_at               DateTime?               @db.DateTime(0)
   raw_material_addition_id Int?                    @db.UnsignedInt
   raw_material_additions   raw_material_additions? @relation(fields: [raw_material_addition_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "raw_material_addition_item_id_foreign")
 

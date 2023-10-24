@@ -18,12 +18,15 @@ import {
     PaginatedRawMaterialAdditionsQueryArgs,
     PaginatedRawMaterialAdditionsSortArgs,
     RawMaterialAddition,
+    RawMaterialAdditionItem,
     RawMaterialAdditionUpsertInput,
     User,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
+import { OrderProduction } from '../../../common/dto/entities/production/order-production.dto';
 
 @Resolver(() => RawMaterialAddition)
 @UseGuards(GqlAuthGuard)
@@ -100,6 +103,15 @@ export class RawMaterialAdditionsResolver {
             userId: currentUser.id,
         });
         return true;
+    }
+
+    @ResolveField(() => [RawMaterialAdditionItem])
+    async raw_material_addition_items(
+        rawMaterialAddition: RawMaterialAddition,
+    ): Promise<RawMaterialAdditionItem[]> {
+        return this.service.getRawMaterialAdditionItems({
+            raw_material_addition_id: rawMaterialAddition.id,
+        });
     }
 
     @ResolveField(() => Boolean)
