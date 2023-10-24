@@ -12,11 +12,13 @@ import { EmployeeTypesModule } from './employee-types/employee-types.module';
 import { EmployeeStatusesModule } from './employee-status/employee-statuses.module';
 import { ProductMaterialsModule } from './product-materials/product-materials.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
+import { RawMaterialAdditionsModule } from './raw-material-additions/raw-material-additions.module';
 
 @Module({
     imports: [
         ProductsModule,
         OrderProductionsModule,
+        RawMaterialAdditionsModule,
         OrderProductionProductsModule,
         OrderProductionEmployeesModule,
         OrderProductionTypesModule,

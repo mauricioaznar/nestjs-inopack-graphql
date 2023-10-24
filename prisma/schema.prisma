@@ -713,3 +713,22 @@ model receipt_types {
   expenses    expenses[]
   order_sales order_sales[]
 }
+
+model raw_material_addition_items {
+  id                       Int                     @id @default(autoincrement()) @db.UnsignedInt
+  active                   Int                     @default(1)
+  amount                   Float
+  raw_material_addition_id Int?                    @db.UnsignedInt
+  raw_material_additions   raw_material_additions? @relation(fields: [raw_material_addition_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "raw_material_addition_item_id_foreign")
+
+  @@index([raw_material_addition_id], map: "raw_material_addition_item_id_foreign")
+}
+
+model raw_material_additions {
+  id                          Int                           @id @default(autoincrement()) @db.UnsignedInt
+  active                      Int                           @default(1)
+  created_at                  DateTime?                     @db.DateTime(0)
+  updated_at                  DateTime?                     @db.DateTime(0)
+  date                        DateTime?                     @db.DateTime(0)
+  raw_material_addition_items raw_material_addition_items[]
+}

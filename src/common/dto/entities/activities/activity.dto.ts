@@ -8,6 +8,7 @@ import {
 
 export enum ActivityEntityName {
     ORDER_PRODUCTION = 'orderProductions',
+    RAW_MATERIAL_ADDITION = 'rawMaterialAdditions',
     ORDER_SALE = 'orderSales',
     ORDER_REQUEST = 'orderRequests',
     PRODUCT = 'products',

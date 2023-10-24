@@ -1,0 +1,118 @@
+import {
+    Args,
+    Mutation,
+    Parent,
+    Query,
+    ResolveField,
+    Resolver,
+    Subscription,
+} from '@nestjs/graphql';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import { RawMaterialAdditionsService } from './raw-material-additions.service';
+import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import {
+    ActivityTypeName,
+    PaginatedRawMaterialAdditions,
+    PaginatedRawMaterialAdditionsQueryArgs,
+    PaginatedRawMaterialAdditionsSortArgs,
+    RawMaterialAddition,
+    RawMaterialAdditionUpsertInput,
+    User,
+} from '../../../common/dto/entities';
+import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+
+@Resolver(() => RawMaterialAddition)
+@UseGuards(GqlAuthGuard)
+@Injectable()
+export class RawMaterialAdditionsResolver {
+    constructor(
+        private service: RawMaterialAdditionsService,
+        private pubSubService: PubSubService,
+    ) {}
+
+    @Query(() => [RawMaterialAddition])
+    async getRawMaterialAdditions(): Promise<RawMaterialAddition[]> {
+        return this.service.getRawMaterialAdditions();
+    }
+
+    @Query(() => PaginatedRawMaterialAdditions)
+    async paginatedRawMaterialAdditions(
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false })
+        paginatedRawMaterialAdditionsQueryArgs: PaginatedRawMaterialAdditionsQueryArgs,
+        @Args({ nullable: false })
+        paginatedRawMaterialAdditionsSortArgs: PaginatedRawMaterialAdditionsSortArgs,
+    ): Promise<PaginatedRawMaterialAdditions> {
+        return this.service.paginatedRawMaterialAdditions({
+            offsetPaginatorArgs,
+            paginatedRawMaterialAdditionsSortArgs,
+            paginatedRawMaterialAdditionsQueryArgs,
+        });
+    }
+
+    @Query(() => RawMaterialAddition, { nullable: true })
+    async getRawMaterialAddition(
+        @Args('RawMaterialAdditionId') rawMaterialAdditionId: number,
+    ): Promise<RawMaterialAddition | null> {
+        return this.service.getRawMaterialAddition({
+            rawMaterialAdditionId: rawMaterialAdditionId,
+        });
+    }
+
+    @Mutation(() => RawMaterialAddition)
+    @RolesDecorator(RoleId.PRODUCTION)
+    async upsertRawMaterialAddition(
+        @Args('RawMaterialAdditionUpsertInput')
+        input: RawMaterialAdditionUpsertInput,
+        @CurrentUser() currentUser: User,
+    ): Promise<RawMaterialAddition> {
+        const rawMaterialAddition =
+            await this.service.upsertRawMaterialAddition(input);
+        await this.pubSubService.rawMaterialAddition({
+            rawMaterialAddition,
+            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        });
+        return rawMaterialAddition;
+    }
+
+    @Mutation(() => Boolean)
+    @RolesDecorator(RoleId.PRODUCTION)
+    async deleteRawMaterialAddition(
+        @Args('RawMaterialAdditionId') rawMaterialAdditionId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<boolean> {
+        const rawMaterialAddition = await this.service.getRawMaterialAddition({
+            rawMaterialAdditionId,
+        });
+        if (!rawMaterialAddition) throw new NotFoundException();
+
+        await this.service.deletesRawMaterialAddition({
+            rawMaterialAddition_id: rawMaterialAdditionId,
+        });
+        await this.pubSubService.rawMaterialAddition({
+            rawMaterialAddition,
+            type: ActivityTypeName.DELETE,
+            userId: currentUser.id,
+        });
+        return true;
+    }
+
+    @ResolveField(() => Boolean)
+    async is_deletable(
+        @Parent() rawMaterialAddition: RawMaterialAddition,
+    ): Promise<boolean> {
+        return this.service.isDeletable({
+            rawMaterialAddition_id: rawMaterialAddition.id,
+        });
+    }
+
+    @Subscription(() => RawMaterialAddition)
+    async raw_material_addition() {
+        return this.pubSubService.listenForRawMaterialAddition();
+    }
+}
