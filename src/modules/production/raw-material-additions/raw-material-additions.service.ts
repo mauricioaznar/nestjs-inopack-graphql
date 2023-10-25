@@ -12,6 +12,8 @@ import {
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import {
+    Account,
+    Branch,
     PaginatedRawMaterialAdditions,
     PaginatedRawMaterialAdditionsQueryArgs,
     PaginatedRawMaterialAdditionsSortArgs,
@@ -108,10 +110,12 @@ export class RawMaterialAdditionsService {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
                     date: input.date,
+                    account_id: input.account_id,
                 },
                 update: {
                     ...getUpdatedAtProperty(),
                     date: input.date,
+                    account_id: input.account_id,
                 },
                 where: {
                     id: input.id || 0,
@@ -157,6 +161,8 @@ export class RawMaterialAdditionsService {
                     ...getUpdatedAtProperty(),
                     raw_material_addition_id: rawMaterialAddition.id,
                     amount: createItem.amount,
+                    unit_price: createItem.unit_price,
+                    resource_id: createItem.resource_id,
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
@@ -168,6 +174,8 @@ export class RawMaterialAdditionsService {
                     ...getUpdatedAtProperty(),
                     raw_material_addition_id: rawMaterialAddition.id,
                     amount: updateItem.amount,
+                    unit_price: updateItem.unit_price,
+                    resource_id: updateItem.resource_id,
                 },
                 where: {
                     id: updateItem.id!,
@@ -241,6 +249,23 @@ export class RawMaterialAdditionsService {
         });
 
         return true;
+    }
+
+    async getAccount({
+        account_id,
+    }: {
+        account_id: number | null;
+    }): Promise<Account | null> {
+        if (!account_id) {
+            return null;
+        }
+
+        return this.prisma.accounts.findFirst({
+            where: {
+                id: account_id,
+                active: 1,
+            },
+        });
     }
 
     async isDeletable({

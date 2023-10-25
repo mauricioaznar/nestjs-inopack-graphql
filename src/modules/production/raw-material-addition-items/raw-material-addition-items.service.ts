@@ -4,6 +4,7 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
     RawMaterialAddition,
     RawMaterialAdditionItem,
+    Resource,
 } from '../../../common/dto/entities';
 
 @Injectable()
@@ -39,6 +40,20 @@ export class RawMaterialAdditionItemsService {
         return this.prisma.raw_material_additions.findUnique({
             where: {
                 id: raw_material_addition_id,
+            },
+        });
+    }
+
+    async getResource({
+        resource_id,
+    }: {
+        resource_id: number | null;
+    }): Promise<Resource | null> {
+        if (!resource_id) return null;
+
+        return this.prisma.resources.findUnique({
+            where: {
+                id: resource_id,
             },
         });
     }

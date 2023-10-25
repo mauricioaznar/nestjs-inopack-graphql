@@ -1,10 +1,12 @@
-import { Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { RawMaterialAdditionItemsService } from './raw-material-addition-items.service';
 import { Public } from '../../auth/decorators/public.decorator';
 import {
+    Account,
     RawMaterialAddition,
     RawMaterialAdditionItem,
+    Resource,
 } from '../../../common/dto/entities';
 
 @Resolver(() => RawMaterialAdditionItem)
@@ -25,6 +27,15 @@ export class RawMaterialAdditionItemsResolver {
         return this.service.getRawMaterialAddition({
             raw_material_addition_id:
                 rawMaterialAdditionItem.raw_material_addition_id,
+        });
+    }
+
+    @ResolveField(() => Resource, { nullable: true })
+    async resource(
+        rawMaterialAdditionItem: RawMaterialAdditionItem,
+    ): Promise<Resource | null> {
+        return this.service.getResource({
+            resource_id: rawMaterialAdditionItem.resource_id,
         });
     }
 }

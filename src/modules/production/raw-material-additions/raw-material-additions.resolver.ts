@@ -13,7 +13,9 @@ import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import {
+    Account,
     ActivityTypeName,
+    Branch,
     PaginatedRawMaterialAdditions,
     PaginatedRawMaterialAdditionsQueryArgs,
     PaginatedRawMaterialAdditionsSortArgs,
@@ -126,5 +128,14 @@ export class RawMaterialAdditionsResolver {
     @Subscription(() => RawMaterialAddition)
     async raw_material_addition() {
         return this.pubSubService.listenForRawMaterialAddition();
+    }
+
+    @ResolveField(() => Account, { nullable: true })
+    async account(
+        @Parent() rawMaterialAddition: RawMaterialAddition,
+    ): Promise<Account | null> {
+        return this.service.getAccount({
+            account_id: rawMaterialAddition.account_id,
+        });
     }
 }

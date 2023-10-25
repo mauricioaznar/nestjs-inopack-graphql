@@ -577,26 +577,27 @@ model account_contacts {
 }
 
 model accounts {
-  id                                            Int                @id @default(autoincrement()) @db.UnsignedInt
-  active                                        Int                @default(1)
-  name                                          String             @db.VarChar(255)
-  abbreviation                                  String             @db.VarChar(255)
-  house_phone                                   String             @default("") @db.VarChar(255)
-  address1                                      String             @default("") @db.VarChar(60)
-  address2                                      String             @default("") @db.VarChar(60)
-  country                                       String             @default("") @db.VarChar(255)
-  city                                          String             @default("") @db.VarChar(255)
-  zip_code                                      String             @default("") @db.VarChar(255)
-  created_at                                    DateTime?          @db.DateTime(0)
-  updated_at                                    DateTime?          @db.DateTime(0)
-  is_supplier                                   Boolean            @default(false)
-  is_client                                     Boolean            @default(false)
-  is_own                                        Boolean            @default(false)
+  id                                            Int                      @id @default(autoincrement()) @db.UnsignedInt
+  active                                        Int                      @default(1)
+  name                                          String                   @db.VarChar(255)
+  abbreviation                                  String                   @db.VarChar(255)
+  house_phone                                   String                   @default("") @db.VarChar(255)
+  address1                                      String                   @default("") @db.VarChar(60)
+  address2                                      String                   @default("") @db.VarChar(60)
+  country                                       String                   @default("") @db.VarChar(255)
+  city                                          String                   @default("") @db.VarChar(255)
+  zip_code                                      String                   @default("") @db.VarChar(255)
+  created_at                                    DateTime?                @db.DateTime(0)
+  updated_at                                    DateTime?                @db.DateTime(0)
+  is_supplier                                   Boolean                  @default(false)
+  is_client                                     Boolean                  @default(false)
+  is_own                                        Boolean                  @default(false)
   account_contacts                              account_contacts[]
   expenses                                      expenses[]
   order_requests                                order_requests[]
-  transfers_accountsTotransfers_from_account_id transfers[]        @relation("accountsTotransfers_from_account_id")
-  transfers_accountsTotransfers_to_account_id   transfers[]        @relation("accountsTotransfers_to_account_id")
+  raw_material_additions                        raw_material_additions[]
+  transfers_accountsTotransfers_from_account_id transfers[]              @relation("accountsTotransfers_from_account_id")
+  transfers_accountsTotransfers_to_account_id   transfers[]              @relation("accountsTotransfers_to_account_id")
 }
 
 model expense_resources {
@@ -655,14 +656,15 @@ model resource_categories {
 }
 
 model resources {
-  id                   Int                  @id @default(autoincrement()) @db.UnsignedInt
-  active               Int                  @default(1)
-  created_at           DateTime?            @db.DateTime(0)
-  updated_at           DateTime?            @db.DateTime(0)
-  name                 String               @db.VarChar(255)
-  resource_category_id Int?                 @db.UnsignedInt
-  resource_categories  resource_categories? @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
-  expense_resources    expense_resources[]
+  id                          Int                           @id @default(autoincrement()) @db.UnsignedInt
+  active                      Int                           @default(1)
+  created_at                  DateTime?                     @db.DateTime(0)
+  updated_at                  DateTime?                     @db.DateTime(0)
+  name                        String                        @db.VarChar(255)
+  resource_category_id        Int?                          @db.UnsignedInt
+  resource_categories         resource_categories?          @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
+  expense_resources           expense_resources[]
+  raw_material_addition_items raw_material_addition_items[]
 
   @@index([resource_category_id], map: "resources_resource_category_id_foreign")
 }
@@ -718,12 +720,16 @@ model raw_material_addition_items {
   id                       Int                     @id @default(autoincrement()) @db.UnsignedInt
   active                   Int                     @default(1)
   amount                   Float
+  unit_price               Float
   created_at               DateTime?               @db.DateTime(0)
   updated_at               DateTime?               @db.DateTime(0)
   raw_material_addition_id Int?                    @db.UnsignedInt
-  raw_material_additions   raw_material_additions? @relation(fields: [raw_material_addition_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "raw_material_addition_item_id_foreign")
+  resource_id              Int?                    @db.UnsignedInt
+  raw_material_additions   raw_material_additions? @relation(fields: [raw_material_addition_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "raw_material_addition_item_addition_id_foreign")
+  resources                resources?              @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "raw_material_addition_item_resource_id_foreign")
 
-  @@index([raw_material_addition_id], map: "raw_material_addition_item_id_foreign")
+  @@index([raw_material_addition_id], map: "raw_material_addition_item_addition_id_foreign")
+  @@index([resource_id], map: "raw_material_addition_item_resource_id_foreign")
 }
 
 model raw_material_additions {
@@ -731,6 +737,10 @@ model raw_material_additions {
   active                      Int                           @default(1)
   created_at                  DateTime?                     @db.DateTime(0)
   updated_at                  DateTime?                     @db.DateTime(0)
+  account_id                  Int?                          @db.UnsignedInt
   date                        DateTime?                     @db.DateTime(0)
+  accounts                    accounts?                     @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "raw_material_addition_account_id_foreign")
   raw_material_addition_items raw_material_addition_items[]
+
+  @@index([account_id], map: "raw_material_addition_account_id_foreign")
 }

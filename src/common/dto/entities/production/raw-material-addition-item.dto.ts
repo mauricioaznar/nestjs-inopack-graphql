@@ -5,6 +5,12 @@ import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 export class RawMaterialAdditionItemBase {
     @Field(() => Float, { nullable: false })
     amount: number;
+
+    @Field(() => Float, { nullable: false })
+    unit_price: number;
+
+    @Field(() => Int, { nullable: true })
+    resource_id: number | null;
 }
 
 @InputType('RawMaterialAdditionItemInput')
