@@ -10,6 +10,7 @@ import {
     Resource,
     ResourceUpsertInput,
     ResourceCategory,
+    ResourcesGetQueryArgs,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -37,10 +38,20 @@ export class ResourcesService {
         });
     }
 
-    async getResources(): Promise<Resource[]> {
+    async getResources({
+        resourcesGetQueryArgs,
+    }: {
+        resourcesGetQueryArgs: ResourcesGetQueryArgs;
+    }): Promise<Resource[]> {
+        const { resource_category_id } = resourcesGetQueryArgs;
         return this.prisma.resources.findMany({
             where: {
                 active: 1,
+                resource_category_id: resource_category_id
+                    ? {
+                          in: resource_category_id,
+                      }
+                    : undefined,
             },
         });
     }

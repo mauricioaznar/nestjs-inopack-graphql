@@ -1,5 +1,6 @@
 import {
     Args,
+    Float,
     Mutation,
     Parent,
     Query,
@@ -136,6 +137,15 @@ export class RawMaterialAdditionsResolver {
     ): Promise<Account | null> {
         return this.service.getAccount({
             account_id: rawMaterialAddition.account_id,
+        });
+    }
+
+    @ResolveField(() => Float, { nullable: false })
+    async total(
+        @Parent() rawMaterialAddition: RawMaterialAddition,
+    ): Promise<number> {
+        return this.service.getTotal({
+            raw_material_addition_id: rawMaterialAddition.id,
         });
     }
 }

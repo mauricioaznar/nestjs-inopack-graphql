@@ -268,6 +268,34 @@ export class RawMaterialAdditionsService {
         });
     }
 
+    async getTotal({
+        raw_material_addition_id,
+    }: {
+        raw_material_addition_id: number | null;
+    }): Promise<number> {
+        if (!raw_material_addition_id) {
+            return 0;
+        }
+
+        const rawMaterialAdditionItems =
+            await this.prisma.raw_material_addition_items.findMany({
+                where: {
+                    raw_material_addition_id: raw_material_addition_id,
+                },
+            });
+
+        return rawMaterialAdditionItems.reduce(
+            (acc, rawMaterialAdditionItem) => {
+                return (
+                    acc +
+                    rawMaterialAdditionItem.amount *
+                        rawMaterialAdditionItem.unit_price
+                );
+            },
+            0,
+        );
+    }
+
     async isDeletable({
         rawMaterialAddition_id,
     }: {

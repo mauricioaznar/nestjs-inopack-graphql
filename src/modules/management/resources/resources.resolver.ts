@@ -10,10 +10,12 @@ import {
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ResourcesService } from './resources.service';
 import {
+    AccountsQueryArgs,
     ActivityTypeName,
     PaginatedResources,
     Resource,
     ResourceCategory,
+    ResourcesGetQueryArgs,
     ResourcesQueryArgs,
     ResourcesSortArgs,
     ResourceUpsertInput,
@@ -74,8 +76,13 @@ export class ResourcesResolver {
     }
 
     @Query(() => [Resource])
-    async getResources(): Promise<Resource[]> {
-        return this.service.getResources();
+    async getResources(
+        @Args({ nullable: false })
+        resourcesGetQueryArgs: ResourcesGetQueryArgs,
+    ): Promise<Resource[]> {
+        return this.service.getResources({
+            resourcesGetQueryArgs,
+        });
     }
 
     @Query(() => PaginatedResources)

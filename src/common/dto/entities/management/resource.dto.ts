@@ -1,6 +1,7 @@
 import {
     ArgsType,
     Field,
+    Float,
     InputType,
     Int,
     ObjectType,
@@ -55,4 +56,10 @@ export class ResourcesSortArgs {
 
     @Field(() => ResourcesSortableFields, { nullable: true })
     sort_field: ResourcesSortableFields | null;
+}
+
+@ArgsType()
+export class ResourcesGetQueryArgs {
+    @Field(() => [Int], { nullable: true })
+    resource_category_id: number[] | null;
 }

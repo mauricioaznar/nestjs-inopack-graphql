@@ -1,9 +1,8 @@
-import { Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Float, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { RawMaterialAdditionItemsService } from './raw-material-addition-items.service';
 import { Public } from '../../auth/decorators/public.decorator';
 import {
-    Account,
     RawMaterialAddition,
     RawMaterialAdditionItem,
     Resource,
@@ -36,6 +35,15 @@ export class RawMaterialAdditionItemsResolver {
     ): Promise<Resource | null> {
         return this.service.getResource({
             resource_id: rawMaterialAdditionItem.resource_id,
+        });
+    }
+
+    @ResolveField(() => Float, { nullable: false })
+    async total(
+        @Parent() rawMaterialAdditionItem: RawMaterialAdditionItem,
+    ): Promise<number> {
+        return this.service.getTotal({
+            raw_material_addition_item_id: rawMaterialAdditionItem.id,
         });
     }
 }

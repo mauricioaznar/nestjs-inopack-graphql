@@ -57,4 +57,29 @@ export class RawMaterialAdditionItemsService {
             },
         });
     }
+
+    async getTotal({
+        raw_material_addition_item_id,
+    }: {
+        raw_material_addition_item_id: number | null;
+    }): Promise<number> {
+        if (!raw_material_addition_item_id) {
+            return 0;
+        }
+
+        const rawMaterialAdditionItem =
+            await this.prisma.raw_material_addition_items.findUnique({
+                where: {
+                    id: raw_material_addition_item_id,
+                },
+            });
+
+        if (!rawMaterialAdditionItem) {
+            return 0;
+        }
+
+        return (
+            rawMaterialAdditionItem.unit_price * rawMaterialAdditionItem.amount
+        );
+    }
 }
