@@ -64,4 +64,7 @@ export class PaginatedRawMaterialAdditions extends OffsetPaginatorResult(
 export class PaginatedRawMaterialAdditionsQueryArgs {
     @Field(() => String, { nullable: false })
     filter: string;
+
+    @Field(() => Int, { nullable: true })
+    account_id: number | null;
 }

@@ -25,7 +25,7 @@ import {
     RawMaterialAdditionUpsertInput,
     User,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
@@ -52,8 +52,10 @@ export class RawMaterialAdditionsResolver {
         paginatedRawMaterialAdditionsQueryArgs: PaginatedRawMaterialAdditionsQueryArgs,
         @Args({ nullable: false })
         paginatedRawMaterialAdditionsSortArgs: PaginatedRawMaterialAdditionsSortArgs,
+        @Args({ nullable: false }) datePaginator: YearMonth,
     ): Promise<PaginatedRawMaterialAdditions> {
         return this.service.paginatedRawMaterialAdditions({
+            datePaginator,
             offsetPaginatorArgs,
             paginatedRawMaterialAdditionsSortArgs,
             paginatedRawMaterialAdditionsQueryArgs,

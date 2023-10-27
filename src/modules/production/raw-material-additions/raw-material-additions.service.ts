@@ -6,10 +6,11 @@ import {
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
     getCreatedAtProperty,
+    getRangesFromYearMonth,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
-import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import {
     Account,
@@ -39,11 +40,18 @@ export class RawMaterialAdditionsService {
         offsetPaginatorArgs,
         paginatedRawMaterialAdditionsQueryArgs,
         paginatedRawMaterialAdditionsSortArgs,
+        datePaginator,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
+        datePaginator: YearMonth;
         paginatedRawMaterialAdditionsQueryArgs: PaginatedRawMaterialAdditionsQueryArgs;
         paginatedRawMaterialAdditionsSortArgs: PaginatedRawMaterialAdditionsSortArgs;
     }): Promise<PaginatedRawMaterialAdditions> {
+        const { startDate, endDate } = getRangesFromYearMonth({
+            year: datePaginator.year,
+            month: datePaginator.month,
+        });
+
         const filter =
             paginatedRawMaterialAdditionsQueryArgs.filter !== ''
                 ? paginatedRawMaterialAdditionsQueryArgs.filter
@@ -55,7 +63,22 @@ export class RawMaterialAdditionsService {
         const where: Prisma.raw_material_additionsWhereInput = {
             AND: [
                 {
+                    date: {
+                        gte: startDate,
+                    },
+                },
+                {
+                    date: {
+                        lt: endDate,
+                    },
+                },
+                {
                     active: 1,
+                },
+                {
+                    account_id:
+                        paginatedRawMaterialAdditionsQueryArgs.account_id ||
+                        undefined,
                 },
             ],
         };
