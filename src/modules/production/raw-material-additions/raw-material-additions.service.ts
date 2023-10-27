@@ -83,11 +83,19 @@ export class RawMaterialAdditionsService {
             ],
         };
 
-        const orderBy: Prisma.raw_material_additionsOrderByWithRelationInput = {
-            updated_at: 'desc',
-        };
+        const orderBy: Prisma.raw_material_additionsOrderByWithRelationInput[] =
+            [
+                {
+                    updated_at: 'desc',
+                },
+            ];
 
         if (sort_order && sort_field) {
+            if (sort_field === 'date') {
+                orderBy.unshift({
+                    date: sort_order,
+                });
+            }
         }
 
         const count = await this.prisma.raw_material_additions.count({
