@@ -53,4 +53,7 @@ export class MachineQueryArgs {
 
     @Field(() => Int, { nullable: true })
     branch_id: number | null;
+
+    @Field(() => String, { nullable: false })
+    filter: string;
 }

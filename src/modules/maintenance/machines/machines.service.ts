@@ -4,12 +4,14 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import {
+    Branch,
     Machine,
     MachineDailyProduction,
     MachinePart,
     MachineQueryArgs,
     MachineSection,
     MachineUpsertInput,
+    OrderProductionType,
 } from '../../../common/dto/entities';
 import { SpareInventoryService } from '../../../common/services/entities/spare-inventory.service';
 import dayjs from 'dayjs';
@@ -115,6 +117,11 @@ export class MachinesService {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         machineQueryArgs: MachineQueryArgs;
     }): Promise<PaginatedOrderProductions> {
+        const filter =
+            machineQueryArgs.filter !== ''
+                ? machineQueryArgs.filter
+                : undefined;
+
         const machinesWhere: Prisma.machinesWhereInput = {
             AND: [
                 {
@@ -126,6 +133,11 @@ export class MachinesService {
                 {
                     order_production_type_id:
                         machineQueryArgs.order_production_type_id || undefined,
+                },
+                {
+                    name: {
+                        contains: filter,
+                    },
                 },
             ],
         };
@@ -390,5 +402,39 @@ export class MachinesService {
         });
 
         return order_productions_count === 0;
+    }
+
+    async getOrderProductionType({
+        order_production_type_id,
+    }: {
+        order_production_type_id: number | null;
+    }): Promise<OrderProductionType | null> {
+        if (!order_production_type_id) {
+            return null;
+        }
+
+        return this.prisma.order_production_type.findFirst({
+            where: {
+                id: order_production_type_id,
+                active: 1,
+            },
+        });
+    }
+
+    async getBranch({
+        branch_id,
+    }: {
+        branch_id: number | null;
+    }): Promise<Branch | null> {
+        if (!branch_id) {
+            return null;
+        }
+
+        return this.prisma.branches.findFirst({
+            where: {
+                id: branch_id,
+                active: 1,
+            },
+        });
     }
 }

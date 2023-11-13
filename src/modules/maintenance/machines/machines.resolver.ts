@@ -10,15 +10,18 @@ import {
 import { Injectable } from '@nestjs/common';
 import { MachinesService } from './machines.service';
 import {
+    Branch,
     Machine,
     MachineDailyProduction,
     MachinePart,
     MachineQueryArgs,
     MachineSection,
     MachineUpsertInput,
+    OrderProductionType,
     PaginatedMachines,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OrderProduction } from '../../../common/dto/entities/production/order-production.dto';
 
 @Resolver(() => Machine)
 @Injectable()
@@ -91,6 +94,22 @@ export class MachinesResolver {
             machineId: machine.id,
             year: yearMonth.year,
             month: yearMonth.month,
+        });
+    }
+
+    @ResolveField(() => OrderProductionType, { nullable: true })
+    async order_production_type(
+        @Parent() machine: Machine,
+    ): Promise<OrderProductionType | null> {
+        return this.service.getOrderProductionType({
+            order_production_type_id: machine.order_production_type_id,
+        });
+    }
+
+    @ResolveField(() => Branch, { nullable: true })
+    async branch(@Parent() machine: Machine): Promise<Branch | null> {
+        return this.service.getBranch({
+            branch_id: machine.branch_id,
         });
     }
 }
