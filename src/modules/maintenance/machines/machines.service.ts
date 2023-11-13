@@ -19,6 +19,10 @@ import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { PaginatedOrderProductions } from '../../../common/dto/entities/production/order-production.dto';
 import { Prisma } from '@prisma/client';
+import {
+    getCreatedAtProperty,
+    getUpdatedAtProperty,
+} from '../../../common/helpers';
 
 @Injectable()
 export class MachinesService {
@@ -53,11 +57,14 @@ export class MachinesService {
 
         return this.prisma.machines.upsert({
             create: {
+                ...getCreatedAtProperty(),
+                ...getUpdatedAtProperty(),
                 name: machineInput.name,
                 branch_id: machineInput.branch_id,
                 order_production_type_id: machineInput.order_production_type_id,
             },
             update: {
+                ...getUpdatedAtProperty(),
                 name: machineInput.name,
                 branch_id: machineInput.branch_id,
                 order_production_type_id: machineInput.order_production_type_id,

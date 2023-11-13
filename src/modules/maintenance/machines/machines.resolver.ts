@@ -6,10 +6,13 @@ import {
     Query,
     ResolveField,
     Resolver,
+    Subscription,
 } from '@nestjs/graphql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { MachinesService } from './machines.service';
 import {
+    Account,
+    ActivityTypeName,
     Branch,
     Machine,
     MachineDailyProduction,
@@ -19,18 +22,34 @@ import {
     MachineUpsertInput,
     OrderProductionType,
     PaginatedMachines,
+    User,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
-import { OrderProduction } from '../../../common/dto/entities/production/order-production.dto';
+import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => Machine)
 @Injectable()
 export class MachinesResolver {
-    constructor(private service: MachinesService) {}
+    constructor(
+        private service: MachinesService,
+        private pubSubService: PubSubService,
+    ) {}
 
     @Mutation(() => Machine)
-    async upsertMachine(@Args('MachineUpsertInput') input: MachineUpsertInput) {
-        return this.service.upsertMachine(input);
+    async upsertMachine(
+        @Args('MachineUpsertInput') input: MachineUpsertInput,
+        @CurrentUser() currentUser: User,
+    ) {
+        const machine = await this.service.upsertMachine(input);
+        await this.pubSubService.machine({
+            machine,
+            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        });
+        return machine;
     }
 
     @Query(() => Machine, {
@@ -111,5 +130,36 @@ export class MachinesResolver {
         return this.service.getBranch({
             branch_id: machine.branch_id,
         });
+    }
+
+    @Mutation(() => Boolean)
+    @RolesDecorator(RoleId.PRODUCTION)
+    async deleteMachine(
+        @Args('MachineId') machineId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<boolean> {
+        const machine = await this.service.getMachine({
+            machine_id: machineId,
+        });
+        if (!machine) throw new NotFoundException();
+        await this.service.deleteMachine({
+            machine_id: machineId,
+        });
+        await this.pubSubService.machine({
+            machine,
+            type: ActivityTypeName.DELETE,
+            userId: currentUser.id,
+        });
+        return true;
+    }
+
+    @Subscription(() => Machine)
+    async machine() {
+        return this.pubSubService.listenForMachine();
+    }
+
+    @ResolveField(() => Boolean, { nullable: false })
+    async is_deletable(@Parent() machine: Machine) {
+        return this.service.isDeletable({ machine_id: machine.id });
     }
 }

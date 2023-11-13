@@ -13,6 +13,7 @@ import {
     Expense,
     Resource,
     RawMaterialAddition,
+    Machine,
 } from '../../dto/entities';
 import { OrderProduction } from '../../dto/entities/production/order-production.dto';
 import { OrderAdjustment } from '../../dto/entities/production/order-adjustment.dto';
@@ -63,6 +64,27 @@ export class PubSubService {
             entity_id: orderProduction.id,
             userId,
             description: `Producción: ${orderProduction.start_date}`,
+        });
+    }
+
+    async machine({
+        machine,
+        type,
+        userId,
+    }: {
+        machine: Machine;
+        type: ActivityTypeName;
+        userId: number;
+    }) {
+        await this.pubSub.publish('machine', {
+            machine: machine,
+        });
+        await this.publishActivity({
+            entity_name: ActivityEntityName.MACHINE,
+            type: type,
+            entity_id: machine.id,
+            userId,
+            description: `Maquina: ${machine.name}`,
         });
     }
 
@@ -314,6 +336,10 @@ export class PubSubService {
 
     async listenForOrderProduction() {
         return this.pubSub.asyncIterator('order_production');
+    }
+
+    async listenForMachine() {
+        return this.pubSub.asyncIterator('machine');
     }
 
     async listenForRawMaterialAddition() {
