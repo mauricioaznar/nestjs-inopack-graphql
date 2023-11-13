@@ -7,13 +7,20 @@ import {
     Machine,
     MachineDailyProduction,
     MachinePart,
+    MachineQueryArgs,
     MachineSection,
     MachineUpsertInput,
 } from '../../../common/dto/entities';
 import { SpareInventoryService } from '../../../common/services/entities/spare-inventory.service';
 import dayjs from 'dayjs';
-import { YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
+import {
+    OrderProductionQueryArgs,
+    PaginatedOrderProductions,
+} from '../../../common/dto/entities/production/order-production.dto';
+import { getRangesFromYearMonth } from '../../../common/helpers';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class MachinesService {
@@ -99,6 +106,46 @@ export class MachinesService {
                 machine_id: machineId,
             },
         });
+    }
+
+    async paginatedMachines({
+        offsetPaginatorArgs,
+        machineQueryArgs,
+    }: {
+        offsetPaginatorArgs: OffsetPaginatorArgs;
+        machineQueryArgs: MachineQueryArgs;
+    }): Promise<PaginatedOrderProductions> {
+        const machinesWhere: Prisma.machinesWhereInput = {
+            AND: [
+                {
+                    active: 1,
+                },
+                {
+                    branch_id: machineQueryArgs.branch_id || undefined,
+                },
+                {
+                    order_production_type_id:
+                        machineQueryArgs.order_production_type_id || undefined,
+                },
+            ],
+        };
+
+        const count = await this.prisma.machines.count({
+            where: machinesWhere,
+        });
+        const machines = await this.prisma.machines.findMany({
+            where: machinesWhere,
+            take: offsetPaginatorArgs.take,
+            skip: offsetPaginatorArgs.skip,
+            orderBy: {
+                updated_at: 'desc',
+            },
+        });
+
+        return {
+            count: count || 0,
+            docs: machines || [],
+        };
     }
 
     async getMachineParts({
@@ -266,7 +313,9 @@ export class MachinesService {
 
         if (!isDeletable) {
             const { order_productions_count } = await this.getDependenciesCount(
-                { machine_id },
+                {
+                    machine_id,
+                },
             );
 
             const errors: string[] = [];

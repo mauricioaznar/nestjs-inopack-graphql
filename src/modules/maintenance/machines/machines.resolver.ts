@@ -13,10 +13,12 @@ import {
     Machine,
     MachineDailyProduction,
     MachinePart,
+    MachineQueryArgs,
     MachineSection,
     MachineUpsertInput,
+    PaginatedMachines,
 } from '../../../common/dto/entities';
-import { YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 
 @Resolver(() => Machine)
 @Injectable()
@@ -58,6 +60,18 @@ export class MachinesResolver {
     async machine_sections(machine: Machine): Promise<MachineSection[]> {
         return this.service.getMachineSections({
             machineId: machine.id,
+        });
+    }
+
+    @Query(() => PaginatedMachines)
+    async paginatedMachines(
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false })
+        machineQueryArgs: MachineQueryArgs,
+    ): Promise<PaginatedMachines> {
+        return this.service.paginatedMachines({
+            offsetPaginatorArgs,
+            machineQueryArgs,
         });
     }
 
