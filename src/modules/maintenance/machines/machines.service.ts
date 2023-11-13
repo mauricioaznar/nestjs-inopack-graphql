@@ -17,11 +17,7 @@ import { SpareInventoryService } from '../../../common/services/entities/spare-i
 import dayjs from 'dayjs';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import {
-    OrderProductionQueryArgs,
-    PaginatedOrderProductions,
-} from '../../../common/dto/entities/production/order-production.dto';
-import { getRangesFromYearMonth } from '../../../common/helpers';
+import { PaginatedOrderProductions } from '../../../common/dto/entities/production/order-production.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
