@@ -45,6 +45,7 @@ export * from './management/expense.dto';
 export * from './management/resource.dto';
 export * from './management/resource-category.dto';
 export * from './management/expense-resource.dto';
+export * from './management/expense-raw-material-addition.dto';
 export * from './summaries/expenses-summary.dto';
 export * from './summaries/payments-summary.dto';
 export * from './summaries/production-summary.dto';

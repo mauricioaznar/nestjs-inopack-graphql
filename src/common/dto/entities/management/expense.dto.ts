@@ -10,6 +10,7 @@ import {
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
 import { ExpensesExpenseResourceInput } from './expense-resource.dto';
+import { ExpenseRawMaterialAdditionInput } from './expense-raw-material-addition.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -64,6 +65,9 @@ export class ExpenseUpsertInput extends ExpenseBase {
 
     @Field(() => [ExpensesExpenseResourceInput])
     expense_resources: ExpensesExpenseResourceInput[];
+
+    @Field(() => [ExpenseRawMaterialAdditionInput])
+    expense_raw_material_additions: ExpenseRawMaterialAdditionInput[];
 }
 
 @ObjectType('Expense')

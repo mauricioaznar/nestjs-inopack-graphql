@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
+    formatDate,
+    formatFloat,
     getCreatedAtProperty,
     getRangesFromYearMonth,
     getUpdatedAtProperty,
@@ -15,6 +17,8 @@ import { Prisma } from '@prisma/client';
 import {
     Account,
     Branch,
+    Expense,
+    GetRawMaterialAdditionsQueryArgs,
     PaginatedRawMaterialAdditions,
     PaginatedRawMaterialAdditionsQueryArgs,
     PaginatedRawMaterialAdditionsSortArgs,
@@ -23,16 +27,65 @@ import {
     RawMaterialAdditionUpsertInput,
 } from '../../../common/dto/entities';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class RawMaterialAdditionsService {
     constructor(private prisma: PrismaService) {}
 
-    async getRawMaterialAdditions(): Promise<RawMaterialAddition[]> {
+    async getRawMaterialAdditions({
+        getRawMaterialAdditionsQueryArgs,
+    }: {
+        getRawMaterialAdditionsQueryArgs: GetRawMaterialAdditionsQueryArgs;
+    }): Promise<RawMaterialAddition[]> {
         return this.prisma.raw_material_additions.findMany({
             where: {
                 active: 1,
+                account_id:
+                    getRawMaterialAdditionsQueryArgs.account_id || undefined,
             },
+        });
+    }
+
+    async getRawMaterialAdditionsWithDisparities(): Promise<
+        RawMaterialAddition[]
+    > {
+        const res = await this.prisma.$queryRawUnsafe<RawMaterialAddition[]>(`
+           SELECT
+                raw_material_additions.*,
+                wtv.total,
+                ztv.total
+           FROM raw_material_additions
+           JOIN
+                (
+                        SELECT
+                            expense_raw_material_additions.raw_material_addition_id as raw_material_addition_id,
+                            round(sum(expense_raw_material_additions.amount)) total
+                        FROM expense_raw_material_additions
+                        WHERE expense_raw_material_additions.active = 1
+                        GROUP BY expense_raw_material_additions.raw_material_addition_id
+                ) AS wtv
+            on wtv.raw_material_addition_id = raw_material_additions.id
+            left JOIN   
+                (
+                        SELECT
+                            raw_material_addition_items.raw_material_addition_id as raw_material_addition_id,
+                            round(sum(raw_material_addition_items.amount * raw_material_addition_items.unit_price)) total
+                        FROM raw_material_addition_items
+                        WHERE raw_material_addition_items.active = 1
+                        GROUP BY raw_material_addition_items.raw_material_addition_id
+                ) AS ztv
+            on ztv.raw_material_addition_id = raw_material_additions.id
+            where ((ztv.total - wtv.total) != 0  or isnull(ztv.total))
+            order by case when date is null then 1 else 0 end, date
+        `);
+
+        return res.map((ex) => {
+            console.log(ex);
+            return {
+                ...ex,
+                date: ex.date ? new Date(ex.date) : null,
+            };
         });
     }
 
@@ -325,6 +378,28 @@ export class RawMaterialAdditionsService {
             },
             0,
         );
+    }
+
+    async getCompoundName({
+        raw_material_addition_id,
+    }: {
+        raw_material_addition_id: number | null;
+    }): Promise<string> {
+        if (!raw_material_addition_id) {
+            return '';
+        }
+
+        const rawMaterialAdditionTotal = await this.getTotal({
+            raw_material_addition_id,
+        });
+
+        const rawMaterialAddition = await this.getRawMaterialAddition({
+            rawMaterialAdditionId: raw_material_addition_id,
+        });
+
+        return `${formatDate(rawMaterialAddition?.date)} (${formatFloat(
+            rawMaterialAdditionTotal,
+        )})`;
     }
 
     async isDeletable({

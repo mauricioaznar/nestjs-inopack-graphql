@@ -17,6 +17,8 @@ import {
     Account,
     ActivityTypeName,
     Branch,
+    Expense,
+    GetRawMaterialAdditionsQueryArgs,
     PaginatedRawMaterialAdditions,
     PaginatedRawMaterialAdditionsQueryArgs,
     PaginatedRawMaterialAdditionsSortArgs,
@@ -29,7 +31,10 @@ import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
-import { OrderProduction } from '../../../common/dto/entities/production/order-production.dto';
+import {
+    OrderProduction,
+    OrderProductionQueryArgs,
+} from '../../../common/dto/entities/production/order-production.dto';
 
 @Resolver(() => RawMaterialAddition)
 @UseGuards(GqlAuthGuard)
@@ -41,8 +46,22 @@ export class RawMaterialAdditionsResolver {
     ) {}
 
     @Query(() => [RawMaterialAddition])
-    async getRawMaterialAdditions(): Promise<RawMaterialAddition[]> {
-        return this.service.getRawMaterialAdditions();
+    async getRawMaterialAdditions(
+        @Args({ nullable: false })
+        getRawMaterialAdditionsQueryArgs: GetRawMaterialAdditionsQueryArgs,
+    ): Promise<RawMaterialAddition[]> {
+        return this.service.getRawMaterialAdditions({
+            getRawMaterialAdditionsQueryArgs,
+        });
+    }
+
+    @Query(() => [RawMaterialAddition])
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
+    async getRawMaterialAdditionsWithDisparities(): Promise<
+        RawMaterialAddition[]
+    > {
+        return this.service.getRawMaterialAdditionsWithDisparities();
     }
 
     @Query(() => PaginatedRawMaterialAdditions)
@@ -139,6 +158,15 @@ export class RawMaterialAdditionsResolver {
     ): Promise<Account | null> {
         return this.service.getAccount({
             account_id: rawMaterialAddition.account_id,
+        });
+    }
+
+    @ResolveField(() => String, { nullable: true })
+    async compound_name(
+        @Parent() rawMaterialAddition: RawMaterialAddition,
+    ): Promise<string> {
+        return this.service.getCompoundName({
+            raw_material_addition_id: rawMaterialAddition.id,
         });
     }
 

@@ -30,6 +30,7 @@ import { ExpenseResource } from '../../../common/dto/entities';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { ExpenseRawMaterialAddition } from '../../../common/dto/entities/management/expense-raw-material-addition.dto';
 
 @Resolver(() => Expense)
 @Injectable()
@@ -160,6 +161,15 @@ export class ExpensesResolver {
         });
     }
 
+    @ResolveField(() => [ExpenseRawMaterialAddition])
+    async expense_raw_material_additions(
+        expense: Expense,
+    ): Promise<ExpenseRawMaterialAddition[]> {
+        return this.service.getExpenseRawMaterialAdditions({
+            expense_id: expense.id,
+        });
+    }
+
     @ResolveField(() => Float)
     async expense_resources_total(expense: Expense): Promise<number> {
         return this.service.getExpenseResourcesTotal({
@@ -170,6 +180,15 @@ export class ExpensesResolver {
     @ResolveField(() => Float)
     async expense_resources_total_with_tax(expense: Expense): Promise<number> {
         return this.service.getExpenseResourcesTotalWithTax({
+            expense_id: expense.id,
+        });
+    }
+
+    @ResolveField(() => Float)
+    async expense_raw_material_additions_total(
+        expense: Expense,
+    ): Promise<number> {
+        return this.service.getExpenseRawMaterialAdditionsTotal({
             expense_id: expense.id,
         });
     }

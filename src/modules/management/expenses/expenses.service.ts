@@ -24,6 +24,7 @@ import {
     vennDiagram,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
+import { ExpenseRawMaterialAddition } from '../../../common/dto/entities/management/expense-raw-material-addition.dto';
 
 @Injectable()
 export class ExpensesService {
@@ -307,10 +308,6 @@ export class ExpensesService {
         // `);
 
         return res.map((ex) => {
-            if (ex.order_code === '56' || ex.order_code === '57') {
-                console.log(ex);
-            }
-
             return {
                 ...ex,
                 expected_payment_date: ex.expected_payment_date
@@ -363,6 +360,29 @@ export class ExpensesService {
         }
 
         return this.prisma.expense_resources.findMany({
+            where: {
+                AND: [
+                    {
+                        expense_id: expense_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
+    async getExpenseRawMaterialAdditions({
+        expense_id,
+    }: {
+        expense_id: number | null;
+    }): Promise<ExpenseRawMaterialAddition[]> {
+        if (!expense_id) {
+            return [];
+        }
+
+        return this.prisma.expense_raw_material_additions.findMany({
             where: {
                 AND: [
                     {
@@ -477,6 +497,72 @@ export class ExpensesService {
                         expense_id: expense.id,
                         resource_id: updateItem.resource_id || null,
                         branch_id: updateItem.branch_id || null,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
+        }
+
+        const newExpenseRawMaterialAdditions =
+            input.expense_raw_material_additions;
+        const oldExpenseRawMaterialAdditions = input.id
+            ? await this.prisma.expense_raw_material_additions.findMany({
+                  where: {
+                      expense_id: input.id,
+                  },
+              })
+            : [];
+
+        const {
+            aMinusB: deleteExpenseRawMaterialAdditions,
+            bMinusA: createExpenseRawMaterialAdditions,
+            intersection: updateExpenseRawMaterialAdditions,
+        } = vennDiagram({
+            a: oldExpenseRawMaterialAdditions,
+            b: newExpenseRawMaterialAdditions,
+            indexProperties: ['id'],
+        });
+
+        for await (const delItem of deleteExpenseRawMaterialAdditions) {
+            if (delItem && delItem.id) {
+                await this.prisma.expense_raw_material_additions.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+                // await this.cacheManager.del(`product_inventory`);
+            }
+        }
+
+        for await (const createItem of createExpenseRawMaterialAdditions) {
+            await this.prisma.expense_raw_material_additions.create({
+                data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
+                    amount: createItem.amount ? createItem.amount : 0,
+                    expense_id: expense.id,
+                    raw_material_addition_id:
+                        createItem.raw_material_addition_id || null,
+                },
+            });
+            // await this.cacheManager.del(`product_inventory`);
+        }
+
+        for await (const updateItem of updateExpenseRawMaterialAdditions) {
+            if (updateItem && updateItem.id) {
+                await this.prisma.expense_raw_material_additions.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        amount: updateItem.amount ? updateItem.amount : 0,
+                        expense_id: expense.id,
+                        raw_material_addition_id:
+                            updateItem.raw_material_addition_id || null,
                     },
                     where: {
                         id: updateItem.id,
@@ -654,6 +740,36 @@ export class ExpensesService {
         });
 
         const total = expenseResources.reduce((acc, curr) => {
+            return acc + curr.amount;
+        }, 0);
+
+        return Math.round(total * 100) / 100;
+    }
+
+    async getExpenseRawMaterialAdditionsTotal({
+        expense_id,
+    }: {
+        expense_id: number | null;
+    }): Promise<number> {
+        if (!expense_id) {
+            return 0;
+        }
+
+        const expenseRawMaterialAdditions =
+            await this.prisma.expense_raw_material_additions.findMany({
+                where: {
+                    AND: [
+                        {
+                            expense_id: expense_id,
+                        },
+                        {
+                            active: 1,
+                        },
+                    ],
+                },
+            });
+
+        const total = expenseRawMaterialAdditions.reduce((acc, curr) => {
             return acc + curr.amount;
         }, 0);
 

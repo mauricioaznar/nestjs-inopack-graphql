@@ -1,5 +1,8 @@
 import dayjs from 'dayjs';
 
-export function formatDate(date: string | Date) {
-    return dayjs(date).format('YYYY-MM-DD');
+export function formatDate(date?: string | Date | null) {
+    if (!date) {
+        return '';
+    }
+    return dayjs(date).utc().format('YYYY-MM-DD');
 }

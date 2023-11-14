@@ -9,6 +9,7 @@ import { ResourceCategoriesModule } from './resource-categories/resource-categor
 import { TransferReceiptsModule } from './transfer-receipts/transfer-receipts.module';
 import { AccountTransferSummariesModule } from './account-transfer-summaries/account-transfer-summaries.module';
 import { ReceiptTypeModule } from './receipt-type/receipt-type.module';
+import { ExpenseRawMaterialAdditionsModule } from './expense-raw-material-additions/expense-raw-material-additions.module';
 
 @Module({
     imports: [
@@ -16,6 +17,7 @@ import { ReceiptTypeModule } from './receipt-type/receipt-type.module';
         AccountsModule,
         AccountContactsModule,
         AccountTransferSummariesModule,
+        ExpenseRawMaterialAdditionsModule,
         ExpensesModule,
         ExpenseResourcesModule,
         ResourcesModule,

@@ -68,3 +68,9 @@ export class PaginatedRawMaterialAdditionsQueryArgs {
     @Field(() => Int, { nullable: true })
     account_id: number | null;
 }
+
+@ArgsType()
+export class GetRawMaterialAdditionsQueryArgs {
+    @Field(() => Int, { nullable: true })
+    account_id: number | null;
+}
