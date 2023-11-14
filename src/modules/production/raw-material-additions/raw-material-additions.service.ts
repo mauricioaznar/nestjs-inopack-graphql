@@ -76,7 +76,7 @@ export class RawMaterialAdditionsService {
                         GROUP BY raw_material_addition_items.raw_material_addition_id
                 ) AS ztv
             on ztv.raw_material_addition_id = raw_material_additions.id
-            where ((ztv.total - wtv.total) != 0  or isnull(ztv.total)) or isnull(wtv.total))
+            where ((ztv.total - wtv.total) != 0  or isnull(ztv.total) or isnull(wtv.total))
             order by case when date is null then 1 else 0 end, date
         `);
 
