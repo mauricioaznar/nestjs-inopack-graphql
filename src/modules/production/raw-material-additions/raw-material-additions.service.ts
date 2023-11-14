@@ -56,7 +56,7 @@ export class RawMaterialAdditionsService {
                 wtv.total,
                 ztv.total
            FROM raw_material_additions
-           JOIN
+           left JOIN
                 (
                         SELECT
                             expense_raw_material_additions.raw_material_addition_id as raw_material_addition_id,
