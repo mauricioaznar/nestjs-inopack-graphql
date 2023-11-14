@@ -77,6 +77,7 @@ export class RawMaterialAdditionsService {
                 ) AS ztv
             on ztv.raw_material_addition_id = raw_material_additions.id
             where ((ztv.total - wtv.total) != 0  or isnull(ztv.total) or isnull(wtv.total))
+            and raw_material_additions.active = 1
             order by case when date is null then 1 else 0 end, date
         `);
 
