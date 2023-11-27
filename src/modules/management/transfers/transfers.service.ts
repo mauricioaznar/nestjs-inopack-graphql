@@ -390,8 +390,8 @@ export class TransfersService {
                 : null;
 
             if (
-                ((toAccount !== null && toAccount?.is_own) ||
-                    (fromAccount !== null && fromAccount?.is_own)) &&
+                ((toAccount !== null && !toAccount?.is_own) ||
+                    (fromAccount !== null && !fromAccount?.is_own)) &&
                 hasReceipts &&
                 input.amount != receiptsAmountTotal
             ) {

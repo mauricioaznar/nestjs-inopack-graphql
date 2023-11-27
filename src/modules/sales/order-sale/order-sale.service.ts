@@ -977,30 +977,6 @@ export class OrderSaleService {
             }
         }
 
-        // IsInvoiceCodeOccupied
-        {
-            if (input.receipt_type_id === 2) {
-                const isInvoiceCodeOccupied = await this.isInvoiceCodeOccupied({
-                    invoice_code: input.invoice_code,
-                    order_sale_id: input.id ? input.id : null,
-                });
-                if (isInvoiceCodeOccupied) {
-                    errors.push(
-                        `invoice code is already occupied (${input.invoice_code})`,
-                    );
-                }
-            }
-        }
-
-        // IsInvoiceCodeValid
-        {
-            if (input.receipt_type_id === 2 && input.invoice_code === 0) {
-                errors.push(
-                    `invoice code is invalid (Invoice code has to be different than 0)`,
-                );
-            }
-        }
-
         // ProductsKiloPrice && ProductGroupWeight
         {
             const orderRequestProducts =
@@ -1070,21 +1046,6 @@ export class OrderSaleService {
                     orderSale.order_request_id !== input.order_request_id
                 ) {
                     errors.push(`Order request cant be changed`);
-                }
-            }
-        }
-
-        //IsOrderSaleReceiptTypeTheSame
-        {
-            if (input.id) {
-                const orderSale = await this.getOrderSale({
-                    orderSaleId: input.id,
-                });
-                if (
-                    !!orderSale &&
-                    orderSale.receipt_type_id !== input.receipt_type_id
-                ) {
-                    errors.push(`Order sale receipt type cant be changed`);
                 }
             }
         }
