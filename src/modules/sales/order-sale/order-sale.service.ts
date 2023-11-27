@@ -729,8 +729,7 @@ export class OrderSaleService {
                 date: input.date,
                 order_code: input.order_code,
                 expected_payment_date: input.expected_payment_date,
-                invoice_code:
-                    input.receipt_type_id === 2 ? input.invoice_code : 0,
+                invoice_code: input.invoice_code,
                 order_sale_status_id: input.order_sale_status_id,
                 receipt_type_id: input.receipt_type_id,
                 order_request_id: input.order_request_id,
@@ -745,11 +744,11 @@ export class OrderSaleService {
             update: {
                 ...getUpdatedAtProperty(),
                 date: input.date,
-                expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code,
-                invoice_code:
-                    input.receipt_type_id === 2 ? input.invoice_code : 0,
+                expected_payment_date: input.expected_payment_date,
+                invoice_code: input.invoice_code,
                 order_sale_status_id: input.order_sale_status_id,
+                receipt_type_id: input.receipt_type_id,
                 require_supplement: input.require_supplement,
                 require_credit_note: input.require_credit_note,
                 supplement_code: input.supplement_code,
