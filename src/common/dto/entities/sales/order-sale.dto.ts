@@ -53,6 +53,9 @@ export class OrderSaleBase {
     @Field(() => String, { nullable: false })
     notes: string;
 
+    @Field(() => Int, { nullable: true })
+    account_id: number | null;
+
     @Field(() => Boolean, { nullable: false })
     canceled: boolean;
 }
@@ -64,9 +67,6 @@ export class OrderSaleInput extends OrderSaleBase {
 
     @Field(() => [OrderSaleProductInput])
     order_sale_products: OrderSaleProductInput[];
-
-    @Field({ nullable: false })
-    order_request_id: number;
 
     @Field({ nullable: false })
     receipt_type_id: number;

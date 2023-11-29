@@ -118,7 +118,7 @@ export class SalesSummaryService {
                 left join product_categories
                 on products.product_category_id = product_categories.id
                 left join accounts
-                on accounts.id = order_requests.account_id
+                on accounts.id = order_sales.account_id
                 left join order_sale_statuses
                 on order_sale_statuses.id = order_sales.order_sale_status_id
                 left join receipt_types

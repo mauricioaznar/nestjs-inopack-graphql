@@ -335,6 +335,8 @@ model order_sales {
   require_supplement    Boolean               @default(false)
   notes                 String                @default("") @db.VarChar(255)
   canceled              Boolean               @default(false)
+  account_id            Int?                  @db.UnsignedInt
+  accounts              accounts?             @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_account_id_foreign")
   order_requests        order_requests?       @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_request_id_foreign")
   order_sale_statuses   order_sale_statuses?  @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
   receipt_types         receipt_types?        @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_receipt_type_foreign")
@@ -344,6 +346,7 @@ model order_sales {
   @@index([order_request_id], map: "order_sales_order_request_id_foreign")
   @@index([receipt_type_id], map: "order_sales_order_sale_receipt_type_id_foreign")
   @@index([order_sale_status_id], map: "order_sales_order_sale_status_id_foreign")
+  @@index([account_id], map: "order_sales_account_id_foreign")
 }
 
 model products {
@@ -596,6 +599,7 @@ model accounts {
   account_contacts                              account_contacts[]
   expenses                                      expenses[]
   order_requests                                order_requests[]
+  order_sales                                   order_sales[]
   raw_material_additions                        raw_material_additions[]
   transfers_accountsTotransfers_from_account_id transfers[]              @relation("accountsTotransfers_from_account_id")
   transfers_accountsTotransfers_to_account_id   transfers[]              @relation("accountsTotransfers_to_account_id")

@@ -32,11 +32,6 @@ import { OrderRequestRemainingProductsService } from '../../../common/services/e
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
-type SoftValidation = {
-    is_order_request_in_production: boolean;
-    is_order_sale_delivered: boolean;
-};
-
 @Injectable()
 export class OrderSaleService {
     constructor(
@@ -70,6 +65,34 @@ export class OrderSaleService {
 
         const isFilterANumber = !Number.isNaN(Number(filter));
 
+        const orderSalesOrWhere: Prisma.Enumerable<Prisma.order_salesWhereInput> =
+            [];
+
+        if (isFilterANumber) {
+            orderSalesOrWhere.push({
+                order_requests: {
+                    order_code: {
+                        in: Number(filter),
+                    },
+                },
+            });
+            orderSalesOrWhere.push({
+                order_code: {
+                    in: Number(filter),
+                },
+            });
+            orderSalesOrWhere.push({
+                invoice_code: {
+                    in: Number(filter),
+                },
+            });
+            orderSalesOrWhere.push({
+                notes: {
+                    contains: filter,
+                },
+            });
+        }
+
         const orderSalesAndWhere: Prisma.Enumerable<Prisma.order_salesWhereInput> =
             [
                 {
@@ -99,36 +122,7 @@ export class OrderSaleService {
                     },
                 },
                 {
-                    OR: [
-                        {
-                            order_code: {
-                                in: isFilterANumber
-                                    ? Number(filter)
-                                    : undefined,
-                            },
-                        },
-                        {
-                            order_requests: {
-                                order_code: {
-                                    in: isFilterANumber
-                                        ? Number(filter)
-                                        : undefined,
-                                },
-                            },
-                        },
-                        {
-                            invoice_code: {
-                                in: isFilterANumber
-                                    ? Number(filter)
-                                    : undefined,
-                            },
-                        },
-                        {
-                            notes: {
-                                contains: filter,
-                            },
-                        },
-                    ],
+                    OR: orderSalesOrWhere,
                 },
             ];
 
@@ -368,33 +362,6 @@ export class OrderSaleService {
             : !!orderSale;
     }
 
-    async isInvoiceCodeOccupied({
-        invoice_code,
-        order_sale_id,
-    }: {
-        invoice_code: number;
-        order_sale_id: number | null;
-    }): Promise<boolean> {
-        if (invoice_code <= 0) return false;
-
-        const orderSale = await this.prisma.order_sales.findFirst({
-            where: {
-                AND: [
-                    {
-                        invoice_code: invoice_code,
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
-            },
-        });
-
-        return !!order_sale_id && order_sale_id >= 0 && orderSale
-            ? orderSale.id !== order_sale_id
-            : !!orderSale;
-    }
-
     async getOrderSaleProducts({
         order_sale_id,
     }: {
@@ -427,19 +394,13 @@ export class OrderSaleService {
             orderSaleId: order_sale_id,
         });
 
-        if (!orderSale || !orderSale.order_request_id) return null;
+        if (!orderSale) return null;
 
-        const orderRequest = await this.prisma.order_requests.findFirst({
-            where: {
-                id: orderSale.order_request_id,
-            },
-        });
-
-        if (!orderRequest || !orderRequest.account_id) return null;
+        if (!orderSale || !orderSale.account_id) return null;
 
         return this.prisma.accounts.findFirst({
             where: {
-                id: orderRequest.account_id,
+                id: orderSale.account_id,
             },
         });
     }
@@ -455,17 +416,9 @@ export class OrderSaleService {
             },
         });
 
-        if (!orderSale || !orderSale.order_request_id) return null;
+        if (!orderSale || !orderSale.account_id) return null;
 
-        const orderRequest = await this.prisma.order_requests.findFirst({
-            where: {
-                id: orderSale.order_request_id,
-            },
-        });
-
-        if (!orderRequest) return null;
-
-        return orderRequest.account_id;
+        return orderSale.account_id;
     }
 
     async getReceiptType({
@@ -732,7 +685,8 @@ export class OrderSaleService {
                 invoice_code: input.invoice_code,
                 order_sale_status_id: input.order_sale_status_id,
                 receipt_type_id: input.receipt_type_id,
-                order_request_id: input.order_request_id,
+                account_id: input.account_id,
+                order_request_id: input.order_request_id || null,
                 require_supplement: input.require_supplement,
                 require_credit_note: input.require_credit_note,
                 supplement_code: input.supplement_code,
@@ -746,7 +700,9 @@ export class OrderSaleService {
                 date: input.date,
                 order_code: input.order_code,
                 expected_payment_date: input.expected_payment_date,
+                order_request_id: input.order_request_id || null,
                 invoice_code: input.invoice_code,
+                account_id: input.account_id,
                 order_sale_status_id: input.order_sale_status_id,
                 receipt_type_id: input.receipt_type_id,
                 require_supplement: input.require_supplement,
@@ -881,83 +837,166 @@ export class OrderSaleService {
             });
         }
 
-        // ProductsAvailability
+        // Order Request
         {
-            const inputOrderSaleProducts = input.order_sale_products;
-            const orderRequestRemainingProducts =
-                await this.orderRequestRemainingProductsService.getOrderRequestRemainingProducts(
-                    {
-                        order_request_id: input.order_request_id,
-                    },
-                );
-            const orderSalePreviousProducts = !!input.id
-                ? await this.getOrderSaleProducts({ order_sale_id: input.id })
-                : null;
-            for await (const remainingProduct of orderRequestRemainingProducts) {
-                const previousProduct =
-                    orderSalePreviousProducts &&
-                    orderSalePreviousProducts.find((orderSaleProduct) => {
-                        return (
-                            orderSaleProduct.product_id ===
-                            remainingProduct.product_id
+            // Has order request
+            if (input.order_request_id) {
+                // Products Availability
+                {
+                    const inputOrderSaleProducts = input.order_sale_products;
+                    const orderRequestRemainingProducts =
+                        await this.orderRequestRemainingProductsService.getOrderRequestRemainingProducts(
+                            {
+                                order_request_id: input.order_request_id,
+                            },
                         );
-                    });
-                const inputProduct = inputOrderSaleProducts.find(
-                    (inputOrderSaleProduct) => {
-                        return (
-                            inputOrderSaleProduct.product_id ===
-                            remainingProduct.product_id
+                    const orderSalePreviousProducts = !!input.id
+                        ? await this.getOrderSaleProducts({
+                              order_sale_id: input.id,
+                          })
+                        : null;
+                    for await (const remainingProduct of orderRequestRemainingProducts) {
+                        const previousProduct =
+                            orderSalePreviousProducts &&
+                            orderSalePreviousProducts.find(
+                                (orderSaleProduct) => {
+                                    return (
+                                        orderSaleProduct.product_id ===
+                                        remainingProduct.product_id
+                                    );
+                                },
+                            );
+                        const inputProduct = inputOrderSaleProducts.find(
+                            (inputOrderSaleProduct) => {
+                                return (
+                                    inputOrderSaleProduct.product_id ===
+                                    remainingProduct.product_id
+                                );
+                            },
                         );
-                    },
-                );
 
-                const remainingKilos =
-                    remainingProduct.kilos +
-                    (previousProduct ? previousProduct.kilos : 0) -
-                    (inputProduct ? inputProduct.kilos : 0);
+                        const remainingKilos =
+                            remainingProduct.kilos +
+                            (previousProduct ? previousProduct.kilos : 0) -
+                            (inputProduct ? inputProduct.kilos : 0);
 
-                if (remainingKilos < 0) {
-                    errors.push(
-                        `product desired kilos not available (remaining kilos: ${remainingKilos})`,
-                    );
+                        if (remainingKilos < 0) {
+                            errors.push(
+                                `product desired kilos not available (remaining kilos: ${remainingKilos})`,
+                            );
+                        }
+
+                        const remainingGroups =
+                            remainingProduct.groups +
+                            (previousProduct ? previousProduct.groups : 0) -
+                            (inputProduct ? inputProduct.groups : 0);
+
+                        if (remainingGroups < 0) {
+                            errors.push(
+                                `product desired groups not available (remaining groups: ${remainingGroups})`,
+                            );
+                        }
+                    }
                 }
 
-                const remainingGroups =
-                    remainingProduct.groups +
-                    (previousProduct ? previousProduct.groups : 0) -
-                    (inputProduct ? inputProduct.groups : 0);
-
-                if (remainingGroups < 0) {
-                    errors.push(
-                        `product desired groups not available (remaining groups: ${remainingGroups})`,
-                    );
-                }
-            }
-        }
-
-        // AreOrderSaleProductsInRequest
-        {
-            const inputOrderSaleProducts = input.order_sale_products;
-            const orderRequestRemainingProducts =
-                await this.orderRequestRemainingProductsService.getOrderRequestRemainingProducts(
-                    {
-                        order_request_id: input.order_request_id,
-                    },
-                );
-
-            for (const inputOrderSaleProduct of inputOrderSaleProducts) {
-                const foundProduct = orderRequestRemainingProducts.find(
-                    (orderRequestRemainingProduct) => {
-                        return (
-                            orderRequestRemainingProduct.product_id ===
-                            inputOrderSaleProduct.product_id
+                // AreOrderSaleProductsInRequest
+                {
+                    const inputOrderSaleProducts = input.order_sale_products;
+                    const orderRequestRemainingProducts =
+                        await this.orderRequestRemainingProductsService.getOrderRequestRemainingProducts(
+                            {
+                                order_request_id: input.order_request_id,
+                            },
                         );
-                    },
-                );
-                if (!foundProduct) {
-                    errors.push(
-                        `product is not in order request (product_id: ${inputOrderSaleProduct.product_id}) )`,
-                    );
+
+                    for (const inputOrderSaleProduct of inputOrderSaleProducts) {
+                        const foundProduct = orderRequestRemainingProducts.find(
+                            (orderRequestRemainingProduct) => {
+                                return (
+                                    orderRequestRemainingProduct.product_id ===
+                                    inputOrderSaleProduct.product_id
+                                );
+                            },
+                        );
+                        if (!foundProduct) {
+                            errors.push(
+                                `product is not in order request (product_id: ${inputOrderSaleProduct.product_id}) )`,
+                            );
+                        }
+                    }
+                }
+
+                // ProductsKiloPrice && ProductGroupWeight
+                {
+                    const orderRequestProducts =
+                        await this.prisma.order_request_products.findMany({
+                            where: {
+                                order_requests: {
+                                    AND: [
+                                        {
+                                            id: input.order_request_id,
+                                        },
+                                        {
+                                            active: 1,
+                                        },
+                                    ],
+                                },
+                            },
+                        });
+                    for (const orderSaleProduct of input.order_sale_products) {
+                        const foundOrderRequestProduct =
+                            orderRequestProducts.find((orderRequestProduct) => {
+                                return (
+                                    orderRequestProduct.product_id ===
+                                    orderSaleProduct.product_id
+                                );
+                            });
+                        if (
+                            foundOrderRequestProduct &&
+                            foundOrderRequestProduct.kilo_price !==
+                                orderSaleProduct.kilo_price
+                        ) {
+                            errors.push(
+                                `order sale product kilo price doesnt match with order request product kilo price (sale: ${orderSaleProduct.kilo_price}, request: ${foundOrderRequestProduct.kilo_price})`,
+                            );
+                        }
+
+                        if (
+                            foundOrderRequestProduct &&
+                            foundOrderRequestProduct.group_weight !==
+                                orderSaleProduct.group_weight
+                        ) {
+                            errors.push(
+                                `order sale product group weight doesnt match with order request product group weight (sale: ${orderSaleProduct.group_weight}, request: ${foundOrderRequestProduct.group_weight})`,
+                            );
+                        }
+
+                        if (
+                            foundOrderRequestProduct &&
+                            foundOrderRequestProduct.group_price !==
+                                orderSaleProduct.group_price
+                        ) {
+                            errors.push(
+                                `order sale product group price doesnt match with order request product group price (sale: ${orderSaleProduct.group_price}, request: ${foundOrderRequestProduct.group_price})`,
+                            );
+                        }
+                    }
+                }
+
+                // IsOrderRequestTheSame
+                {
+                    if (input.id) {
+                        const orderSale = await this.getOrderSale({
+                            orderSaleId: input.id,
+                        });
+                        if (
+                            !!orderSale &&
+                            orderSale.order_request_id !==
+                                input.order_request_id
+                        ) {
+                            errors.push(`Order request cant be changed`);
+                        }
+                    }
                 }
             }
         }
@@ -973,79 +1012,6 @@ export class OrderSaleService {
                 errors.push(
                     `order code is already occupied (${input.order_code})`,
                 );
-            }
-        }
-
-        // ProductsKiloPrice && ProductGroupWeight
-        {
-            const orderRequestProducts =
-                await this.prisma.order_request_products.findMany({
-                    where: {
-                        order_requests: {
-                            AND: [
-                                {
-                                    id: input.order_request_id,
-                                },
-                                {
-                                    active: 1,
-                                },
-                            ],
-                        },
-                    },
-                });
-            for (const orderSaleProduct of input.order_sale_products) {
-                const foundOrderRequestProduct = orderRequestProducts.find(
-                    (orderRequestProduct) => {
-                        return (
-                            orderRequestProduct.product_id ===
-                            orderSaleProduct.product_id
-                        );
-                    },
-                );
-                if (
-                    foundOrderRequestProduct &&
-                    foundOrderRequestProduct.kilo_price !==
-                        orderSaleProduct.kilo_price
-                ) {
-                    errors.push(
-                        `order sale product kilo price doesnt match with order request product kilo price (sale: ${orderSaleProduct.kilo_price}, request: ${foundOrderRequestProduct.kilo_price})`,
-                    );
-                }
-
-                if (
-                    foundOrderRequestProduct &&
-                    foundOrderRequestProduct.group_weight !==
-                        orderSaleProduct.group_weight
-                ) {
-                    errors.push(
-                        `order sale product group weight doesnt match with order request product group weight (sale: ${orderSaleProduct.group_weight}, request: ${foundOrderRequestProduct.group_weight})`,
-                    );
-                }
-
-                if (
-                    foundOrderRequestProduct &&
-                    foundOrderRequestProduct.group_price !==
-                        orderSaleProduct.group_price
-                ) {
-                    errors.push(
-                        `order sale product group price doesnt match with order request product group price (sale: ${orderSaleProduct.group_price}, request: ${foundOrderRequestProduct.group_price})`,
-                    );
-                }
-            }
-        }
-
-        // IsOrderRequestTheSame
-        {
-            if (input.id) {
-                const orderSale = await this.getOrderSale({
-                    orderSaleId: input.id,
-                });
-                if (
-                    !!orderSale &&
-                    orderSale.order_request_id !== input.order_request_id
-                ) {
-                    errors.push(`Order request cant be changed`);
-                }
             }
         }
 
@@ -1089,19 +1055,23 @@ export class OrderSaleService {
         if (!isDeletable) {
             const errors: string[] = [];
 
-            const { is_order_sale_delivered, is_order_request_in_production } =
-                await this.softValidate({
-                    order_sale_id,
-                    current_user_id,
-                    order_request_id: orderSale.order_request_id!,
-                });
+            const {
+                isOrderRequestInProduction,
+                wasOrderSaleDelivered,
+                is_sales_user_authorized,
+            } = await this.salesLevelValidation({
+                order_sale_id,
+                current_user_id,
+                order_request_id: orderSale.order_request_id!,
+            });
+            if (!is_sales_user_authorized) {
+                if (wasOrderSaleDelivered) {
+                    errors.push(`sale is already delivered`);
+                }
 
-            if (is_order_sale_delivered) {
-                errors.push(`sale is already delivered`);
-            }
-
-            if (is_order_request_in_production) {
-                errors.push(`order request is production`);
+                if (isOrderRequestInProduction) {
+                    errors.push(`order request is production`);
+                }
             }
 
             const { transfer_receipts_count } = await this.getDependenciesCount(
@@ -1157,20 +1127,27 @@ export class OrderSaleService {
         order_request_id: number;
         current_user_id: number;
     }): Promise<boolean> {
-        const { is_order_request_in_production, is_order_sale_delivered } =
-            await this.softValidate({
-                order_sale_id: order_sale_id,
-                current_user_id: current_user_id,
-                order_request_id: order_request_id,
-            });
         const { transfer_receipts_count } = await this.getDependenciesCount({
             order_sale_id,
         });
 
+        const orderSale = await this.getOrderSale({
+            orderSaleId: order_sale_id,
+        });
+
+        const userRequiresMoreValidation =
+            await this.doesUserRequiresMoreValidation({ current_user_id });
+
+        const { is_sales_user_authorized } = await this.salesLevelValidation({
+            order_sale_id: order_sale_id,
+            current_user_id: current_user_id,
+            order_request_id: order_request_id,
+        });
+
         return (
-            !is_order_sale_delivered &&
-            !is_order_request_in_production &&
-            transfer_receipts_count === 0
+            (userRequiresMoreValidation ? is_sales_user_authorized : true) &&
+            transfer_receipts_count === 0 &&
+            orderSale?.canceled === false
         );
     }
 
@@ -1180,57 +1157,60 @@ export class OrderSaleService {
         order_request_id,
     }: {
         order_sale_id?: number | null;
-        order_request_id: number;
+        order_request_id?: number | null;
         current_user_id: number;
     }): Promise<boolean> {
-        const { is_order_request_in_production, is_order_sale_delivered } =
-            await this.softValidate({
-                current_user_id,
-                order_sale_id,
-                order_request_id,
-            });
-        return !is_order_sale_delivered && !is_order_request_in_production;
+        const userRequiresMoreValidation =
+            await this.doesUserRequiresMoreValidation({ current_user_id });
+
+        if (!userRequiresMoreValidation) {
+            return true;
+        }
+
+        const { is_sales_user_authorized } = await this.salesLevelValidation({
+            current_user_id,
+            order_sale_id,
+            order_request_id,
+        });
+        return !is_sales_user_authorized;
     }
 
-    async softValidate({
+    async salesLevelValidation({
         current_user_id,
         order_sale_id,
         order_request_id,
     }: {
         order_sale_id?: number | null;
-        order_request_id: number;
+        order_request_id?: number | null;
         current_user_id: number;
-    }): Promise<SoftValidation> {
-        const res = {
-            is_order_request_in_production: false,
-            is_order_sale_delivered: false,
-        };
-
-        let wasOrderSaleDelivered = false;
-
-        if (!!order_sale_id) {
-            wasOrderSaleDelivered = await this.wasOrderSaleDelivered({
-                order_sale_id,
-            });
+    }): Promise<{
+        wasOrderSaleDelivered: boolean;
+        isOrderRequestInProduction: boolean;
+        is_sales_user_authorized;
+    }> {
+        if (!order_sale_id) {
+            return {
+                isOrderRequestInProduction: false,
+                is_sales_user_authorized: false,
+                wasOrderSaleDelivered: false,
+            };
         }
+
+        const wasOrderSaleDelivered = await this.wasOrderSaleDelivered({
+            order_sale_id,
+        });
 
         const isOrderRequestInProduction =
             await this.isOrderRequestInProduction({
                 order_request_id: order_request_id,
             });
 
-        const userRequiresMoreValidation =
-            await this.doesUserRequiresMoreValidation({ current_user_id });
-
-        if (userRequiresMoreValidation) {
-            if (wasOrderSaleDelivered) {
-                res.is_order_sale_delivered = true;
-            } else if (!isOrderRequestInProduction) {
-                res.is_order_request_in_production = true;
-            }
-        }
-
-        return res;
+        return {
+            is_sales_user_authorized:
+                !wasOrderSaleDelivered && !isOrderRequestInProduction,
+            wasOrderSaleDelivered,
+            isOrderRequestInProduction,
+        };
     }
 
     async wasOrderSaleDelivered({
@@ -1277,8 +1257,12 @@ export class OrderSaleService {
     async isOrderRequestInProduction({
         order_request_id,
     }: {
-        order_request_id: number;
+        order_request_id?: number | null;
     }): Promise<boolean> {
+        if (!order_request_id) {
+            return false;
+        }
+
         const orderRequest = await this.prisma.order_requests.findUnique({
             where: {
                 id: order_request_id,
@@ -1286,7 +1270,7 @@ export class OrderSaleService {
         });
 
         if (!orderRequest) {
-            return true;
+            return false;
         }
 
         return orderRequest.order_request_status_id === 2;
