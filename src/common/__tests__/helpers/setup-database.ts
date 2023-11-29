@@ -11,7 +11,6 @@ import { orderSaleStatuses } from '../objects/sales/order-sale-statuses';
 import { receiptTypes } from '../objects/sales/receipt-types';
 import { roles } from '../objects/auth/roles';
 import { productCategories } from '../objects/production/product-categories';
-import { accounts } from '../objects/management/accounts';
 
 export default async function setupDatabase() {
     const app = await setupApp();
@@ -89,9 +88,6 @@ export default async function setupDatabase() {
     });
     await prismaService.receipt_types.createMany({
         data: receiptTypes,
-    });
-    await prismaService.accounts.createMany({
-        data: accounts,
     });
 
     await app.close();

@@ -596,6 +596,7 @@ model accounts {
   is_supplier                                   Boolean                  @default(false)
   is_client                                     Boolean                  @default(false)
   is_own                                        Boolean                  @default(false)
+  requires_order_request                        Boolean                  @default(true)
   account_contacts                              account_contacts[]
   expenses                                      expenses[]
   order_requests                                order_requests[]

@@ -24,6 +24,9 @@ export class AccountBase {
     is_supplier: boolean;
 
     @Field(() => Boolean, { nullable: false })
+    requires_order_request: boolean;
+
+    @Field(() => Boolean, { nullable: false })
     is_client: boolean;
 
     @Field(() => Boolean, { nullable: false })
