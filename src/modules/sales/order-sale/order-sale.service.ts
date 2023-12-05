@@ -839,8 +839,34 @@ export class OrderSaleService {
 
         // Order Request
         {
+            const account = await this.prisma.accounts.findFirst({
+                where: {
+                    id: input.account_id || 0,
+                },
+            });
+
+            if (account?.requires_order_request && !input.order_request_id) {
+                errors.push('Este cliente require un pedido');
+            }
+
             // Has order request
             if (input.order_request_id) {
+                // Order request account same as order sale account
+                {
+                    const orderRequest =
+                        await this.prisma.order_requests.findFirst({
+                            where: {
+                                id: input.order_request_id,
+                            },
+                        });
+
+                    if (orderRequest?.account_id !== input.account_id) {
+                        errors.push(
+                            'La cuenta debe der ser la misma que la del pedido',
+                        );
+                    }
+                }
+
                 // Products Availability
                 {
                     const inputOrderSaleProducts = input.order_sale_products;
