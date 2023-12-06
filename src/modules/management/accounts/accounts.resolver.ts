@@ -7,24 +7,25 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { AccountsService } from './accounts.service';
 import {
     Account,
     AccountContact,
     AccountsQueryArgs,
-    AccountType,
     AccountUpsertInput,
     ActivityTypeName,
     PaginatedAccounts,
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
-    Product,
     User,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => Account)
 @Injectable()
@@ -69,6 +70,8 @@ export class AccountsResolver {
     }
 
     @Mutation(() => Account)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async upsertAccount(
         @Args('AccountUpsertInput') input: AccountUpsertInput,
         @CurrentUser() currentUser: User,
@@ -83,6 +86,8 @@ export class AccountsResolver {
     }
 
     @Mutation(() => Boolean)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
     async deleteAccount(
         @Args('AccountId') accountId: number,
         @CurrentUser() currentUser: User,
