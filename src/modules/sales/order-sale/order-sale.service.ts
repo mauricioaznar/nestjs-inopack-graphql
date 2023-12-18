@@ -216,9 +216,7 @@ export class OrderSaleService {
 
         const andTransfersWhere: Prisma.order_salesWhereInput[] = [
             {
-                order_requests: {
-                    account_id: account_id || undefined,
-                },
+                account_id: account_id || undefined,
             },
             {
                 receipt_type_id: receipt_type_id || undefined,
