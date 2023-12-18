@@ -595,19 +595,11 @@ export class TransfersService {
                                     where: {
                                         id: receipt.order_sale_id,
                                     },
-                                    include: {
-                                        order_requests: {
-                                            include: {
-                                                accounts: true,
-                                            },
-                                        },
-                                    },
                                 });
 
                             if (orderSale) {
                                 const orderSaleAccount =
-                                    orderSale?.order_requests?.accounts?.id ||
-                                    null;
+                                    orderSale?.account_id || null;
 
                                 if (
                                     orderSaleAccount !== input.from_account_id
