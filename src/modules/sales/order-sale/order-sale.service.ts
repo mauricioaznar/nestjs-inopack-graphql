@@ -112,9 +112,7 @@ export class OrderSaleService {
                         orderSalesQueryArgs.order_sale_status_id || undefined,
                 },
                 {
-                    order_requests: {
-                        account_id: orderSalesQueryArgs.account_id || undefined,
-                    },
+                    account_id: orderSalesQueryArgs.account_id || undefined,
                 },
                 {
                     date: {
