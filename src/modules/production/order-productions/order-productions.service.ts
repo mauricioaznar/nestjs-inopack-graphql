@@ -60,13 +60,6 @@ export class OrderProductionsService {
                     {
                         active: 1,
                     },
-                    {
-                        order_productions: {
-                            start_date: {
-                                gte: '2023-12-01',
-                            },
-                        },
-                    },
                 ],
             },
         });
