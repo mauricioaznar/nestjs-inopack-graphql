@@ -343,10 +343,10 @@ model order_sales {
   order_sale_products   order_sale_products[]
   transfer_receipts     transfer_receipts[]
 
+  @@index([account_id], map: "order_sales_account_id_foreign")
   @@index([order_request_id], map: "order_sales_order_request_id_foreign")
   @@index([receipt_type_id], map: "order_sales_order_sale_receipt_type_id_foreign")
   @@index([order_sale_status_id], map: "order_sales_order_sale_status_id_foreign")
-  @@index([account_id], map: "order_sales_account_id_foreign")
 }
 
 model products {

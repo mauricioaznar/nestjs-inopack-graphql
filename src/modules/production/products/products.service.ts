@@ -12,12 +12,15 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { ProductCategory } from '../../../common/dto/entities/production/product-category.dto';
 import { ProductMaterial } from '../../../common/dto/entities/production/product-material.dto';
 import {
+    formatDate,
     getCreatedAtProperty,
+    getStringFromDate,
     getUpdatedAtProperty,
 } from '../../../common/helpers';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class ProductsService {
@@ -51,6 +54,8 @@ export class ProductsService {
     }): Promise<OrderProductionProduct[]> {
         if (!product_id) return [];
 
+        const firstOfDecember = getStringFromDate('2023-12-01');
+
         return this.prisma.order_production_products.findMany({
             where: {
                 AND: [
@@ -63,6 +68,13 @@ export class ProductsService {
                     {
                         order_productions: {
                             active: 1,
+                        },
+                    },
+                    {
+                        order_productions: {
+                            start_date: {
+                                gte: firstOfDecember,
+                            },
                         },
                     },
                 ],
