@@ -24,6 +24,7 @@ import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { Branch, OrderProductionType } from '../../../common/dto/entities';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class OrderProductionsService {
@@ -58,6 +59,13 @@ export class OrderProductionsService {
                     },
                     {
                         active: 1,
+                    },
+                    {
+                        order_productions: {
+                            start_date: {
+                                gte: '2023-12-01',
+                            },
+                        },
                     },
                 ],
             },
