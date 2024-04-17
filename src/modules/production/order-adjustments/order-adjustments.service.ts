@@ -151,11 +151,13 @@ export class OrderAdjustmentsService {
                 ...getUpdatedAtProperty(),
                 date: input.date,
                 order_adjustment_type_id: input.order_adjustment_type_id,
+                order_sale_id: input.order_sale_id,
             },
             update: {
                 ...getUpdatedAtProperty(),
                 date: input.date,
                 order_adjustment_type_id: input.order_adjustment_type_id,
+                order_sale_id: input.order_sale_id,
             },
             where: {
                 id: input.id || 0,
@@ -252,6 +254,18 @@ export class OrderAdjustmentsService {
                     errors.push(`product_id (${product_id_1}) are not unique`);
                 }
             });
+        }
+
+        // IsOrderSaleIdRequired
+        {
+            if (
+                input.order_adjustment_type_id === 6 &&
+                input.order_sale_id === null
+            ) {
+                errors.push(
+                    `order sale id is required when using return type on order adjustments`,
+                );
+            }
         }
 
         if (errors.length > 0) {

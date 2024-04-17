@@ -163,10 +163,13 @@ model order_adjustments {
   created_at                DateTime?                   @db.DateTime(0)
   updated_at                DateTime?                   @db.DateTime(0)
   order_adjustment_type_id  Int?                        @db.UnsignedInt
+  order_sale_id             Int?                        @db.UnsignedInt
   order_adjustment_type     order_adjustment_type?      @relation(fields: [order_adjustment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_adjustments_order_adjustment_type_id_foreign")
+  order_sales               order_sales?                @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_adjustments_order_sale_id_foreign")
   order_adjustment_products order_adjustment_products[]
 
   @@index([order_adjustment_type_id], map: "order_adjustments_order_adjustment_type_id_foreign")
+  @@index([order_sale_id], map: "order_adjustments_order_sale_id_foreign")
 }
 
 model order_production_employees {
@@ -340,6 +343,7 @@ model order_sales {
   order_requests        order_requests?       @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_request_id_foreign")
   order_sale_statuses   order_sale_statuses?  @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
   receipt_types         receipt_types?        @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_receipt_type_foreign")
+  order_adjustments     order_adjustments[]
   order_sale_products   order_sale_products[]
   transfer_receipts     transfer_receipts[]
 

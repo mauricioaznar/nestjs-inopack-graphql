@@ -11,6 +11,9 @@ export class OrderAdjustmentBase {
 
     @Field(() => Int, { nullable: true })
     order_adjustment_type_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    order_sale_id: number | null;
 }
 
 @InputType('OrderAdjustmentInput')
