@@ -1071,6 +1071,76 @@ export class OrderSaleService {
             });
         }
 
+        // Cant remove order sale product if in order adjustment product
+        // Cant reduce kilos/groups less than the sum of adjustment kilos/groups
+        {
+            if (!!input.id) {
+                const orderAdjustmentProducts =
+                    await this.getOrderAdjustmentProducts({
+                        order_sale_id: input.id,
+                    });
+
+                input.order_sale_products.forEach((osp) => {
+                    const foundOrderAdjustmentProducts =
+                        orderAdjustmentProducts.filter((oap) => {
+                            return oap.product_id === osp.product_id;
+                        });
+
+                    const { kilos: adjustmentKilos, groups: adjustmentGroups } =
+                        foundOrderAdjustmentProducts.reduce(
+                            (acc, curr) => {
+                                return {
+                                    kilos: acc.kilos + curr.kilos,
+                                    groups: acc.groups + curr.groups,
+                                };
+                            },
+                            {
+                                kilos: 0,
+                                groups: 0,
+                            },
+                        );
+
+                    if (osp.kilos < adjustmentKilos) {
+                        errors.push(
+                            `Sale kilos (${osp.kilos}) is less than adjustments kilos (${adjustmentKilos})`,
+                        );
+                    }
+
+                    if (osp.groups < adjustmentGroups) {
+                        errors.push(
+                            `Sale groups (${osp.groups}) is less than adjustments groups (${adjustmentGroups})`,
+                        );
+                    }
+                });
+
+                const oldProductItems = await this.getOrderSaleProducts({
+                    order_sale_id: input.id,
+                });
+
+                const newProductItems = input.order_sale_products;
+
+                const { aMinusB: deleteProductItems } = vennDiagram({
+                    a: oldProductItems,
+                    b: newProductItems,
+                    indexProperties: ['id'],
+                });
+
+                for await (const delItem of deleteProductItems) {
+                    const foundAdjustmentProduct = orderAdjustmentProducts.find(
+                        (oap) => {
+                            return oap.product_id === delItem.product_id;
+                        },
+                    );
+
+                    if (foundAdjustmentProduct) {
+                        errors.push(
+                            'Cant remove sale product (remove order adjustment product first)',
+                        );
+                    }
+                }
+            }
+        }
+
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
@@ -1101,8 +1171,8 @@ export class OrderSaleService {
             const errors: string[] = [];
 
             const {
-                isOrderRequestInProduction,
-                wasOrderSaleDelivered,
+                is_order_request_in_production,
+                was_order_sale_delivered,
                 is_sales_user_authorized,
             } = await this.salesLevelValidation({
                 order_sale_id,
@@ -1110,11 +1180,11 @@ export class OrderSaleService {
                 order_request_id: orderSale.order_request_id!,
             });
             if (!is_sales_user_authorized) {
-                if (wasOrderSaleDelivered) {
+                if (was_order_sale_delivered) {
                     errors.push(`sale is already delivered`);
                 }
 
-                if (isOrderRequestInProduction) {
+                if (is_order_request_in_production) {
                     errors.push(`order request is production`);
                 }
             }
@@ -1172,9 +1242,12 @@ export class OrderSaleService {
         order_request_id: number;
         current_user_id: number;
     }): Promise<boolean> {
-        const { transfer_receipts_count } = await this.getDependenciesCount({
-            order_sale_id,
-        });
+        const { transfer_receipts_count, order_adjustments_count } =
+            await this.getDependenciesCount({
+                order_sale_id,
+            });
+        const is_dependencies_count_ok =
+            transfer_receipts_count === 0 && order_adjustments_count === 0;
 
         const orderSale = await this.getOrderSale({
             orderSaleId: order_sale_id,
@@ -1191,7 +1264,7 @@ export class OrderSaleService {
 
         return (
             (userRequiresMoreValidation ? is_sales_user_authorized : true) &&
-            transfer_receipts_count === 0 &&
+            is_dependencies_count_ok &&
             orderSale?.canceled === false
         );
     }
@@ -1229,15 +1302,15 @@ export class OrderSaleService {
         order_request_id?: number | null;
         current_user_id: number;
     }): Promise<{
-        wasOrderSaleDelivered: boolean;
-        isOrderRequestInProduction: boolean;
+        was_order_sale_delivered: boolean;
+        is_order_request_in_production: boolean;
         is_sales_user_authorized;
     }> {
         if (!order_sale_id) {
             return {
-                isOrderRequestInProduction: false,
+                is_order_request_in_production: false,
                 is_sales_user_authorized: false,
-                wasOrderSaleDelivered: false,
+                was_order_sale_delivered: false,
             };
         }
 
@@ -1253,8 +1326,8 @@ export class OrderSaleService {
         return {
             is_sales_user_authorized:
                 !wasOrderSaleDelivered && !isOrderRequestInProduction,
-            wasOrderSaleDelivered,
-            isOrderRequestInProduction,
+            was_order_sale_delivered: wasOrderSaleDelivered,
+            is_order_request_in_production: isOrderRequestInProduction,
         };
     }
 
@@ -1327,6 +1400,7 @@ export class OrderSaleService {
         order_sale_id: number;
     }): Promise<{
         transfer_receipts_count: number;
+        order_adjustments_count: number;
     }> {
         const {
             _count: { id: transferReceiptsCount },
@@ -1346,8 +1420,30 @@ export class OrderSaleService {
             },
         });
 
+        const {
+            _count: { id: orderAdjustmentsCount },
+        } = await this.prisma.order_adjustments.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        order_sales: {
+                            id: order_sale_id,
+                            active: 1,
+                        },
+                    },
+                ],
+            },
+        });
+
         return {
             transfer_receipts_count: transferReceiptsCount,
+            order_adjustments_count: orderAdjustmentsCount,
         };
     }
 }
