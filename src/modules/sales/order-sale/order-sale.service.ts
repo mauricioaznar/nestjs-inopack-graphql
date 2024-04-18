@@ -31,6 +31,7 @@ import { Cache } from 'cache-manager';
 import { OrderRequestRemainingProductsService } from '../../../common/services/entities/order-request-remaining-products-service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
+import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 
 @Injectable()
 export class OrderSaleService {
@@ -377,6 +378,28 @@ export class OrderSaleService {
                         active: 1,
                     },
                 ],
+            },
+        });
+    }
+
+    async getOrderAdjustmentProducts({
+        order_sale_id,
+    }: {
+        order_sale_id: number | null;
+    }): Promise<OrderAdjustmentProduct[]> {
+        if (!order_sale_id) {
+            return [];
+        }
+        return this.prisma.order_adjustment_products.findMany({
+            where: {
+                active: 1,
+                order_adjustments: {
+                    active: 1,
+                    order_sales: {
+                        id: order_sale_id,
+                        active: 1,
+                    },
+                },
             },
         });
     }

@@ -31,6 +31,7 @@ import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 
 @Resolver(() => OrderSale)
 @UseGuards(GqlAuthGuard)
@@ -144,6 +145,15 @@ export class OrderSaleResolver {
         orderSale: OrderSale,
     ): Promise<OrderSaleProduct[]> {
         return this.service.getOrderSaleProducts({
+            order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => [OrderAdjustmentProduct])
+    async order_adjustment_products(
+        orderSale: OrderSale,
+    ): Promise<OrderAdjustmentProduct[]> {
+        return this.service.getOrderAdjustmentProducts({
             order_sale_id: orderSale.id,
         });
     }
