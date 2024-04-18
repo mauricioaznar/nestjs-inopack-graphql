@@ -128,15 +128,14 @@ export class SalesSummaryService {
                         order_adjustment_products.product_id as product_id,
                         order_adjustments.order_sale_id as order_sale_id,
                         sum(order_adjustment_products.kilos) as kilos,
-                        sum(order_adjustment_products.groups) as groups
+                        sum(order_adjustment_products.groups) as 'groups'
                     from order_adjustments
                         join order_adjustment_products
                         on order_adjustment_products.order_adjustment_id = order_adjustments.id
                         and order_adjustment_products.active = 1
+                     where order_adjustments.active = 1
+                     and order_adjustment_type_id = 6 
                      group by order_adjustments.order_sale_id, order_adjustment_products.product_id
-                     where order_adjustments.active = 1 
-      
-                
                 ) as asp 
                     on asp.order_sale_id = order_sales.id
                     and asp.product_id = osp.product_id
