@@ -134,6 +134,7 @@ export class SalesSummaryService {
                         on order_adjustment_products.order_adjustment_id = order_adjustments.id
                         and order_adjustment_products.active = 1
                      where order_adjustments.active = 1
+                     and order_adjustments.order_sale_id is not null
                      and order_adjustment_type_id = 6 
                      group by order_adjustments.order_sale_id, order_adjustment_products.product_id
                 ) as asp 
