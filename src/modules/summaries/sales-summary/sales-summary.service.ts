@@ -59,8 +59,10 @@ export class SalesSummaryService {
                         'product_category_id, product_category_name, order_production_type_id, order_production_type_name';
                     break;
                 case 'product':
-                    selectEntityGroup += 'product_id, product_name';
-                    groupByEntityGroup += 'product_id, product_name';
+                    selectEntityGroup +=
+                        'product_id, product_name, width, calibre, length';
+                    groupByEntityGroup +=
+                        'product_id, product_name, width, calibre, length';
                     break;
                 default:
                     break;
@@ -91,6 +93,9 @@ export class SalesSummaryService {
                  order_sales.date start_date,
                  products.id product_id,
                  products.description product_name,
+                 products.width width, 
+                 products.length length,
+                 products.calibre calibre,
                  products.order_production_type_id order_production_type_id,
                  order_production_type.name order_production_type_name,
                  product_categories.id product_category_id,
