@@ -22,6 +22,7 @@ import {
     PaginatedExpenses,
     User,
     TransferReceipt,
+    OrderSale,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -31,6 +32,7 @@ import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 import { ExpenseRawMaterialAddition } from '../../../common/dto/entities/management/expense-raw-material-addition.dto';
+import { formatFloat } from '../../../common/helpers';
 
 @Resolver(() => Expense)
 @Injectable()
@@ -207,6 +209,17 @@ export class ExpensesResolver {
         return this.service.getExpenseTransferReceiptsTotal({
             expense_id: expense.id,
         });
+    }
+
+    @ResolveField(() => String)
+    async compound_order_code(@Parent() expense: Expense): Promise<string> {
+        return expense && expense.order_code
+            ? expense.order_code
+            : `${expense.id} $(${formatFloat(
+                  await this.service.getExpenseResourcesTotalWithTax({
+                      expense_id: expense.id,
+                  }),
+              )})`;
     }
 
     @ResolveField(() => Boolean)
