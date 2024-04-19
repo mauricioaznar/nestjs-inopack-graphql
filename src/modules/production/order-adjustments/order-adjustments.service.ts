@@ -22,7 +22,7 @@ import { OrderAdjustmentType } from '../../../common/dto/entities/production/ord
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
-import { OrderSaleProduct } from '../../../common/dto/entities';
+import { OrderSale, OrderSaleProduct } from '../../../common/dto/entities';
 
 @Injectable()
 export class OrderAdjustmentsService {
@@ -144,6 +144,29 @@ export class OrderAdjustmentsService {
                                 id: order_sale_id,
                             },
                         },
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
+    async getOrderSale({
+        order_sale_id,
+    }: {
+        order_sale_id?: number | null;
+    }): Promise<OrderSale | null> {
+        if (!order_sale_id) {
+            return null;
+        }
+
+        return this.prisma.order_sales.findFirst({
+            where: {
+                AND: [
+                    {
+                        id: order_sale_id,
                     },
                     {
                         active: 1,
@@ -320,8 +343,9 @@ export class OrderAdjustmentsService {
             }
         }
 
-        // AreOrderAdjustmentProductsInReturn
-        // AreOrderAdjustmentProductsLessThan
+        // AreOrderAdjustmentProductsInOrderSale
+        // AreOrderAdjustmentProductsLessThanOrderSales
+        // AreKilosAndGroupsMoreOrEqualThan0
         {
             if (input.order_adjustment_type_id === 6) {
                 const orderSaleProducts = await this.getOrderSaleProducts({
@@ -335,6 +359,17 @@ export class OrderAdjustmentsService {
                         },
                     );
 
+                    if (oap.kilos < 0) {
+                        errors.push(
+                            `Kilos ${oap.kilos} shouldnt be less than 0`,
+                        );
+                    }
+
+                    if (oap.groups < 0) {
+                        errors.push(
+                            `Groups ${oap.groups} shouldnt be less than 0`,
+                        );
+                    }
                     if (!foundOrderSaleProduct) {
                         errors.push(
                             `Product (${oap.product_id}) is not in order sale`,

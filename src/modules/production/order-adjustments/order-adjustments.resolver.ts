@@ -23,6 +23,7 @@ import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import {
     ActivityTypeName,
+    OrderSale,
     OrderSaleProduct,
     User,
 } from '../../../common/dto/entities';
@@ -118,6 +119,15 @@ export class OrderAdjustmentsResolver {
         @Parent() orderAdjustment: OrderAdjustment,
     ): Promise<OrderSaleProduct[]> {
         return this.service.getOrderSaleProducts({
+            order_sale_id: orderAdjustment.order_sale_id,
+        });
+    }
+
+    @ResolveField(() => OrderSale, { nullable: true })
+    async order_sale(
+        @Parent() orderAdjustment: OrderAdjustment,
+    ): Promise<OrderSale | null> {
+        return this.service.getOrderSale({
             order_sale_id: orderAdjustment.order_sale_id,
         });
     }
