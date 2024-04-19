@@ -21,7 +21,11 @@ import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { ActivityTypeName, User } from '../../../common/dto/entities';
+import {
+    ActivityTypeName,
+    OrderSaleProduct,
+    User,
+} from '../../../common/dto/entities';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
@@ -106,6 +110,24 @@ export class OrderAdjustmentsResolver {
     ): Promise<OrderAdjustmentProduct[]> {
         return this.service.getOrderAdjustmentProducts({
             order_adjustment_id: orderAdjustment.id,
+        });
+    }
+
+    @ResolveField(() => [OrderSaleProduct])
+    async order_sale_products(
+        @Parent() orderAdjustment: OrderAdjustment,
+    ): Promise<OrderSaleProduct[]> {
+        return this.service.getOrderSaleProducts({
+            order_sale_id: orderAdjustment.order_sale_id,
+        });
+    }
+
+    @ResolveField(() => [OrderAdjustmentProduct])
+    async order_sale_adjustment_products(
+        @Parent() orderAdjustment: OrderAdjustment,
+    ): Promise<OrderAdjustmentProduct[]> {
+        return this.service.getOrderSaleAdjustmentProducts({
+            order_sale_id: orderAdjustment.order_sale_id,
         });
     }
 

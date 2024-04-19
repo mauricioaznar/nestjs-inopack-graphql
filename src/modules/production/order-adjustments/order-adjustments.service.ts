@@ -22,7 +22,7 @@ import { OrderAdjustmentType } from '../../../common/dto/entities/production/ord
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
-import dayjs from 'dayjs';
+import { OrderSaleProduct } from '../../../common/dto/entities';
 
 @Injectable()
 export class OrderAdjustmentsService {
@@ -117,6 +117,58 @@ export class OrderAdjustmentsService {
                 AND: [
                     {
                         order_adjustment_id: order_adjustment_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
+    async getOrderSaleAdjustmentProducts({
+        order_sale_id,
+    }: {
+        order_sale_id?: number | null;
+    }): Promise<OrderAdjustmentProduct[]> {
+        if (!order_sale_id) {
+            return [];
+        }
+
+        return this.prisma.order_adjustment_products.findMany({
+            where: {
+                AND: [
+                    {
+                        order_adjustments: {
+                            order_sales: {
+                                id: order_sale_id,
+                            },
+                        },
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
+    async getOrderSaleProducts({
+        order_sale_id,
+    }: {
+        order_sale_id?: number | null;
+    }): Promise<OrderSaleProduct[]> {
+        if (!order_sale_id) {
+            return [];
+        }
+
+        return this.prisma.order_sale_products.findMany({
+            where: {
+                AND: [
+                    {
+                        order_sales: {
+                            id: order_sale_id,
+                        },
                     },
                     {
                         active: 1,
@@ -265,6 +317,88 @@ export class OrderAdjustmentsService {
                 errors.push(
                     `order sale id is required when using return type on order adjustments`,
                 );
+            }
+        }
+
+        // AreOrderAdjustmentProductsInReturn
+        // AreOrderAdjustmentProductsLessThan
+        {
+            if (input.order_adjustment_type_id === 6) {
+                const orderSaleProducts = await this.getOrderSaleProducts({
+                    order_sale_id: input.order_sale_id,
+                });
+
+                input.order_adjustment_products.forEach((oap) => {
+                    const foundOrderSaleProduct = orderSaleProducts.find(
+                        (osp) => {
+                            return osp.product_id === oap.product_id;
+                        },
+                    );
+
+                    if (!foundOrderSaleProduct) {
+                        errors.push(
+                            `Product (${oap.product_id}) is not in order sale`,
+                        );
+                    }
+                });
+
+                const orderAdjustmentProductsIds: number[] = input.id
+                    ? (
+                          await this.getOrderAdjustmentProducts({
+                              order_adjustment_id: input.id,
+                          })
+                      ).map((oap) => {
+                          return oap.id;
+                      })
+                    : [];
+
+                const orderSaleAdjustmentProducts = (
+                    await this.getOrderSaleAdjustmentProducts({
+                        order_sale_id: input.order_sale_id,
+                    })
+                ).filter((osp) => !orderAdjustmentProductsIds.includes(osp.id));
+
+                orderSaleProducts.forEach((osp) => {
+                    const {
+                        groups: otherAdjustmentGroups,
+                        kilos: otherAdjustmentKilos,
+                    } = orderSaleAdjustmentProducts
+                        .filter((osap) => {
+                            return osap.product_id === osp.product_id;
+                        })
+                        .reduce(
+                            (acc, curr) => {
+                                return {
+                                    kilos: acc.kilos + curr.kilos,
+                                    groups: acc.groups + curr.groups,
+                                };
+                            },
+                            { kilos: 0, groups: 0 },
+                        );
+                    const inputOrderAdjustmentProduct =
+                        input.order_adjustment_products.find((oap) => {
+                            return osp.product_id === oap.product_id;
+                        });
+
+                    const totalAdjustmentKilos =
+                        otherAdjustmentKilos +
+                        (inputOrderAdjustmentProduct?.kilos || 0);
+                    const totalAdjustmentGroups =
+                        otherAdjustmentGroups +
+                        (inputOrderAdjustmentProduct?.groups || 0);
+
+                    if (osp.kilos < totalAdjustmentKilos) {
+                        errors.push(
+                            `Order sale kilos (${osp.kilos}) is less than (${totalAdjustmentKilos})`,
+                        );
+                    }
+
+                    if (osp.groups < totalAdjustmentGroups) {
+                        errors.push(
+                            `Order sale groups (${osp.groups}) is less than (${totalAdjustmentGroups})`,
+                        );
+                    }
+                });
             }
         }
 
