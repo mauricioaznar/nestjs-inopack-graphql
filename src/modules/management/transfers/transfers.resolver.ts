@@ -29,6 +29,7 @@ import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { TransferType } from '../../../common/dto/entities/management/transfer-type.dto';
 
 @Resolver(() => Transfer)
 @Injectable()
@@ -136,6 +137,15 @@ export class TransfersResolver {
     async to_account(@Parent() transfer: Transfer): Promise<Account | null> {
         return this.service.getAccount({
             account_id: transfer.to_account_id,
+        });
+    }
+
+    @ResolveField(() => TransferType, { nullable: true })
+    async transfer_type(
+        @Parent() transfer: Transfer,
+    ): Promise<TransferType | null> {
+        return this.service.getTransferType({
+            transfer_type_id: transfer.transfer_type_id,
         });
     }
 

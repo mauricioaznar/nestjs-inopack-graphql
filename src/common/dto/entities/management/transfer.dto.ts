@@ -31,6 +31,9 @@ export class TransferBase {
 
     @Field(() => Date, { nullable: false })
     transferred_date: Date;
+
+    @Field(() => Int, { nullable: true })
+    transfer_type_id: number | null;
 }
 
 @InputType('TransferUpsertInput')

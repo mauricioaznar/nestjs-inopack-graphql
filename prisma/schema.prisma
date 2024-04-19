@@ -347,10 +347,10 @@ model order_sales {
   order_sale_products   order_sale_products[]
   transfer_receipts     transfer_receipts[]
 
-  @@index([account_id], map: "order_sales_account_id_foreign")
   @@index([order_request_id], map: "order_sales_order_request_id_foreign")
   @@index([receipt_type_id], map: "order_sales_order_sale_receipt_type_id_foreign")
   @@index([order_sale_status_id], map: "order_sales_order_sale_status_id_foreign")
+  @@index([account_id], map: "order_sales_account_id_foreign")
 }
 
 model products {
@@ -691,12 +691,15 @@ model transfers {
   transferred                                  Boolean             @default(false)
   transferred_date                             DateTime            @db.DateTime(0)
   amount                                       Float
+  transfer_type_id                             Int?                @db.UnsignedInt
   accounts_accountsTotransfers_from_account_id accounts?           @relation("accountsTotransfers_from_account_id", fields: [from_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_from_account_id_foreign")
   accounts_accountsTotransfers_to_account_id   accounts?           @relation("accountsTotransfers_to_account_id", fields: [to_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_to_account_id_foreign")
+  transfer_type                                transfer_type?      @relation(fields: [transfer_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_transfer_type_id_foreign")
   transfer_receipts                            transfer_receipts[]
 
   @@index([from_account_id], map: "transfers_from_account_id_foreign")
   @@index([to_account_id], map: "transfers_to_account_id_foreign")
+  @@index([transfer_type_id], map: "transfers_transfer_type_id_foreign")
 }
 
 model transfer_receipts {
@@ -725,6 +728,21 @@ model receipt_types {
   updated_at  DateTime?     @db.DateTime(0)
   expenses    expenses[]
   order_sales order_sales[]
+}
+
+model expense_raw_material_additions {
+  id                       Int                     @id @default(autoincrement()) @db.UnsignedInt
+  active                   Int                     @default(1)
+  created_at               DateTime?               @db.DateTime(0)
+  updated_at               DateTime?               @db.DateTime(0)
+  amount                   Float
+  expense_id               Int?                    @db.UnsignedInt
+  raw_material_addition_id Int?                    @db.UnsignedInt
+  expenses                 expenses?               @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "erma_expense_id_foreign")
+  raw_material_additions   raw_material_additions? @relation(fields: [raw_material_addition_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "erma_raw_material_addition_id_foreign")
+
+  @@index([expense_id], map: "erma_expense_id_foreign")
+  @@index([raw_material_addition_id], map: "erma_raw_material_addition_id_foreign")
 }
 
 model raw_material_addition_items {
@@ -757,17 +775,12 @@ model raw_material_additions {
   @@index([account_id], map: "raw_material_addition_account_id_foreign")
 }
 
-model expense_raw_material_additions {
-  id                       Int                     @id @default(autoincrement()) @db.UnsignedInt
-  active                   Int                     @default(1)
-  created_at               DateTime?               @db.DateTime(0)
-  updated_at               DateTime?               @db.DateTime(0)
-  amount                   Float
-  expense_id               Int?                    @db.UnsignedInt
-  raw_material_addition_id Int?                    @db.UnsignedInt
-  expenses                 expenses?               @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "erma_expense_id_foreign")
-  raw_material_additions   raw_material_additions? @relation(fields: [raw_material_addition_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "erma_raw_material_addition_id_foreign")
-
-  @@index([expense_id], map: "erma_expense_id_foreign")
-  @@index([raw_material_addition_id], map: "erma_raw_material_addition_id_foreign")
+model transfer_type {
+  id          Int         @id @default(autoincrement()) @db.UnsignedInt
+  active      Int         @default(1)
+  created_at  DateTime?   @db.DateTime(0)
+  updated_at  DateTime?   @db.DateTime(0)
+  name        String      @db.VarChar(255)
+  description String?     @db.VarChar(255)
+  transfers   transfers[]
 }
