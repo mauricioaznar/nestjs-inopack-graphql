@@ -18,16 +18,14 @@ import {
     ExpensesSortArgs,
     ExpenseUpsertInput,
     GetExpensesQueryArgs,
-    ReceiptType,
     PaginatedExpenses,
-    User,
+    ReceiptType,
     TransferReceipt,
-    OrderSale,
+    User,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
-import { ExpenseResource } from '../../../common/dto/entities';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
@@ -156,32 +154,11 @@ export class ExpensesResolver {
         });
     }
 
-    @ResolveField(() => [ExpenseResource])
-    async expense_resources(expense: Expense): Promise<ExpenseResource[]> {
-        return this.service.getExpenseResources({
-            expense_id: expense.id,
-        });
-    }
-
     @ResolveField(() => [ExpenseRawMaterialAddition])
     async expense_raw_material_additions(
         expense: Expense,
     ): Promise<ExpenseRawMaterialAddition[]> {
         return this.service.getExpenseRawMaterialAdditions({
-            expense_id: expense.id,
-        });
-    }
-
-    @ResolveField(() => Float)
-    async expense_resources_total(expense: Expense): Promise<number> {
-        return this.service.getExpenseResourcesTotal({
-            expense_id: expense.id,
-        });
-    }
-
-    @ResolveField(() => Float)
-    async expense_resources_total_with_tax(expense: Expense): Promise<number> {
-        return this.service.getExpenseResourcesTotalWithTax({
             expense_id: expense.id,
         });
     }
@@ -211,12 +188,19 @@ export class ExpensesResolver {
         });
     }
 
+    @ResolveField(() => Float)
+    async total_with_tax(expense: Expense): Promise<number> {
+        return this.service.getTotalWithTax({
+            expense_id: expense.id,
+        });
+    }
+
     @ResolveField(() => String)
     async compound_order_code(@Parent() expense: Expense): Promise<string> {
         return expense && expense.order_code
             ? expense.order_code
             : `${expense.id} $(${formatFloat(
-                  await this.service.getExpenseResourcesTotalWithTax({
+                  await this.service.getTotalWithTax({
                       expense_id: expense.id,
                   }),
               )})`;

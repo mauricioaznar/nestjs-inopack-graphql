@@ -25,8 +25,6 @@ export class ExpensesSummaryArgs {
 
 export enum ExpensesSummaryEntitiesGroup {
     account = 'account',
-    resource = 'resource',
-    accountResource = 'accountResource',
     receipt = 'receipt',
 }
 
@@ -53,12 +51,6 @@ export class ExpensesRecord {
 
     @Field(() => String, { nullable: true })
     account_abbreviation: string | null;
-
-    @Field(() => Int, { nullable: true })
-    resource_id: number | null;
-
-    @Field(() => String, { nullable: true })
-    resource_name: string | null;
 
     @Field(() => Int, { nullable: true })
     receipt_type_id: number | null;

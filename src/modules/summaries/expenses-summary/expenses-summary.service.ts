@@ -51,20 +51,6 @@ export class ExpensesSummaryService {
                     selectEntityGroup += 'receipt_type_id, receipt_type_name';
                     groupByEntityGroup += 'receipt_type_id, receipt_type_name';
                     break;
-                case 'resource':
-                    selectEntityGroup += 'resource_id, resource_name';
-                    groupByEntityGroup += 'resource_id, resource_name';
-                    break;
-                case 'accountResource':
-                    selectEntityGroup +=
-                        'account_id, account_name, account_abbreviation';
-                    groupByEntityGroup +=
-                        'account_id, account_name, account_abbreviation';
-                    selectEntityGroup += ', ';
-                    groupByEntityGroup += ', ';
-                    selectEntityGroup += 'resource_id, resource_name';
-                    groupByEntityGroup += 'resource_id, resource_name';
-                    break;
                 default:
                     break;
             }
@@ -91,31 +77,25 @@ export class ExpensesSummaryService {
                  accounts.abbreviation account_abbreviation,
                  receipt_types.id receipt_type_id,
                  receipt_types.name receipt_type_name,
-                 expense_resources.resource_id resource_id,
-                 resources.name resource_name,
-                 expense_resources.amount as total,
-                 ((expenses.tax / ztv.total) * expense_resources.amount)  as tax,
-                 (((expenses.tax / ztv.total) * expense_resources.amount) + expense_resources.amount) as total_with_tax
+                 wtv.total as total_with_tax,
+                 expenses.subtotal as total,
+                 expenses.tax  as tax
             from expenses
-                join expense_resources
-                on expense_resources.expense_id = expenses.id
-                join (
-                    select
-                    expense_resources.expense_id,
-                    sum(expense_resources.amount) total
-                    from expense_resources
-                    where expense_resources.active = 1
-                    group by expense_resources.expense_id
-                ) as ztv
-                on ztv.expense_id = expenses.id
-                join resources
-                on resources.id = expense_resources.resource_id
+                JOIN
+                (
+                        SELECT
+                            expenses.id,
+                            round(SUM(expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained), 2) total
+                        FROM expenses
+                        WHERE expenses.active = 1
+                        GROUP BY expenses.id
+                ) AS wtv
+                on wtv.id = expenses.id
                 left join accounts
                 on accounts.id = expenses.account_id
                 left join receipt_types
                 on receipt_types.id = expenses.receipt_type_id
             where expenses.active = 1
-              and expense_resources.active = 1
                 ) as ctc
             where ctc.start_date >= '${startDate}'
               and ctc.start_date

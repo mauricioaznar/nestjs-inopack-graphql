@@ -36,7 +36,6 @@ model branches {
   updated_at        DateTime?           @db.DateTime(0)
   activities        activities[]
   employees         employees[]
-  expense_resources expense_resources[]
   machines          machines[]
   order_productions order_productions[]
   user_branches     user_branches[]
@@ -610,24 +609,6 @@ model accounts {
   transfers_accountsTotransfers_to_account_id   transfers[]              @relation("accountsTotransfers_to_account_id")
 }
 
-model expense_resources {
-  id          Int        @id @default(autoincrement()) @db.UnsignedInt
-  active      Int        @default(1)
-  created_at  DateTime?  @db.DateTime(0)
-  updated_at  DateTime?  @db.DateTime(0)
-  amount      Float
-  expense_id  Int?       @db.UnsignedInt
-  resource_id Int?       @db.UnsignedInt
-  branch_id   Int?       @db.UnsignedInt
-  branches    branches?  @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfer_receipts_branch_id_foreign")
-  expenses    expenses?  @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_resources_expense_id_foreign")
-  resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_resources_resource_id_foreign")
-
-  @@index([expense_id], map: "expense_resources_expense_id_foreign")
-  @@index([resource_id], map: "expense_resources_resource_id_foreign")
-  @@index([branch_id], map: "transfer_receipts_branch_id_foreign")
-}
-
 model expenses {
   id                             Int                              @id @default(autoincrement()) @db.UnsignedInt
   active                         Int                              @default(1)
@@ -647,10 +628,10 @@ model expenses {
   supplement_code                String                           @default("") @db.VarChar(255)
   require_supplement             Boolean                          @default(false)
   canceled                       Boolean                          @default(false)
+  subtotal                       Float                            @default(0.00)
   accounts                       accounts?                        @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
   receipt_types                  receipt_types?                   @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")
   expense_raw_material_additions expense_raw_material_additions[]
-  expense_resources              expense_resources[]
   transfer_receipts              transfer_receipts[]
 
   @@index([account_id], map: "expenses_account_id_foreign")
@@ -674,7 +655,6 @@ model resources {
   name                        String                        @db.VarChar(255)
   resource_category_id        Int?                          @db.UnsignedInt
   resource_categories         resource_categories?          @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
-  expense_resources           expense_resources[]
   raw_material_addition_items raw_material_addition_items[]
 
   @@index([resource_category_id], map: "resources_resource_category_id_foreign")

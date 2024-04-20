@@ -9,7 +9,6 @@ import {
 } from '@nestjs/graphql';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
-import { ExpensesExpenseResourceInput } from './expense-resource.dto';
 import { ExpenseRawMaterialAdditionInput } from './expense-raw-material-addition.dto';
 
 @ObjectType({ isAbstract: true })
@@ -40,6 +39,9 @@ export class ExpenseBase {
     tax_retained: number;
 
     @Field(() => Float, { nullable: false })
+    subtotal: number;
+
+    @Field(() => Float, { nullable: false })
     non_tax_retained: number;
 
     @Field(() => Float, { nullable: false })
@@ -62,9 +64,6 @@ export class ExpenseBase {
 export class ExpenseUpsertInput extends ExpenseBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
-
-    @Field(() => [ExpensesExpenseResourceInput])
-    expense_resources: ExpensesExpenseResourceInput[];
 
     @Field(() => [ExpenseRawMaterialAdditionInput])
     expense_raw_material_additions: ExpenseRawMaterialAdditionInput[];

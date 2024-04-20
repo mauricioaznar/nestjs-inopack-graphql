@@ -2,9 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
     Branch,
     ExpenseRawMaterialAddition,
-    ExpenseResource,
     RawMaterialAddition,
-    Resource,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 

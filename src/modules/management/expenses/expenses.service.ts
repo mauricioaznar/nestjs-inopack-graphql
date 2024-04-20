@@ -6,13 +6,12 @@ import {
 import {
     Account,
     Expense,
-    ExpenseResource,
     ExpensesQueryArgs,
     ExpensesSortArgs,
     ExpenseUpsertInput,
     GetExpensesQueryArgs,
-    ReceiptType,
     PaginatedExpenses,
+    ReceiptType,
     TransferReceipt,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
@@ -223,22 +222,13 @@ export class ExpensesService {
             JOIN
                 (
                         SELECT
-                        ztv.expense_id AS expense_id,
-                        round(SUM(ztv.expense_subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained), 2) total
+                            expenses.id,
+                            round(SUM(expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained), 2) total
                         FROM expenses
-                        JOIN (
-                                select
-                                expense_resources.expense_id,
-                                sum(expense_resources.amount) expense_subtotal
-                                from expense_resources
-                                where expense_resources.active = 1
-                                group by expense_resources.expense_id
-                            ) AS ztv
-                        ON ztv.expense_id = expenses.id
                         WHERE expenses.active = 1
-                        GROUP BY ztv.expense_id
+                        GROUP BY expenses.id
                 ) AS wtv
-            on wtv.expense_id = expenses.id
+            on wtv.id = expenses.id
             left join
                 (
                     select
@@ -256,56 +246,6 @@ export class ExpensesService {
             and expenses.canceled = 0
             order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
         `);
-
-        // const res = await this.prisma.$queryRawUnsafe<Expense[]>(`
-        //     SELECT
-        //         expenses.*,
-        //         wtv.total as expenses_total,
-        //         otv.total as transfer_receipts_total
-        //     FROM expenses
-        //     JOIN
-        //         (
-        //                 SELECT
-        //                 ztv.expense_id AS expense_id,
-        //                 round(SUM(ztv.total), 2) total
-        //             FROM
-        //                 (
-        //                     SELECT
-        //                     expenses.id AS expense_id,
-        //                     (((expenses.tax / ztv.expense_total) * expense_resources.amount) + expense_resources.amount) as total
-        //                     FROM expense_resources
-        //                     JOIN expenses ON expenses.id = expense_resources.expense_id
-        //                     join (
-        //                         select
-        //                         expense_resources.expense_id,
-        //                         sum(expense_resources.amount) expense_total
-        //                         from expense_resources
-        //                         where expense_resources.active = 1
-        //                         group by expense_resources.expense_id
-        //                     ) as ztv
-        //                     on ztv.expense_id = expenses.id
-        //                     WHERE expenses.active = 1
-        //                     AND expense_resources.active = 1
-        //                 ) AS ztv
-        //             GROUP BY ztv.expense_id
-        //         ) AS wtv
-        //     on wtv.expense_id = expenses.id
-        //     left join
-        //         (
-        //             select
-        //             transfer_receipts.expense_id,
-        //             round(sum(transfer_receipts.amount), 2) as total
-        //             from transfers
-        //             join transfer_receipts
-        //             on transfers.id = transfer_receipts.transfer_id
-        //             where transfers.active = 1
-        //             and transfer_receipts.active = 1
-        //             group by expense_id
-        //         ) as otv
-        //     on otv.expense_id = expenses.id
-        //     where ((otv.total - wtv.total) != 0  or isnull(otv.total))
-        //     order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
-        // `);
 
         return res.map((ex) => {
             return {
@@ -350,29 +290,6 @@ export class ExpensesService {
         });
     }
 
-    async getExpenseResources({
-        expense_id,
-    }: {
-        expense_id: number | null;
-    }): Promise<ExpenseResource[]> {
-        if (!expense_id) {
-            return [];
-        }
-
-        return this.prisma.expense_resources.findMany({
-            where: {
-                AND: [
-                    {
-                        expense_id: expense_id,
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
-            },
-        });
-    }
-
     async getExpenseRawMaterialAdditions({
         expense_id,
     }: {
@@ -410,6 +327,7 @@ export class ExpensesService {
                 order_code: input.order_code.replace(' ', ''),
                 receipt_type_id: input.receipt_type_id,
                 notes: input.notes,
+                subtotal: input.subtotal,
                 tax: input.tax,
                 tax_retained: input.tax_retained,
                 non_tax: input.non_tax,
@@ -426,6 +344,7 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date,
                 order_code: input.order_code.replace(' ', ''),
                 receipt_type_id: input.receipt_type_id,
+                subtotal: input.subtotal,
                 notes: input.notes,
                 tax: input.tax,
                 tax_retained: input.tax_retained,
@@ -439,71 +358,6 @@ export class ExpensesService {
                 id: input.id || 0,
             },
         });
-
-        const newExpenseResources = input.expense_resources;
-        const oldExpenseResources = input.id
-            ? await this.prisma.expense_resources.findMany({
-                  where: {
-                      expense_id: input.id,
-                  },
-              })
-            : [];
-
-        const {
-            aMinusB: deleteExpenseResources,
-            bMinusA: createExpenseResources,
-            intersection: updateExpenseResources,
-        } = vennDiagram({
-            a: oldExpenseResources,
-            b: newExpenseResources,
-            indexProperties: ['id'],
-        });
-
-        for await (const delItem of deleteExpenseResources) {
-            if (delItem && delItem.id) {
-                await this.prisma.expense_resources.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        active: -1,
-                    },
-                    where: {
-                        id: delItem.id,
-                    },
-                });
-                // await this.cacheManager.del(`product_inventory`);
-            }
-        }
-
-        for await (const createItem of createExpenseResources) {
-            await this.prisma.expense_resources.create({
-                data: {
-                    ...getCreatedAtProperty(),
-                    ...getUpdatedAtProperty(),
-                    amount: createItem.amount ? createItem.amount : 0,
-                    expense_id: expense.id,
-                    resource_id: createItem.resource_id || null,
-                    branch_id: createItem.branch_id || null,
-                },
-            });
-            // await this.cacheManager.del(`product_inventory`);
-        }
-
-        for await (const updateItem of updateExpenseResources) {
-            if (updateItem && updateItem.id) {
-                await this.prisma.expense_resources.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        amount: updateItem.amount ? updateItem.amount : 0,
-                        expense_id: expense.id,
-                        resource_id: updateItem.resource_id || null,
-                        branch_id: updateItem.branch_id || null,
-                    },
-                    where: {
-                        id: updateItem.id,
-                    },
-                });
-            }
-        }
 
         const newExpenseRawMaterialAdditions =
             input.expense_raw_material_additions;
@@ -680,7 +534,7 @@ export class ExpensesService {
         });
     }
 
-    async getExpenseResourcesTotalWithTax({
+    async getTotalWithTax({
         expense_id,
     }: {
         expense_id: number | null;
@@ -689,61 +543,16 @@ export class ExpensesService {
             return 0;
         }
 
-        const expenseResources = await this.prisma.expense_resources.findMany({
-            where: {
-                AND: [
-                    {
-                        expense_id: expense_id,
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
-            },
-        });
-
         const expense = await this.getExpense({ expense_id });
 
-        const total = expenseResources.reduce((acc, curr) => {
-            return acc + curr.amount;
-        }, 0);
-
+        const subtotal = expense?.subtotal || 0;
         const tax = expense?.tax || 0;
         const tax_retained = expense?.tax_retained || 0;
         const non_tax_retained = expense?.non_tax_retained || 0;
 
-        const totalWithTax = total + tax - tax_retained - non_tax_retained;
+        const totalWithTax = subtotal + tax - tax_retained - non_tax_retained;
 
         return Math.round(totalWithTax * 100) / 100;
-    }
-
-    async getExpenseResourcesTotal({
-        expense_id,
-    }: {
-        expense_id: number | null;
-    }): Promise<number> {
-        if (!expense_id) {
-            return 0;
-        }
-
-        const expenseResources = await this.prisma.expense_resources.findMany({
-            where: {
-                AND: [
-                    {
-                        expense_id: expense_id,
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
-            },
-        });
-
-        const total = expenseResources.reduce((acc, curr) => {
-            return acc + curr.amount;
-        }, 0);
-
-        return Math.round(total * 100) / 100;
     }
 
     async getExpenseRawMaterialAdditionsTotal({
@@ -808,15 +617,6 @@ export class ExpensesService {
             },
             where: {
                 id: expense_id,
-            },
-        });
-
-        await this.prisma.expense_resources.updateMany({
-            data: {
-                active: -1,
-            },
-            where: {
-                expense_id: expense_id,
             },
         });
 
