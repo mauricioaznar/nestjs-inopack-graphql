@@ -662,7 +662,15 @@ export class ExpensesService {
             expense_id,
         });
 
-        return transfer_receipts === 0;
+        const expense = await this.getExpense({
+            expense_id,
+        });
+
+        if (!expense) {
+            return true;
+        }
+
+        return transfer_receipts === 0 && expense.canceled === false;
     }
 
     async isEditable({ expense_id }: { expense_id: number }): Promise<boolean> {
