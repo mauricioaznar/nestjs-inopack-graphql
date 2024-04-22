@@ -15,7 +15,6 @@ export class PrismaService
                 { emit: 'stdout', level: 'error' },
             ],
             errorFormat: 'colorless',
-            rejectOnNotFound: false,
         });
     }
 

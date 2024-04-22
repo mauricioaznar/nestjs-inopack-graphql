@@ -147,7 +147,7 @@ export class TransfersService {
                                       order_sales: {
                                           invoice_code: {
                                               in: isFilterANumber
-                                                  ? Number(filter)
+                                                  ? [Number(filter)]
                                                   : undefined,
                                           },
                                       },
@@ -162,7 +162,7 @@ export class TransfersService {
                                     ? {
                                           expenses: {
                                               order_code: {
-                                                  in: filter,
+                                                  in: [filter],
                                               },
                                           },
                                       }

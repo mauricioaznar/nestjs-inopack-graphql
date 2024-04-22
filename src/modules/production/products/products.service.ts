@@ -455,7 +455,6 @@ export class ProductsService {
             where: {
                 id: product_id,
             },
-            rejectOnNotFound: false,
         });
 
         if (!product) {

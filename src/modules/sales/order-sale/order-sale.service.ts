@@ -73,18 +73,18 @@ export class OrderSaleService {
             orderSalesOrWhere.push({
                 order_requests: {
                     order_code: {
-                        in: Number(filter),
+                        in: [Number(filter)],
                     },
                 },
             });
             orderSalesOrWhere.push({
                 order_code: {
-                    in: Number(filter),
+                    in: [Number(filter)],
                 },
             });
             orderSalesOrWhere.push({
                 invoice_code: {
-                    in: Number(filter),
+                    in: [Number(filter)],
                 },
             });
             orderSalesOrWhere.push({

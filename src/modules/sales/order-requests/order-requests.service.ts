@@ -143,7 +143,7 @@ export class OrderRequestsService {
                         {
                             order_code: {
                                 in: isFilterANumber
-                                    ? Number(filter)
+                                    ? [Number(filter)]
                                     : undefined,
                             },
                         },
