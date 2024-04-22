@@ -15,13 +15,13 @@ export class ProductionSummaryArgs {
     @Field(() => Int, { nullable: true })
     month?: number | null;
 
-    @Field(() => Int, { nullable: false })
-    order_production_type_id: number;
+    @Field(() => Int, { nullable: true })
+    order_production_type_id: number | null;
 
-    @Field(() => Int, { nullable: false })
-    branch_id: number;
+    @Field(() => Int, { nullable: true })
+    branch_id: number | null;
 
-    @Field(() => ProductionSummaryEntitiesGroup, { nullable: false })
+    @Field(() => ProductionSummaryEntitiesGroup, { nullable: true })
     entity_group: ProductionSummaryEntitiesGroup;
 }
 
@@ -55,13 +55,31 @@ export class ProductionRecord {
     machine_name: string | null;
 
     @Field(() => Int, { nullable: true })
+    product_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    product_description: string | null;
+
+    @Field(() => Int, { nullable: true })
     branch_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    branch_name: string | null;
 
     @Field(() => Int, { nullable: true })
     product_category_id: number | null;
 
     @Field(() => String, { nullable: true })
-    branch_name: string | null;
+    product_category_name: string | null;
+
+    @Field(() => Float, { nullable: true })
+    width: number | null;
+
+    @Field(() => Float, { nullable: true })
+    length: number | null;
+
+    @Field(() => Float, { nullable: true })
+    calibre: number | null;
 
     @Field(() => Int, { nullable: true })
     day: number;
@@ -77,6 +95,9 @@ export class ProductionRecord {
 export class WasteRecord {
     @Field(() => Int, { nullable: true })
     order_production_type_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    order_production_type_name: string | null;
 
     @Field(() => Float, { nullable: false })
     waste: number;

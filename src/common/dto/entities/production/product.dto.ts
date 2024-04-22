@@ -38,7 +38,7 @@ export class ProductBase {
     length: number | null;
 
     @Field(() => Float, { nullable: true })
-    calibre: number;
+    calibre: number | null;
 
     @Field(() => Float, { nullable: false })
     current_group_weight: number;
