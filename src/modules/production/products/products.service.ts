@@ -248,7 +248,7 @@ export class ProductsService {
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
-                calibre: input.calibre,
+                calibre: input.calibre || 0,
                 discontinued: input.discontinued,
                 internal_description: input.internal_description,
                 external_description: input.external_description,
@@ -265,7 +265,7 @@ export class ProductsService {
             },
             update: {
                 ...getUpdatedAtProperty(),
-                calibre: input.calibre,
+                calibre: input.calibre || 0,
                 code: input.code,
                 discontinued: input.discontinued,
                 internal_description: input.internal_description,

@@ -39,8 +39,19 @@ export class ProductionSummaryService {
                 month,
             });
 
-        const andWhereType = `and (order_productions.order_production_type_id = ${order_production_type_id} and products.order_production_type_id = ${order_production_type_id})`;
-        const andWhereWasteType = `and order_productions.order_production_type_id = ${order_production_type_id}`;
+        const andWhereOrderProductionType = order_production_type_id
+            ? `and (order_productions.order_production_type_id = ${order_production_type_id} and products.order_production_type_id = ${order_production_type_id})`
+            : '';
+        const andWhereWasteOrderProductionType = order_production_type_id
+            ? `and order_productions.order_production_type_id = ${order_production_type_id}`
+            : '';
+
+        const andWhereBranch = branch_id
+            ? `and branches.id = ${branch_id}`
+            : '';
+        const andWhereWasteBranch = branch_id
+            ? `and branches.id = ${branch_id}`
+            : '';
 
         let groupByEntityGroup = '';
         let selectEntityGroup = '';
@@ -59,12 +70,15 @@ export class ProductionSummaryService {
                 break;
 
             default:
+            case null:
+                selectEntityGroup =
+                    'machine_id, machine_type_id, machine_name, branch_name, branch_id, product_category_id, product_category_name, product_id, product_description, width, length, calibre';
+                groupByEntityGroup =
+                    'machine_id, machine_type_id, machine_name, branch_name, branch_id, product_category_id, product_category_name, product_id, product_description, width, length, calibre';
                 break;
         }
 
-        const production = await this.prisma.$queryRawUnsafe<
-            ProductionSummary['production']
-        >(`
+        const productionQuery = `
             select ctc.order_production_type_id,
                    ctc.order_production_type_name,
                    sum(ctc.kilos) as kilos,
@@ -86,8 +100,11 @@ export class ProductionSummaryService {
                  machines.name machine_name,
                  machines.machine_type_id machine_type_id,
                  order_production_products.kilos,
-                 order_production_products.product_id,
-                 products.description product_description
+                 order_production_products.product_id product_id,
+                 products.description product_description,
+                 products.width width,
+                 products.length length,
+                 products.calibre calibre
              from order_production_products
                 join order_productions
                 on order_productions.id = order_production_products.order_production_id
@@ -103,18 +120,24 @@ export class ProductionSummaryService {
                 on branches.id = order_productions.branch_id
             where order_production_products.active = 1
               and order_productions.active = 1
-              and branches.id = ${branch_id} ${andWhereType}
+              ${andWhereOrderProductionType}
+              ${andWhereBranch}
                 ) as ctc
             where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date
                 < '${formattedEndDate}'
             group by ctc.order_production_type_id, ctc.order_production_type_name, ${groupByEntityGroup}, ${groupByDateGroup}
-        `);
+        `;
+
+        const production = await this.prisma.$queryRawUnsafe<
+            ProductionSummary['production']
+        >(productionQuery);
 
         const waste = await this.prisma.$queryRawUnsafe<
             ProductionSummary['waste']
         >(`
             select ctc.order_production_type_id,
+                   ctc.order_production_type_name,
                    sum(ctc.waste) waste,
                    ${selectDateGroup}
             from (SELECT date (date_add(order_productions.start_date, interval
@@ -135,11 +158,11 @@ export class ProductionSummaryService {
             join branches
               on branches.id = order_productions.branch_id
             WHERE order_productions.active = 1
-              and branches.id = ${branch_id} ${andWhereWasteType}) as ctc
+              ${andWhereWasteBranch} ${andWhereWasteOrderProductionType}) as ctc
             where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date
                 < '${formattedEndDate}'
-            group by ctc.order_production_type_id, ${groupByDateGroup}
+            group by ctc.order_production_type_id, ctc.order_production_type_name,  ${groupByDateGroup}
             order by ${orderByDateGroup}
         `);
 
