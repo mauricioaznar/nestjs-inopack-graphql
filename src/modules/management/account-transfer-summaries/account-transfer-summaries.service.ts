@@ -9,7 +9,7 @@ export class AccountTransferSummariesService {
 
     async getAccountTransferSummary(): Promise<AccountTransferSummary[]> {
         return await this.prisma.$queryRawUnsafe(`
-            select accounts.id as account_id, (if (to_transfers.total, to_transfers.total, 0) - if (from_transfers.total, from_transfers.total, 0)) as current_amount from accounts
+            select round(accounts.id) as account_id, (if (to_transfers.total, to_transfers.total, 0) - if (from_transfers.total, from_transfers.total, 0)) as current_amount from accounts
                 left join (
                     select
                         sum(transfers.amount) as total,
@@ -37,11 +37,12 @@ export class AccountTransferSummariesService {
     }: {
         account_id: number | null;
     }): Promise<Account | null> {
+        console.log(account_id, typeof account_id);
         if (!account_id) {
             return null;
         }
 
-        return this.prisma.accounts.findFirst({
+        return this.prisma.accounts.findUnique({
             where: {
                 id: account_id,
             },
