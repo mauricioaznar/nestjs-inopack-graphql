@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { AccountTransferSummary } from '../../../common/dto/entities/management/account-transfer-summary.dto';
 import { Account } from '../../../common/dto/entities';
+import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()
 export class AccountTransferSummariesService {
@@ -9,7 +10,11 @@ export class AccountTransferSummariesService {
 
     async getAccountTransferSummary(): Promise<AccountTransferSummary[]> {
         return await this.prisma.$queryRawUnsafe(`
-            select round(accounts.id) as account_id, (if (to_transfers.total, to_transfers.total, 0) - if (from_transfers.total, from_transfers.total, 0)) as current_amount from accounts
+            select ${convertToInt(
+                'accounts.id',
+                'account_id',
+            )}, (if (to_transfers.total, to_transfers.total, 0) - if (from_transfers.total, from_transfers.total, 0)) as current_amount 
+            from accounts
                 left join (
                     select
                         sum(transfers.amount) as total,

@@ -24,6 +24,7 @@ import {
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
 import { ExpenseRawMaterialAddition } from '../../../common/dto/entities/management/expense-raw-material-addition.dto';
+import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()
 export class ExpensesService {
@@ -216,6 +217,9 @@ export class ExpensesService {
         const res = await this.prisma.$queryRawUnsafe<Expense[]>(`
                                SELECT
                 expenses.*,
+                ${convertToInt('expenses.id', 'id')},
+                ${convertToInt('account_id')},
+                ${convertToInt('receipt_type_id')},
                 wtv.total as expenses_total,
                 otv.total as transfer_receipts_total
             FROM expenses

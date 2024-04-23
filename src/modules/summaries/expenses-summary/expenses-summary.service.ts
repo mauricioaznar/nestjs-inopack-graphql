@@ -6,6 +6,7 @@ import {
     ExpensesSummary,
     ExpensesSummaryArgs,
 } from '../../../common/dto/entities';
+import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()
 export class ExpensesSummaryService {
@@ -42,13 +43,16 @@ export class ExpensesSummaryService {
             const entity_group = entity_groups[i];
             switch (entity_group) {
                 case 'account':
-                    selectEntityGroup +=
-                        'account_id, account_name, account_abbreviation';
+                    selectEntityGroup += `${convertToInt(
+                        'account_id',
+                    )}, account_name, account_abbreviation`;
                     groupByEntityGroup +=
                         'account_id, account_name, account_abbreviation';
                     break;
                 case 'receipt':
-                    selectEntityGroup += 'receipt_type_id, receipt_type_name';
+                    selectEntityGroup += `${convertToInt(
+                        'receipt_type_id',
+                    )}, receipt_type_name`;
                     groupByEntityGroup += 'receipt_type_id, receipt_type_name';
                     break;
                 default:

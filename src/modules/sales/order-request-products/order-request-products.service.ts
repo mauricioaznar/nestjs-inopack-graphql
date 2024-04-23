@@ -6,6 +6,7 @@ import {
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OptimizedRequestProduct } from '../../../common/dto/entities/sales/optimized-request-product.dto';
+import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()
 export class OrderRequestProductsService {
@@ -53,24 +54,18 @@ export class OrderRequestProductsService {
     }
 
     async getOptimizedRequestProducts(): Promise<OptimizedRequestProduct[]> {
-        return await this.prisma.$queryRaw<OptimizedRequestProduct[]>`
+        const queryStr = `
                  select 
-                   order_requests.order_code,
+                   ${convertToInt('order_requests.order_code', 'order_code')},
                    order_requests.priority,
-                   order_requests.id                                order_request_id,
                    order_requests.date                              order_request_date,
                    order_requests.estimated_delivery_date           order_request_estimated_delivery_date,
                    order_request_statuses.name                      order_request_status_name,
-                   order_request_statuses.id                        order_request_status_id,
                    order_sale_products_delivered.last_sale,
                    order_sale_products_delivered.first_sale,
-                   accounts.id                                       account_id,
                    accounts.name                                     account_name,
-                   order_request_products.product_id                product_id,
                    products.description                             product_description,
                    products.code                                    product_code,
-                   products.width                                   product_width,
-                   products.calibre                                 product_calibre,
                    products.order_production_type_id                order_production_type_id,
                    order_request_products.kilos                     order_request_kilos,
                    IFNULL(order_sale_products_delivered.kilos, 0)   order_sale_delivered_kilos,
@@ -79,7 +74,20 @@ export class OrderRequestProductsService {
                    (order_request_products.kilos -
                     IFNULL(order_sale_products_delivered.kilos, 0)) order_sale_remaining_kilos,
                    (order_request_products.groups -   
-                    IFNULL(order_sale_products_delivered.groups, 0)) order_sale_remaining_groups
+                    IFNULL(order_sale_products_delivered.groups, 0)) order_sale_remaining_groups,
+                    ${convertToInt('products.width', 'product_width')},
+                    ${convertToInt('products.calibre', 'product_calibre')},
+                    ${convertToInt(
+                        'order_request_products.product_id',
+                        'product_id',
+                    )},
+                    ${convertToInt('accounts.id', 'account_id')},
+                    ${convertToInt('order_request_status_id')},
+                    ${convertToInt(`order_requests.id`, `order_request_id`)},
+                    ${convertToInt(
+                        `products.order_production_type_id`,
+                        `order_production_type_id`,
+                    )} 
             from order_requests
                      join order_request_products
                           on order_requests.id = order_request_products.order_request_id
@@ -111,5 +119,9 @@ export class OrderRequestProductsService {
               and order_request_products.active = 1
               and order_request_statuses.id in (1, 2);
         `;
+        const res = await this.prisma.$queryRawUnsafe<
+            OptimizedRequestProduct[]
+        >(queryStr);
+        return res;
     }
 }

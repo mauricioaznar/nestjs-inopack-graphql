@@ -10,6 +10,7 @@ import {
     getRangesFromYearMonth,
 } from '../../../common/helpers';
 import dayjs from 'dayjs';
+import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()
 export class ProductionSummaryService {
@@ -57,30 +58,47 @@ export class ProductionSummaryService {
         let selectEntityGroup = '';
         switch (entity_group) {
             case 'machine':
-                selectEntityGroup =
-                    'machine_id, machine_type_id, machine_name, branch_name, branch_id';
+                selectEntityGroup = `${convertToInt('machine_id')},
+                     ${convertToInt('machine_type_id')},
+                     machine_name,
+                     ${convertToInt('branch_id')},
+                     branch_name`;
                 groupByEntityGroup =
                     'machine_id, machine_type_id, machine_name, branch_name, branch_id';
                 break;
             case 'productCategory':
-                selectEntityGroup =
-                    'product_category_id, product_category_name, branch_name, branch_id';
+                selectEntityGroup = `${convertToInt('product_category_id')},
+                     product_category_name,
+                     branch_name,
+                     ${convertToInt('branch_id')}`;
                 groupByEntityGroup =
                     'product_category_id, product_category_name, branch_name, branch_id';
                 break;
 
             default:
             case null:
-                selectEntityGroup =
-                    'machine_id, machine_type_id, machine_name, branch_name, branch_id, product_category_id, product_category_name, product_id, product_description, width, length, calibre';
+                selectEntityGroup = `${convertToInt('product_category_id')},
+                     product_category_name,
+                     ${convertToInt('machine_type_id')},
+                     ${convertToInt('machine_id')},
+                     machine_name,
+                     ${convertToInt('branch_id')},
+                     branch_name,
+                     ${convertToInt('width')},
+                     ${convertToInt('length')},
+                     ${convertToInt('calibre')},
+                     ${convertToInt('product_id')},
+                     product_description`;
+
                 groupByEntityGroup =
                     'machine_id, machine_type_id, machine_name, branch_name, branch_id, product_category_id, product_category_name, product_id, product_description, width, length, calibre';
                 break;
         }
 
         const productionQuery = `
-            select ctc.order_production_type_id,
-                   ctc.order_production_type_name,
+            select 
+                   ${convertToInt('order_production_type_id')},
+                   order_production_type_name,
                    sum(ctc.kilos) as kilos,
                    ${selectEntityGroup},
                    ${selectDateGroup}
@@ -136,8 +154,8 @@ export class ProductionSummaryService {
         const waste = await this.prisma.$queryRawUnsafe<
             ProductionSummary['waste']
         >(`
-            select ctc.order_production_type_id,
-                   ctc.order_production_type_name,
+            select ${convertToInt('order_production_type_id')},
+                   order_production_type_name,
                    sum(ctc.waste) waste,
                    ${selectDateGroup}
             from (SELECT date (date_add(order_productions.start_date, interval

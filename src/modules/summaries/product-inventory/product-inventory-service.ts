@@ -2,7 +2,8 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { ProductInventory } from '../../../common/dto/entities/production/product-inventory.dto';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { Product } from '../../../common/dto/entities';
+import { Product, ProductionSummary } from '../../../common/dto/entities';
+import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()
 export class ProductInventoryService {
@@ -17,17 +18,9 @@ export class ProductInventoryService {
         //
         // if (!!cachedProductInventory) return cachedProductInventory;
 
-        const results = await this.prisma.$queryRaw<ProductInventory[]>`
-            SELECT 
-                *,
-                IF (
-                   cte.last_update != '0001-01-01 00:00:00',
-                   DATE_FORMAT(cte.last_update, '%Y-%m-%dT%TZ'),
-                   null
-                ) as last_update
-            FROM (
-                SELECT
-                        products.id as product_id,
+        const queryString = `
+                   SELECT
+                        ${convertToInt('products.id', 'product_id')},
                         sale_products.kilos             as kilos_sold_given,
                         adjustment_products.kilos       as kilos_adjusted,
                         production_products.kilos       as kilos_produced,
@@ -97,8 +90,11 @@ export class ProductInventoryService {
                 WHERE products.active = 1
                 AND (products.order_production_type_id = 1 OR products.order_production_type_id is null)
                 ORDER BY last_update DESC
-            ) as cte;
         `;
+
+        const results = await this.prisma.$queryRawUnsafe<ProductInventory[]>(
+            queryString,
+        );
 
         // await this.cacheManager.set(`product_inventory`, results);
         return results;
@@ -107,8 +103,11 @@ export class ProductInventoryService {
     async getProduct({
         product_id,
     }: {
-        product_id: number;
+        product_id?: number | null;
     }): Promise<Product | null> {
+        if (!product_id) {
+            return null;
+        }
         return this.prisma.products.findFirst({
             where: {
                 id: product_id,

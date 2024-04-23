@@ -32,6 +32,7 @@ import { OrderRequestRemainingProductsService } from '../../../common/services/e
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
+import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()
 export class OrderSaleService {
@@ -269,6 +270,11 @@ export class OrderSaleService {
         const res = await this.prisma.$queryRawUnsafe<OrderSale[]>(`
             SELECT 
                 order_sales.*,
+                ${convertToInt('order_sales.id', 'id')},
+                ${convertToInt('account_id')},
+                ${convertToInt('order_sale_status_id')},
+                ${convertToInt('order_request_id')},
+                ${convertToInt('receipt_type_id')},
                 wtv.total_with_tax as order_sales_total,
                 otv.total as transfer_receipts_total
             FROM order_sales

@@ -6,6 +6,7 @@ import {
     SalesSummary,
     SalesSummaryArgs,
 } from '../../../common/dto/entities/summaries/sales-summary.dto';
+import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()
 export class SalesSummaryService {
@@ -43,24 +44,34 @@ export class SalesSummaryService {
             const entity_group = entity_groups[i];
             switch (entity_group) {
                 case 'account':
-                    selectEntityGroup +=
-                        'account_id, account_name, account_abbreviation';
+                    selectEntityGroup += `${convertToInt(
+                        'account_id',
+                    )}, account_name, account_abbreviation`;
                     groupByEntityGroup +=
                         'account_id, account_name, account_abbreviation';
                     break;
                 case 'receipt':
-                    selectEntityGroup += 'receipt_type_id, receipt_type_name';
+                    selectEntityGroup += `${convertToInt(
+                        'receipt_type_id',
+                    )}, receipt_type_name`;
                     groupByEntityGroup += 'receipt_type_id, receipt_type_name';
                     break;
                 case 'productCategory':
-                    selectEntityGroup +=
-                        'product_category_id, product_category_name, order_production_type_id, order_production_type_name';
+                    selectEntityGroup += `
+                        ${convertToInt(
+                            'product_category_id',
+                        )}, product_category_name, ${convertToInt(
+                        'order_production_type_id',
+                    )}, order_production_type_name`;
                     groupByEntityGroup +=
                         'product_category_id, product_category_name, order_production_type_id, order_production_type_name';
                     break;
                 case 'product':
-                    selectEntityGroup +=
-                        'product_id, product_name, width, calibre, length';
+                    selectEntityGroup += `${convertToInt(
+                        'product_id',
+                    )}, product_name, ${convertToInt('width')}, ${convertToInt(
+                        'calibre',
+                    )}, ${convertToInt('length')}`;
                     groupByEntityGroup +=
                         'product_id, product_name, width, calibre, length';
                     break;

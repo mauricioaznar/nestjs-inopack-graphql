@@ -11,6 +11,6 @@ export class ProductInventory {
     @Field(() => String, { nullable: true })
     last_update: string;
 
-    @Field(() => Int, { nullable: false })
-    product_id: number;
+    @Field(() => Int, { nullable: true })
+    product_id: number | null;
 }

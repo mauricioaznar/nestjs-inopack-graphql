@@ -28,6 +28,7 @@ import {
 } from '../../../common/dto/entities';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 import dayjs from 'dayjs';
+import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()
 export class RawMaterialAdditionsService {
@@ -53,8 +54,13 @@ export class RawMaterialAdditionsService {
         const res = await this.prisma.$queryRawUnsafe<RawMaterialAddition[]>(`
            SELECT
                 raw_material_additions.*,
-                wtv.total,
-                ztv.total
+                ${convertToInt('raw_material_additions.id', 'id')},
+                ${convertToInt(
+                    'raw_material_additions.account_id',
+                    'account_id',
+                )},
+                wtv.total as expenses_total,
+                ztv.total as additions_total
            FROM raw_material_additions
            left JOIN
                 (

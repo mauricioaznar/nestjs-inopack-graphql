@@ -1,6 +1,7 @@
 import {
     ArgsType,
     Field,
+    Float,
     InputType,
     Int,
     ObjectType,
@@ -34,6 +35,18 @@ export class RawMaterialAdditionUpsertInput extends RawMaterialAdditionBase {
 export class RawMaterialAddition extends RawMaterialAdditionBase {
     @Field({ nullable: false })
     id: number;
+}
+
+@ObjectType('RawMaterialAdditionWithDisparities')
+export class RawMaterialAdditionWithDisparities extends RawMaterialAdditionBase {
+    @Field({ nullable: false })
+    id: number;
+
+    @Field(() => Float, { nullable: true })
+    expense_total: number | null;
+
+    @Field(() => Float, { nullable: true })
+    additions_total: number | null;
 }
 
 export enum PaginatedRawMaterialAdditionsSortableFields {
