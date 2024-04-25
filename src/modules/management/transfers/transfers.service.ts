@@ -430,7 +430,7 @@ export class TransfersService {
                 );
             }
 
-            if (isTransferAnAdjustment || isTransferBetweenOwnAccounts) {
+            if (isTransferBetweenOwnAccounts) {
                 input.transfer_receipts = [];
             }
         }
