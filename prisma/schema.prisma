@@ -111,11 +111,11 @@ model machines {
   branch_id                 Int?                        @db.UnsignedInt
   order_production_type_id  Int?                        @db.UnsignedInt
   discontinued              Boolean                     @default(false)
-  machine_parts             machine_parts[]
-  machine_sections          machine_sections[]
-  order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_order_production_type_id_foreign")
   branches                  branches?                   @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_branch_id_foreign")
   machine_type              machine_type?               @relation(fields: [machine_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_machine_type_id_foreign")
+  order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_order_production_type_id_foreign")
+  machine_parts             machine_parts[]
+  machine_sections          machine_sections[]
   order_production_products order_production_products[]
 
   @@index([order_production_type_id], map: "machine_order_production_type_id_foreign")
@@ -163,9 +163,9 @@ model order_adjustments {
   updated_at                DateTime?                   @db.DateTime(0)
   order_adjustment_type_id  Int?                        @db.UnsignedInt
   order_sale_id             Int?                        @db.UnsignedInt
-  order_adjustment_products order_adjustment_products[]
   order_adjustment_type     order_adjustment_type?      @relation(fields: [order_adjustment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_adjustments_order_adjustment_type_id_foreign")
   order_sales               order_sales?                @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_adjustments_order_sale_id_foreign")
+  order_adjustment_products order_adjustment_products[]
 
   @@index([order_adjustment_type_id], map: "order_adjustments_order_adjustment_type_id_foreign")
   @@index([order_sale_id], map: "order_adjustments_order_sale_id_foreign")
@@ -229,11 +229,11 @@ model order_productions {
   order_production_type_id   Int?                         @db.UnsignedInt
   branch_id                  Int?                         @db.UnsignedInt
   start_date                 DateTime                     @db.Date
-  order_production_employees order_production_employees[]
-  order_production_products  order_production_products[]
   branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_branch_id_foreign")
   employees                  employees?                   @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_employee_id_foreign")
   order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_order_production_type_id_foreign")
+  order_production_employees order_production_employees[]
+  order_production_products  order_production_products[]
 
   @@index([branch_id], map: "order_productions_branch_id_foreign")
   @@index([employee_id], map: "order_productions_employee_id_foreign")
@@ -280,9 +280,9 @@ model order_requests {
   estimated_delivery_date DateTime?                @db.DateTime(0)
   priority                Float
   notes                   String                   @db.VarChar(255)
-  order_request_products  order_request_products[]
   accounts                accounts?                @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_account_id_foreign")
   order_request_statuses  order_request_statuses?  @relation(fields: [order_request_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_order_request_status_id_foreign")
+  order_request_products  order_request_products[]
   order_sales             order_sales[]
 
   @@index([account_id], map: "order_requests_company_id_foreign")
@@ -342,12 +342,12 @@ model order_sales {
   tax                     Float                 @default(0.00)
   total_with_tax          Float                 @default(0.00)
   transfer_receipts_total Float                 @default(0.00)
-  order_adjustments       order_adjustments[]
-  order_sale_products     order_sale_products[]
   accounts                accounts?             @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_account_id_foreign")
   order_requests          order_requests?       @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_request_id_foreign")
   order_sale_statuses     order_sale_statuses?  @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
   receipt_types           receipt_types?        @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_receipt_type_foreign")
+  order_adjustments       order_adjustments[]
+  order_sale_products     order_sale_products[]
   transfer_receipts       transfer_receipts[]
 
   @@index([order_request_id], map: "order_sales_order_request_id_foreign")
@@ -376,13 +376,13 @@ model products {
   external_description      String                      @db.VarChar(255)
   discontinued              Boolean                     @default(false)
   current_group_price       Float                       @default(0.00)
+  order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_order_production_type_id_foreign")
+  product_categories        product_categories?         @relation(fields: [product_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_category_id")
+  product_materials         product_materials?          @relation(fields: [product_material_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_material_id")
   order_adjustment_products order_adjustment_products[]
   order_production_products order_production_products[]
   order_request_products    order_request_products[]
   order_sale_products       order_sale_products[]
-  product_categories        product_categories?         @relation(fields: [product_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_category_id")
-  product_materials         product_materials?          @relation(fields: [product_material_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_material_id")
-  order_production_type     order_production_type?      @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_order_production_type_id_foreign")
 
   @@index([product_category_id], map: "product_category_id")
   @@index([product_material_id], map: "product_material_id")
@@ -441,11 +441,11 @@ model users {
   role_id        Int?            @db.UnsignedInt
   fullname       String          @db.VarChar(255)
   branch_id      Int?            @db.UnsignedInt
+  branches       branches?       @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_branch_id_foreign")
+  roles          roles?          @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_role_id_foreign")
   activities     activities[]
   user_branches  user_branches[]
   user_roles     user_roles[]
-  branches       branches?       @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_branch_id_foreign")
-  roles          roles?          @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_role_id_foreign")
 
   @@index([branch_id], map: "users_branch_id_foreign")
   @@index([role_id], map: "users_role_id_foreign")
@@ -475,10 +475,10 @@ model machine_parts {
   current_spare_id                Int?                      @db.UnsignedInt
   current_spare_required_quantity Int?                      @db.UnsignedInt
   name                            String                    @db.VarChar(255)
-  machine_compatibilities         machine_compatibilities[]
   spares                          spares?                   @relation(fields: [current_spare_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_parts_current_spare_id_foreign")
   machines                        machines?                 @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_parts_machine_id_foreign")
   machine_sections                machine_sections?         @relation(fields: [machine_section_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_parts_machine_section_id_foreign")
+  machine_compatibilities         machine_compatibilities[]
 
   @@index([current_spare_id], map: "machine_parts_current_spare_id_foreign")
   @@index([machine_id], map: "machine_parts_machine_id_foreign")
@@ -492,8 +492,8 @@ model machine_sections {
   updated_at    DateTime?       @db.DateTime(0)
   machine_id    Int?            @db.UnsignedInt
   name          String          @db.VarChar(255)
-  machine_parts machine_parts[]
   machines      machines?       @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machine_sections_machine_id_foreign")
+  machine_parts machine_parts[]
 
   @@index([machine_id], map: "machine_sections_machine_id_foreign")
 }
@@ -541,10 +541,10 @@ model spares {
   updated_at              DateTime?                 @db.DateTime(0)
   spare_category_id       Int?                      @db.UnsignedInt
   name                    String                    @db.VarChar(255)
+  spare_categories        spare_categories?         @relation(fields: [spare_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "spares_spare_category_id_foreign")
   machine_compatibilities machine_compatibilities[]
   machine_parts           machine_parts[]
   spare_transactions      spare_transactions[]
-  spare_categories        spare_categories?         @relation(fields: [spare_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "spares_spare_category_id_foreign")
 
   @@index([spare_category_id], map: "spares_spare_category_id_foreign")
 }
@@ -634,9 +634,9 @@ model expenses {
   subtotal                       Float                            @default(0.00)
   transfer_receipts_total        Float                            @default(0.00)
   total_with_tax                 Float                            @default(0.00)
-  expense_raw_material_additions expense_raw_material_additions[]
   accounts                       accounts?                        @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
   receipt_types                  receipt_types?                   @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")
+  expense_raw_material_additions expense_raw_material_additions[]
   transfer_receipts              transfer_receipts[]
 
   @@index([account_id], map: "expenses_account_id_foreign")
@@ -659,8 +659,8 @@ model resources {
   updated_at                  DateTime?                     @db.DateTime(0)
   name                        String                        @db.VarChar(255)
   resource_category_id        Int?                          @db.UnsignedInt
-  raw_material_addition_items raw_material_addition_items[]
   resource_categories         resource_categories?          @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
+  raw_material_addition_items raw_material_addition_items[]
 
   @@index([resource_category_id], map: "resources_resource_category_id_foreign")
 }
@@ -677,10 +677,10 @@ model transfers {
   transferred_date                             DateTime            @db.DateTime(0)
   amount                                       Float
   transfer_type_id                             Int?                @db.UnsignedInt
-  transfer_receipts                            transfer_receipts[]
   accounts_accountsTotransfers_from_account_id accounts?           @relation("accountsTotransfers_from_account_id", fields: [from_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_from_account_id_foreign")
   accounts_accountsTotransfers_to_account_id   accounts?           @relation("accountsTotransfers_to_account_id", fields: [to_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_to_account_id_foreign")
   transfer_type                                transfer_type?      @relation(fields: [transfer_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transfers_transfer_type_id_foreign")
+  transfer_receipts                            transfer_receipts[]
 
   @@index([from_account_id], map: "transfers_from_account_id_foreign")
   @@index([to_account_id], map: "transfers_to_account_id_foreign")
@@ -753,9 +753,9 @@ model raw_material_additions {
   updated_at                     DateTime?                        @db.DateTime(0)
   account_id                     Int?                             @db.UnsignedInt
   date                           DateTime?                        @db.DateTime(0)
+  accounts                       accounts?                        @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "raw_material_addition_account_id_foreign")
   expense_raw_material_additions expense_raw_material_additions[]
   raw_material_addition_items    raw_material_addition_items[]
-  accounts                       accounts?                        @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "raw_material_addition_account_id_foreign")
 
   @@index([account_id], map: "raw_material_addition_account_id_foreign")
 }
