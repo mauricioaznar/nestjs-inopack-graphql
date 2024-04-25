@@ -75,6 +75,9 @@ export class Expense extends ExpenseBase {
     transfer_receipts_total: number;
 
     @Field(() => Float, { nullable: false })
+    transfer_receipts_total_no_adjustments: number;
+
+    @Field(() => Float, { nullable: false })
     total_with_tax: number;
 }
 

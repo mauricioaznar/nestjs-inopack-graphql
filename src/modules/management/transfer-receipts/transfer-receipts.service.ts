@@ -24,7 +24,7 @@ export class TransferReceiptsService {
             return null;
         }
 
-        return this.prisma.order_sales.findFirst({
+        return this.prisma.order_sales.findUnique({
             where: {
                 id: order_sale_id,
             },

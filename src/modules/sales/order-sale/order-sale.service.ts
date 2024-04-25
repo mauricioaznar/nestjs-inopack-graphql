@@ -518,30 +518,37 @@ export class OrderSaleService {
 
         if (!orderSale) return 0;
 
-        const orderSaleProductsTotal = orderSaleProducts.reduce(
-            (acc, product) => {
-                const kiloProductTotal =
-                    product.kilo_price *
-                    product.kilos *
-                    (orderSale.receipt_type_id === 2 ? 1.16 : 1);
+        const orderAdjustmentProducts = await this.getOrderAdjustmentProducts({
+            order_sale_id: order_sale_id,
+        });
 
-                const groupProductTotal =
-                    product.group_price *
-                    product.groups *
-                    (orderSale.receipt_type_id === 2 ? 1.16 : 1);
+        const orderSaleProductsTotal = orderSaleProducts.reduce((acc, osp) => {
+            const orderAdjustmentProduct = orderAdjustmentProducts.find(
+                (oap) => {
+                    return oap.product_id === osp.product_id;
+                },
+            );
 
-                const productTotal = kiloProductTotal + groupProductTotal;
+            const kiloProductTotal =
+                osp.kilo_price *
+                (osp.kilos - (orderAdjustmentProduct?.kilos || 0)) *
+                (orderSale.receipt_type_id === 2 ? 1.16 : 1);
 
-                const discountTotal =
-                    productTotal -
-                    (productTotal - productTotal * (product.discount / 100));
+            const groupProductTotal =
+                osp.group_price *
+                (osp.groups - (orderAdjustmentProduct?.groups || 0)) *
+                (orderSale.receipt_type_id === 2 ? 1.16 : 1);
 
-                const productTotalMinusDiscount = productTotal - discountTotal;
+            const productTotal = kiloProductTotal + groupProductTotal;
 
-                return acc + productTotalMinusDiscount;
-            },
-            0,
-        );
+            const discountTotal =
+                productTotal -
+                (productTotal - productTotal * (osp.discount / 100));
+
+            const productTotalMinusDiscount = productTotal - discountTotal;
+
+            return acc + productTotalMinusDiscount;
+        }, 0);
 
         return round(orderSaleProductsTotal);
     }
@@ -683,6 +690,8 @@ export class OrderSaleService {
                     total_with_tax: 0,
                 },
             );
+
+        console.log(subtotal, tax, total_with_tax);
 
         const orderSale = await this.prisma.order_sales.upsert({
             create: {

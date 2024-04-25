@@ -422,7 +422,7 @@ export class TransfersService {
 
     async updateExpensesTransfersTotal({ expense_id }: { expense_id: number }) {
         const {
-            _sum: { amount },
+            _sum: { amount: transfersTotal },
         } = await this.prisma.transfer_receipts.aggregate({
             _sum: {
                 amount: true,
@@ -433,10 +433,30 @@ export class TransfersService {
             },
         });
 
+        const {
+            _sum: { amount: transfersTotalNoAdjustments },
+        } = await this.prisma.transfer_receipts.aggregate({
+            _sum: {
+                amount: true,
+            },
+            where: {
+                active: 1,
+                expense_id: expense_id,
+                NOT: {
+                    transfers: {
+                        transfer_type_id: 4,
+                    },
+                },
+            },
+        });
+
         await this.prisma.expenses.updateMany({
             data: {
                 ...getUpdatedAtProperty(),
-                transfer_receipts_total: round(amount || 0),
+                transfer_receipts_total: round(transfersTotal || 0),
+                transfer_receipts_total_no_adjustments: round(
+                    transfersTotalNoAdjustments || 0,
+                ),
             },
             where: {
                 id: expense_id,
@@ -461,10 +481,30 @@ export class TransfersService {
             },
         });
 
+        const {
+            _sum: { amount: transfersTotalNoAdjustments },
+        } = await this.prisma.transfer_receipts.aggregate({
+            _sum: {
+                amount: true,
+            },
+            where: {
+                active: 1,
+                order_sale_id: order_sale_id,
+                NOT: {
+                    transfers: {
+                        transfer_type_id: 4,
+                    },
+                },
+            },
+        });
+
         await this.prisma.order_sales.updateMany({
             data: {
                 ...getUpdatedAtProperty(),
                 transfer_receipts_total: round(amount || 0),
+                transfer_receipts_total_no_adjustments: round(
+                    transfersTotalNoAdjustments || 0,
+                ),
             },
             where: {
                 id: order_sale_id,

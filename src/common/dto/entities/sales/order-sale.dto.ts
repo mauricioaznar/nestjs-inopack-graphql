@@ -91,6 +91,9 @@ export class OrderSale extends OrderSaleBase {
 
     @Field(() => Float, { nullable: false })
     subtotal: number;
+
+    @Field(() => Float, { nullable: false })
+    transfer_receipts_total_no_adjustments: number;
 }
 
 @ObjectType()
