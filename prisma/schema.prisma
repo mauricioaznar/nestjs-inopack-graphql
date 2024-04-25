@@ -319,32 +319,36 @@ model order_sale_statuses {
 }
 
 model order_sales {
-  id                    Int                   @id @default(autoincrement()) @db.UnsignedInt
-  order_code            Int
-  active                Int                   @default(1)
-  date                  DateTime              @db.DateTime(0)
-  created_at            DateTime?             @db.DateTime(0)
-  updated_at            DateTime?             @db.DateTime(0)
-  order_sale_status_id  Int?                  @db.UnsignedInt
-  order_request_id      Int?                  @db.UnsignedInt
-  receipt_type_id       Int?                  @db.UnsignedInt
-  invoice_code          Int                   @default(0)
-  expected_payment_date DateTime?             @db.DateTime(0)
-  credit_note_code      String                @default("") @db.VarChar(255)
-  credit_note_amount    Float                 @default(0.00)
-  require_credit_note   Boolean               @default(false)
-  supplement_code       String                @default("") @db.VarChar(255)
-  require_supplement    Boolean               @default(false)
-  notes                 String                @default("") @db.VarChar(255)
-  canceled              Boolean               @default(false)
-  account_id            Int?                  @db.UnsignedInt
-  order_adjustments     order_adjustments[]
-  order_sale_products   order_sale_products[]
-  accounts              accounts?             @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_account_id_foreign")
-  order_requests        order_requests?       @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_request_id_foreign")
-  order_sale_statuses   order_sale_statuses?  @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
-  receipt_types         receipt_types?        @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_receipt_type_foreign")
-  transfer_receipts     transfer_receipts[]
+  id                      Int                   @id @default(autoincrement()) @db.UnsignedInt
+  order_code              Int
+  active                  Int                   @default(1)
+  date                    DateTime              @db.DateTime(0)
+  created_at              DateTime?             @db.DateTime(0)
+  updated_at              DateTime?             @db.DateTime(0)
+  order_sale_status_id    Int?                  @db.UnsignedInt
+  order_request_id        Int?                  @db.UnsignedInt
+  receipt_type_id         Int?                  @db.UnsignedInt
+  invoice_code            Int                   @default(0)
+  expected_payment_date   DateTime?             @db.DateTime(0)
+  credit_note_code        String                @default("") @db.VarChar(255)
+  credit_note_amount      Float                 @default(0.00)
+  require_credit_note     Boolean               @default(false)
+  supplement_code         String                @default("") @db.VarChar(255)
+  require_supplement      Boolean               @default(false)
+  notes                   String                @default("") @db.VarChar(255)
+  canceled                Boolean               @default(false)
+  account_id              Int?                  @db.UnsignedInt
+  subtotal                Float                 @default(0.00)
+  tax                     Float                 @default(0.00)
+  total_with_tax          Float                 @default(0.00)
+  transfer_receipts_total Float                 @default(0.00)
+  order_adjustments       order_adjustments[]
+  order_sale_products     order_sale_products[]
+  accounts                accounts?             @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_account_id_foreign")
+  order_requests          order_requests?       @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_request_id_foreign")
+  order_sale_statuses     order_sale_statuses?  @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
+  receipt_types           receipt_types?        @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_receipt_type_foreign")
+  transfer_receipts       transfer_receipts[]
 
   @@index([order_request_id], map: "order_sales_order_request_id_foreign")
   @@index([receipt_type_id], map: "order_sales_order_sale_receipt_type_id_foreign")
@@ -624,11 +628,12 @@ model expenses {
   tax                            Float                            @default(0.00)
   tax_retained                   Float                            @default(0.00)
   non_tax_retained               Float                            @default(0.00)
-  non_tax                        Float                            @default(0.00)
   supplement_code                String                           @default("") @db.VarChar(255)
   require_supplement             Boolean                          @default(false)
   canceled                       Boolean                          @default(false)
   subtotal                       Float                            @default(0.00)
+  transfer_receipts_total        Float                            @default(0.00)
+  total_with_tax                 Float                            @default(0.00)
   expense_raw_material_additions expense_raw_material_additions[]
   accounts                       accounts?                        @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
   receipt_types                  receipt_types?                   @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")

@@ -125,8 +125,6 @@ export class SalesSummaryService {
             from order_sales
                 join order_sale_products as osp
                 on osp.order_sale_id = order_sales.id
-                left join order_requests
-                on order_requests.id = order_sales.order_request_id
                 left join products
                 on osp.product_id = products.id
                 left join order_production_type

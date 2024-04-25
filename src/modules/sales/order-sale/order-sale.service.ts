@@ -33,6 +33,7 @@ import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
+import { round } from '../../../common/helpers/number/round';
 
 @Injectable()
 export class OrderSaleService {
@@ -530,7 +531,7 @@ export class OrderSaleService {
             0,
         );
 
-        return Math.round(orderSaleProductsTotal * 100) / 100;
+        return round(orderSaleProductsTotal);
     }
 
     async getOrderSaleInvoiceTotal({
@@ -609,73 +610,6 @@ export class OrderSaleService {
         });
     }
 
-    async getOrderSaleTransferReceiptsTotal({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<number> {
-        const transferReceipts = await this.prisma.transfer_receipts.findMany({
-            where: {
-                AND: [
-                    {
-                        order_sale_id: order_sale_id,
-                        active: 1,
-                    },
-                    {
-                        transfers: {
-                            active: 1,
-                        },
-                    },
-                    {
-                        order_sales: {
-                            active: 1,
-                        },
-                    },
-                ],
-            },
-        });
-
-        const orderSale = await this.prisma.order_sales.findUnique({
-            where: {
-                id: order_sale_id,
-            },
-        });
-
-        if (!orderSale) return 0;
-
-        const total = transferReceipts.reduce((acc, tr) => {
-            return acc + tr.amount;
-        }, 0);
-
-        return Math.round(total * 100) / 100;
-    }
-
-    async getOrderSaleTaxTotal({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<number> {
-        const orderSale = await this.prisma.order_sales.findUnique({
-            where: {
-                id: order_sale_id,
-            },
-        });
-
-        if (!orderSale) return 0;
-
-        const orderSaleProductsTotal = await this.getOrderSaleProductsTotal({
-            order_sale_id,
-        });
-
-        if (orderSale.receipt_type_id !== 2) {
-            return 0;
-        }
-
-        const orderSaleTaxTotal = (orderSaleProductsTotal / 1.16) * 0.16;
-
-        return Math.round(orderSaleTaxTotal * 100) / 100;
-    }
-
     async getOrderSaleStatus({
         order_sale_status_id,
     }: {
@@ -700,6 +634,46 @@ export class OrderSaleService {
     }): Promise<OrderSale> {
         await this.validateOrderSale(input, current_user_id);
 
+        const { subtotal, tax, total_with_tax } =
+            input.order_sale_products.reduce(
+                (acc, osp) => {
+                    const kiloSubtotal = osp.kilo_price * osp.kilos;
+
+                    const kiloTax =
+                        kiloSubtotal * (input.receipt_type_id === 2 ? 0.16 : 0);
+
+                    const kiloProductTotal =
+                        kiloSubtotal * (input.receipt_type_id === 2 ? 1.16 : 1);
+
+                    const groupSubtotal = osp.group_price * osp.groups;
+
+                    const groupTax =
+                        groupSubtotal *
+                        (input.receipt_type_id === 2 ? 0.16 : 0);
+
+                    const groupProductTotal =
+                        groupSubtotal *
+                        (input.receipt_type_id === 2 ? 1.16 : 1);
+
+                    const subtotal = kiloSubtotal + groupSubtotal;
+                    const tax = kiloTax + groupTax;
+                    const totalWithTax = kiloProductTotal + groupProductTotal;
+
+                    return {
+                        subtotal: acc.subtotal + subtotal,
+                        tax: acc.tax + tax,
+                        total_with_tax: acc.total_with_tax + totalWithTax,
+                    };
+                },
+                {
+                    subtotal: 0,
+                    tax: 0,
+                    total_with_tax: 0,
+                },
+            );
+
+        console.log(subtotal, tax, total_with_tax);
+
         const orderSale = await this.prisma.order_sales.upsert({
             create: {
                 ...getCreatedAtProperty(),
@@ -719,6 +693,9 @@ export class OrderSaleService {
                 credit_note_amount: input.credit_note_amount,
                 notes: input.notes,
                 canceled: input.canceled,
+                subtotal: subtotal,
+                tax: tax,
+                total_with_tax: total_with_tax,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -737,14 +714,13 @@ export class OrderSaleService {
                 credit_note_amount: input.credit_note_amount,
                 notes: input.notes,
                 canceled: input.canceled,
+                subtotal: round(subtotal),
+                tax: round(tax),
+                total_with_tax: round(total_with_tax),
             },
             where: {
                 id: input.id || 0,
             },
-        });
-
-        const orderRequest = await this.getOrderRequest({
-            order_sale_id: orderSale.id,
         });
 
         const newProductItems = input.order_sale_products;

@@ -79,6 +79,18 @@ export class OrderSaleInput extends OrderSaleBase {
 export class OrderSale extends OrderSaleBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field(() => Float, { nullable: false })
+    transfer_receipts_total: number;
+
+    @Field(() => Float, { nullable: false })
+    tax: number;
+
+    @Field(() => Float, { nullable: false })
+    total_with_tax: number;
+
+    @Field(() => Float, { nullable: false })
+    subtotal: number;
 }
 
 @ObjectType()

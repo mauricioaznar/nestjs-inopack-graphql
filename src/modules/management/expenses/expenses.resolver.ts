@@ -181,29 +181,11 @@ export class ExpensesResolver {
         });
     }
 
-    @ResolveField(() => Float)
-    async transfer_receipts_total(expense: Expense): Promise<number> {
-        return this.service.getExpenseTransferReceiptsTotal({
-            expense_id: expense.id,
-        });
-    }
-
-    @ResolveField(() => Float)
-    async total_with_tax(expense: Expense): Promise<number> {
-        return this.service.getTotalWithTax({
-            expense_id: expense.id,
-        });
-    }
-
     @ResolveField(() => String)
     async compound_order_code(@Parent() expense: Expense): Promise<string> {
         return expense && expense.order_code
             ? expense.order_code
-            : `${expense.id} $(${formatFloat(
-                  await this.service.getTotalWithTax({
-                      expense_id: expense.id,
-                  }),
-              )})`;
+            : `${expense.id} $(${formatFloat(expense.total_with_tax)})`;
     }
 
     @ResolveField(() => Boolean)

@@ -25,6 +25,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { ExpenseRawMaterialAddition } from '../../../common/dto/entities/management/expense-raw-material-addition.dto';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
+import { round } from '../../../common/helpers/number/round';
 
 @Injectable()
 export class ExpensesService {
@@ -127,6 +128,12 @@ export class ExpensesService {
 
         const isFilterANumber = !Number.isNaN(Number(filter));
 
+        /*
+            {
+
+            },
+         */
+
         const expensesAndWhere: Prisma.Enumerable<Prisma.expensesWhereInput> = [
             {
                 active: 1,
@@ -180,6 +187,16 @@ export class ExpensesService {
                 supplement_code: '',
             });
         }
+        if (expensesQueryArgs.is_transfer_incomplete) {
+            expensesAndWhere.push({
+                total_with_tax: {
+                    not: {
+                        equals: this.prisma.expenses.fields
+                            .transfer_receipts_total,
+                    },
+                },
+            });
+        }
 
         const expensesWhere: Prisma.expensesWhereInput = {
             AND: expensesAndWhere,
@@ -221,7 +238,7 @@ export class ExpensesService {
                 ${convertToInt('account_id')},
                 ${convertToInt('receipt_type_id')},
                 wtv.total as expenses_total,
-                otv.total as transfer_receipts_total
+                ifnull(otv.total, 0) as transfer_receipts_total
             FROM expenses
             JOIN
                 (
@@ -320,6 +337,13 @@ export class ExpensesService {
     async upsertExpense(input: ExpenseUpsertInput): Promise<Expense> {
         await this.validateUpsertExpense(input);
 
+        const total_with_tax = round(
+            input.subtotal +
+                input.tax -
+                input.non_tax_retained -
+                input.tax_retained,
+        );
+
         const expense = await this.prisma.expenses.upsert({
             create: {
                 ...getCreatedAtProperty(),
@@ -334,8 +358,8 @@ export class ExpensesService {
                 subtotal: input.subtotal,
                 tax: input.tax,
                 tax_retained: input.tax_retained,
-                non_tax: input.non_tax,
                 non_tax_retained: input.non_tax_retained,
+                total_with_tax: total_with_tax,
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
@@ -352,8 +376,8 @@ export class ExpensesService {
                 notes: input.notes,
                 tax: input.tax,
                 tax_retained: input.tax_retained,
-                non_tax: input.non_tax,
                 non_tax_retained: input.non_tax_retained,
+                total_with_tax: total_with_tax,
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
@@ -536,27 +560,6 @@ export class ExpensesService {
                 ],
             },
         });
-    }
-
-    async getTotalWithTax({
-        expense_id,
-    }: {
-        expense_id: number | null;
-    }): Promise<number> {
-        if (!expense_id) {
-            return 0;
-        }
-
-        const expense = await this.getExpense({ expense_id });
-
-        const subtotal = expense?.subtotal || 0;
-        const tax = expense?.tax || 0;
-        const tax_retained = expense?.tax_retained || 0;
-        const non_tax_retained = expense?.non_tax_retained || 0;
-
-        const totalWithTax = subtotal + tax - tax_retained - non_tax_retained;
-
-        return Math.round(totalWithTax * 100) / 100;
     }
 
     async getExpenseRawMaterialAdditionsTotal({

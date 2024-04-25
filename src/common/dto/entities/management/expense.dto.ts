@@ -44,9 +44,6 @@ export class ExpenseBase {
     @Field(() => Float, { nullable: false })
     non_tax_retained: number;
 
-    @Field(() => Float, { nullable: false })
-    non_tax: number;
-
     @Field(() => Int, { nullable: true })
     account_id: number | null;
 
@@ -73,6 +70,12 @@ export class ExpenseUpsertInput extends ExpenseBase {
 export class Expense extends ExpenseBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field(() => Float, { nullable: false })
+    transfer_receipts_total: number;
+
+    @Field(() => Float, { nullable: false })
+    total_with_tax: number;
 }
 
 @ArgsType()
@@ -100,6 +103,9 @@ export class ExpensesQueryArgs {
 
     @Field(() => Boolean, { nullable: true })
     no_supplement: boolean;
+
+    @Field(() => Boolean, { nullable: true })
+    is_transfer_incomplete: boolean;
 
     @Field(() => Int, { nullable: true })
     receipt_type_id: number;

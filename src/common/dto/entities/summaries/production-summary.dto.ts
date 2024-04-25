@@ -6,6 +6,7 @@ import {
     ObjectType,
     registerEnumType,
 } from '@nestjs/graphql';
+import { DateGroupBy } from '../../dates/dates';
 
 @InputType('ProductionSummaryArgs')
 export class ProductionSummaryArgs {
@@ -23,6 +24,9 @@ export class ProductionSummaryArgs {
 
     @Field(() => ProductionSummaryEntitiesGroup, { nullable: true })
     entity_group: ProductionSummaryEntitiesGroup;
+
+    @Field(() => DateGroupBy, { nullable: false })
+    date_group_by: DateGroupBy;
 }
 
 export enum ProductionSummaryEntitiesGroup {
@@ -41,6 +45,9 @@ export class ProductionRecord {
 
     @Field(() => String, { nullable: true })
     order_production_type_name: string | null;
+
+    @Field(() => Float, { nullable: true })
+    count_id: number | null;
 
     @Field(() => Float, { nullable: false })
     kilos: number;

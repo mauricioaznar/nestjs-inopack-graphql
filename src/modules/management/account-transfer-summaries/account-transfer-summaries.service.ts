@@ -42,7 +42,6 @@ export class AccountTransferSummariesService {
     }: {
         account_id: number | null;
     }): Promise<Account | null> {
-        console.log(account_id, typeof account_id);
         if (!account_id) {
             return null;
         }

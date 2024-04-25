@@ -287,6 +287,8 @@ export class TransfersService {
     ): Promise<Transfer> {
         await this.validateUpsertTransfer(transferInput);
 
+        console.log(transferInput);
+
         const transfer = await this.prisma.transfers.upsert({
             create: {
                 ...getCreatedAtProperty(),
@@ -319,6 +321,7 @@ export class TransfersService {
             ? await this.prisma.transfer_receipts.findMany({
                   where: {
                       transfer_id: transferInput.id,
+                      active: 1,
                   },
               })
             : [];
@@ -344,6 +347,17 @@ export class TransfersService {
                         id: delItem.id,
                     },
                 });
+                if (delItem.expense_id) {
+                    await this.updateExpensesTransfersTotal({
+                        expense_id: delItem.expense_id,
+                    });
+                }
+
+                if (delItem.order_sale_id) {
+                    await this.updateOrderSalesTransfersTotal({
+                        order_sale_id: delItem.order_sale_id,
+                    });
+                }
                 // await this.cacheManager.del(`product_inventory`);
             }
         }
@@ -359,6 +373,18 @@ export class TransfersService {
                     amount: createItem.amount,
                 },
             });
+
+            if (createItem.expense_id) {
+                await this.updateExpensesTransfersTotal({
+                    expense_id: createItem.expense_id,
+                });
+            }
+
+            if (createItem.order_sale_id) {
+                await this.updateOrderSalesTransfersTotal({
+                    order_sale_id: createItem.order_sale_id,
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
@@ -377,9 +403,72 @@ export class TransfersService {
                     },
                 });
             }
+            if (updateItem.expense_id) {
+                await this.updateExpensesTransfersTotal({
+                    expense_id: updateItem.expense_id,
+                });
+            }
+
+            if (updateItem.order_sale_id) {
+                await this.updateOrderSalesTransfersTotal({
+                    order_sale_id: updateItem.order_sale_id,
+                });
+            }
         }
 
         return transfer;
+    }
+
+    async updateExpensesTransfersTotal({ expense_id }: { expense_id: number }) {
+        const {
+            _sum: { amount },
+        } = await this.prisma.transfer_receipts.aggregate({
+            _sum: {
+                amount: true,
+            },
+            where: {
+                active: 1,
+                expense_id: expense_id,
+            },
+        });
+
+        await this.prisma.expenses.updateMany({
+            data: {
+                ...getUpdatedAtProperty(),
+                transfer_receipts_total: amount || 0,
+            },
+            where: {
+                id: expense_id,
+            },
+        });
+    }
+
+    async updateOrderSalesTransfersTotal({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }) {
+        const {
+            _sum: { amount },
+        } = await this.prisma.transfer_receipts.aggregate({
+            _sum: {
+                amount: true,
+            },
+            where: {
+                active: 1,
+                order_sale_id: order_sale_id,
+            },
+        });
+
+        await this.prisma.order_sales.updateMany({
+            data: {
+                ...getUpdatedAtProperty(),
+                transfer_receipts_total: amount || 0,
+            },
+            where: {
+                id: order_sale_id,
+            },
+        });
     }
 
     async validateUpsertTransfer(input: TransferUpsertInput): Promise<void> {

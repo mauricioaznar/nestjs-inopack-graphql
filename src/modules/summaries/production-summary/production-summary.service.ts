@@ -7,10 +7,12 @@ import {
 } from '../../../common/dto/entities/summaries/production-summary.dto';
 import {
     getDatesInjections,
+    getDatesInjectionsV2,
     getRangesFromYearMonth,
 } from '../../../common/helpers';
 import dayjs from 'dayjs';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
+import { DateGroupBy } from '../../../common/dto/dates/dates';
 
 @Injectable()
 export class ProductionSummaryService {
@@ -25,6 +27,7 @@ export class ProductionSummaryService {
         order_production_type_id,
         entity_group,
         branch_id,
+        date_group_by,
     }: ProductionSummaryArgs): Promise<ProductionSummary> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: year,
@@ -35,10 +38,11 @@ export class ProductionSummaryService {
         const formattedEndDate = dayjs(endDate).utc().format('YYYY-MM-DD');
 
         const { groupByDateGroup, orderByDateGroup, selectDateGroup } =
-            getDatesInjections({
-                year,
-                month,
+            getDatesInjectionsV2({
+                dateGroupBy: date_group_by,
             });
+
+        console.log(groupByDateGroup, selectDateGroup);
 
         const andWhereOrderProductionType = order_production_type_id
             ? `and (order_productions.order_production_type_id = ${order_production_type_id} and products.order_production_type_id = ${order_production_type_id})`
@@ -88,10 +92,11 @@ export class ProductionSummaryService {
                      ${convertToInt('length')},
                      ${convertToInt('calibre')},
                      ${convertToInt('product_id')},
+                     ${convertToInt('order_production_product_id')},
                      product_description`;
 
                 groupByEntityGroup =
-                    'machine_id, machine_type_id, machine_name, branch_name, branch_id, product_category_id, product_category_name, product_id, product_description, width, length, calibre';
+                    'machine_id, machine_type_id, machine_name, branch_name, branch_id, product_category_id, product_category_name, product_id, product_description, width, length, calibre, order_production_product_id';
                 break;
         }
 
@@ -118,6 +123,7 @@ export class ProductionSummaryService {
                  machines.name machine_name,
                  machines.machine_type_id machine_type_id,
                  order_production_products.kilos,
+                 order_production_products.id order_production_product_id,
                  order_production_products.product_id product_id,
                  products.description product_description,
                  products.width width,
