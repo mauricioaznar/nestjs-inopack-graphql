@@ -115,6 +115,9 @@ export class PaginatedOrderSalesQueryArgs {
 
     @Field(() => Boolean, { nullable: true })
     no_credit_note: boolean;
+
+    @Field(() => Boolean, { nullable: true })
+    is_transfer_incomplete: boolean;
 }
 
 @ArgsType()

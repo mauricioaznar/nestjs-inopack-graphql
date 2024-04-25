@@ -195,6 +195,7 @@ export class ExpensesService {
                             .transfer_receipts_total,
                     },
                 },
+                canceled: false,
             });
         }
 

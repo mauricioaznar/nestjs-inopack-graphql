@@ -141,6 +141,18 @@ export class OrderSaleService {
             });
         }
 
+        if (orderSalesQueryArgs.is_transfer_incomplete) {
+            orderSalesAndWhere.push({
+                total_with_tax: {
+                    not: {
+                        equals: this.prisma.order_sales.fields
+                            .transfer_receipts_total,
+                    },
+                },
+                canceled: false,
+            });
+        }
+
         const orderSalesWhere: Prisma.order_salesWhereInput = {
             AND: orderSalesAndWhere,
         };
@@ -277,7 +289,7 @@ export class OrderSaleService {
                 ${convertToInt('order_request_id')},
                 ${convertToInt('receipt_type_id')},
                 wtv.total_with_tax as order_sales_total,
-                otv.total as transfer_receipts_total
+                ifnull(otv.total, 0) as transfer_receipts_total
             FROM order_sales
             JOIN
                 (
