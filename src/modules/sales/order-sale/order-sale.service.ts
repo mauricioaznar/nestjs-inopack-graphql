@@ -672,8 +672,6 @@ export class OrderSaleService {
                 },
             );
 
-        console.log(subtotal, tax, total_with_tax);
-
         const orderSale = await this.prisma.order_sales.upsert({
             create: {
                 ...getCreatedAtProperty(),
@@ -693,9 +691,9 @@ export class OrderSaleService {
                 credit_note_amount: input.credit_note_amount,
                 notes: input.notes,
                 canceled: input.canceled,
-                subtotal: subtotal,
-                tax: tax,
-                total_with_tax: total_with_tax,
+                subtotal: round(subtotal),
+                tax: round(tax),
+                total_with_tax: round(total_with_tax),
             },
             update: {
                 ...getUpdatedAtProperty(),

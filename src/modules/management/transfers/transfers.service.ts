@@ -23,6 +23,7 @@ import {
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
 import { TransferType } from '../../../common/dto/entities/management/transfer-type.dto';
+import { round } from '../../../common/helpers/number/round';
 
 @Injectable()
 export class TransfersService {
@@ -435,7 +436,7 @@ export class TransfersService {
         await this.prisma.expenses.updateMany({
             data: {
                 ...getUpdatedAtProperty(),
-                transfer_receipts_total: amount || 0,
+                transfer_receipts_total: round(amount || 0),
             },
             where: {
                 id: expense_id,
@@ -463,7 +464,7 @@ export class TransfersService {
         await this.prisma.order_sales.updateMany({
             data: {
                 ...getUpdatedAtProperty(),
-                transfer_receipts_total: amount || 0,
+                transfer_receipts_total: round(amount || 0),
             },
             where: {
                 id: order_sale_id,
