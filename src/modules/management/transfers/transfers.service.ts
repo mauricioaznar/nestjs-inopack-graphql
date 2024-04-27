@@ -288,8 +288,6 @@ export class TransfersService {
     ): Promise<Transfer> {
         await this.validateUpsertTransfer(transferInput);
 
-        console.log(transferInput);
-
         const transfer = await this.prisma.transfers.upsert({
             create: {
                 ...getCreatedAtProperty(),

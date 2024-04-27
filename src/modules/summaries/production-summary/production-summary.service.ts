@@ -6,13 +6,11 @@ import {
     ProductionSummaryArgs,
 } from '../../../common/dto/entities/summaries/production-summary.dto';
 import {
-    getDatesInjections,
     getDatesInjectionsV2,
     getRangesFromYearMonth,
 } from '../../../common/helpers';
 import dayjs from 'dayjs';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
-import { DateGroupBy } from '../../../common/dto/dates/dates';
 
 @Injectable()
 export class ProductionSummaryService {
@@ -41,8 +39,6 @@ export class ProductionSummaryService {
             getDatesInjectionsV2({
                 dateGroupBy: date_group_by,
             });
-
-        console.log(groupByDateGroup, selectDateGroup);
 
         const andWhereOrderProductionType = order_production_type_id
             ? `and (order_productions.order_production_type_id = ${order_production_type_id} and products.order_production_type_id = ${order_production_type_id})`
