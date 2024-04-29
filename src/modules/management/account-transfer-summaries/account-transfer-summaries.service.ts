@@ -48,7 +48,7 @@ export class AccountTransferSummariesService {
 
         return this.prisma.accounts.findUnique({
             where: {
-                id: account_id,
+                id: Number(account_id),
             },
         });
     }

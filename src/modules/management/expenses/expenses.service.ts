@@ -352,7 +352,9 @@ export class ExpensesService {
                 date: input.date,
                 locked: input.locked,
                 account_id: input.account_id,
-                expected_payment_date: input.expected_payment_date,
+                expected_payment_date: input.expected_payment_date
+                    ? input.expected_payment_date
+                    : null,
                 order_code: input.order_code.replace(' ', ''),
                 receipt_type_id: input.receipt_type_id,
                 notes: input.notes,
@@ -370,7 +372,9 @@ export class ExpensesService {
                 date: input.date,
                 locked: input.locked,
                 account_id: input.account_id,
-                expected_payment_date: input.expected_payment_date,
+                expected_payment_date: input.expected_payment_date
+                    ? input.expected_payment_date
+                    : null,
                 order_code: input.order_code.replace(' ', ''),
                 receipt_type_id: input.receipt_type_id,
                 subtotal: input.subtotal,
