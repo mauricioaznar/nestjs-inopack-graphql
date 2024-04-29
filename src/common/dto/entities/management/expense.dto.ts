@@ -88,6 +88,9 @@ export class GetExpensesQueryArgs {
 
     @Field(() => Int, { nullable: true })
     receipt_type_id: number | null;
+
+    @Field(() => Boolean, { nullable: true })
+    is_canceled: boolean | null;
 }
 
 @ObjectType()

@@ -53,7 +53,8 @@ export class ExpensesService {
         datePaginator: YearMonth;
         expensesSortArgs: ExpensesSortArgs;
     }): Promise<Expense[]> {
-        const { account_id, receipt_type_id } = getExpensesQueryArgs;
+        const { account_id, receipt_type_id, is_canceled } =
+            getExpensesQueryArgs;
         const { sort_order, sort_field } = expensesSortArgs;
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
@@ -66,6 +67,9 @@ export class ExpensesService {
             },
             {
                 receipt_type_id: receipt_type_id || undefined,
+            },
+            {
+                canceled: is_canceled !== null ? is_canceled : undefined,
             },
             {
                 active: 1,
