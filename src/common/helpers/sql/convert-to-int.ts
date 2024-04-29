@@ -1,3 +1,3 @@
 export function convertToInt(originalName, newName = originalName) {
-    return `cast(${originalName} as float(12)) as ${newName}`;
+    return `cast(${originalName} as decimal(12, 2)) as ${newName}`;
 }
