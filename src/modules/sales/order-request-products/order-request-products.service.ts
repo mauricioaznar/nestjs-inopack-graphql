@@ -122,6 +122,15 @@ export class OrderRequestProductsService {
         const res = await this.prisma.$queryRawUnsafe<
             OptimizedRequestProduct[]
         >(queryStr);
-        return res;
+
+        return res.map((item) => {
+            return {
+                ...item,
+                order_request_estimated_delivery_date:
+                    item.order_request_estimated_delivery_date
+                        ? new Date(item.order_request_estimated_delivery_date)
+                        : null,
+            };
+        });
     }
 }

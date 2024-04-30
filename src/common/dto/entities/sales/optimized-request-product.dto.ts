@@ -8,8 +8,8 @@ export class OptimizedRequestProduct {
     @Field(() => String, { nullable: false })
     account_name: string;
 
-    @Field(() => String, { nullable: true })
-    order_request_estimated_delivery_date: string | null;
+    @Field(() => Date, { nullable: true })
+    order_request_estimated_delivery_date: Date | null;
 
     @Field(() => Int, { nullable: true })
     product_id?: number | null;
