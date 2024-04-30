@@ -96,6 +96,9 @@ export class ProductionRecord {
 
     @Field(() => Int, { nullable: false })
     year: number;
+
+    @Field(() => Float, { nullable: true })
+    hours: number | null;
 }
 
 @ObjectType('WasteRecord')

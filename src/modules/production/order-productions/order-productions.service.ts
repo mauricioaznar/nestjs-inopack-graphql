@@ -214,6 +214,10 @@ export class OrderProductionsService {
                     active: 1,
                     group_weight: createItem.group_weight,
                     groups: createItem.groups,
+                    hours:
+                        createItem.hours !== null && createItem.hours !== 0
+                            ? createItem.hours
+                            : null,
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
@@ -229,6 +233,10 @@ export class OrderProductionsService {
                     active: 1,
                     group_weight: updateItem.group_weight,
                     groups: updateItem.groups,
+                    hours:
+                        updateItem.hours !== null && updateItem.hours !== 0
+                            ? updateItem.hours
+                            : null,
                 },
                 where: {
                     product_id: updateItem.product_id,

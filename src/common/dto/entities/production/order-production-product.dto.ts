@@ -17,6 +17,9 @@ export class OrderProductionProductBase {
 
     @Field(() => Int, { nullable: false })
     machine_id: number | null;
+
+    @Field(() => Float, { nullable: true })
+    hours: number | null;
 }
 
 @InputType('OrderProductionProductInput')

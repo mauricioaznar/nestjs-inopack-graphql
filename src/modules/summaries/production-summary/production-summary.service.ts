@@ -88,11 +88,12 @@ export class ProductionSummaryService {
                      ${convertToInt('length')},
                      ${convertToInt('calibre')},
                      ${convertToInt('product_id')},
+                     ${convertToInt('hours')},
                      ${convertToInt('order_production_product_id')},
                      product_description`;
 
                 groupByEntityGroup =
-                    'machine_id, machine_type_id, machine_name, branch_name, branch_id, product_category_id, product_category_name, product_id, product_description, width, length, calibre, order_production_product_id';
+                    'machine_id, machine_type_id, machine_name, branch_name, branch_id, product_category_id, product_category_name, product_id, product_description, width, length, calibre, hours, order_production_product_id';
                 break;
         }
 
@@ -115,6 +116,7 @@ export class ProductionSummaryService {
                  branches.name branch_name,
                  order_productions.order_production_type_id order_production_type_id,
                  order_production_type.name order_production_type_name,
+                 order_production_products.hours hours,
                  order_production_products.machine_id machine_id,
                  machines.name machine_name,
                  machines.machine_type_id machine_type_id,
