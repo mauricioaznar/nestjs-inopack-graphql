@@ -20,6 +20,9 @@ export class ExpenseBase {
     @Field(() => Boolean, { nullable: false })
     require_supplement: boolean;
 
+    @Field(() => Boolean, { nullable: false })
+    require_order_code: boolean;
+
     @Field(() => String, { nullable: false })
     supplement_code: string;
 

@@ -637,6 +637,7 @@ model expenses {
   transfer_receipts_total                Float                            @default(0.00)
   transfer_receipts_total_no_adjustments Float                            @default(0.00)
   total_with_tax                         Float                            @default(0.00)
+  require_order_code                     Boolean                          @default(true)
   expense_raw_material_additions         expense_raw_material_additions[]
   accounts                               accounts?                        @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
   receipt_types                          receipt_types?                   @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")

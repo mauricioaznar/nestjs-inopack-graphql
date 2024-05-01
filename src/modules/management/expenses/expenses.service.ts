@@ -181,12 +181,16 @@ export class ExpensesService {
 
         if (noReceipt) {
             expensesAndWhere.push({
+                require_order_code: true,
                 order_code: '',
             });
         }
 
         if (expensesQueryArgs.no_supplement) {
             expensesAndWhere.push({
+                transfer_receipts_total: {
+                    gt: 0,
+                },
                 require_supplement: true,
                 supplement_code: '',
             });
@@ -359,6 +363,7 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date
                     ? input.expected_payment_date
                     : null,
+                require_order_code: input.require_order_code,
                 order_code: input.order_code.replace(' ', ''),
                 receipt_type_id: input.receipt_type_id,
                 notes: input.notes,
@@ -379,6 +384,7 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date
                     ? input.expected_payment_date
                     : null,
+                require_order_code: input.require_order_code,
                 order_code: input.order_code.replace(' ', ''),
                 receipt_type_id: input.receipt_type_id,
                 subtotal: input.subtotal,
