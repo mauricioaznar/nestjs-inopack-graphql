@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import {
     Branch,
+    GetMachineQueryFields,
     Machine,
     MachineDailyProduction,
     MachinePart,
@@ -44,10 +45,23 @@ export class MachinesService {
         });
     }
 
-    async getMachines(): Promise<Machine[]> {
+    async getMachines({
+        getMachineQueryFields,
+    }: {
+        getMachineQueryFields: GetMachineQueryFields;
+    }): Promise<Machine[]> {
+        const { exclude_discontinued } = getMachineQueryFields;
         return this.prisma.machines.findMany({
             where: {
-                active: 1,
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        discontinued:
+                            exclude_discontinued === true ? false : undefined,
+                    },
+                ],
             },
         });
     }
@@ -62,12 +76,14 @@ export class MachinesService {
                 name: machineInput.name,
                 branch_id: machineInput.branch_id,
                 order_production_type_id: machineInput.order_production_type_id,
+                discontinued: machineInput.discontinued,
             },
             update: {
                 ...getUpdatedAtProperty(),
                 name: machineInput.name,
                 branch_id: machineInput.branch_id,
                 order_production_type_id: machineInput.order_production_type_id,
+                discontinued: machineInput.discontinued,
             },
             where: {
                 id: machineInput.id || 0,

@@ -20,6 +20,9 @@ export class MachineBase {
 
     @Field(() => Int, { nullable: true })
     order_production_type_id: number | null;
+
+    @Field(() => Boolean, { nullable: false })
+    discontinued: boolean;
 }
 
 @InputType('MachineUpsertInput')
@@ -56,4 +59,10 @@ export class MachineQueryArgs {
 
     @Field(() => String, { nullable: false })
     filter: string;
+}
+
+@ArgsType()
+export class GetMachineQueryFields {
+    @Field(() => Boolean, { nullable: true })
+    exclude_discontinued: boolean | null;
 }

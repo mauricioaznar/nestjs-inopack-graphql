@@ -14,6 +14,8 @@ import {
     Account,
     ActivityTypeName,
     Branch,
+    GetMachineQueryFields,
+    GetProductsQueryFields,
     Machine,
     MachineDailyProduction,
     MachinePart,
@@ -60,8 +62,13 @@ export class MachinesResolver {
     }
 
     @Query(() => [Machine])
-    async getMachines() {
-        return this.service.getMachines();
+    async getMachines(
+        @Args({ nullable: true })
+        getMachineQueryFields: GetMachineQueryFields,
+    ) {
+        return this.service.getMachines({
+            getMachineQueryFields,
+        });
     }
 
     @ResolveField(() => [MachinePart])
