@@ -18,9 +18,6 @@ export class OrderSaleProductBase {
     @Field({ nullable: false })
     group_weight: number;
 
-    @Field(() => Int, { nullable: false })
-    discount: number;
-
     @Field(() => Int, { nullable: true })
     product_id?: number | null;
 }

@@ -58,6 +58,15 @@ export class OrderSaleBase {
 
     @Field(() => Boolean, { nullable: false })
     canceled: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    automatic_tax_calculation: boolean;
+
+    @Field(() => Float, { nullable: false })
+    tax: number;
+
+    @Field(() => Float, { nullable: false })
+    subtotal: number;
 }
 
 @InputType('OrderSaleInput')
@@ -84,16 +93,10 @@ export class OrderSale extends OrderSaleBase {
     transfer_receipts_total: number;
 
     @Field(() => Float, { nullable: false })
-    tax: number;
+    transfer_receipts_total_no_adjustments: number;
 
     @Field(() => Float, { nullable: false })
     total_with_tax: number;
-
-    @Field(() => Float, { nullable: false })
-    subtotal: number;
-
-    @Field(() => Float, { nullable: false })
-    transfer_receipts_total_no_adjustments: number;
 }
 
 @ObjectType()

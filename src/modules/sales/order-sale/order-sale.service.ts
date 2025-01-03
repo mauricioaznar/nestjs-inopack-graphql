@@ -288,29 +288,17 @@ export class OrderSaleService {
                 ${convertToInt('order_sale_status_id')},
                 ${convertToInt('order_request_id')},
                 ${convertToInt('receipt_type_id')},
-                wtv.total_with_tax as order_sales_total,
+                wtv.total as order_sales_total,
                 ifnull(otv.total, 0) as transfer_receipts_total
             FROM order_sales
             JOIN
                 (
-                    SELECT 
-                        ztv.order_sale_id AS order_sale_id,
-                        round(SUM(ztv.total), 2) total,
-                        round(SUM(ztv.tax), 2) tax,
-                        round(SUM(ztv.total_with_tax), 2) total_with_tax
-                    FROM
-                        (
-                            SELECT 
-                            order_sales.id AS order_sale_id,
-                                ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) total,
-                                ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.receipt_type_id = 2, 0.16, 0) tax,
-                                ((osp.kilos * osp.kilo_price) - (osp.kilos * osp.kilo_price * osp.discount / 100) + (osp.groups * osp.group_price) - (osp.groups * osp.group_price * osp.discount / 100)) * IF(order_sales.receipt_type_id = 2, 1.16, 1) total_with_tax
-                            FROM order_sale_products as osp
-                            JOIN order_sales ON order_sales.id = osp.order_sale_id
-                            WHERE order_sales.active = 1
-                            AND osp.active = 1
-                        ) AS ztv
-                    GROUP BY ztv.order_sale_id
+                        SELECT
+                            order_sales.id order_sale_id,
+                            round(sum(order_sales.subtotal + order_sales.tax), 2) total
+                        FROM order_sales
+                        WHERE order_sales.active = 1
+                        GROUP BY order_sales.id
                 ) AS wtv
             on wtv.order_sale_id = order_sales.id
             left join 
@@ -326,10 +314,12 @@ export class OrderSaleService {
                     group by order_sale_id
                 ) as otv
             on otv.order_sale_id = order_sales.id
-            where ((otv.total - wtv.total_with_tax) != 0 or isnull(otv.total))
+            where ((otv.total - wtv.total) != 0 or isnull(otv.total))
             and order_sales.canceled = 0
             order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
         `);
+
+        console.log(res);
 
         return res.map((os) => {
             return {
@@ -531,26 +521,18 @@ export class OrderSaleService {
 
             const kiloProductTotal =
                 osp.kilo_price *
-                (osp.kilos - (orderAdjustmentProduct?.kilos || 0)) *
-                (orderSale.receipt_type_id === 2 ? 1.16 : 1);
+                (osp.kilos - (orderAdjustmentProduct?.kilos || 0));
 
             const groupProductTotal =
                 osp.group_price *
-                (osp.groups - (orderAdjustmentProduct?.groups || 0)) *
-                (orderSale.receipt_type_id === 2 ? 1.16 : 1);
+                (osp.groups - (orderAdjustmentProduct?.groups || 0));
 
             const productTotal = kiloProductTotal + groupProductTotal;
 
-            const discountTotal =
-                productTotal -
-                (productTotal - productTotal * (osp.discount / 100));
-
-            const productTotalMinusDiscount = productTotal - discountTotal;
-
-            return acc + productTotalMinusDiscount;
+            return acc + productTotal;
         }, 0);
 
-        return round(orderSaleProductsTotal);
+        return round(orderSaleProductsTotal + orderSale.tax);
     }
 
     async getOrderSaleInvoiceTotal({
@@ -582,15 +564,9 @@ export class OrderSaleService {
 
         const orderSaleProductsTotal = orderSaleProducts.reduce(
             (acc, product) => {
-                const kiloProductTotal =
-                    product.kilo_price *
-                    product.kilos *
-                    (orderSale.receipt_type_id === 2 ? 1.16 : 1);
+                const kiloProductTotal = product.kilo_price * product.kilos;
 
-                const groupProductTotal =
-                    product.group_price *
-                    product.groups *
-                    (orderSale.receipt_type_id === 2 ? 1.16 : 1);
+                const groupProductTotal = product.group_price * product.groups;
 
                 const productTotal = kiloProductTotal + groupProductTotal;
 
@@ -599,7 +575,7 @@ export class OrderSaleService {
             0,
         );
 
-        return Math.round(orderSaleProductsTotal * 100) / 100;
+        return Math.round((orderSaleProductsTotal + orderSale.tax) * 100) / 100;
     }
 
     async getOrderSaleTransferReceipts({
@@ -654,42 +630,51 @@ export class OrderSaleService {
         await this.validateOrderSale(input, current_user_id);
 
         const { subtotal, tax, total_with_tax } =
-            input.order_sale_products.reduce(
-                (acc, osp) => {
-                    const kiloSubtotal = osp.kilo_price * osp.kilos;
+            !input.automatic_tax_calculation
+                ? {
+                      subtotal: input.subtotal,
+                      tax: input.tax,
+                      total_with_tax: input.subtotal + input.tax,
+                  }
+                : input.order_sale_products.reduce(
+                      (acc, osp) => {
+                          const kiloSubtotal = osp.kilo_price * osp.kilos;
 
-                    const kiloTax =
-                        kiloSubtotal * (input.receipt_type_id === 2 ? 0.16 : 0);
+                          const kiloTax =
+                              kiloSubtotal *
+                              (input.receipt_type_id === 2 ? 0.16 : 0);
 
-                    const kiloProductTotal =
-                        kiloSubtotal * (input.receipt_type_id === 2 ? 1.16 : 1);
+                          const kiloProductTotal =
+                              kiloSubtotal *
+                              (input.receipt_type_id === 2 ? 1.16 : 1);
 
-                    const groupSubtotal = osp.group_price * osp.groups;
+                          const groupSubtotal = osp.group_price * osp.groups;
 
-                    const groupTax =
-                        groupSubtotal *
-                        (input.receipt_type_id === 2 ? 0.16 : 0);
+                          const groupTax =
+                              groupSubtotal *
+                              (input.receipt_type_id === 2 ? 0.16 : 0);
 
-                    const groupProductTotal =
-                        groupSubtotal *
-                        (input.receipt_type_id === 2 ? 1.16 : 1);
+                          const groupProductTotal =
+                              groupSubtotal *
+                              (input.receipt_type_id === 2 ? 1.16 : 1);
 
-                    const subtotal = kiloSubtotal + groupSubtotal;
-                    const tax = kiloTax + groupTax;
-                    const totalWithTax = kiloProductTotal + groupProductTotal;
+                          const subtotal = kiloSubtotal + groupSubtotal;
+                          const tax = kiloTax + groupTax;
+                          const totalWithTax =
+                              kiloProductTotal + groupProductTotal;
 
-                    return {
-                        subtotal: acc.subtotal + subtotal,
-                        tax: acc.tax + tax,
-                        total_with_tax: acc.total_with_tax + totalWithTax,
-                    };
-                },
-                {
-                    subtotal: 0,
-                    tax: 0,
-                    total_with_tax: 0,
-                },
-            );
+                          return {
+                              subtotal: acc.subtotal + subtotal,
+                              tax: acc.tax + tax,
+                              total_with_tax: acc.total_with_tax + totalWithTax,
+                          };
+                      },
+                      {
+                          subtotal: 0,
+                          tax: 0,
+                          total_with_tax: 0,
+                      },
+                  );
 
         const orderSale = await this.prisma.order_sales.upsert({
             create: {
@@ -710,6 +695,7 @@ export class OrderSaleService {
                 credit_note_amount: input.credit_note_amount,
                 notes: input.notes,
                 canceled: input.canceled,
+                automatic_tax_calculation: input.automatic_tax_calculation,
                 subtotal: round(subtotal),
                 tax: round(tax),
                 total_with_tax: round(total_with_tax),
@@ -729,6 +715,7 @@ export class OrderSaleService {
                 supplement_code: input.supplement_code,
                 credit_note_code: input.credit_note_code,
                 credit_note_amount: input.credit_note_amount,
+                automatic_tax_calculation: input.automatic_tax_calculation,
                 notes: input.notes,
                 canceled: input.canceled,
                 subtotal: round(subtotal),
@@ -786,7 +773,6 @@ export class OrderSaleService {
                     active: 1,
                     group_weight: createItem.group_weight,
                     groups: createItem.groups,
-                    discount: createItem.discount,
                     group_price: createItem.group_price,
                 },
             });
@@ -804,7 +790,6 @@ export class OrderSaleService {
                         group_weight: updateItem.group_weight,
                         groups: updateItem.groups,
                         kilo_price: updateItem.kilo_price,
-                        discount: updateItem.discount,
                         group_price: updateItem.group_price,
                     },
                     where: {

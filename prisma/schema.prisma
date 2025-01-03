@@ -344,6 +344,7 @@ model order_sales {
   total_with_tax                         Float                 @default(0.00)
   transfer_receipts_total                Float                 @default(0.00)
   transfer_receipts_total_no_adjustments Float                 @default(0.00)
+  automatic_tax_calculation              Boolean               @default(true)
   order_adjustments                      order_adjustments[]
   order_sale_products                    order_sale_products[]
   accounts                               accounts?             @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_account_id_foreign")

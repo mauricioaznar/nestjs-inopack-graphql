@@ -119,9 +119,9 @@ export class SalesSummaryService {
                  order_sale_statuses.id status_id,
                  order_sale_statuses.name status_name,
                  (osp.kilos - ifnull(asp.kilos, 0)) kilos_sold,
-                 (((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) - ((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price * osp.discount / 100) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price) - ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price * osp.discount / 100)) total,
-                 (((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) - ((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price * osp.discount / 100) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price) - ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price * osp.discount / 100)) * IF(order_sales.receipt_type_id = 2, 0.16, 0) tax,
-                 (((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) - ((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price * osp.discount / 100) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price) - ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price * osp.discount / 100)) * IF(order_sales.receipt_type_id = 2, 1.16, 1) total_with_tax
+                 ((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price) total,
+                 (((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price)) * IF(order_sales.receipt_type_id = 2, 0.16, 0) tax,
+                 (((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price)) * IF(order_sales.receipt_type_id = 2, 1.16, 1) total_with_tax
             from order_sales
                 join order_sale_products as osp
                 on osp.order_sale_id = order_sales.id
@@ -157,6 +157,7 @@ export class SalesSummaryService {
                 
             where osp.active = 1
               and order_sales.active = 1
+              and products.id != 196
                 ) as ctc
             where ctc.start_date >= '${startDate}'
               and ctc.start_date < '${endDate}'

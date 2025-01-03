@@ -49,8 +49,6 @@ export class OrderSaleProductsService {
         const groupsTotal =
             orderSaleProduct.group_price * orderSaleProduct.groups;
         const total = kilosTotal + groupsTotal;
-        const discount = total * (orderSaleProduct.discount / 100);
-        const totalMinusDiscount = total - discount;
-        return Math.round(totalMinusDiscount * 100) / 100;
+        return Math.round(total * 100) / 100;
     }
 }
