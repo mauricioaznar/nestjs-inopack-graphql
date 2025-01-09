@@ -31,6 +31,7 @@ export enum SalesSummaryEntitiesGroup {
     account = 'account',
     receipt = 'receipt',
     product = 'product',
+    productAccount = 'productAccount',
 }
 
 registerEnumType(SalesSummaryEntitiesGroup, {

@@ -75,6 +75,19 @@ export class SalesSummaryService {
                     groupByEntityGroup +=
                         'product_id, product_name, width, calibre, length';
                     break;
+
+                case 'productAccount':
+                    selectEntityGroup += `${convertToInt(
+                        'product_id',
+                    )}, product_name, ${convertToInt('width')}, ${convertToInt(
+                        'calibre',
+                    )}, ${convertToInt('length')}, ${convertToInt(
+                        'account_id',
+                    )}, account_name, account_abbreviation`;
+                    groupByEntityGroup +=
+                        'product_id, product_name, width, calibre, length, account_id, account_name, account_abbreviation';
+                    break;
+
                 default:
                     break;
             }
