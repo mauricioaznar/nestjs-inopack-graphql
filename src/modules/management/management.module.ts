@@ -10,6 +10,7 @@ import { AccountTransferSummariesModule } from './account-transfer-summaries/acc
 import { ReceiptTypeModule } from './receipt-type/receipt-type.module';
 import { ExpenseRawMaterialAdditionsModule } from './expense-raw-material-additions/expense-raw-material-additions.module';
 import { TransferTypeModule } from './transfer-types/transfer-type.module';
+import { SupplierTypesModule } from './supplier-types/supplier-types.module';
 
 @Module({
     imports: [
@@ -24,6 +25,7 @@ import { TransferTypeModule } from './transfer-types/transfer-type.module';
         TransferReceiptsModule,
         TransferTypeModule,
         ReceiptTypeModule,
+        SupplierTypesModule
     ],
 })
 export class ManagementModule {}

@@ -20,6 +20,7 @@ import {
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
+import { SupplierType } from '../../../common/dto/entities/management/supplier-type.dto';
 
 @Injectable()
 export class AccountsService {
@@ -155,6 +156,7 @@ export class AccountsService {
                 is_supplier: input.is_supplier,
                 is_client: input.is_client,
                 is_own: input.is_own,
+                supplier_type_id: input.supplier_type_id || null,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -164,6 +166,7 @@ export class AccountsService {
                 is_supplier: input.is_supplier,
                 is_client: input.is_client,
                 is_own: input.is_own,
+                supplier_type_id: input.supplier_type_id || null,
             },
             where: {
                 id: input.id || 0,
@@ -254,6 +257,22 @@ export class AccountsService {
                         active: 1,
                     },
                 ],
+            },
+        });
+    }
+
+    async getSupplierType({
+        supplier_type_id,
+    }: {
+        supplier_type_id: number | null;
+    }): Promise<SupplierType | null> {
+        if (!supplier_type_id) {
+            return null;
+        }
+
+        return this.prisma.supplier_type.findFirst({
+            where: {
+                id: supplier_type_id,
             },
         });
     }

@@ -26,6 +26,7 @@ import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { SupplierType } from '../../../common/dto/entities/management/supplier-type.dto';
 
 @Resolver(() => Account)
 @Injectable()
@@ -109,6 +110,15 @@ export class AccountsResolver {
     async account_contacts(@Parent() account: Account) {
         return this.service.getAccountContacts({
             account_id: account.id,
+        });
+    }
+
+    @ResolveField(() => SupplierType, { nullable: true })
+    async supplier_type(
+        @Parent() account: Account,
+    ): Promise<SupplierType | null> {
+        return this.service.getSupplierType({
+            supplier_type_id: account.supplier_type_id,
         });
     }
 

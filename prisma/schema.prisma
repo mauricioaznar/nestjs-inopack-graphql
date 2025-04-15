@@ -607,13 +607,17 @@ model accounts {
   is_client                                     Boolean                  @default(false)
   is_own                                        Boolean                  @default(false)
   requires_order_request                        Boolean                  @default(true)
+  supplier_type_id                              Int?                     @db.UnsignedInt
   account_contacts                              account_contacts[]
+  supplier_type                                 supplier_type?           @relation(fields: [supplier_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suppliers_supplier_type_id_foreign")
   expenses                                      expenses[]
   order_requests                                order_requests[]
   order_sales                                   order_sales[]
   raw_material_additions                        raw_material_additions[]
   transfers_accountsTotransfers_from_account_id transfers[]              @relation("accountsTotransfers_from_account_id")
   transfers_accountsTotransfers_to_account_id   transfers[]              @relation("accountsTotransfers_to_account_id")
+
+  @@index([supplier_type_id], map: "suppliers_supplier_type_id_foreign")
 }
 
 model expenses {
@@ -773,4 +777,13 @@ model transfer_type {
   name        String      @db.VarChar(255)
   description String?     @db.VarChar(255)
   transfers   transfers[]
+}
+
+model supplier_type {
+  id         Int        @id @default(autoincrement()) @db.UnsignedInt
+  active     Int        @default(1)
+  created_at DateTime?  @db.DateTime(0)
+  updated_at DateTime?  @db.DateTime(0)
+  name       String     @db.VarChar(255)
+  accounts   accounts[]
 }
