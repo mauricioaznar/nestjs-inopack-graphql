@@ -55,6 +55,12 @@ export class ExpensesSummaryService {
                     )}, receipt_type_name`;
                     groupByEntityGroup += 'receipt_type_id, receipt_type_name';
                     break;
+                case 'supplier_type':
+                    selectEntityGroup += `${convertToInt(
+                        'supplier_type_id',
+                    )}, supplier_type_name`;
+                    groupByEntityGroup += 'supplier_type_id, supplier_type_name';
+                    break;
                 default:
                     break;
             }
@@ -81,6 +87,8 @@ export class ExpensesSummaryService {
                  accounts.abbreviation account_abbreviation,
                  receipt_types.id receipt_type_id,
                  receipt_types.name receipt_type_name,
+                 supplier_type.id supplier_type_id,
+                 supplier_type.name supplier_type_name,
                  wtv.total as total_with_tax,
                  expenses.subtotal as total,
                  expenses.tax  as tax
@@ -99,6 +107,8 @@ export class ExpensesSummaryService {
                 on accounts.id = expenses.account_id
                 left join receipt_types
                 on receipt_types.id = expenses.receipt_type_id
+                left join supplier_type
+                on supplier_type.id = accounts.supplier_type_id
             where expenses.active = 1
                 ) as ctc
             where ctc.start_date >= '${startDate}'
@@ -111,6 +121,8 @@ export class ExpensesSummaryService {
         const expenses = await this.prisma.$queryRawUnsafe<
             ExpensesSummary['expenses']
         >(queryString);
+
+        console.log(expenses);
 
         return {
             expenses: expenses,

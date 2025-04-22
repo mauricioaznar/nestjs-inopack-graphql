@@ -1,37 +1,6 @@
 import dayjs from 'dayjs';
 import { DateGroupBy } from '../../dto/dates/dates';
 
-export const getDatesInjections = function ({
-    year,
-    month,
-}: {
-    year: null | number;
-    month?: null | number;
-}): {
-    groupByDateGroup: string;
-    orderByDateGroup: string;
-    selectDateGroup: string;
-} {
-    if (year && month !== undefined && month !== null) {
-        return {
-            selectDateGroup:
-                'day(ctc.start_date) day, month(ctc.start_date) month, year(ctc.start_date) year',
-            groupByDateGroup:
-                'day(ctc.start_date), month(ctc.start_date), year(ctc.start_date)',
-            orderByDateGroup:
-                'year(ctc.start_date) desc, month(ctc.start_date) desc, day(ctc.start_date) desc',
-        };
-    } else {
-        return {
-            selectDateGroup:
-                'month(ctc.start_date) month, year(ctc.start_date) year',
-            groupByDateGroup: 'month(ctc.start_date), year(ctc.start_date)',
-            orderByDateGroup:
-                'year(ctc.start_date) desc, month(ctc.start_date) desc',
-        };
-    }
-};
-
 export const getDatesInjectionsV2 = function ({
     dateGroupBy,
 }: {
@@ -44,19 +13,19 @@ export const getDatesInjectionsV2 = function ({
     if (dateGroupBy === 'day') {
         return {
             selectDateGroup:
-                'day(ctc.start_date) day, month(ctc.start_date) month, year(ctc.start_date) year',
+                `cast(day(ctc.start_date) as decimal(12 ,2)) as day, cast(month(ctc.start_date) as decimal(12 ,2)) as month, year(ctc.start_date) year`,
             groupByDateGroup:
-                'day(ctc.start_date), month(ctc.start_date), year(ctc.start_date)',
+                'day, month, year(ctc.start_date)',
             orderByDateGroup:
-                'year(ctc.start_date) desc, month(ctc.start_date) desc, day(ctc.start_date) desc',
+                'year(ctc.start_date) desc, month desc, day desc',
         };
     } else if (dateGroupBy === 'month') {
         return {
             selectDateGroup:
-                'month(ctc.start_date) month, year(ctc.start_date) year',
-            groupByDateGroup: 'month(ctc.start_date), year(ctc.start_date)',
+                'cast(month(ctc.start_date) as decimal(12 ,2)) as month, year(ctc.start_date) year',
+            groupByDateGroup: 'month, year(ctc.start_date)',
             orderByDateGroup:
-                'year(ctc.start_date) desc, month(ctc.start_date) desc',
+                'year(ctc.start_date) desc, month desc',
         };
     } else {
         return {
