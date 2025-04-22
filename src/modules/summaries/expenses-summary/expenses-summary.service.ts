@@ -122,8 +122,6 @@ export class ExpensesSummaryService {
             ExpensesSummary['expenses']
         >(queryString);
 
-        console.log(expenses);
-
         return {
             expenses: expenses,
         };
