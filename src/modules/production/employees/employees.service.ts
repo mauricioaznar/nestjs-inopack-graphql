@@ -6,6 +6,7 @@ import {
 import {
     Employee,
     EmployeeUpsertInput,
+    GetEmployeesQueryFields,
     PaginatedEmployees,
     PaginatedEmployeesQueryArgs,
     PaginatedEmployeesSortArgs,
@@ -17,16 +18,33 @@ import {
 } from '../../../common/helpers';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
-import { Branch, OrderProductionType } from '../../../common/dto/entities';
+import {
+    Branch,
+    GetProductsQueryFields,
+    OrderProductionType,
+} from '../../../common/dto/entities';
 
 @Injectable()
 export class EmployeesService {
     constructor(private prisma: PrismaService) {}
 
-    async getEmployees(): Promise<Employee[]> {
+    async getEmployees(args?: {
+        getEmployeesQueryFields?: GetEmployeesQueryFields;
+    }): Promise<Employee[]> {
+        const getEmployeeQueryFields = args?.getEmployeesQueryFields;
+        const excludeDiscontinued =
+            getEmployeeQueryFields?.exclude_discontinued;
+
         return this.prisma.employees.findMany({
             where: {
-                active: 1,
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        employee_status_id: excludeDiscontinued ? 1 : undefined,
+                    },
+                ],
             },
             orderBy: {
                 fullname: 'asc',

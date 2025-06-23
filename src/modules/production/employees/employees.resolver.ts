@@ -12,6 +12,7 @@ import { EmployeesService } from './employees.service';
 import {
     Employee,
     EmployeeUpsertInput,
+    GetEmployeesQueryFields,
     PaginatedEmployees,
     PaginatedEmployeesQueryArgs,
     PaginatedEmployeesSortArgs,
@@ -22,6 +23,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import {
     ActivityTypeName,
     Branch,
+    GetProductsQueryFields,
     OrderProductionType,
     PaginatedProducts,
     User,
@@ -41,7 +43,10 @@ export class EmployeesResolver {
     ) {}
 
     @Query(() => [Employee])
-    async getEmployees(): Promise<Employee[]> {
+    async getEmployees(
+        @Args({ nullable: true })
+        getEmployeesQueryFields: GetEmployeesQueryFields,
+    ): Promise<Employee[]> {
         return this.service.getEmployees();
     }
 

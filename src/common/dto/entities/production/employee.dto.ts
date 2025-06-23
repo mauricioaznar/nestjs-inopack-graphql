@@ -75,3 +75,9 @@ export class PaginatedEmployeesQueryArgs {
     @Field(() => Int, { nullable: true })
     branch_id: number | null;
 }
+
+@ArgsType()
+export class GetEmployeesQueryFields {
+    @Field(() => Boolean, { nullable: true })
+    exclude_discontinued: boolean | null;
+}
