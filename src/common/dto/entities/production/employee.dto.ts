@@ -18,13 +18,13 @@ export class EmployeeBase {
     @Field()
     last_name: string;
 
-    @Field(() => Int, { nullable: true })
+    @Field(() => Int, { nullable: false })
     employee_status_id: number | null;
 
-    @Field(() => Int, { nullable: true })
+    @Field(() => Int, { nullable: false })
     order_production_type_id: number | null;
 
-    @Field(() => Int, { nullable: true })
+    @Field(() => Int, { nullable: false })
     branch_id: number | null;
 }
 
