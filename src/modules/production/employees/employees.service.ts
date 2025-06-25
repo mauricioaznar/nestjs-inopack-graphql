@@ -23,6 +23,7 @@ import {
     GetProductsQueryFields,
     OrderProductionType,
 } from '../../../common/dto/entities';
+import { EmployeeStatus } from '../../../common/dto/entities/production/employee-status.dto';
 
 @Injectable()
 export class EmployeesService {
@@ -301,6 +302,22 @@ export class EmployeesService {
         return this.prisma.branches.findFirst({
             where: {
                 id: branch_id,
+            },
+        });
+    }
+
+    async getEmployeeStatus({
+        employee_status_id,
+    }: {
+        employee_status_id: number | null;
+    }): Promise<EmployeeStatus | null> {
+        if (!employee_status_id) {
+            return null;
+        }
+
+        return this.prisma.employee_statuses.findFirst({
+            where: {
+                id: employee_status_id,
             },
         });
     }

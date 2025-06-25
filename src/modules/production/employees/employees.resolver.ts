@@ -32,6 +32,7 @@ import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { EmployeeType } from '../../../common/dto/entities/production/employee-type.dto';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { EmployeeStatus } from '../../../common/dto/entities/production/employee-status.dto';
 
 @Resolver(() => Employee)
 @UseGuards(GqlAuthGuard)
@@ -47,7 +48,9 @@ export class EmployeesResolver {
         @Args({ nullable: true })
         getEmployeesQueryFields: GetEmployeesQueryFields,
     ): Promise<Employee[]> {
-        return this.service.getEmployees();
+        return this.service.getEmployees({
+            getEmployeesQueryFields: getEmployeesQueryFields,
+        });
     }
 
     @Query(() => PaginatedEmployees)
@@ -117,6 +120,15 @@ export class EmployeesResolver {
     @ResolveField(() => Branch, { nullable: true })
     async branch(@Parent() employee: Employee): Promise<EmployeeType | null> {
         return this.service.getBranch({ branch_id: employee.branch_id });
+    }
+
+    @ResolveField(() => EmployeeStatus, { nullable: true })
+    async employee_status(
+        @Parent() employee: Employee,
+    ): Promise<EmployeeStatus | null> {
+        return this.service.getEmployeeStatus({
+            employee_status_id: employee.employee_status_id,
+        });
     }
 
     @ResolveField(() => OrderProductionType, { nullable: true })
