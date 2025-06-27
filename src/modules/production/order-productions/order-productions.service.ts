@@ -155,6 +155,7 @@ export class OrderProductionsService {
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
                 waste: input.waste,
+                shift: input.shift,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -162,6 +163,7 @@ export class OrderProductionsService {
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
                 waste: input.waste,
+                shift: input.shift,
             },
             where: {
                 id: input.id || 0,

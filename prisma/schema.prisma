@@ -79,6 +79,7 @@ model employees {
   credit                     Float                        @default(0.00)
   credit_required            Int                          @default(0)
   order_production_type_id   Int?                         @db.UnsignedInt
+  is_leader                  Int                          @default(0)
   branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_branch_id_foreign")
   employee_statuses          employee_statuses?           @relation(fields: [employee_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_status_id_foreign")
   employee_type              employee_type?               @relation(fields: [employee_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_type_id_foreign")
@@ -230,6 +231,7 @@ model order_productions {
   order_production_type_id   Int?                         @db.UnsignedInt
   branch_id                  Int?                         @db.UnsignedInt
   start_date                 DateTime                     @db.Date
+  shift                      Int?
   order_production_employees order_production_employees[]
   order_production_products  order_production_products[]
   branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_branch_id_foreign")

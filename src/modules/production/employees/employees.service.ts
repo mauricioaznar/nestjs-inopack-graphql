@@ -161,6 +161,7 @@ export class EmployeesService {
                 employee_status_id: input.employee_status_id,
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
+                is_leader: input.is_leader,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -170,6 +171,7 @@ export class EmployeesService {
                 employee_status_id: input.employee_status_id,
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
+                is_leader: input.is_leader,
             },
             where: {
                 id: input.id || 0,

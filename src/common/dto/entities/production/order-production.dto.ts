@@ -17,6 +17,9 @@ export class OrderProductionBase {
 
     @Field(() => Int, { nullable: true })
     order_production_type_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    shift: number | null;
 }
 
 @InputType('OrderProductionInput')

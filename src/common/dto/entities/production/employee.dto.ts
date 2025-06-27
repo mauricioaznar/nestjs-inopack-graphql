@@ -26,6 +26,9 @@ export class EmployeeBase {
 
     @Field(() => Int, { nullable: true })
     branch_id: number | null;
+
+    @Field({ nullable: false })
+    is_leader: number;
 }
 
 @InputType('EmployeeUpsertInput')
