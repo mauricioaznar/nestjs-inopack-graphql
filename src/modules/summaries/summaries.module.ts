@@ -4,6 +4,7 @@ import { ProductionSummaryModule } from './production-summary/production-summary
 import { SalesSummaryModule } from './sales-summary/sales-summary.module';
 import { ExpensesSummaryModule } from './expenses-summary/expenses-summary.module';
 import { TransfersSummaryModule } from './transfers-summary/transfers-summary.module';
+import { EmployeesSummaryModule } from './employee-summary/employees-summary.module';
 
 @Module({
     imports: [
@@ -12,6 +13,7 @@ import { TransfersSummaryModule } from './transfers-summary/transfers-summary.mo
         SalesSummaryModule,
         ExpensesSummaryModule,
         TransfersSummaryModule,
+        EmployeesSummaryModule,
     ],
 })
 export class SummariesModule {}

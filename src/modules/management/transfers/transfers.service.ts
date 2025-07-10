@@ -798,6 +798,9 @@ export class TransfersService {
         transfer_id: number;
     }): Promise<boolean> {
         const transfer = await this.getTransfer({ transfer_id: transfer_id });
+        const transferReceipts = await this.getTransferReceipts({
+            transfer_id: transfer_id,
+        });
 
         if (!transfer) {
             throw new NotFoundException();
@@ -820,6 +823,19 @@ export class TransfersService {
                 transfer_id: transfer_id,
             },
         });
+
+        for await (const transferReceipt of transferReceipts) {
+            if (transferReceipt.expense_id) {
+                await this.updateExpensesTransfersTotal({
+                    expense_id: transferReceipt.expense_id,
+                });
+            }
+            if (transferReceipt.order_sale_id) {
+                await this.updateOrderSalesTransfersTotal({
+                    order_sale_id: transferReceipt.order_sale_id,
+                });
+            }
+        }
 
         return true;
     }

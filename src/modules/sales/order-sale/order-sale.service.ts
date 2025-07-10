@@ -319,8 +319,6 @@ export class OrderSaleService {
             order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
         `);
 
-        console.log(res);
-
         return res.map((os) => {
             return {
                 ...os,
@@ -479,103 +477,6 @@ export class OrderSaleService {
                 id: orderSale.order_request_id,
             },
         });
-    }
-
-    async getOrderSaleProductsTotal({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<number> {
-        const orderSaleProducts =
-            await this.prisma.order_sale_products.findMany({
-                where: {
-                    AND: [
-                        {
-                            order_sale_id: order_sale_id,
-                        },
-                        {
-                            active: 1,
-                        },
-                    ],
-                },
-            });
-
-        const orderSale = await this.prisma.order_sales.findUnique({
-            where: {
-                id: order_sale_id,
-            },
-        });
-
-        if (!orderSale) return 0;
-
-        const orderAdjustmentProducts = await this.getOrderAdjustmentProducts({
-            order_sale_id: order_sale_id,
-        });
-
-        const orderSaleProductsTotal = orderSaleProducts.reduce((acc, osp) => {
-            const orderAdjustmentProduct = orderAdjustmentProducts.find(
-                (oap) => {
-                    return oap.product_id === osp.product_id;
-                },
-            );
-
-            const kiloProductTotal =
-                osp.kilo_price *
-                (osp.kilos - (orderAdjustmentProduct?.kilos || 0));
-
-            const groupProductTotal =
-                osp.group_price *
-                (osp.groups - (orderAdjustmentProduct?.groups || 0));
-
-            const productTotal = kiloProductTotal + groupProductTotal;
-
-            return acc + productTotal;
-        }, 0);
-
-        return round(orderSaleProductsTotal + orderSale.tax);
-    }
-
-    async getOrderSaleInvoiceTotal({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<number> {
-        const orderSaleProducts =
-            await this.prisma.order_sale_products.findMany({
-                where: {
-                    AND: [
-                        {
-                            order_sale_id: order_sale_id,
-                        },
-                        {
-                            active: 1,
-                        },
-                    ],
-                },
-            });
-
-        const orderSale = await this.prisma.order_sales.findUnique({
-            where: {
-                id: order_sale_id,
-            },
-        });
-
-        if (!orderSale) return 0;
-
-        const orderSaleProductsTotal = orderSaleProducts.reduce(
-            (acc, product) => {
-                const kiloProductTotal = product.kilo_price * product.kilos;
-
-                const groupProductTotal = product.group_price * product.groups;
-
-                const productTotal = kiloProductTotal + groupProductTotal;
-
-                return acc + productTotal;
-            },
-            0,
-        );
-
-        return Math.round((orderSaleProductsTotal + orderSale.tax) * 100) / 100;
     }
 
     async getOrderSaleTransferReceipts({
