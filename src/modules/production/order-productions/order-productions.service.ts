@@ -23,7 +23,11 @@ import { Cache } from 'cache-manager';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { Branch, OrderProductionType } from '../../../common/dto/entities';
+import {
+    Branch,
+    OrderProductionResource,
+    OrderProductionType,
+} from '../../../common/dto/entities';
 import dayjs from 'dayjs';
 
 @Injectable()
@@ -52,6 +56,25 @@ export class OrderProductionsService {
         order_production_id: number;
     }): Promise<OrderProductionProduct[]> {
         return this.prisma.order_production_products.findMany({
+            where: {
+                AND: [
+                    {
+                        order_production_id: order_production_id,
+                    },
+                    {
+                        active: 1,
+                    },
+                ],
+            },
+        });
+    }
+
+    async getOrderProductionResources({
+        order_production_id,
+    }: {
+        order_production_id: number;
+    }): Promise<OrderProductionResource[]> {
+        return this.prisma.order_production_resources.findMany({
             where: {
                 AND: [
                     {
@@ -305,6 +328,76 @@ export class OrderProductionsService {
                     order_production_id: orderProduction.id,
                 },
             });
+        }
+
+        const newResourceItems = input.order_production_resources;
+        const oldResourceItems = input.id
+            ? await this.prisma.order_production_resources.findMany({
+                  where: {
+                      order_production_id: input.id,
+                  },
+              })
+            : [];
+
+        const {
+            aMinusB: deleteResourceItems,
+            bMinusA: createResourceItems,
+            intersection: updateResourceItems,
+        } = vennDiagram({
+            a: oldResourceItems,
+            b: newResourceItems,
+            indexProperties: ['id'],
+        });
+
+        for await (const delItem of deleteResourceItems) {
+            await this.prisma.order_production_resources.updateMany({
+                data: {
+                    ...getUpdatedAtProperty(),
+                    active: -1,
+                },
+                where: {
+                    product_id: delItem.product_id,
+                    order_production_id: orderProduction.id,
+                },
+            });
+            // await this.cacheManager.del(`product_inventory`);
+        }
+
+        for await (const createItem of createResourceItems) {
+            await this.prisma.order_production_resources.create({
+                data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
+                    order_production_id: orderProduction.id,
+                    product_id: createItem.product_id,
+                    machine_id: createItem.machine_id,
+                    kilos: createItem.kilos,
+                    active: 1,
+                    group_weight: createItem.group_weight,
+                    groups: createItem.groups,
+                },
+            });
+            // await this.cacheManager.del(`product_inventory`);
+        }
+
+        for await (const updateItem of updateResourceItems) {
+            await this.prisma.order_production_resources.updateMany({
+                data: {
+                    ...getUpdatedAtProperty(),
+                    product_id: updateItem.product_id,
+                    machine_id: updateItem.machine_id,
+                    kilos: updateItem.kilos,
+                    active: 1,
+                    group_weight: updateItem.group_weight,
+                    groups: updateItem.groups,
+                },
+                where: {
+                    product_id: updateItem.product_id,
+                    machine_id: updateItem.machine_id,
+                    order_production_id: orderProduction.id,
+                },
+            });
+            // await this.cacheManager.del(`product_inventory`);
         }
 
         return orderProduction;

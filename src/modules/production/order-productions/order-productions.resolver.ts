@@ -20,6 +20,7 @@ import { OrderProductionEmployee } from '../../../common/dto/entities/production
 import {
     ActivityTypeName,
     Branch,
+    OrderProductionResource,
     OrderProductionType,
     User,
 } from '../../../common/dto/entities';
@@ -103,6 +104,15 @@ export class OrderProductionsResolver {
         orderProduction: OrderProduction,
     ): Promise<OrderProductionProduct[]> {
         return this.service.getOrderProductionProducts({
+            order_production_id: orderProduction.id,
+        });
+    }
+
+    @ResolveField(() => [OrderProductionResource])
+    async order_production_resources(
+        orderProduction: OrderProduction,
+    ): Promise<OrderProductionResource[]> {
+        return this.service.getOrderProductionResources({
             order_production_id: orderProduction.id,
         });
     }

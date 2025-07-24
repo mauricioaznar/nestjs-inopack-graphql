@@ -20,6 +20,8 @@ export * from './maintenance/spare-transactions.dto';
 // production
 export * from './production/product.dto';
 export * from './production/order-production-type.dto';
+export * from './production/order-production-product.dto';
+export * from './production/order-production-resource.dto';
 export * from './production/raw-material-addition.dto';
 export * from './production/raw-material-addition-item.dto';
 
@@ -52,3 +54,4 @@ export * from './summaries/payments-summary.dto';
 export * from './summaries/production-summary.dto';
 export * from './summaries/sales-summary.dto';
 export * from './summaries/employees-summary.dto';
+export * from './summaries/production-resources-summary.dto';

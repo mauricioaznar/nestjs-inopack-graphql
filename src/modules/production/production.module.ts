@@ -14,6 +14,7 @@ import { ProductMaterialsModule } from './product-materials/product-materials.mo
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { RawMaterialAdditionsModule } from './raw-material-additions/raw-material-additions.module';
 import { RawMaterialAdditionItemsModule } from './raw-material-addition-items/raw-material-addition-items.module';
+import { OrderProductionResourcesModule } from './order-production-resources/order-production-resources.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { RawMaterialAdditionItemsModule } from './raw-material-addition-items/ra
         RawMaterialAdditionsModule,
         RawMaterialAdditionItemsModule,
         OrderProductionProductsModule,
+        OrderProductionResourcesModule,
         OrderProductionEmployeesModule,
         OrderProductionTypesModule,
         OrderAdjustmentsModule,
