@@ -47,6 +47,7 @@ export class ProductionResourcesSummaryService {
         const queryString = `
             select sum(ctc.kilos)                       as               kilos,
                    sum(ctc.groups)                         as               \`groups\`,
+                   sum(ctc.hours)                         as               \`hours\`,
                    ${selectEntityGroup}
                    ${selectDateGroup}
             from (
@@ -56,6 +57,7 @@ export class ProductionResourcesSummaryService {
                          order_productions.start_date start_date,
                          order_production_resources.kilos kilos,
                          order_production_resources.groups \`groups\`,
+                         order_production_resources.hours hours,
                          products.description product_name,
                          employees.fullname employee_name,
                          employees.id employee_id,

@@ -804,6 +804,7 @@ model order_production_resources {
   product_id          Int?               @db.UnsignedInt
   order_production_id Int?               @db.UnsignedInt
   machine_id          Int?               @db.UnsignedInt
+  hours               Float?
   machines            machines?          @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_resources_machine_id_foreign")
   order_productions   order_productions? @relation(fields: [order_production_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_resources_order_production_id_foreign")
   products            products?          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_resources_product_id_foreign")
