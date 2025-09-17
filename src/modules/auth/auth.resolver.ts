@@ -50,7 +50,6 @@ export class AuthResolver {
 
     @Query(() => [User])
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.SUPER)
     async users() {
         return this.userService.findAll();
     }
@@ -80,6 +79,7 @@ export class AuthResolver {
 
     @Mutation(() => User)
     @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.SUPER)
     async createUser(
         @Args('CreateUserInput') input: CreateUserInput,
         @CurrentUser() currentUser: User,

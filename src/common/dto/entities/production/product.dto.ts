@@ -38,6 +38,9 @@ export class ProductBase {
     length: number | null;
 
     @Field(() => Float, { nullable: true })
+    pleat: number | null;
+
+    @Field(() => Float, { nullable: true })
     calibre: number | null;
 
     @Field(() => Float, { nullable: false })

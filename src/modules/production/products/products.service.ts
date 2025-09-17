@@ -262,6 +262,7 @@ export class ProductsService {
                 product_category_id: input.product_category_id,
                 product_material_id: input.product_material_id,
                 current_group_price: input.current_group_price,
+                pleat: input.pleat,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -279,6 +280,7 @@ export class ProductsService {
                 product_category_id: input.product_category_id,
                 product_material_id: input.product_material_id,
                 current_group_price: input.current_group_price,
+                pleat: input.pleat,
             },
             where: {
                 id: input.id || 0,

@@ -600,6 +600,7 @@ export class OrderSaleService {
                 subtotal: round(subtotal),
                 tax: round(tax),
                 total_with_tax: round(total_with_tax),
+                created_by_id: current_user_id,
             },
             update: {
                 ...getUpdatedAtProperty(),
