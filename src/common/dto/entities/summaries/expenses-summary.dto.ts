@@ -21,6 +21,9 @@ export class ExpensesSummaryArgs {
 
     @Field(() => DateGroupBy, { nullable: false })
     date_group_by: DateGroupBy;
+
+    @Field(() => Boolean, { nullable: true })
+    exclude_loans: boolean;
 }
 
 export enum ExpensesSummaryEntitiesGroup {

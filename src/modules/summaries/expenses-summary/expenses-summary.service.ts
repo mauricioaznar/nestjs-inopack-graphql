@@ -20,6 +20,7 @@ export class ExpensesSummaryService {
         month,
         entity_groups,
         date_group_by,
+        exclude_loans,
     }: ExpensesSummaryArgs): Promise<ExpensesSummary> {
         if (year === null || year === undefined) {
             return {
@@ -59,7 +60,8 @@ export class ExpensesSummaryService {
                     selectEntityGroup += `${convertToInt(
                         'supplier_type_id',
                     )}, supplier_type_name`;
-                    groupByEntityGroup += 'supplier_type_id, supplier_type_name';
+                    groupByEntityGroup +=
+                        'supplier_type_id, supplier_type_name';
                     break;
                 default:
                     break;
@@ -69,6 +71,11 @@ export class ExpensesSummaryService {
                 selectEntityGroup += ', ';
                 groupByEntityGroup += ', ';
             }
+        }
+
+        let excludeLoansWhere = '';
+        if (exclude_loans) {
+            excludeLoansWhere = 'and supplier_type.id NOT IN (12)';
         }
 
         const queryString = `
@@ -109,6 +116,7 @@ export class ExpensesSummaryService {
                 on receipt_types.id = expenses.receipt_type_id
                 left join supplier_type
                 on supplier_type.id = accounts.supplier_type_id
+                ${excludeLoansWhere}
             where expenses.active = 1
                 ) as ctc
             where ctc.start_date >= '${startDate}'
