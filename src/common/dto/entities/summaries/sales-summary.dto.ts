@@ -24,6 +24,9 @@ export class SalesSummaryArgs {
 
     @Field(() => Boolean, { nullable: false })
     only_own_products: boolean;
+
+    @Field(() => Boolean, { nullable: true })
+    exclude_loans: boolean;
 }
 
 export enum SalesSummaryEntitiesGroup {

@@ -21,6 +21,7 @@ export class SalesSummaryService {
         entity_groups,
         date_group_by,
         only_own_products,
+        exclude_loans,
     }: SalesSummaryArgs): Promise<SalesSummary> {
         if (year === null || year === undefined) {
             return {
@@ -40,6 +41,9 @@ export class SalesSummaryService {
 
         let groupByEntityGroup = '';
         let selectEntityGroup = '';
+
+
+
         for (let i = 0; i < entity_groups.length; i++) {
             const entity_group = entity_groups[i];
             switch (entity_group) {
@@ -101,6 +105,11 @@ export class SalesSummaryService {
         let ownProductWhere = '';
         if (only_own_products) {
             ownProductWhere = 'and ctc.order_production_type_id IS NOT NULL';
+        }
+
+        let excludeLoansWhere = '';
+        if (exclude_loans) {
+            excludeLoansWhere = 'and products.id  NOT IN (196)';
         }
 
         const sales = await this.prisma.$queryRawUnsafe<SalesSummary['sales']>(`
@@ -168,13 +177,14 @@ export class SalesSummaryService {
                     on asp.order_sale_id = order_sales.id
                     and asp.product_id = osp.product_id
                 
-            where osp.active = 1
-              and order_sales.active = 1
-              and products.id != 196
+                where osp.active = 1
+                and order_sales.active = 1
+                ${excludeLoansWhere}
                 ) as ctc
             where ctc.start_date >= '${startDate}'
               and ctc.start_date < '${endDate}'
               ${ownProductWhere}
+    
             group by ${groupByEntityGroup} ${groupByDateGroup}
             order by ${orderByDateGroup}
         `);

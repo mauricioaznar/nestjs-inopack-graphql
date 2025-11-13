@@ -1,12 +1,13 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { getDateRangeSql, getDatesInjectionsV2 } from '../../../common/helpers';
+import { getDateRangeSql, getDatesInjectionsV2, getRangesFromYearMonth } from '../../../common/helpers';
 import {
     ExpensesSummary,
     ExpensesSummaryArgs,
 } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class ExpensesSummaryService {
@@ -22,16 +23,19 @@ export class ExpensesSummaryService {
         date_group_by,
         exclude_loans,
     }: ExpensesSummaryArgs): Promise<ExpensesSummary> {
-        if (year === null || year === undefined) {
+        if (year === null || month === undefined) {
             return {
                 expenses: [],
             };
         }
 
-        const { startDate, endDate } = getDateRangeSql({
+        const { startDate, endDate } = getRangesFromYearMonth({
             year: year,
             month: month,
         });
+
+        const formattedStartDate = dayjs(startDate).utc().format('YYYY-MM-DD');
+        const formattedEndDate = dayjs(endDate).utc().format('YYYY-MM-DD');
 
         const { groupByDateGroup, orderByDateGroup, selectDateGroup } =
             getDatesInjectionsV2({
@@ -116,12 +120,13 @@ export class ExpensesSummaryService {
                 on receipt_types.id = expenses.receipt_type_id
                 left join supplier_type
                 on supplier_type.id = accounts.supplier_type_id
+                where expenses.active = 1
                 ${excludeLoansWhere}
-            where expenses.active = 1
                 ) as ctc
-            where ctc.start_date >= '${startDate}'
+            where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date
-                < '${endDate}'
+                < '${formattedEndDate}'
+            
             group by ${groupByEntityGroup} ${groupByDateGroup}
             order by ${orderByDateGroup}
         `;
