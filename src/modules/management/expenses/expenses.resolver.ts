@@ -14,6 +14,7 @@ import {
     Account,
     ActivityTypeName,
     Expense,
+    ExpenseResource,
     ExpensesQueryArgs,
     ExpensesSortArgs,
     ExpenseUpsertInput,
@@ -29,7 +30,6 @@ import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
-import { ExpenseRawMaterialAddition } from '../../../common/dto/entities/management/expense-raw-material-addition.dto';
 import { formatFloat } from '../../../common/helpers';
 
 @Resolver(() => Expense)
@@ -154,20 +154,16 @@ export class ExpensesResolver {
         });
     }
 
-    @ResolveField(() => [ExpenseRawMaterialAddition])
-    async expense_raw_material_additions(
-        expense: Expense,
-    ): Promise<ExpenseRawMaterialAddition[]> {
-        return this.service.getExpenseRawMaterialAdditions({
+    @ResolveField(() => [ExpenseResource])
+    async expense_resources(expense: Expense): Promise<ExpenseResource[]> {
+        return this.service.getExpenseResources({
             expense_id: expense.id,
         });
     }
 
     @ResolveField(() => Float)
-    async expense_raw_material_additions_total(
-        expense: Expense,
-    ): Promise<number> {
-        return this.service.getExpenseRawMaterialAdditionsTotal({
+    async expense_resources_total(expense: Expense): Promise<number> {
+        return this.service.getExpenseResourcesTotal({
             expense_id: expense.id,
         });
     }

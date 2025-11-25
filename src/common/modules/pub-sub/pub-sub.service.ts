@@ -88,27 +88,6 @@ export class PubSubService {
         });
     }
 
-    async rawMaterialAddition({
-        rawMaterialAddition,
-        type,
-        userId,
-    }: {
-        rawMaterialAddition: RawMaterialAddition;
-        type: ActivityTypeName;
-        userId: number;
-    }) {
-        await this.pubSub.publish('raw_material_addition', {
-            raw_material_addition: rawMaterialAddition,
-        });
-        await this.publishActivity({
-            entity_name: ActivityEntityName.RAW_MATERIAL_ADDITION,
-            type: type,
-            entity_id: rawMaterialAddition.id,
-            userId,
-            description: `Producción: ${rawMaterialAddition.date}`,
-        });
-    }
-
     async orderAdjustment({
         orderAdjustment,
         type,

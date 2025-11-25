@@ -6,6 +6,7 @@ import {
 import {
     Account,
     Expense,
+    ExpenseResource,
     ExpensesQueryArgs,
     ExpensesSortArgs,
     ExpenseUpsertInput,
@@ -23,7 +24,6 @@ import {
     vennDiagram,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
-import { ExpenseRawMaterialAddition } from '../../../common/dto/entities/management/expense-raw-material-addition.dto';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 import { round } from '../../../common/helpers/number/round';
 
@@ -320,16 +320,16 @@ export class ExpensesService {
         });
     }
 
-    async getExpenseRawMaterialAdditions({
+    async getExpenseResources({
         expense_id,
     }: {
         expense_id: number | null;
-    }): Promise<ExpenseRawMaterialAddition[]> {
+    }): Promise<ExpenseResource[]> {
         if (!expense_id) {
             return [];
         }
 
-        return this.prisma.expense_raw_material_additions.findMany({
+        return this.prisma.expense_resources.findMany({
             where: {
                 AND: [
                     {
@@ -402,10 +402,9 @@ export class ExpensesService {
             },
         });
 
-        const newExpenseRawMaterialAdditions =
-            input.expense_raw_material_additions;
-        const oldExpenseRawMaterialAdditions = input.id
-            ? await this.prisma.expense_raw_material_additions.findMany({
+        const newExpenseResources = input.expense_resources;
+        const oldExpenseResources = input.id
+            ? await this.prisma.expense_resources.findMany({
                   where: {
                       expense_id: input.id,
                   },
@@ -413,18 +412,18 @@ export class ExpensesService {
             : [];
 
         const {
-            aMinusB: deleteExpenseRawMaterialAdditions,
-            bMinusA: createExpenseRawMaterialAdditions,
-            intersection: updateExpenseRawMaterialAdditions,
+            aMinusB: deleteExpenseResources,
+            bMinusA: createExpenseResources,
+            intersection: updateExpenseResources,
         } = vennDiagram({
-            a: oldExpenseRawMaterialAdditions,
-            b: newExpenseRawMaterialAdditions,
+            a: oldExpenseResources,
+            b: newExpenseResources,
             indexProperties: ['id'],
         });
 
-        for await (const delItem of deleteExpenseRawMaterialAdditions) {
+        for await (const delItem of deleteExpenseResources) {
             if (delItem && delItem.id) {
-                await this.prisma.expense_raw_material_additions.updateMany({
+                await this.prisma.expense_resources.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         active: -1,
@@ -437,29 +436,27 @@ export class ExpensesService {
             }
         }
 
-        for await (const createItem of createExpenseRawMaterialAdditions) {
-            await this.prisma.expense_raw_material_additions.create({
+        for await (const createItem of createExpenseResources) {
+            await this.prisma.expense_resources.create({
                 data: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
-                    amount: createItem.amount ? createItem.amount : 0,
+                    units: createItem.units ? createItem.units : 0,
                     expense_id: expense.id,
-                    raw_material_addition_id:
-                        createItem.raw_material_addition_id || null,
+                    resource_id: createItem.resource_id || null,
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
         }
 
-        for await (const updateItem of updateExpenseRawMaterialAdditions) {
+        for await (const updateItem of updateExpenseResources) {
             if (updateItem && updateItem.id) {
-                await this.prisma.expense_raw_material_additions.updateMany({
+                await this.prisma.expense_resources.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
-                        amount: updateItem.amount ? updateItem.amount : 0,
+                        units: updateItem.units ? updateItem.units : 0,
                         expense_id: expense.id,
-                        raw_material_addition_id:
-                            updateItem.raw_material_addition_id || null,
+                        resource_id: updateItem.resource_id || null,
                     },
                     where: {
                         id: updateItem.id,
@@ -577,7 +574,7 @@ export class ExpensesService {
         });
     }
 
-    async getExpenseRawMaterialAdditionsTotal({
+    async getExpenseResourcesTotal({
         expense_id,
     }: {
         expense_id: number | null;
@@ -587,7 +584,7 @@ export class ExpensesService {
         }
 
         const expenseRawMaterialAdditions =
-            await this.prisma.expense_raw_material_additions.findMany({
+            await this.prisma.expense_resources.findMany({
                 where: {
                     AND: [
                         {
@@ -601,7 +598,7 @@ export class ExpensesService {
             });
 
         const total = expenseRawMaterialAdditions.reduce((acc, curr) => {
-            return acc + curr.amount;
+            return acc + curr.units;
         }, 0);
 
         return Math.round(total * 100) / 100;
@@ -651,6 +648,7 @@ export class ExpensesService {
         expense_id: number;
     }): Promise<{
         transfer_receipts: number;
+        expense_resources: number;
     }> {
         const {
             _count: { id: transfersCount },
@@ -669,9 +667,27 @@ export class ExpensesService {
                 ],
             },
         });
+        const {
+            _count: { id: expenseResourcesCount },
+        } = await this.prisma.expense_resources.aggregate({
+            _count: {
+                id: true,
+            },
+            where: {
+                AND: [
+                    {
+                        active: 1,
+                    },
+                    {
+                        expense_id,
+                    },
+                ],
+            },
+        });
 
         return {
             transfer_receipts: transfersCount,
+            expense_resources: expenseResourcesCount,
         };
     }
 
@@ -680,9 +696,10 @@ export class ExpensesService {
     }: {
         expense_id: number;
     }): Promise<boolean> {
-        const { transfer_receipts } = await this.getDependenciesCount({
-            expense_id,
-        });
+        const { transfer_receipts, expense_resources } =
+            await this.getDependenciesCount({
+                expense_id,
+            });
 
         const expense = await this.getExpense({
             expense_id,
@@ -692,7 +709,11 @@ export class ExpensesService {
             return true;
         }
 
-        return transfer_receipts === 0 && expense.canceled === false;
+        return (
+            transfer_receipts === 0 &&
+            expense_resources === 0 &&
+            expense.canceled === false
+        );
     }
 
     async isEditable({ expense_id }: { expense_id: number }): Promise<boolean> {
