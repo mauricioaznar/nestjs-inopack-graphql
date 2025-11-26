@@ -18,6 +18,18 @@ export class ResourceBase {
 
     @Field(() => Int, { nullable: true })
     resource_category_id: number | null;
+
+    @Field(() => Float, { nullable: true })
+    current_group_weight: number | null;
+
+    @Field(() => Float, { nullable: true })
+    current_unit_price: number | null;
+
+    @Field(() => Float, { nullable: true })
+    current_group_price: number | null;
+
+    @Field(() => Float, { nullable: true })
+    group_weight_strict: number | null;
 }
 
 @InputType('ResourceUpsertInput')

@@ -11,6 +11,15 @@ export class ExpenseResourceBase {
 
     @Field(() => Int, { nullable: true })
     resource_id?: number | null;
+
+    @Field(() => Float, { nullable: true })
+    groups: number | null;
+
+    @Field(() => Float, { nullable: true })
+    group_weight?: number | null;
+
+    @Field(() => Float, { nullable: true })
+    unit_price?: number | null;
 }
 
 @InputType('ExpenseResourceInput')

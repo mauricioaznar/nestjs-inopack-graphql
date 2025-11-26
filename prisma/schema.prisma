@@ -785,6 +785,7 @@ model expense_resources {
   units        Float
   groups       Float?
   group_weight Float?
+  unit_price   Float?
   resource_id  Int?       @db.UnsignedInt
   expense_id   Int?       @db.UnsignedInt
   expenses     expenses?  @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_resources_expense_id_foreign")

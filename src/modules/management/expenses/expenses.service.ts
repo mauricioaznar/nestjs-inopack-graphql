@@ -444,6 +444,9 @@ export class ExpensesService {
                     units: createItem.units ? createItem.units : 0,
                     expense_id: expense.id,
                     resource_id: createItem.resource_id || null,
+                    groups: createItem.groups,
+                    group_weight: createItem.group_weight,
+                    unit_price: createItem.unit_price,
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
@@ -457,6 +460,9 @@ export class ExpensesService {
                         units: updateItem.units ? updateItem.units : 0,
                         expense_id: expense.id,
                         resource_id: updateItem.resource_id || null,
+                        groups: updateItem.groups,
+                        group_weight: updateItem.group_weight,
+                        unit_price: updateItem.unit_price,
                     },
                     where: {
                         id: updateItem.id,
