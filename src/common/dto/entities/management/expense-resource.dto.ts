@@ -1,4 +1,15 @@
-import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
+import {
+    ArgsType,
+    Field,
+    Float,
+    InputType,
+    Int,
+    ObjectType,
+    registerEnumType,
+} from '@nestjs/graphql';
+import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
+import { ColumnOrder } from '../../pagination';
+import { Resource } from './resource.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -32,4 +43,32 @@ export class ExpenseResourceInput extends ExpenseResourceBase {
 export class ExpenseResource extends ExpenseResourceBase {
     @Field({ nullable: false })
     id: number;
+}
+
+@ObjectType()
+export class PaginatedExpenseResources extends OffsetPaginatorResult(
+    ExpenseResource,
+) {}
+
+@ArgsType()
+export class ExpenseResourcesPaginatedQueryArgs {
+    @Field(() => String, { nullable: true })
+    filter: string;
+}
+
+export enum ExpenseResourcesPaginatedSortableFields {
+    name = 'name',
+}
+
+registerEnumType(ExpenseResourcesPaginatedSortableFields, {
+    name: 'ExpenseResourcesPaginatedSortableFields',
+});
+
+@ArgsType()
+export class ExpenseResourcesPaginatedSortableArgs {
+    @Field(() => ColumnOrder, { nullable: true })
+    sort_order: ColumnOrder | null;
+
+    @Field(() => ExpenseResourcesPaginatedSortableFields, { nullable: true })
+    sort_field: ExpenseResourcesPaginatedSortableFields | null;
 }

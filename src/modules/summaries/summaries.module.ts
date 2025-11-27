@@ -6,6 +6,7 @@ import { ExpensesSummaryModule } from './expenses-summary/expenses-summary.modul
 import { TransfersSummaryModule } from './transfers-summary/transfers-summary.module';
 import { EmployeesSummaryModule } from './employee-summary/employees-summary.module';
 import { ProductionResourcesSummaryModule } from './production-resources-summary/production-resources-summary.module';
+import { ExpenseResourcesSummaryModule } from './expense-resources-summary/expense-resources-summary.module';
 
 @Module({
     imports: [
@@ -13,6 +14,7 @@ import { ProductionResourcesSummaryModule } from './production-resources-summary
         ProductionSummaryModule,
         SalesSummaryModule,
         ExpensesSummaryModule,
+        ExpenseResourcesSummaryModule,
         TransfersSummaryModule,
         EmployeesSummaryModule,
         ProductionResourcesSummaryModule,

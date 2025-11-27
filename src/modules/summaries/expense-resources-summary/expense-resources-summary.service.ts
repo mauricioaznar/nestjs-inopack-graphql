@@ -2,34 +2,33 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
-    getDateRangeSql,
     getDatesInjectionsV2,
     getRangesFromYearMonth,
 } from '../../../common/helpers';
-import {
-    ExpensesSummary,
-    ExpensesSummaryArgs,
-} from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 import dayjs from 'dayjs';
+import {
+    ExpenseResourcesSummary,
+    ExpenseResourcesSummaryArgs,
+} from '../../../common/dto/entities/summaries/expenses-resources-summary.dto';
 
 @Injectable()
-export class ExpensesSummaryService {
+export class ExpenseResourcesSummaryService {
     constructor(
         private prisma: PrismaService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) {}
 
-    async getExpensesSummary({
+    async getExpenseResourcesSummary({
         year,
         month,
         entity_groups,
         date_group_by,
         exclude_loans,
-    }: ExpensesSummaryArgs): Promise<ExpensesSummary> {
+    }: ExpenseResourcesSummaryArgs): Promise<ExpenseResourcesSummary> {
         if (year === null || month === undefined) {
             return {
-                expenses: [],
+                expenseResources: [],
             };
         }
 
@@ -93,39 +92,43 @@ export class ExpensesSummaryService {
                    ${selectEntityGroup}
                    ${selectDateGroup}
             from (
-             select
-                 date (date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day)) first_day_of_the_week,
-                 date(date_add(date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day), interval 6 day)) last_day_of_the_week,
-                 expenses.date start_date,
-                 accounts.id account_id,
-                 accounts.name account_name,
-                 accounts.abbreviation account_abbreviation,
-                 receipt_types.id receipt_type_id,
-                 receipt_types.name receipt_type_name,
-                 supplier_type.id supplier_type_id,
-                 supplier_type.name supplier_type_name,
-                 wtv.total as total_with_tax,
-                 expenses.subtotal as total,
-                 expenses.tax  as tax
-            from expenses
-                JOIN
-                (
-                        SELECT
-                            expenses.id,
-                            round(SUM(expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained), 2) total
-                        FROM expenses
-                        WHERE expenses.active = 1
-                        GROUP BY expenses.id
-                ) AS wtv
-                on wtv.id = expenses.id
-                left join accounts
-                on accounts.id = expenses.account_id
-                left join receipt_types
-                on receipt_types.id = expenses.receipt_type_id
-                left join supplier_type
-                on supplier_type.id = accounts.supplier_type_id
-                where expenses.active = 1
-                ${excludeLoansWhere}
+                select
+                     date (date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day)) first_day_of_the_week,
+                     date(date_add(date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day), interval 6 day)) last_day_of_the_week,
+                           expenses_calc.expense_resource_subtotal total,
+                     (expenses_calc.fraction * expenses_calc.expense_tax) tax,
+                     expenses_calc.expense_resource_subtotal  + (expenses_calc.fraction * expenses_calc.expense_tax) total_with_tax,
+                     expenses_calc.expense_id,
+                     expenses.date start_date,
+                     expenses_calc.resource_id
+                FROM (
+                    SELECT
+                        expenses.date start_date,
+                        expense_resources.id expense_resource_id,
+                        expense_resources.resource_id resource_id,
+                        expenses.id expense_id,
+                        expense_resources.units,
+                        expense_resources.unit_price,
+                        (expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_total,
+                        (expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_tax,
+                        expenses.subtotal expense_subtotal,
+                        ((expense_resources.units * expense_resources.unit_price)  / expenses.subtotal) fraction,
+                        (expense_resources.units * expense_resources.unit_price) expense_resource_subtotal
+                            from expenses
+                        join expense_resources
+                        on expense_resources.expense_id = expenses.id
+                        where expenses.active = 1
+                        and expense_resources.active = 1
+                    ) expenses_calc
+                    left join expenses
+                    on expenses_calc.expense_id = expenses.id
+                    left join accounts
+                    on accounts.id = expenses.account_id
+                    left join receipt_types
+                    on receipt_types.id = expenses.receipt_type_id
+                    left join supplier_type
+                    on supplier_type.id = accounts.supplier_type_id
+                    ${excludeLoansWhere}
                 ) as ctc
             where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date
@@ -135,12 +138,12 @@ export class ExpensesSummaryService {
             order by ${orderByDateGroup}
         `;
 
-        const expenses = await this.prisma.$queryRawUnsafe<
-            ExpensesSummary['expenses']
+        const expenseResources = await this.prisma.$queryRawUnsafe<
+            ExpenseResourcesSummary['expenseResources']
         >(queryString);
 
         return {
-            expenses: expenses,
+            expenseResources: expenseResources,
         };
     }
 }
