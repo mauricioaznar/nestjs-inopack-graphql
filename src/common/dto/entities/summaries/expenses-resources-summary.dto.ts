@@ -30,6 +30,7 @@ export enum ExpenseResourcesSummaryEntitiesGroup {
     account = 'account',
     receipt = 'receipt',
     supplier_type = 'supplier_type',
+    resource = 'resource',
     resource_category = 'resource_category',
 }
 
@@ -68,6 +69,12 @@ export class ExpenseResourcesRecord {
 
     @Field(() => String, { nullable: true })
     supplier_type_name: string | null;
+
+    @Field(() => Int, { nullable: true })
+    resource_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    resource_name: string | null;
 
     @Field(() => Int, { nullable: true })
     day: number;

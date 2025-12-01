@@ -57,11 +57,11 @@ export class ExpenseResourcesSummaryService {
                     groupByEntityGroup +=
                         'account_id, account_name, account_abbreviation';
                     break;
-                case 'receipt':
+                case 'resource':
                     selectEntityGroup += `${convertToInt(
-                        'receipt_type_id',
-                    )}, receipt_type_name`;
-                    groupByEntityGroup += 'receipt_type_id, receipt_type_name';
+                        'resource_id',
+                    )}, resource_name`;
+                    groupByEntityGroup += 'resource_id, resource_name';
                     break;
                 case 'supplier_type':
                     selectEntityGroup += `${convertToInt(
@@ -100,21 +100,24 @@ export class ExpenseResourcesSummaryService {
                      expenses_calc.expense_resource_subtotal  + (expenses_calc.fraction * expenses_calc.expense_tax) total_with_tax,
                      expenses_calc.expense_id,
                      expenses.date start_date,
-                     expenses_calc.resource_id
+                     resources.name resource_name,
+                     resources.id resource_id,
+                     supplier_type.id supplier_type_id,
+                     supplier_type.name supplier_type_name
                 FROM (
                     SELECT
-                        expenses.date start_date,
-                        expense_resources.id expense_resource_id,
-                        expense_resources.resource_id resource_id,
-                        expenses.id expense_id,
-                        expense_resources.units,
-                        expense_resources.unit_price,
-                        (expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_total,
-                        (expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_tax,
-                        expenses.subtotal expense_subtotal,
-                        ((expense_resources.units * expense_resources.unit_price)  / expenses.subtotal) fraction,
-                        (expense_resources.units * expense_resources.unit_price) expense_resource_subtotal
-                            from expenses
+                            expenses.date start_date,
+                            expense_resources.id expense_resource_id,
+                            expense_resources.resource_id resource_id,
+                            expenses.id expense_id,
+                            expense_resources.units,
+                            expense_resources.unit_price,
+                            (expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_total,
+                            (expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_tax,
+                            expenses.subtotal expense_subtotal,
+                            ((expense_resources.units * expense_resources.unit_price)  / expenses.subtotal) fraction,
+                            (expense_resources.units * expense_resources.unit_price) expense_resource_subtotal
+                        from expenses
                         join expense_resources
                         on expense_resources.expense_id = expenses.id
                         where expenses.active = 1
@@ -124,6 +127,8 @@ export class ExpenseResourcesSummaryService {
                     on expenses_calc.expense_id = expenses.id
                     left join accounts
                     on accounts.id = expenses.account_id
+                    left join resources
+                    on resources.id = expenses_calc.resource_id
                     left join receipt_types
                     on receipt_types.id = expenses.receipt_type_id
                     left join supplier_type
