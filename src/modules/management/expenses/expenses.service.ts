@@ -375,6 +375,7 @@ export class ExpensesService {
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
+                resources_total: input.resources_total,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -396,6 +397,7 @@ export class ExpensesService {
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
+                resources_total: input.resources_total,
             },
             where: {
                 id: input.id || 0,
@@ -444,8 +446,6 @@ export class ExpensesService {
                     units: createItem.units ? createItem.units : 0,
                     expense_id: expense.id,
                     resource_id: createItem.resource_id || null,
-                    groups: createItem.groups,
-                    group_weight: createItem.group_weight,
                     unit_price: createItem.unit_price,
                 },
             });
@@ -460,8 +460,6 @@ export class ExpensesService {
                         units: updateItem.units ? updateItem.units : 0,
                         expense_id: expense.id,
                         resource_id: updateItem.resource_id || null,
-                        groups: updateItem.groups,
-                        group_weight: updateItem.group_weight,
                         unit_price: updateItem.unit_price,
                     },
                     where: {
@@ -502,6 +500,32 @@ export class ExpensesService {
                         'Tax can only be set when expense has order receipt type id = 2',
                     );
                 }
+            }
+        }
+
+        // expense resource must have one item
+        {
+            if (input.expense_resources.length === 0) {
+                errors.push('At least one resource must be picked');
+            }
+        }
+
+        // expense resources total should match subtotal
+        {
+            const expenseResourceTotal =
+                Math.round(
+                    input.expense_resources.reduce((acc, curr) => {
+                        const currTotal =
+                            Number(curr.units) *
+                            (!Number.isNaN(Number(curr.unit_price))
+                                ? Number(curr.unit_price)
+                                : 0);
+                        return acc + currTotal;
+                    }, 0) * 100,
+                ) / 100;
+
+            if (expenseResourceTotal !== input.subtotal) {
+                errors.push('subtotal != resource total');
             }
         }
 
@@ -578,36 +602,6 @@ export class ExpensesService {
                 ],
             },
         });
-    }
-
-    async getExpenseResourcesTotal({
-        expense_id,
-    }: {
-        expense_id: number | null;
-    }): Promise<number> {
-        if (!expense_id) {
-            return 0;
-        }
-
-        const expenseRawMaterialAdditions =
-            await this.prisma.expense_resources.findMany({
-                where: {
-                    AND: [
-                        {
-                            expense_id: expense_id,
-                        },
-                        {
-                            active: 1,
-                        },
-                    ],
-                },
-            });
-
-        const total = expenseRawMaterialAdditions.reduce((acc, curr) => {
-            return acc + curr.units;
-        }, 0);
-
-        return Math.round(total * 100) / 100;
     }
 
     async deleteExpense({

@@ -18,6 +18,7 @@ import {
     PaginatedAccounts,
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
+    Resource,
     User,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
@@ -119,6 +120,13 @@ export class AccountsResolver {
     ): Promise<SupplierType | null> {
         return this.service.getSupplierType({
             supplier_type_id: account.supplier_type_id,
+        });
+    }
+
+    @ResolveField(() => Resource, { nullable: true })
+    async resource(@Parent() account: Account): Promise<Resource | null> {
+        return this.service.getResource({
+            resource_id: account.resource_id,
         });
     }
 

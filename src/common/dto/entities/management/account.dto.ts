@@ -29,11 +29,11 @@ export class AccountBase {
     @Field(() => Boolean, { nullable: false })
     is_client: boolean;
 
-    @Field(() => Boolean, { nullable: false })
-    is_own: boolean;
-
     @Field(() => Int, { nullable: true })
     supplier_type_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    resource_id: number | null;
 }
 
 @InputType('AccountUpsertInput')
@@ -49,6 +49,9 @@ export class AccountUpsertInput extends AccountBase {
 export class Account extends AccountBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field(() => Boolean, { nullable: false })
+    is_own: boolean;
 }
 
 @ObjectType()

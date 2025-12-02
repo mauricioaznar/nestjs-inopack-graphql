@@ -618,7 +618,9 @@ model accounts {
   is_own                                        Boolean            @default(false)
   requires_order_request                        Boolean            @default(true)
   supplier_type_id                              Int?               @db.UnsignedInt
+  resource_id                                   Int?               @db.UnsignedInt
   account_contacts                              account_contacts[]
+  resources                                     resources?         @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_resource_id_foreign")
   supplier_type                                 supplier_type?     @relation(fields: [supplier_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suppliers_supplier_type_id_foreign")
   expenses                                      expenses[]
   order_requests                                order_requests[]
@@ -627,6 +629,7 @@ model accounts {
   transfers_accountsTotransfers_to_account_id   transfers[]        @relation("accountsTotransfers_to_account_id")
 
   @@index([supplier_type_id], map: "suppliers_supplier_type_id_foreign")
+  @@index([resource_id], map: "accounts_resource_id_foreign")
 }
 
 model expenses {
@@ -652,6 +655,7 @@ model expenses {
   transfer_receipts_total_no_adjustments Float               @default(0.00)
   total_with_tax                         Float               @default(0.00)
   require_order_code                     Boolean             @default(true)
+  resources_total                        Float?
   expense_resources                      expense_resources[]
   accounts                               accounts?           @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
   receipt_types                          receipt_types?      @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")
@@ -681,8 +685,10 @@ model resources {
   current_unit_price   Float                @default(0.00)
   current_group_weight Float                @default(0.00)
   group_weight_strict  Float                @default(0.00)
+  accounts             accounts[]
   expense_resources    expense_resources[]
   resource_categories  resource_categories? @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
+  supplier_type        supplier_type[]
 
   @@index([resource_category_id], map: "resources_resource_category_id_foreign")
 }
@@ -748,12 +754,16 @@ model transfer_type {
 }
 
 model supplier_type {
-  id         Int        @id @default(autoincrement()) @db.UnsignedInt
-  active     Int        @default(1)
-  created_at DateTime?  @db.DateTime(0)
-  updated_at DateTime?  @db.DateTime(0)
-  name       String     @db.VarChar(255)
-  accounts   accounts[]
+  id          Int        @id @default(autoincrement()) @db.UnsignedInt
+  active      Int        @default(1)
+  created_at  DateTime?  @db.DateTime(0)
+  updated_at  DateTime?  @db.DateTime(0)
+  name        String     @db.VarChar(255)
+  resource_id Int?       @db.UnsignedInt
+  accounts    accounts[]
+  resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "supplier_type_resource_id_foreign")
+
+  @@index([resource_id], map: "supplier_type_resource_id_foreign")
 }
 
 model order_production_resources {
@@ -778,18 +788,16 @@ model order_production_resources {
 }
 
 model expense_resources {
-  id           Int        @id @default(autoincrement()) @db.UnsignedInt
-  active       Int        @default(1)
-  created_at   DateTime?  @db.DateTime(0)
-  updated_at   DateTime?  @db.DateTime(0)
-  units        Float
-  groups       Float?
-  group_weight Float?
-  unit_price   Float?
-  resource_id  Int?       @db.UnsignedInt
-  expense_id   Int?       @db.UnsignedInt
-  expenses     expenses?  @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_resources_expense_id_foreign")
-  resources    resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_resources_resource_id_foreign")
+  id          Int        @id @default(autoincrement()) @db.UnsignedInt
+  active      Int        @default(1)
+  created_at  DateTime?  @db.DateTime(0)
+  updated_at  DateTime?  @db.DateTime(0)
+  units       Float
+  unit_price  Float?
+  resource_id Int?       @db.UnsignedInt
+  expense_id  Int?       @db.UnsignedInt
+  expenses    expenses?  @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_resources_expense_id_foreign")
+  resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_resources_resource_id_foreign")
 
   @@index([expense_id], map: "expense_resources_expense_id_foreign")
   @@index([resource_id], map: "expense_resources_resource_id_foreign")

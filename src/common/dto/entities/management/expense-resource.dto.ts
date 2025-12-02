@@ -24,12 +24,6 @@ export class ExpenseResourceBase {
     resource_id?: number | null;
 
     @Field(() => Float, { nullable: true })
-    groups: number | null;
-
-    @Field(() => Float, { nullable: true })
-    group_weight?: number | null;
-
-    @Field(() => Float, { nullable: true })
     unit_price?: number | null;
 }
 

@@ -7,12 +7,14 @@ import { TransfersSummaryModule } from './transfers-summary/transfers-summary.mo
 import { EmployeesSummaryModule } from './employee-summary/employees-summary.module';
 import { ProductionResourcesSummaryModule } from './production-resources-summary/production-resources-summary.module';
 import { ExpenseResourcesSummaryModule } from './expense-resources-summary/expense-resources-summary.module';
+import { SalesProductsSummaryModule } from './sales-products-summary/sales-products-summary.module';
 
 @Module({
     imports: [
         ProductInventoryModule,
         ProductionSummaryModule,
         SalesSummaryModule,
+        SalesProductsSummaryModule,
         ExpensesSummaryModule,
         ExpenseResourcesSummaryModule,
         TransfersSummaryModule,

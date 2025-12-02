@@ -11,6 +11,7 @@ import {
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
     PaginatedProducts,
+    Resource,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -155,8 +156,8 @@ export class AccountsService {
                 requires_order_request: input.requires_order_request,
                 is_supplier: input.is_supplier,
                 is_client: input.is_client,
-                is_own: input.is_own,
                 supplier_type_id: input.supplier_type_id || null,
+                resource_id: input.resource_id
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -165,8 +166,8 @@ export class AccountsService {
                 requires_order_request: input.requires_order_request,
                 is_supplier: input.is_supplier,
                 is_client: input.is_client,
-                is_own: input.is_own,
                 supplier_type_id: input.supplier_type_id || null,
+                resource_id: input.resource_id
             },
             where: {
                 id: input.id || 0,
@@ -273,6 +274,22 @@ export class AccountsService {
         return this.prisma.supplier_type.findFirst({
             where: {
                 id: supplier_type_id,
+            },
+        });
+    }
+
+    async getResource({
+        resource_id,
+    }: {
+        resource_id: number | null;
+    }): Promise<Resource | null> {
+        if (!resource_id) {
+            return null;
+        }
+
+        return this.prisma.resources.findFirst({
+            where: {
+                id: resource_id,
             },
         });
     }
