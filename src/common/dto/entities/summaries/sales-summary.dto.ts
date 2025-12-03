@@ -46,6 +46,9 @@ export class SalesRecord {
     @Field(() => Float, { nullable: false })
     kilos_sold: number;
 
+    @Field(() => Float, { nullable: false })
+    groups_sold: number;
+
     @Field(() => Float, { nullable: true })
     width: number | null;
 

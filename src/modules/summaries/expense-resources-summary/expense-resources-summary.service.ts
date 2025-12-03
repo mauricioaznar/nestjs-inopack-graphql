@@ -28,7 +28,7 @@ export class ExpenseResourcesSummaryService {
     }: ExpenseResourcesSummaryArgs): Promise<ExpenseResourcesSummary> {
         if (year === null || month === undefined) {
             return {
-                expenseResources: [],
+                expenses: [],
             };
         }
 
@@ -63,6 +63,14 @@ export class ExpenseResourcesSummaryService {
                     )}, resource_name`;
                     groupByEntityGroup += 'resource_id, resource_name';
                     break;
+
+                case 'resource_category':
+                    selectEntityGroup += `${convertToInt(
+                        'resource_category_id',
+                    )}, resource_category_name`;
+                    groupByEntityGroup +=
+                        'resource_category_id, resource_category_name';
+                    break;
                 case 'supplier_type':
                     selectEntityGroup += `${convertToInt(
                         'supplier_type_id',
@@ -95,13 +103,20 @@ export class ExpenseResourcesSummaryService {
                 select
                      date (date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day)) first_day_of_the_week,
                      date(date_add(date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day), interval 6 day)) last_day_of_the_week,
-                           expenses_calc.expense_resource_subtotal total,
+                     expenses_calc.expense_resource_subtotal total,
                      (expenses_calc.fraction * expenses_calc.expense_tax) tax,
                      expenses_calc.expense_resource_subtotal  + (expenses_calc.fraction * expenses_calc.expense_tax) total_with_tax,
                      expenses_calc.expense_id,
                      expenses.date start_date,
                      resources.name resource_name,
                      resources.id resource_id,
+                     resource_categories.name resource_category_name,
+                     resource_categories.id resource_category_id,
+                     accounts.id account_id,
+                     accounts.name account_name,
+                     accounts.abbreviation account_abbreviation,
+                     receipt_types.id receipt_type_id,
+                     receipt_types.name receipt_type_name,
                      supplier_type.id supplier_type_id,
                      supplier_type.name supplier_type_name
                 FROM (
@@ -115,7 +130,7 @@ export class ExpenseResourcesSummaryService {
                             (expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_total,
                             (expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_tax,
                             expenses.subtotal expense_subtotal,
-                            ((expense_resources.units * expense_resources.unit_price)  / expenses.subtotal) fraction,
+                            if (expenses.subtotal != 0, ((expense_resources.units * expense_resources.unit_price)  / expenses.subtotal), 0) fraction,
                             (expense_resources.units * expense_resources.unit_price) expense_resource_subtotal
                         from expenses
                         join expense_resources
@@ -129,26 +144,28 @@ export class ExpenseResourcesSummaryService {
                     on accounts.id = expenses.account_id
                     left join resources
                     on resources.id = expenses_calc.resource_id
+                    left join resource_categories
+                    on resource_categories.id = resources.resource_category_id
                     left join receipt_types
                     on receipt_types.id = expenses.receipt_type_id
                     left join supplier_type
                     on supplier_type.id = accounts.supplier_type_id
+                    where expenses.active = 1
                     ${excludeLoansWhere}
                 ) as ctc
             where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date
                 < '${formattedEndDate}'
-            
             group by ${groupByEntityGroup} ${groupByDateGroup}
             order by ${orderByDateGroup}
         `;
 
         const expenseResources = await this.prisma.$queryRawUnsafe<
-            ExpenseResourcesSummary['expenseResources']
+            ExpenseResourcesSummary['expenses']
         >(queryString);
 
         return {
-            expenseResources: expenseResources,
+            expenses: expenseResources,
         };
     }
 }

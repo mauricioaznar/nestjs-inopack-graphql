@@ -77,6 +77,12 @@ export class ExpenseResourcesRecord {
     resource_name: string | null;
 
     @Field(() => Int, { nullable: true })
+    resource_category_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    resource_category_name: string | null;
+
+    @Field(() => Int, { nullable: true })
     day: number;
 
     @Field(() => Int, { nullable: true })
@@ -89,5 +95,5 @@ export class ExpenseResourcesRecord {
 @ObjectType('ExpenseResourcesSummary')
 export class ExpenseResourcesSummary {
     @Field(() => [ExpenseResourcesRecord], { nullable: false })
-    expenseResources: ExpenseResourcesRecord[];
+    expenses: ExpenseResourcesRecord[];
 }

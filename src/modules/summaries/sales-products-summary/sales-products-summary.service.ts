@@ -112,6 +112,7 @@ export class SalesProductsSummaryService {
 
         const sales = await this.prisma.$queryRawUnsafe<SalesSummary['sales']>(`
             select sum(ctc.kilos_sold)                  as               kilos_sold,
+                   sum(ctc.groups_sold)                 as               groups_sold,
                    sum(ctc.total)                       as               total,
                    sum(ctc.tax)                         as               tax,
                    sum(ctc.total_with_tax)              as               total_with_tax,
