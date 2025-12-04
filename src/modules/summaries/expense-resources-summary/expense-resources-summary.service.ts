@@ -107,7 +107,7 @@ export class ExpenseResourcesSummaryService {
                      (expenses_calc.fraction * expenses_calc.expense_tax) tax,
                      (expenses_calc.fraction * expenses_calc.expense_tax_retained) tax_retained,
                      (expenses_calc.fraction * expenses_calc.expense_non_tax_retained) non_tax_retained,
-                     expenses_calc.expense_resource_subtotal total_with_tax,
+                     (expenses_calc.expense_resource_subtotal + (expenses_calc.fraction * expenses_calc.expense_tax_calc))  total_with_tax,
                      expenses_calc.expense_id,
                      expenses.date start_date,
                      resources.name resource_name,
@@ -133,6 +133,7 @@ export class ExpenseResourcesSummaryService {
                             (expenses.tax) expense_tax,
                             (expenses.tax_retained) expense_tax_retained,
                             (expenses.non_tax_retained) expense_non_tax_retained,
+                            (expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_tax_calc,
                             expenses.subtotal expense_subtotal,
                             if (expenses.subtotal != 0, ((expense_resources.units * expense_resources.unit_price)  / expenses.subtotal), 0) fraction,
                             (expense_resources.units * expense_resources.unit_price) expense_resource_subtotal

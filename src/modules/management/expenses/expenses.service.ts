@@ -523,12 +523,7 @@ export class ExpensesService {
                 }, 0),
             );
 
-            const totalWithTax = round(
-                input.subtotal +
-                    input.tax -
-                    input.non_tax_retained -
-                    input.tax_retained,
-            );
+            const totalWithTax = round(input.subtotal);
 
             if (expenseResourceTotal !== totalWithTax) {
                 errors.push(
