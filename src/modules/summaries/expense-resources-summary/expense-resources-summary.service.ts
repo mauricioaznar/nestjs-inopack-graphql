@@ -90,7 +90,7 @@ export class ExpenseResourcesSummaryService {
 
         let excludeLoansWhere = '';
         if (exclude_loans) {
-            excludeLoansWhere = 'and supplier_type.id NOT IN (12)';
+            excludeLoansWhere = 'and resources.id NOT IN (14)';
         }
 
         const queryString = `
@@ -156,6 +156,7 @@ export class ExpenseResourcesSummaryService {
                     left join supplier_type
                     on supplier_type.id = accounts.supplier_type_id
                     where expenses.active = 1
+                    and expenses.canceled = 0
                     ${excludeLoansWhere}
                 ) as ctc
             where ctc.start_date >= '${formattedStartDate}'
