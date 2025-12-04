@@ -512,20 +512,28 @@ export class ExpensesService {
 
         // expense resources total should match subtotal
         {
-            const expenseResourceTotal =
-                Math.round(
-                    input.expense_resources.reduce((acc, curr) => {
-                        const currTotal =
-                            Number(curr.units) *
-                            (!Number.isNaN(Number(curr.unit_price))
-                                ? Number(curr.unit_price)
-                                : 0);
-                        return acc + currTotal;
-                    }, 0) * 100,
-                ) / 100;
+            const expenseResourceTotal = round(
+                input.expense_resources.reduce((acc, curr) => {
+                    const currTotal =
+                        Number(curr.units) *
+                        (!Number.isNaN(Number(curr.unit_price))
+                            ? Number(curr.unit_price)
+                            : 0);
+                    return acc + currTotal;
+                }, 0),
+            );
 
-            if (expenseResourceTotal !== input.subtotal) {
-                errors.push('subtotal != resource total');
+            const totalWithTax = round(
+                input.subtotal +
+                    input.tax -
+                    input.non_tax_retained -
+                    input.tax_retained,
+            );
+
+            if (expenseResourceTotal !== totalWithTax) {
+                errors.push(
+                    `subtotal != resource total (resources_total: ${expenseResourceTotal}, subtotal: ${totalWithTax})`,
+                );
             }
         }
 
@@ -639,6 +647,15 @@ export class ExpensesService {
             },
         });
 
+        await this.prisma.expense_resources.updateMany({
+            data: {
+                active: -1,
+            },
+            where: {
+                expense_id: expense_id,
+            },
+        });
+
         return true;
     }
 
@@ -648,7 +665,6 @@ export class ExpensesService {
         expense_id: number;
     }): Promise<{
         transfer_receipts: number;
-        expense_resources: number;
     }> {
         const {
             _count: { id: transfersCount },
@@ -667,27 +683,8 @@ export class ExpensesService {
                 ],
             },
         });
-        const {
-            _count: { id: expenseResourcesCount },
-        } = await this.prisma.expense_resources.aggregate({
-            _count: {
-                id: true,
-            },
-            where: {
-                AND: [
-                    {
-                        active: 1,
-                    },
-                    {
-                        expense_id,
-                    },
-                ],
-            },
-        });
-
         return {
             transfer_receipts: transfersCount,
-            expense_resources: expenseResourcesCount,
         };
     }
 
@@ -696,10 +693,9 @@ export class ExpensesService {
     }: {
         expense_id: number;
     }): Promise<boolean> {
-        const { transfer_receipts, expense_resources } =
-            await this.getDependenciesCount({
-                expense_id,
-            });
+        const { transfer_receipts } = await this.getDependenciesCount({
+            expense_id,
+        });
 
         const expense = await this.getExpense({
             expense_id,
@@ -709,11 +705,7 @@ export class ExpensesService {
             return true;
         }
 
-        return (
-            transfer_receipts === 0 &&
-            expense_resources === 0 &&
-            expense.canceled === false
-        );
+        return transfer_receipts === 0 && expense.canceled === false;
     }
 
     async isEditable({ expense_id }: { expense_id: number }): Promise<boolean> {
