@@ -96,7 +96,10 @@ export class ExpenseResourcesSummaryService {
         const queryString = `
             select sum(ctc.total)                       as               total,
                    sum(ctc.tax)                         as               tax,
+                   sum(ctc.tax_retained)                         as               tax_retained,
+                   sum(ctc.non_tax_retained)                         as               non_tax_retained,
                    sum(ctc.total_with_tax)              as               total_with_tax,
+                   sum(ctc.units_sold)              as               units_sold,
                    ${selectEntityGroup}
                    ${selectDateGroup}
             from (
@@ -104,6 +107,7 @@ export class ExpenseResourcesSummaryService {
                      date (date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day)) first_day_of_the_week,
                      date(date_add(date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day), interval 6 day)) last_day_of_the_week,
                      expenses_calc.expense_resource_subtotal total,
+                     if(resources.include_units_in_summary = 1, expenses_calc.units, 0) units_sold,
                      (expenses_calc.fraction * expenses_calc.expense_tax) tax,
                      (expenses_calc.fraction * expenses_calc.expense_tax_retained) tax_retained,
                      (expenses_calc.fraction * expenses_calc.expense_non_tax_retained) non_tax_retained,

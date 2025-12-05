@@ -263,6 +263,7 @@ export class ProductsService {
                 product_material_id: input.product_material_id,
                 current_group_price: input.current_group_price,
                 pleat: input.pleat,
+                include_units_in_summary: input.include_units_in_summary,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -281,6 +282,7 @@ export class ProductsService {
                 product_material_id: input.product_material_id,
                 current_group_price: input.current_group_price,
                 pleat: input.pleat,
+                include_units_in_summary: input.include_units_in_summary,
             },
             where: {
                 id: input.id || 0,

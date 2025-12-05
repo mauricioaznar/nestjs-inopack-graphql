@@ -19,6 +19,9 @@ export class ResourceBase {
     @Field(() => Int, { nullable: true })
     resource_category_id: number | null;
 
+    @Field(() => Boolean, { nullable: false })
+    include_units_in_summary: boolean;
+
     @Field(() => Float, { nullable: true })
     current_group_weight: number | null;
 

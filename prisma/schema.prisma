@@ -387,6 +387,7 @@ model products {
   discontinued               Boolean                      @default(false)
   current_group_price        Float                        @default(0.00)
   pleat                      Float?
+  include_units_in_summary   Boolean                      @default(true)
   order_adjustment_products  order_adjustment_products[]
   order_production_products  order_production_products[]
   order_production_resources order_production_resources[]
@@ -675,20 +676,21 @@ model resource_categories {
 }
 
 model resources {
-  id                   Int                  @id @default(autoincrement()) @db.UnsignedInt
-  active               Int                  @default(1)
-  created_at           DateTime?            @db.DateTime(0)
-  updated_at           DateTime?            @db.DateTime(0)
-  name                 String               @db.VarChar(255)
-  resource_category_id Int?                 @db.UnsignedInt
-  current_group_price  Float                @default(0.00)
-  current_unit_price   Float                @default(0.00)
-  current_group_weight Float                @default(0.00)
-  group_weight_strict  Float                @default(0.00)
-  accounts             accounts[]
-  expense_resources    expense_resources[]
-  resource_categories  resource_categories? @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
-  supplier_type        supplier_type[]
+  id                       Int                  @id @default(autoincrement()) @db.UnsignedInt
+  active                   Int                  @default(1)
+  created_at               DateTime?            @db.DateTime(0)
+  updated_at               DateTime?            @db.DateTime(0)
+  name                     String               @db.VarChar(255)
+  resource_category_id     Int?                 @db.UnsignedInt
+  current_group_price      Float                @default(0.00)
+  current_unit_price       Float                @default(0.00)
+  current_group_weight     Float                @default(0.00)
+  group_weight_strict      Float                @default(0.00)
+  include_units_in_summary Boolean              @default(false)
+  accounts                 accounts[]
+  expense_resources        expense_resources[]
+  resource_categories      resource_categories? @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
+  supplier_type            supplier_type[]
 
   @@index([resource_category_id], map: "resources_resource_category_id_foreign")
 }

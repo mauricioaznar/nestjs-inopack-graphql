@@ -31,6 +31,9 @@ export class ProductBase {
     @Field(() => Float, { nullable: false })
     current_group_price: number;
 
+    @Field(() => Boolean, { nullable: false })
+    include_units_in_summary: boolean;
+
     @Field(() => Float, { nullable: false })
     width: number;
 

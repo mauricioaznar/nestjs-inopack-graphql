@@ -47,7 +47,16 @@ export class ExpenseResourcesRecord {
     tax: number;
 
     @Field(() => Float, { nullable: false })
+    tax_retained: number;
+
+    @Field(() => Float, { nullable: false })
+    non_tax_retained: number;
+
+    @Field(() => Float, { nullable: false })
     total_with_tax: number;
+
+    @Field(() => Float, { nullable: false })
+    units_sold: number;
 
     @Field(() => Int, { nullable: true })
     account_id: number | null;
