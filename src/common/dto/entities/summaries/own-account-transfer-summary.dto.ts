@@ -2,7 +2,7 @@ import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
-export class AccountTransferSummaryBase {
+export class OwnAccountTransferSummaryBase {
     @Field(() => Float, { nullable: true })
     current_amount: number | null;
 
@@ -10,5 +10,5 @@ export class AccountTransferSummaryBase {
     account_id: number | null;
 }
 
-@ObjectType('AccountTransferSummary')
-export class AccountTransferSummary extends AccountTransferSummaryBase {}
+@ObjectType('OwnAccountTransferSummary')
+export class OwnAccountTransferSummary extends OwnAccountTransferSummaryBase {}

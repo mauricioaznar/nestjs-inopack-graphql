@@ -620,6 +620,7 @@ model accounts {
   requires_order_request                        Boolean            @default(true)
   supplier_type_id                              Int?               @db.UnsignedInt
   resource_id                                   Int?               @db.UnsignedInt
+  monitor_balance                               Boolean            @default(false)
   account_contacts                              account_contacts[]
   resources                                     resources?         @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_resource_id_foreign")
   supplier_type                                 supplier_type?     @relation(fields: [supplier_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suppliers_supplier_type_id_foreign")

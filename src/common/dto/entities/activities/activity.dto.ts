@@ -16,12 +16,10 @@ export enum ActivityEntityName {
     ACCOUNT = 'accounts',
     MACHINE = 'machines',
     USER = 'users',
-    EQUIPMENTS = 'equipments',
     TRANSFER = 'transfers',
-
     RESOURCE = 'resource',
-
     EXPENSE = 'expenses',
+    EXPENSE_RESOURCE = 'expenseResources',
 }
 
 registerEnumType(ActivityEntityName, {

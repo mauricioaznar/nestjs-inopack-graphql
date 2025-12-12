@@ -27,6 +27,9 @@ export class AccountBase {
     requires_order_request: boolean;
 
     @Field(() => Boolean, { nullable: false })
+    monitor_balance: boolean;
+
+    @Field(() => Boolean, { nullable: false })
     is_client: boolean;
 
     @Field(() => Int, { nullable: true })

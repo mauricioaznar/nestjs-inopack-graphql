@@ -8,6 +8,8 @@ import { EmployeesSummaryModule } from './employee-summary/employees-summary.mod
 import { ProductionResourcesSummaryModule } from './production-resources-summary/production-resources-summary.module';
 import { ExpenseResourcesSummaryModule } from './expense-resources-summary/expense-resources-summary.module';
 import { SalesProductsSummaryModule } from './sales-products-summary/sales-products-summary.module';
+import { OwnAccountTransferSummariesModule } from './own-account-transfer-summaries/own-account-transfer-summaries.module';
+import { ThirdPartyAccountTransferSummariesModule } from './third-party-account-transfer-summaries/third-party-account-transfer-summaries.module';
 
 @Module({
     imports: [
@@ -15,6 +17,8 @@ import { SalesProductsSummaryModule } from './sales-products-summary/sales-produ
         ProductionSummaryModule,
         SalesSummaryModule,
         SalesProductsSummaryModule,
+        OwnAccountTransferSummariesModule,
+        ThirdPartyAccountTransferSummariesModule,
         ExpensesSummaryModule,
         ExpenseResourcesSummaryModule,
         TransfersSummaryModule,

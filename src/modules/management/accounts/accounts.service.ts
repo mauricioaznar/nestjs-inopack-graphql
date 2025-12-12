@@ -157,7 +157,8 @@ export class AccountsService {
                 is_supplier: input.is_supplier,
                 is_client: input.is_client,
                 supplier_type_id: input.supplier_type_id || null,
-                resource_id: input.resource_id
+                resource_id: input.resource_id,
+                monitor_balance: input.monitor_balance,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -167,7 +168,8 @@ export class AccountsService {
                 is_supplier: input.is_supplier,
                 is_client: input.is_client,
                 supplier_type_id: input.supplier_type_id || null,
-                resource_id: input.resource_id
+                resource_id: input.resource_id,
+                monitor_balance: input.monitor_balance,
             },
             where: {
                 id: input.id || 0,
@@ -247,6 +249,9 @@ export class AccountsService {
         account_id,
     }: {
         account_id: number;
+        
+        
+        
     }): Promise<AccountContact[]> {
         return this.prisma.account_contacts.findMany({
             where: {

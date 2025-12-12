@@ -2,18 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { PubSub } from 'graphql-subscriptions';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+    Account,
     ActivityEntityName,
     ActivityTypeName,
-    Account,
+    Expense,
+    ExpenseResource,
+    Machine,
     OrderRequest,
     OrderSale,
     Product,
+    Resource,
     Transfer,
     User,
-    Expense,
-    Resource,
-    RawMaterialAddition,
-    Machine,
 } from '../../dto/entities';
 import { OrderProduction } from '../../dto/entities/production/order-production.dto';
 import { OrderAdjustment } from '../../dto/entities/production/order-adjustment.dto';
@@ -277,6 +277,27 @@ export class PubSubService {
         });
     }
 
+    async expenseResource({
+        expenseResource,
+        type,
+        userId,
+    }: {
+        expenseResource: ExpenseResource;
+        type: ActivityTypeName;
+        userId: number;
+    }) {
+        await this.pubSub.publish('expense_resource', {
+            expense_resource: expenseResource,
+        });
+        await this.publishActivity({
+            entity_name: ActivityEntityName.EXPENSE_RESOURCE,
+            type: type,
+            entity_id: expenseResource.id,
+            userId,
+            description: `Compra: ${expenseResource.id}`,
+        });
+    }
+
     async publishActivity({
         entity_id,
         entity_name,
@@ -359,5 +380,9 @@ export class PubSubService {
 
     async listenForExpense() {
         return this.pubSub.asyncIterator('expense');
+    }
+
+    async listenForExpenseResource() {
+        return this.pubSub.asyncIterator('expense_resource');
     }
 }

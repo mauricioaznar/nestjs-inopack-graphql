@@ -6,7 +6,6 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { ResourcesModule } from './resources/resources.module';
 import { ResourceCategoriesModule } from './resource-categories/resource-categories.module';
 import { TransferReceiptsModule } from './transfer-receipts/transfer-receipts.module';
-import { AccountTransferSummariesModule } from './account-transfer-summaries/account-transfer-summaries.module';
 import { ReceiptTypeModule } from './receipt-type/receipt-type.module';
 import { ExpenseResourcesModule } from './expense-resources/expense-resources.module';
 import { TransferTypeModule } from './transfer-types/transfer-type.module';
@@ -17,7 +16,6 @@ import { SupplierTypesModule } from './supplier-types/supplier-types.module';
         TransfersModule,
         AccountsModule,
         AccountContactsModule,
-        AccountTransferSummariesModule,
         ExpenseResourcesModule,
         ExpensesModule,
         ResourcesModule,

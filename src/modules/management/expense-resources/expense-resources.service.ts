@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import {
+    Account,
+    Expense,
     ExpenseResource,
     ExpenseResourcesPaginatedQueryArgs,
     ExpenseResourcesPaginatedSortableArgs,
-    PaginatedResources,
+    PaginatedExpenseResources,
+    Resource,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
@@ -16,6 +19,64 @@ export class ExpenseResourcesService {
 
     async getExpenseResources(): Promise<ExpenseResource[]> {
         return this.prisma.expense_resources.findMany();
+    }
+
+    async getExpense({
+        expense_id,
+    }: {
+        expense_id?: number | null;
+    }): Promise<Expense | null> {
+        if (!expense_id) {
+            return null;
+        }
+
+        return this.prisma.expenses.findFirst({
+            where: {
+                id: expense_id,
+            },
+        });
+    }
+
+    async getAccount({
+        expense_id,
+    }: {
+        expense_id?: number | null;
+    }): Promise<Account | null> {
+        if (!expense_id) {
+            return null;
+        }
+
+        const expense = await this.prisma.expenses.findFirst({
+            where: {
+                id: expense_id,
+            },
+        });
+
+        if (!expense || !expense.account_id) {
+            return null;
+        }
+
+        return this.prisma.accounts.findFirst({
+            where: {
+                id: expense.account_id,
+            },
+        });
+    }
+
+    async getResource({
+        resource_id,
+    }: {
+        resource_id?: number | null;
+    }): Promise<Resource | null> {
+        if (!resource_id) {
+            return null;
+        }
+
+        return this.prisma.resources.findFirst({
+            where: {
+                id: resource_id,
+            },
+        });
     }
 
     async getExpenseResource({
@@ -44,7 +105,7 @@ export class ExpenseResourcesService {
         datePaginator: YearMonth;
         expenseResourcesQueryArgs: ExpenseResourcesPaginatedQueryArgs;
         expenseResourcesSortArgs: ExpenseResourcesPaginatedSortableArgs;
-    }): Promise<PaginatedResources> {
+    }): Promise<PaginatedExpenseResources> {
         const { startDate, endDate } = getRangesFromYearMonth({
             year: datePaginator.year,
             month: datePaginator.month,
@@ -60,7 +121,7 @@ export class ExpenseResourcesService {
 
         const isFilterANumber = !Number.isNaN(Number(filter));
 
-        const resourcesWhere: Prisma.resourcesWhereInput = {
+        const resourcesWhere: Prisma.expense_resourcesWhereInput = {
             AND: [
                 {
                     active: 1,
@@ -79,11 +140,11 @@ export class ExpenseResourcesService {
             }
         }
 
-        const resourcesCount = await this.prisma.resources.count({
+        const resourcesCount = await this.prisma.expense_resources.count({
             where: resourcesWhere,
         });
 
-        const resources = await this.prisma.resources.findMany({
+        const resources = await this.prisma.expense_resources.findMany({
             where: resourcesWhere,
             take: offsetPaginatorArgs.take,
             skip: offsetPaginatorArgs.skip,

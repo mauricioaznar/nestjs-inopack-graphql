@@ -1,14 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { AccountTransferSummary } from '../../../common/dto/entities/management/account-transfer-summary.dto';
-import { Account } from '../../../common/dto/entities';
+import { Account, Expense } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
+import { OwnAccountTransferSummary } from '../../../common/dto/entities/summaries/own-account-transfer-summary.dto';
 
 @Injectable()
-export class AccountTransferSummariesService {
+export class OwnAccountTransferSummariesService {
     constructor(private prisma: PrismaService) {}
 
-    async getAccountTransferSummary(): Promise<AccountTransferSummary[]> {
+    async getOwnAccountsTransferSummary(): Promise<
+        OwnAccountTransferSummary[]
+    > {
         return await this.prisma.$queryRawUnsafe(`
             select ${convertToInt(
                 'accounts.id',
@@ -33,7 +35,8 @@ export class AccountTransferSummariesService {
                         group by transfers.to_account_id
                     ) as to_transfers
                 on to_transfers.to_account_id = accounts.id
-                where accounts.is_own = 1
+                where accounts.active = 1
+                and accounts.is_own = 1
         `);
     }
 

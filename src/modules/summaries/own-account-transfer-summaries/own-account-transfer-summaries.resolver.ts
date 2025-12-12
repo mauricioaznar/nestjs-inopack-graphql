@@ -1,28 +1,30 @@
 import { Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable, UseGuards } from '@nestjs/common';
-import { AccountTransferSummariesService } from './account-transfer-summaries.service';
+import { OwnAccountTransferSummariesService } from './own-account-transfer-summaries.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
-import { AccountTransferSummary } from '../../../common/dto/entities/management/account-transfer-summary.dto';
+import { OwnAccountTransferSummary } from '../../../common/dto/entities/summaries/own-account-transfer-summary.dto';
 import { Account } from '../../../common/dto/entities';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
-@Resolver(() => AccountTransferSummary)
+@Resolver(() => OwnAccountTransferSummary)
 @UseGuards(GqlAuthGuard)
 // @Role('super')
 @Injectable()
-export class AccountTransferSummariesResolver {
-    constructor(private service: AccountTransferSummariesService) {}
+export class OwnAccountTransferSummariesResolver {
+    constructor(private service: OwnAccountTransferSummariesService) {}
 
-    @Query(() => [AccountTransferSummary])
+    @Query(() => [OwnAccountTransferSummary])
     @UseGuards(GqlAuthGuard)
     @RolesDecorator(RoleId.ADMIN)
-    async getAccountTransferSummary(): Promise<AccountTransferSummary[]> {
-        return this.service.getAccountTransferSummary();
+    async getOwnAccountsTransferSummary(): Promise<
+        OwnAccountTransferSummary[]
+    > {
+        return this.service.getOwnAccountsTransferSummary();
     }
 
     @ResolveField(() => Account, { nullable: true })
-    async account(@Parent() accountTransferSummary: AccountTransferSummary) {
+    async account(@Parent() accountTransferSummary: OwnAccountTransferSummary) {
         return this.service.getAccount({
             account_id: accountTransferSummary.account_id,
         });
