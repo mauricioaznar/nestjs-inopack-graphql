@@ -123,6 +123,12 @@ export class ExpensesQueryArgs {
     receipt_type_id: number;
 }
 
+@ArgsType()
+export class ExpensesWithDisparitiesQueryArgs {
+    @Field(() => Boolean, { nullable: true })
+    monitor_balance: boolean;
+}
+
 export enum ExpensesSortableFields {
     date = 'date',
 }

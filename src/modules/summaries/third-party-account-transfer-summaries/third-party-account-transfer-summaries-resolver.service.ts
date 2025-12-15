@@ -1,11 +1,17 @@
-import { Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable, UseGuards } from '@nestjs/common';
 import { ThirdPartyAccountTransferSummariesService } from './third-party-account-transfer-summaries.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
-import { Account } from '../../../common/dto/entities';
+import {
+    Account,
+    ExpensesWithDisparitiesQueryArgs,
+} from '../../../common/dto/entities';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
-import { ThirdPartyAccountTransferSummary } from '../../../common/dto/entities/summaries/third-party-account-transfer-summary.dto';
+import {
+    ThirdPartyAccountTransferQueryArgs,
+    ThirdPartyAccountTransferSummary,
+} from '../../../common/dto/entities/summaries/third-party-account-transfer-summary.dto';
 
 @Resolver(() => ThirdPartyAccountTransferSummary)
 @UseGuards(GqlAuthGuard)
@@ -17,10 +23,13 @@ export class ThirdPartyAccountTransferSummariesResolver {
     @Query(() => [ThirdPartyAccountTransferSummary])
     @UseGuards(GqlAuthGuard)
     @RolesDecorator(RoleId.ADMIN)
-    async getThirdPartyAccountsTransferSummary(): Promise<
-        ThirdPartyAccountTransferSummary[]
-    > {
-        return this.service.getThirdPartyAccountTransferSummary();
+    async getThirdPartyAccountsTransferSummary(
+        @Args({ nullable: false })
+        thirdPArtyAccountTransferQueryArgs: ThirdPartyAccountTransferQueryArgs,
+    ): Promise<ThirdPartyAccountTransferSummary[]> {
+        return this.service.getThirdPartyAccountTransferSummary(
+            thirdPArtyAccountTransferQueryArgs,
+        );
     }
 
     @ResolveField(() => Account, { nullable: true })

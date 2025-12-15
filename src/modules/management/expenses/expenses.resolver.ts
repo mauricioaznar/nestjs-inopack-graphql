@@ -17,6 +17,7 @@ import {
     ExpenseResource,
     ExpensesQueryArgs,
     ExpensesSortArgs,
+    ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
     GetExpensesQueryArgs,
     PaginatedExpenses,
@@ -105,8 +106,13 @@ export class ExpensesResolver {
     @Query(() => [Expense])
     @UseGuards(GqlAuthGuard)
     @RolesDecorator(RoleId.ADMIN)
-    async getExpensesWithDisparities(): Promise<Expense[]> {
-        return this.service.getExpensesWithDisparities();
+    async getExpensesWithDisparities(
+        @Args({ nullable: false })
+        expensesWithDisparitiesQueryArgs: ExpensesWithDisparitiesQueryArgs,
+    ): Promise<Expense[]> {
+        return this.service.getExpensesWithDisparities(
+            expensesWithDisparitiesQueryArgs,
+        );
     }
 
     @Query(() => PaginatedExpenses)

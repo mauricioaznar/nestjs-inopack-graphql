@@ -2,15 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { Account } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
-import { ThirdPartyAccountTransferSummary } from '../../../common/dto/entities/summaries/third-party-account-transfer-summary.dto';
+import {
+    ThirdPartyAccountTransferQueryArgs,
+    ThirdPartyAccountTransferSummary,
+} from '../../../common/dto/entities/summaries/third-party-account-transfer-summary.dto';
 
 @Injectable()
 export class ThirdPartyAccountTransferSummariesService {
     constructor(private prisma: PrismaService) {}
 
-    async getThirdPartyAccountTransferSummary(): Promise<
-        ThirdPartyAccountTransferSummary[]
-    > {
+    async getThirdPartyAccountTransferSummary(
+        thirdPArtyAccountTransferQueryArgs: ThirdPartyAccountTransferQueryArgs,
+    ): Promise<ThirdPartyAccountTransferSummary[]> {
+        let andWhereThirdPArtyAccountTransfer = '';
+        if (thirdPArtyAccountTransferQueryArgs.monitor_balance) {
+            andWhereThirdPArtyAccountTransfer +=
+                'and accounts.monitor_balance = 1';
+        }
+
         const res = await this.prisma.$queryRawUnsafe<
             ThirdPartyAccountTransferSummary[]
         >(`
@@ -45,7 +54,7 @@ export class ThirdPartyAccountTransferSummariesService {
             join accounts
             on accounts.id = expenses.account_id
             where expenses.canceled = 0
-            and accounts.monitor_balance = 1
+            ${andWhereThirdPArtyAccountTransfer}
             and accounts.active = 1
             group by account_id
         `);

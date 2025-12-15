@@ -9,6 +9,7 @@ import {
     ExpenseResource,
     ExpensesQueryArgs,
     ExpensesSortArgs,
+    ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
     GetExpensesQueryArgs,
     PaginatedExpenses,
@@ -239,7 +240,14 @@ export class ExpensesService {
         };
     }
 
-    async getExpensesWithDisparities(): Promise<Expense[]> {
+    async getExpensesWithDisparities(
+        expensesWithDisparitiesQueryArgs?: ExpensesWithDisparitiesQueryArgs,
+    ): Promise<Expense[]> {
+        let andWhereMonitorBalance = '';
+        if (expensesWithDisparitiesQueryArgs?.monitor_balance) {
+            andWhereMonitorBalance += 'and accounts.monitor_balance = 1';
+        }
+
         const res = await this.prisma.$queryRawUnsafe<Expense[]>(`
                                SELECT
                 expenses.*,
@@ -272,8 +280,11 @@ export class ExpensesService {
                     group by expense_id
                 ) as otv
             on otv.expense_id = expenses.id
+            left join accounts
+            on accounts.id = expenses.account_id
             where ((otv.total - wtv.total) != 0  or isnull(otv.total))
             and expenses.canceled = 0
+            ${andWhereMonitorBalance}
             order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
         `);
 

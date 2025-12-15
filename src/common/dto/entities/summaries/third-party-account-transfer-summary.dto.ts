@@ -1,4 +1,5 @@
 import {
+    ArgsType,
     Field,
     Float,
     InputType,
@@ -18,6 +19,12 @@ export class ThirdPartyAccountTransferSummaryBase {
 
     @Field(() => Int, { nullable: true })
     account_id: number | null;
+}
+
+@ArgsType()
+export class ThirdPartyAccountTransferQueryArgs {
+    @Field(() => Boolean, { nullable: true })
+    monitor_balance: boolean;
 }
 
 @ObjectType('ThirdPartyAccountTransferSummary')
