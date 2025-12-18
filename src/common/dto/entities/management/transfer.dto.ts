@@ -34,6 +34,9 @@ export class TransferBase {
 
     @Field(() => Int, { nullable: true })
     transfer_type_id: number | null;
+
+    @Field(() => String, { nullable: false })
+    notes: string;
 }
 
 @InputType('TransferUpsertInput')

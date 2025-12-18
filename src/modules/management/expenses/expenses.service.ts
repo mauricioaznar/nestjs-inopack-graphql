@@ -458,6 +458,8 @@ export class ExpensesService {
                     expense_id: expense.id,
                     resource_id: createItem.resource_id || null,
                     unit_price: createItem.unit_price,
+                    date: createItem.date || null,
+                    notes: createItem.notes || '',
                 },
             });
             // await this.cacheManager.del(`product_inventory`);
@@ -472,6 +474,8 @@ export class ExpensesService {
                         expense_id: expense.id,
                         resource_id: updateItem.resource_id || null,
                         unit_price: updateItem.unit_price,
+                        date: updateItem.date || null,
+                        notes: updateItem.notes || '',
                     },
                     where: {
                         id: updateItem.id,

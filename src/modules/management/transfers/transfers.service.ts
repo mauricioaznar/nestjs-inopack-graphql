@@ -299,6 +299,7 @@ export class TransfersService {
                 transferred_date: transferInput.transferred_date,
                 transferred: transferInput.transferred,
                 transfer_type_id: transferInput.transfer_type_id,
+                notes: transferInput.notes,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -309,6 +310,7 @@ export class TransfersService {
                 transferred_date: transferInput.transferred_date,
                 transferred: transferInput.transferred,
                 transfer_type_id: transferInput.transfer_type_id,
+                notes: transferInput.notes,
             },
             where: {
                 id: transferInput.id || 0,

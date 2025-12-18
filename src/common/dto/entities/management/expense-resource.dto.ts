@@ -24,6 +24,12 @@ export class ExpenseResourceBase {
 
     @Field(() => Float, { nullable: true })
     unit_price?: number | null;
+
+    @Field(() => String, { nullable: false })
+    notes: string;
+
+    @Field(() => Date, { nullable: true })
+    date: Date | null;
 }
 
 @InputType('ExpenseExpenseResourceInput')
