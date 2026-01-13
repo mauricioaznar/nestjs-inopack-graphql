@@ -56,6 +56,9 @@ export class OrderSaleBase {
     @Field(() => Int, { nullable: true })
     account_id: number | null;
 
+    @Field(() => Int, { nullable: true })
+    created_by_id: number | null;
+
     @Field(() => Boolean, { nullable: false })
     canceled: boolean;
 
