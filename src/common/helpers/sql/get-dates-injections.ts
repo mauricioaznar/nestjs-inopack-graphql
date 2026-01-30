@@ -12,26 +12,23 @@ export const getDatesInjectionsV2 = function ({
 } {
     if (dateGroupBy === 'day') {
         return {
-            selectDateGroup:
-                `cast(day(ctc.start_date) as decimal(12 ,2)) as day, cast(month(ctc.start_date) as decimal(12 ,2)) as month, year(ctc.start_date) year`,
-            groupByDateGroup:
-                'day, month, year(ctc.start_date)',
-            orderByDateGroup:
-                'year(ctc.start_date) desc, month desc, day desc',
+            selectDateGroup: `cast(day(ctc.start_date) as decimal(12 ,2)) as day, cast(month(ctc.start_date) as decimal(12 ,2)) as month, cast(year(ctc.start_date) as decimal(12 ,2)) as year`,
+            groupByDateGroup: 'day, month, year',
+            orderByDateGroup: 'year desc, month desc, day desc',
         };
     } else if (dateGroupBy === 'month') {
         return {
             selectDateGroup:
-                'cast(month(ctc.start_date) as decimal(12 ,2)) as month, year(ctc.start_date) year',
-            groupByDateGroup: 'month, year(ctc.start_date)',
-            orderByDateGroup:
-                'year(ctc.start_date) desc, month desc',
+                'cast(month(ctc.start_date) as decimal(12 ,2)) as month, cast(year(ctc.start_date) as decimal(12 ,2)) as year',
+            groupByDateGroup: 'month, year',
+            orderByDateGroup: 'year desc, month desc',
         };
     } else {
         return {
-            selectDateGroup: 'year(ctc.start_date) year',
-            groupByDateGroup: 'year(ctc.start_date)',
-            orderByDateGroup: 'year(ctc.start_date) desc',
+            selectDateGroup:
+                'cast(year(ctc.start_date) as decimal(12 ,2)) as year',
+            groupByDateGroup: 'year',
+            orderByDateGroup: 'year desc',
         };
     }
 };
