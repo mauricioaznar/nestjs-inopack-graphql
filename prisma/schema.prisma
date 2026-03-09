@@ -657,7 +657,7 @@ model expenses {
   transfer_receipts_total_no_adjustments Float               @default(0.00)
   total_with_tax                         Float               @default(0.00)
   require_order_code                     Boolean             @default(true)
-  resources_total                        Float?
+  resources_total                        Float?              @default(0.00)
   expense_resources                      expense_resources[]
   accounts                               accounts?           @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
   receipt_types                          receipt_types?      @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")
@@ -797,7 +797,7 @@ model expense_resources {
   created_at  DateTime?  @db.DateTime(0)
   updated_at  DateTime?  @db.DateTime(0)
   units       Float
-  unit_price  Float?
+  unit_price  Float?     @default(0.00)
   resource_id Int?       @db.UnsignedInt
   expense_id  Int?       @db.UnsignedInt
   notes       String     @default("") @db.VarChar(255)

@@ -20,7 +20,6 @@ export class SalesSummaryService {
         month,
         entity_groups,
         date_group_by,
-        only_own_products,
         exclude_loans,
     }: SalesSummaryArgs): Promise<SalesSummary> {
         if (year === null || year === undefined) {
@@ -41,8 +40,6 @@ export class SalesSummaryService {
 
         let groupByEntityGroup = '';
         let selectEntityGroup = '';
-
-
 
         for (let i = 0; i < entity_groups.length; i++) {
             const entity_group = entity_groups[i];
@@ -100,11 +97,6 @@ export class SalesSummaryService {
                 selectEntityGroup += ', ';
                 groupByEntityGroup += ', ';
             }
-        }
-
-        let ownProductWhere = '';
-        if (only_own_products) {
-            ownProductWhere = 'and ctc.order_production_type_id IS NOT NULL';
         }
 
         let excludeLoansWhere = '';
@@ -183,8 +175,6 @@ export class SalesSummaryService {
                 ) as ctc
             where ctc.start_date >= '${startDate}'
               and ctc.start_date < '${endDate}'
-              ${ownProductWhere}
-    
             group by ${groupByEntityGroup} ${groupByDateGroup}
             order by ${orderByDateGroup}
         `);

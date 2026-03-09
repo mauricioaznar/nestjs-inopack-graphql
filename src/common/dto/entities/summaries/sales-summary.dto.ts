@@ -22,9 +22,6 @@ export class SalesSummaryArgs {
     @Field(() => DateGroupBy, { nullable: false })
     date_group_by: DateGroupBy;
 
-    @Field(() => Boolean, { nullable: false })
-    only_own_products: boolean;
-
     @Field(() => Boolean, { nullable: true })
     exclude_loans: boolean;
 }
