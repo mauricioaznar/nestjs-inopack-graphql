@@ -254,6 +254,7 @@ export class ExpensesService {
                 ${convertToInt('expenses.id', 'id')},
                 ${convertToInt('account_id')},
                 ${convertToInt('receipt_type_id')},
+                ${convertToInt('expense_status_id')},
                 wtv.total as expenses_total,
                 ifnull(otv.total, 0) as transfer_receipts_total
             FROM expenses
@@ -296,6 +297,33 @@ export class ExpensesService {
                     : null,
                 date: new Date(ex.date),
             };
+        });
+    }
+
+    async getExpenseStatus({
+        expense_status_id,
+    }: {
+        expense_status_id: number | null;
+    }) {
+        if (!expense_status_id) {
+            return null;
+        }
+
+        return this.prisma.expense_statuses.findFirst({
+            where: {
+                id: expense_status_id,
+            },
+        });
+    }
+
+    async getExpenseStatuses() {
+        return this.prisma.expense_statuses.findMany({
+            where: {
+                active: 1,
+            },
+            orderBy: {
+                id: 'asc',
+            },
         });
     }
 
@@ -377,6 +405,7 @@ export class ExpensesService {
                 require_order_code: input.require_order_code,
                 order_code: input.order_code.replace(' ', ''),
                 receipt_type_id: input.receipt_type_id,
+                expense_status_id: input.expense_status_id,
                 notes: input.notes,
                 subtotal: input.subtotal,
                 tax: input.tax,
@@ -399,6 +428,7 @@ export class ExpensesService {
                 require_order_code: input.require_order_code,
                 order_code: input.order_code.replace(' ', ''),
                 receipt_type_id: input.receipt_type_id,
+                expense_status_id: input.expense_status_id,
                 subtotal: input.subtotal,
                 notes: input.notes,
                 tax: input.tax,

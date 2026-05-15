@@ -634,6 +634,16 @@ model accounts {
   @@index([resource_id], map: "accounts_resource_id_foreign")
 }
 
+model expense_statuses {
+  id         Int        @id @default(autoincrement()) @db.UnsignedInt
+  active     Int        @default(1)
+  name       String     @db.VarChar(255)
+  color      String?    @db.VarChar(7)
+  created_at DateTime?  @db.DateTime(0)
+  updated_at DateTime?  @db.DateTime(0)
+  expenses   expenses[]
+}
+
 model expenses {
   id                                     Int                 @id @default(autoincrement()) @db.UnsignedInt
   active                                 Int                 @default(1)
@@ -658,13 +668,16 @@ model expenses {
   total_with_tax                         Float               @default(0.00)
   require_order_code                     Boolean             @default(true)
   resources_total                        Float?              @default(0.00)
+  expense_status_id                      Int?                @db.UnsignedInt
   expense_resources                      expense_resources[]
   accounts                               accounts?           @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
+  expense_statuses                       expense_statuses?   @relation(fields: [expense_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_expense_status_id_foreign")
   receipt_types                          receipt_types?      @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")
   transfer_receipts                      transfer_receipts[]
 
   @@index([account_id], map: "expenses_account_id_foreign")
   @@index([receipt_type_id], map: "expenses_receipt_type_foreign")
+  @@index([expense_status_id], map: "expenses_expense_status_id_foreign")
 }
 
 model resource_categories {

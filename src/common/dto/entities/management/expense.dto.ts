@@ -56,6 +56,9 @@ export class ExpenseBase {
     @Field(() => Int, { nullable: true })
     receipt_type_id: number | null;
 
+    @Field(() => Int, { nullable: true })
+    expense_status_id: number | null;
+
     @Field(() => String, { nullable: false })
     notes: string;
 

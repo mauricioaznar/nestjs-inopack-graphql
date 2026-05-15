@@ -15,6 +15,7 @@ import {
     ActivityTypeName,
     Expense,
     ExpenseResource,
+    ExpenseStatus,
     ExpensesQueryArgs,
     ExpensesSortArgs,
     ExpensesWithDisparitiesQueryArgs,
@@ -87,6 +88,13 @@ export class ExpensesResolver {
         return this.service.getExpense({ expense_id: id });
     }
 
+    @Query(() => [ExpenseStatus])
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
+    async getExpenseStatuses(): Promise<ExpenseStatus[]> {
+        return this.service.getExpenseStatuses();
+    }
+
     @Query(() => [Expense])
     @UseGuards(GqlAuthGuard)
     @RolesDecorator(RoleId.ADMIN)
@@ -157,6 +165,15 @@ export class ExpensesResolver {
     ): Promise<ReceiptType | null> {
         return this.service.getReceiptType({
             receipt_type_id: expense.receipt_type_id,
+        });
+    }
+
+    @ResolveField(() => ExpenseStatus, { nullable: true })
+    async expense_status(
+        @Parent() expense: Expense,
+    ): Promise<ExpenseStatus | null> {
+        return this.service.getExpenseStatus({
+            expense_status_id: expense.expense_status_id,
         });
     }
 
