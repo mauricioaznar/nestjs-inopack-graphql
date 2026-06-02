@@ -13,6 +13,9 @@
     "incremental": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "paths": {
+      "typeorm": ["src/db/typeorm-shim"]
+    }
   }
 }

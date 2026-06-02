@@ -140,6 +140,10 @@ export class TransfersService {
                     transfersQueryArgs.from_account_id || undefined,
             },
             {
+                transfer_type_id:
+                    transfersQueryArgs.transfer_type_id || undefined,
+            },
+            {
                 OR: [
                     {
                         transfer_receipts: {
