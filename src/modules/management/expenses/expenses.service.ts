@@ -17,10 +17,10 @@ import {
     TransferReceipt,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import {
     getCreatedAtProperty,
-    getRangesFromYearMonth,
+    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
@@ -51,13 +51,13 @@ export class ExpensesService {
         expensesSortArgs,
     }: {
         getExpensesQueryArgs: GetExpensesQueryArgs;
-        datePaginator: YearMonth;
+        datePaginator: DatePaginator;
         expensesSortArgs: ExpensesSortArgs;
     }): Promise<Expense[]> {
         const { account_id, receipt_type_id, is_canceled } =
             getExpensesQueryArgs;
         const { sort_order, sort_field } = expensesSortArgs;
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: datePaginator.year,
             month: datePaginator.month,
         });
@@ -113,11 +113,11 @@ export class ExpensesService {
         expensesSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
-        datePaginator: YearMonth;
+        datePaginator: DatePaginator;
         expensesQueryArgs: ExpensesQueryArgs;
         expensesSortArgs: ExpensesSortArgs;
     }): Promise<PaginatedExpenses> {
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: datePaginator.year,
             month: datePaginator.month,
         });

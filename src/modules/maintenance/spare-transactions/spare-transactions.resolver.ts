@@ -6,7 +6,7 @@ import {
     SpareOperation,
     SpareTransaction,
 } from '../../../common/dto/entities';
-import { YearMonth } from '../../../common/dto/pagination';
+import { DatePaginator } from '../../../common/dto/pagination';
 
 @Resolver(() => SpareTransaction)
 @Injectable()
@@ -15,7 +15,7 @@ export class SpareTransactionsResolver {
 
     @Query(() => [SpareTransaction])
     async getSpareTransactions(
-        @Args() datePaginator: YearMonth,
+        @Args() datePaginator: DatePaginator,
     ): Promise<SpareTransaction[]> {
         return this.spareTransactionsService.getSpareTransactions(
             datePaginator,

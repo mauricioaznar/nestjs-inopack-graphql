@@ -4,8 +4,8 @@ import {
     SpareOperation,
     SpareTransaction,
 } from '../../../common/dto/entities';
-import { getRangesFromYearMonth } from '../../../common/helpers';
-import { YearMonth } from '../../../common/dto/pagination';
+import { getRangesFromDatePaginator } from '../../../common/helpers';
+import { DatePaginator } from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
 @Injectable()
@@ -13,12 +13,12 @@ export class SpareTransactionsService {
     constructor(private prisma: PrismaService) {}
 
     async getSpareTransactions(
-        datePaginator: YearMonth,
+        datePaginator: DatePaginator,
     ): Promise<SpareTransaction[]> {
         if (!datePaginator || !datePaginator.year || !datePaginator.month)
             return [];
 
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: datePaginator.year,
             month: datePaginator.month,
         });

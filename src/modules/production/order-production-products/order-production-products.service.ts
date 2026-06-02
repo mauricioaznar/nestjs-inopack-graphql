@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { getRangesFromYearMonth } from '../../../common/helpers';
+import { getRangesFromDatePaginator } from '../../../common/helpers';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 import { OrderProduction } from '../../../common/dto/entities/production/order-production.dto';
 import { Machine, Product } from '../../../common/dto/entities';
@@ -12,7 +12,7 @@ export class OrderProductionProductsService {
     async getOrderProductionProducts(): Promise<OrderProductionProduct[]> {
         // low: 1
         // very high: 7
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: 2022,
             month: 4,
         });

@@ -17,7 +17,7 @@ import {
     PaginatedExpenseResources,
     Resource,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 
 @Resolver(() => ExpenseResource)
@@ -46,7 +46,7 @@ export class ExpenseResourcesResolver {
     @Query(() => PaginatedExpenseResources)
     async paginatedExpenseResources(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
-        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
         @Args({ nullable: false })
         expenseResourcesQueryArgs: ExpenseResourcesPaginatedQueryArgs,
         @Args({ nullable: false })

@@ -24,7 +24,7 @@ import {
     OrderProductionType,
     User,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -52,7 +52,7 @@ export class OrderProductionsResolver {
     @Query(() => PaginatedOrderProductions)
     async paginatedOrderProductions(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
-        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
         @Args({ nullable: false })
         orderProductionQueryArgs: OrderProductionQueryArgs,
     ): Promise<PaginatedOrderProductions> {

@@ -23,13 +23,13 @@ import {
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
-    getRangesFromYearMonth,
+    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderRequestRemainingProductsService } from '../../../common/services/entities/order-request-remaining-products-service';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
@@ -50,11 +50,11 @@ export class OrderSaleService {
         orderSalesSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
-        datePaginator: YearMonth;
+        datePaginator: DatePaginator;
         orderSalesQueryArgs: PaginatedOrderSalesQueryArgs;
         orderSalesSortArgs: OrderSalesSortArgs;
     }): Promise<PaginatedOrderSales> {
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: datePaginator.year,
             month: datePaginator.month,
         });
@@ -217,12 +217,12 @@ export class OrderSaleService {
         orderSalesSortArgs,
     }: {
         getOrderSalesQueryArgs: GetOrderSalesQueryArgs;
-        datePaginator: YearMonth;
+        datePaginator: DatePaginator;
         orderSalesSortArgs: OrderSalesSortArgs;
     }): Promise<OrderSale[]> {
         const { account_id, receipt_type_id } = getOrderSalesQueryArgs;
         const { sort_order, sort_field } = orderSalesSortArgs;
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: datePaginator.year,
             month: datePaginator.month,
         });

@@ -9,8 +9,8 @@ import {
     Resource,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
-import { getRangesFromYearMonth } from '../../../common/helpers';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
+import { getRangesFromDatePaginator } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -102,11 +102,11 @@ export class ExpenseResourcesService {
         expenseResourcesSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
-        datePaginator: YearMonth;
+        datePaginator: DatePaginator;
         expenseResourcesQueryArgs: ExpenseResourcesPaginatedQueryArgs;
         expenseResourcesSortArgs: ExpenseResourcesPaginatedSortableArgs;
     }): Promise<PaginatedExpenseResources> {
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: datePaginator.year,
             month: datePaginator.month,
         });

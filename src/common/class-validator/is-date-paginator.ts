@@ -1,13 +1,13 @@
 import { registerDecorator, ValidationOptions } from 'class-validator';
 import dayjs from 'dayjs';
 
-export function IsYearMonth(
+export function IsDatePaginator(
     property: string,
     validationOptions?: ValidationOptions,
 ) {
     return function (object: any, propertyName: string) {
         registerDecorator({
-            name: 'IsYearMonth',
+            name: 'IsDatePaginator',
             target: object.constructor,
             propertyName: propertyName,
             constraints: [property],

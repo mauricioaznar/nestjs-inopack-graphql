@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import {
     getCreatedAtProperty,
-    getRangesFromYearMonth,
+    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
@@ -20,7 +20,7 @@ import {
 } from '../../../common/dto/entities/production/order-adjustment.dto';
 import { OrderAdjustmentType } from '../../../common/dto/entities/production/order-adjustment-type.dto';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { OrderSale, OrderSaleProduct } from '../../../common/dto/entities';
 
@@ -50,10 +50,10 @@ export class OrderAdjustmentsService {
         orderAdjustmentQueryArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
-        datePaginator: YearMonth;
+        datePaginator: DatePaginator;
         orderAdjustmentQueryArgs: OrderAdjustmentQueryArgs;
     }): Promise<PaginatedOrderAdjustments> {
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: datePaginator.year,
             month: datePaginator.month,
         });

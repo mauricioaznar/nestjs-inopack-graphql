@@ -13,11 +13,11 @@ import {
     TransferReceipt,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import {
     formatFloat,
     getCreatedAtProperty,
-    getRangesFromYearMonth,
+    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
@@ -45,13 +45,13 @@ export class TransfersService {
     async getTransfers({
         datePaginator,
     }: {
-        datePaginator: YearMonth;
+        datePaginator: DatePaginator;
     }): Promise<Transfer[]> {
         if (!datePaginator.year) {
             return [];
         }
 
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: datePaginator.year,
             month: datePaginator.month,
         });
@@ -100,11 +100,11 @@ export class TransfersService {
         transfersSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
-        datePaginator: YearMonth;
+        datePaginator: DatePaginator;
         transfersQueryArgs: TransfersQueryArgs;
         transfersSortArgs: TransfersSortArgs;
     }): Promise<PaginatedTransfers> {
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: datePaginator.year,
             month: datePaginator.month,
         });

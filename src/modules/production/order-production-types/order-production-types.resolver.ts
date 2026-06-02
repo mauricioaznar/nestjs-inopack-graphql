@@ -12,7 +12,7 @@ import {
     OrderProductionType,
     OrderProductionTypeDailyProduction,
 } from '../../../common/dto/entities';
-import { YearMonth } from '../../../common/dto/pagination';
+import { DatePaginator } from '../../../common/dto/pagination';
 
 @Resolver(() => OrderProductionType)
 // @Role('super')
@@ -37,7 +37,7 @@ export class OrderProductionTypesResolver {
     @ResolveField(() => [OrderProductionTypeDailyProduction])
     async month_production(
         @Parent() orderProductionType: OrderProductionType,
-        @Args() yearMonth: YearMonth,
+        @Args() yearMonth: DatePaginator,
         @Args('BranchId', { type: () => Int, nullable: true })
         branchId?: number | null,
     ): Promise<OrderProductionTypeDailyProduction[]> {

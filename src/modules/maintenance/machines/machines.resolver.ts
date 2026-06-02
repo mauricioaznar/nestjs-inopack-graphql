@@ -26,7 +26,7 @@ import {
     PaginatedMachines,
     User,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
@@ -114,7 +114,7 @@ export class MachinesResolver {
     @ResolveField(() => [MachineDailyProduction])
     async month_production(
         @Parent() machine: Machine,
-        @Args() yearMonth: YearMonth,
+        @Args() yearMonth: DatePaginator,
     ): Promise<MachineDailyProduction[]> {
         return this.service.getMonthProduction({
             machineId: machine.id,

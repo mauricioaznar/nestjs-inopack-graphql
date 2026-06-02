@@ -7,7 +7,7 @@ import {
 } from '../../../common/dto/entities/summaries/production-summary.dto';
 import {
     getDatesInjectionsV2,
-    getRangesFromYearMonth,
+    getRangesFromDatePaginator,
 } from '../../../common/helpers';
 import dayjs from 'dayjs';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
@@ -27,7 +27,7 @@ export class ProductionSummaryService {
         branch_id,
         date_group_by,
     }: ProductionSummaryArgs): Promise<ProductionSummary> {
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: year,
             month: month,
         });

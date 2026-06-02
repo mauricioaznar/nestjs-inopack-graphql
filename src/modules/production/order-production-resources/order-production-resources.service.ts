@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { getRangesFromYearMonth } from '../../../common/helpers';
+import { getRangesFromDatePaginator } from '../../../common/helpers';
 import { OrderProduction } from '../../../common/dto/entities/production/order-production.dto';
 import {
     Machine,
@@ -13,7 +13,7 @@ export class OrderProductionResourcesService {
     constructor(private prisma: PrismaService) {}
 
     async getOrderProductionResources(): Promise<OrderProductionResource[]> {
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: 2022,
             month: 4,
         });

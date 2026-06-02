@@ -27,7 +27,7 @@ import {
     User,
     TransferReceipt,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -54,7 +54,7 @@ export class OrderSaleResolver {
     @Query(() => [OrderSale])
     async getOrderSales(
         @Args({ nullable: false }) args: GetOrderSalesQueryArgs,
-        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
         @Args({ nullable: false })
         orderSalesSortArgs: OrderSalesSortArgs,
     ): Promise<OrderSale[]> {
@@ -73,7 +73,7 @@ export class OrderSaleResolver {
     @Query(() => PaginatedOrderSales)
     async paginatedOrderSales(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
-        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
         @Args({ nullable: false })
         orderSalesQueryArgs: PaginatedOrderSalesQueryArgs,
         @Args({ nullable: false })

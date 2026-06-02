@@ -26,7 +26,7 @@ import {
     TransferReceipt,
     User,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
@@ -100,7 +100,7 @@ export class ExpensesResolver {
     @RolesDecorator(RoleId.ADMIN)
     async getExpenses(
         @Args({ nullable: false }) args: GetExpensesQueryArgs,
-        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
         @Args({ nullable: false })
         expensesSortArgs: ExpensesSortArgs,
     ): Promise<Expense[]> {
@@ -128,7 +128,7 @@ export class ExpensesResolver {
     @RolesDecorator(RoleId.ADMIN)
     async paginatedExpenses(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
-        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
         @Args({ nullable: false })
         expensesQueryArgs: ExpensesQueryArgs,
         @Args({ nullable: false })

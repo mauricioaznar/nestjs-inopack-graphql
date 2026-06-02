@@ -20,13 +20,13 @@ import {
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
-    getRangesFromYearMonth,
+    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderRequestRemainingProductsService } from '../../../common/services/entities/order-request-remaining-products-service';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
@@ -95,11 +95,11 @@ export class OrderRequestsService {
         orderRequestsSortArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
-        datePaginator: YearMonth;
+        datePaginator: DatePaginator;
         paginatedOrderRequestsQueryArgs: PaginatedOrderRequestsQueryArgs;
         orderRequestsSortArgs: OrderRequestsSortArgs;
     }): Promise<PaginatedOrderRequests> {
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: datePaginator.year,
             month: datePaginator.month,
         });

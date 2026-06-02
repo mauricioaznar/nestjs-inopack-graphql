@@ -17,7 +17,7 @@ import {
 } from '../../../common/dto/entities/production/order-adjustment.dto';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 import { OrderAdjustmentType } from '../../../common/dto/entities/production/order-adjustment-type.dto';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -56,7 +56,7 @@ export class OrderAdjustmentsResolver {
     @Query(() => PaginatedOrderAdjustments)
     async paginatedOrderAdjustments(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
-        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
         @Args({ nullable: false })
         orderAdjustmentQueryArgs: OrderAdjustmentQueryArgs,
     ): Promise<PaginatedOrderAdjustments> {

@@ -3,7 +3,7 @@ import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
     getDatesInjectionsV2,
-    getRangesFromYearMonth,
+    getRangesFromDatePaginator,
 } from '../../../common/helpers';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 import dayjs from 'dayjs';
@@ -32,7 +32,7 @@ export class ExpenseResourcesSummaryService {
             };
         }
 
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: year,
             month: month,
         });

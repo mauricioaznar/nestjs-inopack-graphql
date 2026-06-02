@@ -21,7 +21,7 @@ import {
     ResourceUpsertInput,
     User,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 
@@ -88,7 +88,7 @@ export class ResourcesResolver {
     @Query(() => PaginatedResources)
     async paginatedResources(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
-        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
         @Args({ nullable: false })
         resourcesQueryArgs: ResourcesQueryArgs,
         @Args({ nullable: false })

@@ -14,13 +14,13 @@ import {
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 import {
     getCreatedAtProperty,
-    getRangesFromYearMonth,
+    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { OrderProductionEmployee } from '../../../common/dto/entities/production/order-production-employee.dto';
 import { Cache } from 'cache-manager';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
@@ -94,29 +94,45 @@ export class OrderProductionsService {
         orderProductionQueryArgs,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
-        datePaginator: YearMonth;
+        datePaginator: DatePaginator;
         orderProductionQueryArgs: OrderProductionQueryArgs;
     }): Promise<PaginatedOrderProductions> {
-        const { startDate, endDate } = getRangesFromYearMonth({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        let startDate: Date | undefined;
+        let endDate: Date | undefined;
+
+        if (datePaginator.start_date || datePaginator.end_date) {
+            startDate = datePaginator.start_date
+                ? dayjs(datePaginator.start_date).utc().startOf('day').toDate()
+                : undefined;
+            endDate = datePaginator.end_date
+                ? dayjs(datePaginator.end_date).utc().endOf('day').toDate()
+                : undefined;
+        } else {
+            ({ startDate, endDate } = getRangesFromDatePaginator({
+                year: datePaginator.year,
+                month: datePaginator.month,
+            }));
+        }
 
         const orderProductionsWhere: Prisma.order_productionsWhereInput = {
             AND: [
                 {
                     active: 1,
                 },
-                {
-                    start_date: {
-                        gte: startDate,
-                    },
-                },
-                {
-                    start_date: {
-                        lt: endDate,
-                    },
-                },
+                startDate
+                    ? {
+                          start_date: {
+                              gte: startDate,
+                          },
+                      }
+                    : {},
+                endDate
+                    ? {
+                          start_date: {
+                              lte: endDate,
+                          },
+                      }
+                    : {},
                 {
                     branch_id: orderProductionQueryArgs.branch_id || undefined,
                 },

@@ -23,7 +23,7 @@ import {
     TransferUpsertInput,
     User,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, YearMonth } from '../../../common/dto/pagination';
+import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
@@ -89,7 +89,7 @@ export class TransfersResolver {
 
     @Query(() => [Transfer])
     async getTransfers(
-        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
     ): Promise<Transfer[]> {
         return this.service.getTransfers({ datePaginator });
     }
@@ -99,7 +99,7 @@ export class TransfersResolver {
     @RolesDecorator(RoleId.ADMIN)
     async paginatedTransfers(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
-        @Args({ nullable: false }) datePaginator: YearMonth,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
         @Args({ nullable: false })
         transfersQueryArgs: TransfersQueryArgs,
         @Args({ nullable: false })

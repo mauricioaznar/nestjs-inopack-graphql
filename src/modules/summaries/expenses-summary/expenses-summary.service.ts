@@ -4,7 +4,7 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
     getDateRangeSql,
     getDatesInjectionsV2,
-    getRangesFromYearMonth,
+    getRangesFromDatePaginator,
 } from '../../../common/helpers';
 import {
     ExpensesSummary,
@@ -33,7 +33,7 @@ export class ExpensesSummaryService {
             };
         }
 
-        const { startDate, endDate } = getRangesFromYearMonth({
+        const { startDate, endDate } = getRangesFromDatePaginator({
             year: year,
             month: month,
         });
