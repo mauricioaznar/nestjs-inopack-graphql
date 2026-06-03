@@ -141,6 +141,17 @@ export class OrderProductionsService {
                         orderProductionQueryArgs.order_production_type_id ||
                         undefined,
                 },
+                orderProductionQueryArgs.machine_id
+                    ? {
+                          order_production_products: {
+                              some: {
+                                  machine_id:
+                                      orderProductionQueryArgs.machine_id,
+                                  active: 1,
+                              },
+                          },
+                      }
+                    : {},
             ],
         };
 
