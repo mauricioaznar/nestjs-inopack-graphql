@@ -70,6 +70,9 @@ export class TransfersQueryArgs {
 
     @Field(() => Int, { nullable: true })
     transfer_type_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    account_id: number | null;
 }
 
 export enum TransfersSortableFields {

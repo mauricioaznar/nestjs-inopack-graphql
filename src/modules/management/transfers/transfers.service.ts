@@ -104,10 +104,25 @@ export class TransfersService {
         transfersQueryArgs: TransfersQueryArgs;
         transfersSortArgs: TransfersSortArgs;
     }): Promise<PaginatedTransfers> {
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        // start_date/end_date strings take precedence over year/month when provided
+        let filterStartDate: Date | undefined;
+        let filterEndDate: Date | undefined;
+
+        if (datePaginator.start_date || datePaginator.end_date) {
+            filterStartDate = datePaginator.start_date
+                ? new Date(datePaginator.start_date)
+                : undefined;
+            filterEndDate = datePaginator.end_date
+                ? new Date(datePaginator.end_date)
+                : undefined;
+        } else {
+            const ranges = getRangesFromDatePaginator({
+                year: datePaginator.year,
+                month: datePaginator.month,
+            });
+            filterStartDate = ranges.startDate;
+            filterEndDate = datePaginator.year ? ranges.endDate : undefined;
+        }
 
         const { sort_order, sort_field } = transfersSortArgs;
 
@@ -124,12 +139,12 @@ export class TransfersService {
             },
             {
                 transferred_date: {
-                    gte: startDate || undefined,
+                    gte: filterStartDate || undefined,
                 },
             },
             {
                 transferred_date: {
-                    lt: datePaginator.year ? endDate : undefined,
+                    lt: filterEndDate || undefined,
                 },
             },
             {
@@ -143,6 +158,21 @@ export class TransfersService {
                 transfer_type_id:
                     transfersQueryArgs.transfer_type_id || undefined,
             },
+            ...(transfersQueryArgs.account_id
+                ? [
+                      {
+                          OR: [
+                              {
+                                  from_account_id:
+                                      transfersQueryArgs.account_id,
+                              },
+                              {
+                                  to_account_id: transfersQueryArgs.account_id,
+                              },
+                          ],
+                      },
+                  ]
+                : []),
             {
                 OR: [
                     {
