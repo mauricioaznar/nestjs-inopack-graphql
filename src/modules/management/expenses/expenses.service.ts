@@ -117,10 +117,25 @@ export class ExpensesService {
         expensesQueryArgs: ExpensesQueryArgs;
         expensesSortArgs: ExpensesSortArgs;
     }): Promise<PaginatedExpenses> {
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        // start_date/end_date strings take precedence over year/month when provided
+        let startDate: Date | undefined;
+        let endDate: Date | undefined;
+
+        if (datePaginator.start_date || datePaginator.end_date) {
+            startDate = datePaginator.start_date
+                ? new Date(datePaginator.start_date)
+                : undefined;
+            endDate = datePaginator.end_date
+                ? new Date(datePaginator.end_date)
+                : undefined;
+        } else {
+            const ranges = getRangesFromDatePaginator({
+                year: datePaginator.year,
+                month: datePaginator.month,
+            });
+            startDate = ranges.startDate;
+            endDate = datePaginator.year ? ranges.endDate : undefined;
+        }
 
         const { sort_order, sort_field } = expensesSortArgs;
 
@@ -157,9 +172,6 @@ export class ExpensesService {
                 account_id: expensesQueryArgs.account_id || undefined,
             },
             {
-                receipt_type_id: expensesQueryArgs.receipt_type_id || undefined,
-            },
-            {
                 OR: [
                     {
                         notes: {
@@ -172,8 +184,10 @@ export class ExpensesService {
                         },
                     },
                     {
-                        notes: {
-                            contains: filter,
+                        receipt_type: {
+                            name: {
+                                contains: filter,
+                            },
                         },
                     },
                 ],
