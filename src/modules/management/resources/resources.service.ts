@@ -16,7 +16,6 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import {
     getCreatedAtProperty,
-    getRangesFromDatePaginator,
     getUpdatedAtProperty,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
@@ -118,10 +117,12 @@ export class ResourcesService {
         resourcesQueryArgs: ResourcesQueryArgs;
         resourcesSortArgs: ResourcesSortArgs;
     }): Promise<PaginatedResources> {
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        const startDate = datePaginator.start_date
+            ? new Date(datePaginator.start_date)
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? new Date(datePaginator.end_date)
+            : undefined;
 
         const { sort_order, sort_field } = resourcesSortArgs;
 

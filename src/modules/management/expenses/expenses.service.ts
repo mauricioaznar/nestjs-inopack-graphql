@@ -20,7 +20,6 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import {
     getCreatedAtProperty,
-    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
@@ -57,10 +56,12 @@ export class ExpensesService {
         const { account_id, receipt_type_id, is_canceled } =
             getExpensesQueryArgs;
         const { sort_order, sort_field } = expensesSortArgs;
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        const startDate = datePaginator.start_date
+            ? new Date(datePaginator.start_date)
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? new Date(datePaginator.end_date)
+            : undefined;
 
         const andExpensesWhere: Prisma.expensesWhereInput[] = [
             {
@@ -77,12 +78,12 @@ export class ExpensesService {
             },
             {
                 date: {
-                    lt: datePaginator.year ? endDate : undefined,
+                    lt: endDate,
                 },
             },
             {
                 date: {
-                    gte: startDate || undefined,
+                    gte: startDate,
                 },
             },
         ];
@@ -117,25 +118,12 @@ export class ExpensesService {
         expensesQueryArgs: ExpensesQueryArgs;
         expensesSortArgs: ExpensesSortArgs;
     }): Promise<PaginatedExpenses> {
-        // start_date/end_date strings take precedence over year/month when provided
-        let startDate: Date | undefined;
-        let endDate: Date | undefined;
-
-        if (datePaginator.start_date || datePaginator.end_date) {
-            startDate = datePaginator.start_date
-                ? new Date(datePaginator.start_date)
-                : undefined;
-            endDate = datePaginator.end_date
-                ? new Date(datePaginator.end_date)
-                : undefined;
-        } else {
-            const ranges = getRangesFromDatePaginator({
-                year: datePaginator.year,
-                month: datePaginator.month,
-            });
-            startDate = ranges.startDate;
-            endDate = datePaginator.year ? ranges.endDate : undefined;
-        }
+        const startDate = datePaginator.start_date
+            ? new Date(datePaginator.start_date)
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? new Date(datePaginator.end_date)
+            : undefined;
 
         const { sort_order, sort_field } = expensesSortArgs;
 
@@ -154,7 +142,7 @@ export class ExpensesService {
             },
          */
 
-        const expensesAndWhere: Prisma.Enumerable<Prisma.expensesWhereInput> = [
+        const expensesAndWhere: Prisma.expensesWhereInput[] = [
             {
                 active: 1,
             },
@@ -184,7 +172,7 @@ export class ExpensesService {
                         },
                     },
                     {
-                        receipt_type: {
+                        receipt_types: {
                             name: {
                                 contains: filter,
                             },

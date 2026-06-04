@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import {
     BadRequestException,
     CACHE_MANAGER,
@@ -20,7 +21,6 @@ import {
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
-    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
@@ -99,10 +99,12 @@ export class OrderRequestsService {
         paginatedOrderRequestsQueryArgs: PaginatedOrderRequestsQueryArgs;
         orderRequestsSortArgs: OrderRequestsSortArgs;
     }): Promise<PaginatedOrderRequests> {
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        const startDate = datePaginator.start_date
+            ? dayjs(datePaginator.start_date).utc().startOf('day').toDate()
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? dayjs(datePaginator.end_date).utc().endOf('day').toDate()
+            : undefined;
 
         const { sort_order, sort_field } = orderRequestsSortArgs;
 

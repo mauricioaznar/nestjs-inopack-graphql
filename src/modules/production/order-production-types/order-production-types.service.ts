@@ -3,10 +3,9 @@ import {
     OrderProductionType,
     OrderProductionTypeDailyProduction,
 } from '../../../common/dto/entities';
-import { DatePaginator } from '../../../common/dto/pagination';
+import { YearMonthArgs } from '../../../common/dto/pagination';
 import dayjs from 'dayjs';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { getRangesFromDatePaginator } from '../../../common/helpers';
 
 @Injectable()
 export class OrderProductionTypesService {
@@ -36,7 +35,7 @@ export class OrderProductionTypesService {
     }: {
         orderProductionTypeId: number;
         branchId?: number | null;
-    } & DatePaginator): Promise<OrderProductionTypeDailyProduction[]> {
+    } & YearMonthArgs): Promise<OrderProductionTypeDailyProduction[]> {
         const days: OrderProductionTypeDailyProduction[] = [];
 
         if (!year || !month) return days;

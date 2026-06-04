@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import {
     BadRequestException,
     CACHE_MANAGER,
@@ -6,7 +7,6 @@ import {
 } from '@nestjs/common';
 import {
     getCreatedAtProperty,
-    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
@@ -53,10 +53,18 @@ export class OrderAdjustmentsService {
         datePaginator: DatePaginator;
         orderAdjustmentQueryArgs: OrderAdjustmentQueryArgs;
     }): Promise<PaginatedOrderAdjustments> {
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        const startDate = datePaginator.start_date
+            ? dayjs(datePaginator.start_date).utc().startOf('day').toDate()
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? dayjs(datePaginator.end_date).utc().endOf('day').toDate()
+            : undefined;
+
+        const filter =
+            orderAdjustmentQueryArgs.filter &&
+            orderAdjustmentQueryArgs.filter !== ''
+                ? orderAdjustmentQueryArgs.filter
+                : undefined;
 
         const whereInput: Prisma.order_adjustmentsWhereInput = {
             AND: [
@@ -78,6 +86,39 @@ export class OrderAdjustmentsService {
                         orderAdjustmentQueryArgs.order_adjustment_type_id ||
                         undefined,
                 },
+                filter
+                    ? {
+                          OR: [
+                              {
+                                  order_adjustment_type: {
+                                      name: { contains: filter },
+                                  },
+                              },
+                              {
+                                  order_adjustment_products: {
+                                      some: {
+                                          products: {
+                                              description: {
+                                                  contains: filter,
+                                              },
+                                          },
+                                          active: 1,
+                                      },
+                                  },
+                              },
+                              {
+                                  order_adjustment_products: {
+                                      some: {
+                                          products: {
+                                              code: { contains: filter },
+                                          },
+                                          active: 1,
+                                      },
+                                  },
+                              },
+                          ],
+                      }
+                    : {},
             ],
         };
 

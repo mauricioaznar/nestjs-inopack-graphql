@@ -206,6 +206,13 @@ export class OrderSaleResolver {
         });
     }
 
+    @ResolveField(() => User, { nullable: true })
+    async created_by(@Parent() orderSale: OrderSale): Promise<User | null> {
+        return this.service.getCreatedBy({
+            created_by_id: orderSale.created_by_id,
+        });
+    }
+
     @ResolveField(() => String)
     async compound_order_code(@Parent() orderSale: OrderSale): Promise<string> {
         return `${orderSale.order_code}${

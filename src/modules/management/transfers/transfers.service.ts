@@ -17,7 +17,6 @@ import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/paginati
 import {
     formatFloat,
     getCreatedAtProperty,
-    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
@@ -47,14 +46,12 @@ export class TransfersService {
     }: {
         datePaginator: DatePaginator;
     }): Promise<Transfer[]> {
-        if (!datePaginator.year) {
-            return [];
-        }
-
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        const startDate = datePaginator.start_date
+            ? new Date(datePaginator.start_date)
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? new Date(datePaginator.end_date)
+            : undefined;
 
         const transfersWhere: Prisma.transfersWhereInput[] = [
             {
@@ -62,12 +59,12 @@ export class TransfersService {
             },
             {
                 transferred_date: {
-                    gte: startDate || undefined,
+                    gte: startDate,
                 },
             },
             {
                 transferred_date: {
-                    lt: datePaginator.year ? endDate : undefined,
+                    lt: endDate,
                 },
             },
             {
@@ -104,25 +101,12 @@ export class TransfersService {
         transfersQueryArgs: TransfersQueryArgs;
         transfersSortArgs: TransfersSortArgs;
     }): Promise<PaginatedTransfers> {
-        // start_date/end_date strings take precedence over year/month when provided
-        let filterStartDate: Date | undefined;
-        let filterEndDate: Date | undefined;
-
-        if (datePaginator.start_date || datePaginator.end_date) {
-            filterStartDate = datePaginator.start_date
-                ? new Date(datePaginator.start_date)
-                : undefined;
-            filterEndDate = datePaginator.end_date
-                ? new Date(datePaginator.end_date)
-                : undefined;
-        } else {
-            const ranges = getRangesFromDatePaginator({
-                year: datePaginator.year,
-                month: datePaginator.month,
-            });
-            filterStartDate = ranges.startDate;
-            filterEndDate = datePaginator.year ? ranges.endDate : undefined;
-        }
+        const filterStartDate = datePaginator.start_date
+            ? new Date(datePaginator.start_date)
+            : undefined;
+        const filterEndDate = datePaginator.end_date
+            ? new Date(datePaginator.end_date)
+            : undefined;
 
         const { sort_order, sort_field } = transfersSortArgs;
 

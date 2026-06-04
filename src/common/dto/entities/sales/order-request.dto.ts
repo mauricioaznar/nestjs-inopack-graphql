@@ -45,6 +45,9 @@ export class OrderRequestInput extends OrderRequestBase {
 export class OrderRequest extends OrderRequestBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field(() => Date, { nullable: true })
+    updated_at?: Date | null;
 }
 
 @ArgsType()

@@ -54,6 +54,9 @@ export class PaginatedOrderProductions extends OffsetPaginatorResult(
 
 @ArgsType()
 export class OrderProductionQueryArgs {
+    @Field(() => String, { nullable: true })
+    filter: string | null;
+
     @Field(() => Int, { nullable: true })
     order_production_type_id: number | null;
 

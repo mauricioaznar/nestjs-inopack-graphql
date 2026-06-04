@@ -14,7 +14,6 @@ import {
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 import {
     getCreatedAtProperty,
-    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
@@ -97,22 +96,18 @@ export class OrderProductionsService {
         datePaginator: DatePaginator;
         orderProductionQueryArgs: OrderProductionQueryArgs;
     }): Promise<PaginatedOrderProductions> {
-        let startDate: Date | undefined;
-        let endDate: Date | undefined;
+        const startDate = datePaginator.start_date
+            ? dayjs(datePaginator.start_date).utc().startOf('day').toDate()
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? dayjs(datePaginator.end_date).utc().endOf('day').toDate()
+            : undefined;
 
-        if (datePaginator.start_date || datePaginator.end_date) {
-            startDate = datePaginator.start_date
-                ? dayjs(datePaginator.start_date).utc().startOf('day').toDate()
+        const filter =
+            orderProductionQueryArgs.filter &&
+            orderProductionQueryArgs.filter !== ''
+                ? orderProductionQueryArgs.filter
                 : undefined;
-            endDate = datePaginator.end_date
-                ? dayjs(datePaginator.end_date).utc().endOf('day').toDate()
-                : undefined;
-        } else {
-            ({ startDate, endDate } = getRangesFromDatePaginator({
-                year: datePaginator.year,
-                month: datePaginator.month,
-            }));
-        }
 
         const orderProductionsWhere: Prisma.order_productionsWhereInput = {
             AND: [
@@ -150,6 +145,66 @@ export class OrderProductionsService {
                                   active: 1,
                               },
                           },
+                      }
+                    : {},
+                filter
+                    ? {
+                          OR: [
+                              {
+                                  order_production_type: {
+                                      name: { contains: filter },
+                                  },
+                              },
+                              {
+                                  branches: {
+                                      name: { contains: filter },
+                                  },
+                              },
+                              {
+                                  order_production_products: {
+                                      some: {
+                                          machines: {
+                                              name: { contains: filter },
+                                          },
+                                          active: 1,
+                                      },
+                                  },
+                              },
+                              {
+                                  order_production_products: {
+                                      some: {
+                                          products: {
+                                              description: {
+                                                  contains: filter,
+                                              },
+                                          },
+                                          active: 1,
+                                      },
+                                  },
+                              },
+                              {
+                                  order_production_products: {
+                                      some: {
+                                          products: {
+                                              code: {
+                                                  contains: filter,
+                                              },
+                                          },
+                                          active: 1,
+                                      },
+                                  },
+                              },
+                              {
+                                  order_production_employees: {
+                                      some: {
+                                          employees: {
+                                              fullname: { contains: filter },
+                                          },
+                                          active: 1,
+                                      },
+                                  },
+                              },
+                          ],
                       }
                     : {},
             ],

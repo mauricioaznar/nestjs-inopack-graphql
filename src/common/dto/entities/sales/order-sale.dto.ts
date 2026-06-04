@@ -92,6 +92,9 @@ export class OrderSale extends OrderSaleBase {
     @Field({ nullable: false })
     id: number;
 
+    @Field(() => Date, { nullable: true })
+    updated_at?: Date | null;
+
     @Field(() => Int, { nullable: true })
     created_by_id: number | null;
 

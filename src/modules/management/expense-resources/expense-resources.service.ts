@@ -10,7 +10,6 @@ import {
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
-import { getRangesFromDatePaginator } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -106,10 +105,12 @@ export class ExpenseResourcesService {
         expenseResourcesQueryArgs: ExpenseResourcesPaginatedQueryArgs;
         expenseResourcesSortArgs: ExpenseResourcesPaginatedSortableArgs;
     }): Promise<PaginatedExpenseResources> {
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        const startDate = datePaginator.start_date
+            ? new Date(datePaginator.start_date)
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? new Date(datePaginator.end_date)
+            : undefined;
 
         const { sort_order, sort_field } = expenseResourcesSortArgs;
 

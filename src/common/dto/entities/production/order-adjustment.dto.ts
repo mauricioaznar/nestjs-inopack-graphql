@@ -29,6 +29,9 @@ export class OrderAdjustmentInput extends OrderAdjustmentBase {
 export class OrderAdjustment extends OrderAdjustmentBase {
     @Field({ nullable: false })
     id: number;
+
+    @Field(() => Date, { nullable: true })
+    updated_at?: Date | null;
 }
 
 @ObjectType()
@@ -40,4 +43,7 @@ export class PaginatedOrderAdjustments extends OffsetPaginatorResult(
 export class OrderAdjustmentQueryArgs {
     @Field(() => Int, { nullable: true })
     order_adjustment_type_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    filter?: string | null;
 }

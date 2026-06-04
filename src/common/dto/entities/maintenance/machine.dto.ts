@@ -59,6 +59,9 @@ export class MachineQueryArgs {
 
     @Field(() => String, { nullable: false })
     filter: string;
+
+    @Field(() => Boolean, { nullable: true })
+    discontinued?: boolean | null;
 }
 
 @ArgsType()

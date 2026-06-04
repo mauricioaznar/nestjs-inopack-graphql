@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import {
     BadRequestException,
     CACHE_MANAGER,
@@ -23,7 +24,6 @@ import {
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
-    getRangesFromDatePaginator,
     getUpdatedAtProperty,
     vennDiagram,
 } from '../../../common/helpers';
@@ -54,10 +54,12 @@ export class OrderSaleService {
         orderSalesQueryArgs: PaginatedOrderSalesQueryArgs;
         orderSalesSortArgs: OrderSalesSortArgs;
     }): Promise<PaginatedOrderSales> {
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        const startDate = datePaginator.start_date
+            ? dayjs(datePaginator.start_date).utc().startOf('day').toDate()
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? dayjs(datePaginator.end_date).utc().endOf('day').toDate()
+            : undefined;
 
         const { sort_order, sort_field } = orderSalesSortArgs;
 
@@ -119,7 +121,7 @@ export class OrderSaleService {
                 },
                 {
                     date: {
-                        lt: datePaginator.year ? endDate : undefined,
+                        lt: endDate,
                     },
                 },
                 {
@@ -222,10 +224,12 @@ export class OrderSaleService {
     }): Promise<OrderSale[]> {
         const { account_id, receipt_type_id } = getOrderSalesQueryArgs;
         const { sort_order, sort_field } = orderSalesSortArgs;
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: datePaginator.year,
-            month: datePaginator.month,
-        });
+        const startDate = datePaginator.start_date
+            ? dayjs(datePaginator.start_date).utc().startOf('day').toDate()
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? dayjs(datePaginator.end_date).utc().endOf('day').toDate()
+            : undefined;
 
         const andTransfersWhere: Prisma.order_salesWhereInput[] = [
             {
@@ -239,7 +243,7 @@ export class OrderSaleService {
             },
             {
                 date: {
-                    lt: datePaginator.year ? endDate : undefined,
+                    lt: endDate,
                 },
             },
             {
@@ -518,6 +522,17 @@ export class OrderSaleService {
             where: {
                 id: order_sale_status_id,
             },
+        });
+    }
+
+    async getCreatedBy({
+        created_by_id,
+    }: {
+        created_by_id?: number | null;
+    }): Promise<User | null> {
+        if (!created_by_id) return null;
+        return this.prisma.users.findFirst({
+            where: { id: created_by_id },
         });
     }
 
