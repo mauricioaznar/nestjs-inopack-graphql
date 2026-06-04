@@ -140,22 +140,47 @@ export class OrderRequestsService {
                         paginatedOrderRequestsQueryArgs.order_request_status_id ||
                         undefined,
                 },
-                {
-                    OR: [
-                        {
-                            order_code: {
-                                in: isFilterANumber
-                                    ? [Number(filter)]
-                                    : undefined,
-                            },
-                        },
-                        {
-                            notes: {
-                                contains: filter,
-                            },
-                        },
-                    ],
-                },
+                ...(filter
+                    ? [
+                          {
+                              OR: [
+                                  ...(isFilterANumber
+                                      ? [
+                                            {
+                                                order_code: {
+                                                    in: [Number(filter)],
+                                                },
+                                            },
+                                        ]
+                                      : []),
+                                  {
+                                      notes: {
+                                          contains: filter,
+                                      },
+                                  },
+                                  {
+                                      accounts: {
+                                          name: {
+                                              contains: filter,
+                                          },
+                                      },
+                                  },
+                                  {
+                                      order_request_products: {
+                                          some: {
+                                              products: {
+                                                  description: {
+                                                      contains: filter,
+                                                  },
+                                              },
+                                              active: 1,
+                                          },
+                                      },
+                                  },
+                              ],
+                          },
+                      ]
+                    : []),
             ],
         };
 

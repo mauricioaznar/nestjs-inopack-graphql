@@ -13,6 +13,7 @@ import {
     Account,
     AccountContact,
     AccountsQueryArgs,
+    AccountTransactionItem,
     AccountUpsertInput,
     ActivityTypeName,
     PaginatedAccounts,
@@ -52,6 +53,15 @@ export class AccountsResolver {
         @Args('AccountId') accountId: number,
     ): Promise<Account | null> {
         return this.service.getAccount({
+            account_id: accountId,
+        });
+    }
+
+    @Query(() => [AccountTransactionItem])
+    async getAccountTransactionHistory(
+        @Args('AccountId') accountId: number,
+    ): Promise<AccountTransactionItem[]> {
+        return this.service.getAccountTransactionHistory({
             account_id: accountId,
         });
     }

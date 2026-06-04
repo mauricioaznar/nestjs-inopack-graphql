@@ -73,27 +73,36 @@ export class OrderSaleService {
         const orderSalesOrWhere: Prisma.Enumerable<Prisma.order_salesWhereInput> =
             [];
 
-        if (isFilterANumber) {
-            orderSalesOrWhere.push({
-                order_requests: {
+        if (filter) {
+            if (isFilterANumber) {
+                orderSalesOrWhere.push({
+                    order_requests: {
+                        order_code: {
+                            in: [Number(filter)],
+                        },
+                    },
+                });
+                orderSalesOrWhere.push({
                     order_code: {
                         in: [Number(filter)],
                     },
-                },
-            });
-            orderSalesOrWhere.push({
-                order_code: {
-                    in: [Number(filter)],
-                },
-            });
-            orderSalesOrWhere.push({
-                invoice_code: {
-                    in: [Number(filter)],
-                },
-            });
+                });
+                orderSalesOrWhere.push({
+                    invoice_code: {
+                        in: [Number(filter)],
+                    },
+                });
+            }
             orderSalesOrWhere.push({
                 notes: {
                     contains: filter,
+                },
+            });
+            orderSalesOrWhere.push({
+                accounts: {
+                    name: {
+                        contains: filter,
+                    },
                 },
             });
         }

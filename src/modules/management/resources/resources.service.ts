@@ -138,6 +138,15 @@ export class ResourcesService {
                 {
                     active: 1,
                 },
+                ...(filter
+                    ? [
+                          {
+                              name: {
+                                  contains: filter,
+                              },
+                          },
+                      ]
+                    : []),
             ],
         };
         let orderBy: Prisma.resourcesOrderByWithRelationInput = {

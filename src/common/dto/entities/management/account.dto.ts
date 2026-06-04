@@ -1,6 +1,7 @@
 import {
     ArgsType,
     Field,
+    Float,
     InputType,
     Int,
     ObjectType,
@@ -82,6 +83,57 @@ export class PaginatedAccountsSortArgs {
 
     @Field(() => AccountsSortableFields, { nullable: true })
     sort_field: AccountsSortableFields | null;
+}
+
+@ObjectType('AccountItemTransfer')
+export class AccountItemTransfer {
+    @Field(() => Float)
+    amount: number;
+
+    @Field(() => Date, { nullable: true })
+    transferred_date: Date | null;
+
+    @Field(() => String)
+    notes: string;
+}
+
+@ObjectType('AccountTransactionItem')
+export class AccountTransactionItem {
+    @Field(() => Int)
+    id: number;
+
+    @Field(() => String)
+    type: string;
+
+    @Field(() => String)
+    order_code: string;
+
+    @Field(() => Int, { nullable: true })
+    invoice_code: number | null;
+
+    @Field(() => Date)
+    date: Date;
+
+    @Field(() => Date, { nullable: true })
+    expected_payment_date: Date | null;
+
+    @Field(() => String)
+    notes: string;
+
+    @Field(() => Int, { nullable: true })
+    receipt_type_id: number | null;
+
+    @Field(() => Float)
+    total_with_tax: number;
+
+    @Field(() => Float)
+    transfer_receipts_total: number;
+
+    @Field(() => String, { nullable: true })
+    expense_status_color: string | null;
+
+    @Field(() => [AccountItemTransfer])
+    transfers: AccountItemTransfer[];
 }
 
 @ArgsType()

@@ -7,12 +7,14 @@ import {
     Account,
     AccountContact,
     AccountsQueryArgs,
+    AccountTransactionItem,
     AccountUpsertInput,
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
     PaginatedProducts,
     Resource,
 } from '../../../common/dto/entities';
+import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 import {
     getCreatedAtProperty,
     getUpdatedAtProperty,
@@ -385,5 +387,146 @@ export class AccountsService {
         });
 
         return order_requests_count === 0;
+    }
+
+    async getAccountTransactionHistory({
+        account_id,
+    }: {
+        account_id: number;
+    }): Promise<AccountTransactionItem[]> {
+        const res = await this.prisma.$queryRawUnsafe<AccountTransactionItem[]>(`
+            SELECT
+                'sale' as type,
+                ${convertToInt('order_sales.id', 'id')},
+                CAST(order_sales.order_code AS CHAR) as order_code,
+                order_sales.invoice_code,
+                order_sales.date,
+                order_sales.expected_payment_date,
+                order_sales.notes,
+                ${convertToInt('order_sales.receipt_type_id', 'receipt_type_id')},
+                wtv_s.total as total_with_tax,
+                ifnull(otv_s.total, 0) as transfer_receipts_total,
+                NULL as expense_status_color
+            FROM order_sales
+            JOIN (
+                SELECT order_sales.id order_sale_id,
+                    round(sum(order_sales.subtotal + order_sales.tax), 2) total
+                FROM order_sales
+                WHERE order_sales.active = 1
+                GROUP BY order_sales.id
+            ) AS wtv_s ON wtv_s.order_sale_id = order_sales.id
+            LEFT JOIN (
+                SELECT transfer_receipts.order_sale_id,
+                    round(sum(transfer_receipts.amount), 2) as total
+                FROM transfers
+                JOIN transfer_receipts ON transfers.id = transfer_receipts.transfer_id
+                WHERE transfers.active = 1 AND transfer_receipts.active = 1
+                GROUP BY order_sale_id
+            ) AS otv_s ON otv_s.order_sale_id = order_sales.id
+            WHERE order_sales.active = 1
+            AND order_sales.canceled = 0
+            AND order_sales.account_id = ${account_id}
+
+            UNION ALL
+
+            SELECT
+                'expense' as type,
+                ${convertToInt('expenses.id', 'id')},
+                expenses.order_code,
+                NULL as invoice_code,
+                expenses.date,
+                expenses.expected_payment_date,
+                expenses.notes,
+                ${convertToInt('expenses.receipt_type_id', 'receipt_type_id')},
+                wtv_e.total as total_with_tax,
+                ifnull(otv_e.total, 0) as transfer_receipts_total,
+                expense_statuses.color as expense_status_color
+            FROM expenses
+            JOIN (
+                SELECT expenses.id,
+                    round(SUM(expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained), 2) total
+                FROM expenses
+                WHERE expenses.active = 1
+                GROUP BY expenses.id
+            ) AS wtv_e ON wtv_e.id = expenses.id
+            LEFT JOIN (
+                SELECT transfer_receipts.expense_id,
+                    round(sum(transfer_receipts.amount), 2) as total
+                FROM transfers
+                JOIN transfer_receipts ON transfers.id = transfer_receipts.transfer_id
+                WHERE transfers.active = 1 AND transfer_receipts.active = 1
+                GROUP BY expense_id
+            ) AS otv_e ON otv_e.expense_id = expenses.id
+            LEFT JOIN expense_statuses ON expense_statuses.id = expenses.expense_status_id
+            WHERE expenses.active = 1
+            AND expenses.canceled = 0
+            AND expenses.account_id = ${account_id}
+
+            ORDER BY
+                CASE WHEN expected_payment_date IS NULL THEN 1 ELSE 0 END,
+                expected_payment_date DESC,
+                date DESC
+            LIMIT 15
+        `);
+
+        const items = res.map((item) => ({
+            ...item,
+            date: new Date(item.date),
+            expected_payment_date: item.expected_payment_date
+                ? new Date(item.expected_payment_date)
+                : null,
+            transfers: [] as { amount: number; transferred_date: Date | null; notes: string }[],
+        }));
+
+        const saleIds = items
+            .filter((i) => i.type === 'sale')
+            .map((i) => i.id);
+        const expenseIds = items
+            .filter((i) => i.type === 'expense')
+            .map((i) => i.id);
+
+        const receipts =
+            saleIds.length === 0 && expenseIds.length === 0
+                ? []
+                : await this.prisma.transfer_receipts.findMany({
+                      where: {
+                          active: 1,
+                          transfers: { active: 1 },
+                          OR: [
+                              ...(saleIds.length > 0
+                                  ? [{ order_sale_id: { in: saleIds } }]
+                                  : []),
+                              ...(expenseIds.length > 0
+                                  ? [{ expense_id: { in: expenseIds } }]
+                                  : []),
+                          ],
+                      },
+                      include: {
+                          transfers: {
+                              select: { transferred_date: true, amount: true, notes: true },
+                          },
+                      },
+                  });
+
+        receipts.forEach((receipt) => {
+            const item = items.find((i) => {
+                if (i.type === 'sale') {
+                    return Number(i.id) === Number(receipt.order_sale_id);
+                } else {
+                    return Number(i.id) === Number(receipt.expense_id);
+                }
+            });
+            if (item && receipt.transfers) {
+                item.transfers.push({
+                    amount: receipt.amount,
+                    transferred_date: receipt.transfers.transferred_date
+                        ? new Date(receipt.transfers.transferred_date)
+                        : null,
+                    notes: receipt.transfers.notes ?? '',
+                });
+            }
+        });
+
+        return items;
     }
 }
