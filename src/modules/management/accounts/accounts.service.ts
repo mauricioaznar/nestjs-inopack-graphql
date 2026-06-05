@@ -463,10 +463,8 @@ export class AccountsService {
             AND expenses.account_id = ${account_id}
 
             ORDER BY
-                CASE WHEN expected_payment_date IS NULL THEN 1 ELSE 0 END,
-                expected_payment_date DESC,
                 date DESC
-            LIMIT 15
+            LIMIT 5000
         `);
 
         const items = res.map((item) => ({
@@ -525,6 +523,20 @@ export class AccountsService {
                     notes: receipt.transfers.notes ?? '',
                 });
             }
+        });
+
+        // Transfers have no `date` of their own, so order them by
+        // `transferred_date` (newest first); nulls sink to the bottom.
+        items.forEach((item) => {
+            item.transfers.sort((a, b) => {
+                const aTime = a.transferred_date
+                    ? a.transferred_date.getTime()
+                    : -Infinity;
+                const bTime = b.transferred_date
+                    ? b.transferred_date.getTime()
+                    : -Infinity;
+                return bTime - aTime;
+            });
         });
 
         return items;
