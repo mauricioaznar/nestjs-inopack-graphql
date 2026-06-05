@@ -12,12 +12,6 @@ export class PayrollEntryBase {
     @Field(() => String, { nullable: false })
     estatus: string;
 
-    @Field(() => String, { nullable: false })
-    area: string;
-
-    @Field(() => String, { nullable: false })
-    puesto: string;
-
     @Field(() => Boolean, { nullable: false })
     control_bono_area: boolean;
 
@@ -35,6 +29,9 @@ export class PayrollEntryBase {
 
     @Field(() => Float, { nullable: false })
     he: number;
+
+    @Field(() => Boolean, { nullable: false })
+    he_override: boolean;
 
     @Field(() => Int, { nullable: false })
     retardos: number;
@@ -95,6 +92,16 @@ export class PayrollEntry extends PayrollEntryBase {
 
     // --- computed fields (resolved at the GraphQL layer) ---
 
+    // area is the employee's category name; is_leader comes from the employee.
+    @Field(() => String, { nullable: false })
+    area: string;
+
+    @Field(() => Int, { nullable: false })
+    is_leader: number;
+
+    @Field(() => Float, { nullable: false })
+    he_effective: number;
+
     @Field(() => Float, { nullable: false })
     hn: number;
 
@@ -106,6 +113,9 @@ export class PayrollEntry extends PayrollEntryBase {
 
     @Field(() => Float, { nullable: false })
     vac_pay: number;
+
+    @Field(() => Float, { nullable: false })
+    prima_vac: number;
 
     @Field(() => Float, { nullable: false })
     puntualidad: number;

@@ -1,6 +1,7 @@
 import {
     ArgsType,
     Field,
+    Float,
     InputType,
     Int,
     ObjectType,
@@ -44,6 +45,12 @@ export class Employee extends EmployeeBase {
 
     @Field()
     fullname: string;
+
+    @Field(() => Float, { nullable: false })
+    base_salary: number;
+
+    @Field(() => Int, { nullable: true })
+    employee_category_id: number | null;
 }
 
 export enum PaginatedEmployeesSortableFields {

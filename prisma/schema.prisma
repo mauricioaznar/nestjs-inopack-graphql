@@ -81,6 +81,8 @@ model employees {
   credit_required            Int                          @default(0)
   order_production_type_id   Int?                         @db.UnsignedInt
   is_leader                  Int                          @default(0)
+  employee_category_id       Int?                         @db.UnsignedInt
+  employee_categories        employee_categories?         @relation(fields: [employee_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_category_id_foreign")
   branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_branch_id_foreign")
   employee_statuses          employee_statuses?           @relation(fields: [employee_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_status_id_foreign")
   employee_type              employee_type?               @relation(fields: [employee_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_type_id_foreign")
@@ -93,6 +95,16 @@ model employees {
   @@index([employee_status_id], map: "employees_employee_status_id_foreign")
   @@index([employee_type_id], map: "employees_employee_type_id_foreign")
   @@index([order_production_type_id], map: "employees_order_production_type_id_foreign")
+  @@index([employee_category_id], map: "employees_employee_category_id_foreign")
+}
+
+model employee_categories {
+  id         Int         @id @default(autoincrement()) @db.UnsignedInt
+  active     Int         @default(1)
+  name       String      @db.VarChar(100)
+  created_at DateTime?   @db.DateTime(0)
+  updated_at DateTime?   @db.DateTime(0)
+  employees  employees[]
 }
 
 model machine_type {
@@ -847,14 +859,13 @@ model payroll_entries {
   payroll_period_id   Int             @db.UnsignedInt
   employee_id         Int             @db.UnsignedInt
   estatus             String          @default("ALTA") @db.VarChar(50)
-  area                String          @default("") @db.VarChar(100)
-  puesto              String          @default("") @db.VarChar(100)
   control_bono_area   Boolean         @default(false)
   control_deposito    Boolean         @default(false)
   sueldo              Float           @default(0) @db.Float
   jo                  Float           @default(48) @db.Float
   ht                  Float           @default(0) @db.Float
   he                  Float           @default(0) @db.Float
+  he_override         Boolean         @default(false)
   retardos            Int             @default(0)
   faltas              Int             @default(0)
   vac                 Float           @default(0) @db.Float
