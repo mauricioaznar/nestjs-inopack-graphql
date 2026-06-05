@@ -22,6 +22,7 @@ import { SummariesModule } from './modules/summaries/summaries.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { PubSubModule } from './common/modules/pub-sub/pub-sub.module';
 import { ManagementModule } from './modules/management/management.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
 
 @Module({
     imports: [
@@ -77,6 +78,7 @@ import { ManagementModule } from './modules/management/management.module';
         MaintenanceModule,
         ManagementModule,
         SalesModule,
+        PayrollModule,
         SummariesModule,
         MemoryTokenModule,
         ActivitiesModule,
