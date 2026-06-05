@@ -31,16 +31,22 @@ export class PayrollService {
     }
 
     async upsertPayrollPeriod(input: PayrollPeriodInput): Promise<PayrollPeriod> {
+        const startDate = input.start_date ? new Date(input.start_date) : null;
+        const endDate = input.end_date ? new Date(input.end_date) : null;
+
+        if (!startDate || isNaN(startDate.getTime()) || !endDate || isNaN(endDate.getTime())) {
+            throw new Error('start_date and end_date are required and must be valid dates');
+        }
         return this.prisma.payroll_periods.upsert({
             create: {
-                start_date: input.start_date,
-                end_date: input.end_date,
+                start_date: startDate,
+                end_date: endDate,
                 week_number: input.week_number,
                 branch_id: input.branch_id,
             },
             update: {
-                start_date: input.start_date,
-                end_date: input.end_date,
+                start_date: startDate,
+                end_date: endDate,
                 week_number: input.week_number,
                 branch_id: input.branch_id,
             },
@@ -84,6 +90,7 @@ export class PayrollService {
             sueldo: input.sueldo,
             jo: input.jo,
             ht: input.ht,
+            he: input.he,
             retardos: input.retardos,
             faltas: input.faltas,
             vac: input.vac,
@@ -120,16 +127,9 @@ export class PayrollService {
     // ---------------------------------------------------------------------------
 
     private attachComputedFields(row: any): PayrollEntry {
-        const { sueldo, jo, ht, dias_festivos, faltas, puesto, area, control_bono_area } = row;
+        const { sueldo, jo, ht, he, dias_festivos, faltas, puesto, area, control_bono_area } = row;
 
-        // HE — extra hours
-        let he: number;
-        if (dias_festivos > 0) {
-            const holiday_hours = (jo / 6) * dias_festivos;
-            he = Math.max(0, ht + holiday_hours - jo);
-        } else {
-            he = Math.max(0, ht - jo);
-        }
+        // HE — extra hours are now a manual input (row.he), no longer derived.
 
         // $HN — normal hours pay
         let hn: number;
@@ -182,7 +182,6 @@ export class PayrollService {
 
         return {
             ...row,
-            he,
             hn,
             he_pay,
             fest_pay,

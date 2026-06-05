@@ -33,6 +33,9 @@ export class PayrollEntryBase {
     @Field(() => Float, { nullable: false })
     ht: number;
 
+    @Field(() => Float, { nullable: false })
+    he: number;
+
     @Field(() => Int, { nullable: false })
     retardos: number;
 
@@ -91,9 +94,6 @@ export class PayrollEntry extends PayrollEntryBase {
     updated_at?: Date | null;
 
     // --- computed fields (resolved at the GraphQL layer) ---
-
-    @Field(() => Float, { nullable: false })
-    he: number;
 
     @Field(() => Float, { nullable: false })
     hn: number;

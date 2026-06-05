@@ -3,11 +3,11 @@ import { ArgsType, Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
 export class PayrollPeriodBase {
-    @Field(() => Date, { nullable: false })
-    start_date: Date;
+    @Field(() => Date, { nullable: true })
+    start_date: Date | null;
 
-    @Field(() => Date, { nullable: false })
-    end_date: Date;
+    @Field(() => Date, { nullable: true })
+    end_date: Date | null;
 
     @Field(() => Int, { nullable: false })
     week_number: number;

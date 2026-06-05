@@ -825,51 +825,52 @@ model expense_resources {
 }
 
 model payroll_periods {
-  id               Int               @id @default(autoincrement()) @db.UnsignedInt
-  active           Int               @default(1)
-  created_at       DateTime?         @db.DateTime(0)
-  updated_at       DateTime?         @db.DateTime(0)
-  branch_id        Int?              @db.UnsignedInt
-  start_date       DateTime          @db.Date
-  end_date         DateTime          @db.Date
-  week_number      Int               @default(0)
-  branches         branches?         @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payroll_periods_branch_id_foreign")
-  payroll_entries  payroll_entries[]
+  id              Int               @id @default(autoincrement()) @db.UnsignedInt
+  active          Int               @default(1)
+  created_at      DateTime?         @db.DateTime(0)
+  updated_at      DateTime?         @db.DateTime(0)
+  branch_id       Int?              @db.UnsignedInt
+  start_date      DateTime          @db.Date
+  end_date        DateTime          @db.Date
+  week_number     Int               @default(0)
+  payroll_entries payroll_entries[]
+  branches        branches?         @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payroll_periods_branch_id_foreign")
 
   @@index([branch_id], map: "payroll_periods_branch_id_foreign")
 }
 
 model payroll_entries {
-  id                    Int              @id @default(autoincrement()) @db.UnsignedInt
-  active                Int              @default(1)
-  created_at            DateTime?        @db.DateTime(0)
-  updated_at            DateTime?        @db.DateTime(0)
-  payroll_period_id     Int              @db.UnsignedInt
-  employee_id           Int              @db.UnsignedInt
-  estatus               String           @default("ALTA") @db.VarChar(50)
-  area                  String           @default("") @db.VarChar(100)
-  puesto                String           @default("") @db.VarChar(100)
-  control_bono_area     Boolean          @default(false)
-  control_deposito      Boolean          @default(false)
-  sueldo                Float            @default(0)
-  jo                    Float            @default(48)
-  ht                    Float            @default(0)
-  retardos              Int              @default(0)
-  faltas                Int              @default(0)
-  vac                   Float            @default(0)
-  dias_festivos         Float            @default(0)
-  infonavit             Float            @default(0)
-  fonacot               Float            @default(0)
-  descuento_prestamos   Float            @default(0)
-  otros_menos           Float            @default(0)
-  entregas_especiales   Float            @default(0)
-  viajes                Float            @default(0)
-  bonos                 Float            @default(0)
-  otros_mas             Float            @default(0)
-  bd                    Float            @default(0)
-  observaciones         String           @default("") @db.VarChar(500)
-  payroll_periods       payroll_periods  @relation(fields: [payroll_period_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payroll_entries_period_id_foreign")
-  employees             employees        @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payroll_entries_employee_id_foreign")
+  id                  Int             @id @default(autoincrement()) @db.UnsignedInt
+  active              Int             @default(1)
+  created_at          DateTime?       @db.DateTime(0)
+  updated_at          DateTime?       @db.DateTime(0)
+  payroll_period_id   Int             @db.UnsignedInt
+  employee_id         Int             @db.UnsignedInt
+  estatus             String          @default("ALTA") @db.VarChar(50)
+  area                String          @default("") @db.VarChar(100)
+  puesto              String          @default("") @db.VarChar(100)
+  control_bono_area   Boolean         @default(false)
+  control_deposito    Boolean         @default(false)
+  sueldo              Float           @default(0) @db.Float
+  jo                  Float           @default(48) @db.Float
+  ht                  Float           @default(0) @db.Float
+  he                  Float           @default(0) @db.Float
+  retardos            Int             @default(0)
+  faltas              Int             @default(0)
+  vac                 Float           @default(0) @db.Float
+  dias_festivos       Float           @default(0) @db.Float
+  infonavit           Float           @default(0) @db.Float
+  fonacot             Float           @default(0) @db.Float
+  descuento_prestamos Float           @default(0) @db.Float
+  otros_menos         Float           @default(0) @db.Float
+  entregas_especiales Float           @default(0) @db.Float
+  viajes              Float           @default(0) @db.Float
+  bonos               Float           @default(0) @db.Float
+  otros_mas           Float           @default(0) @db.Float
+  bd                  Float           @default(0) @db.Float
+  observaciones       String          @default("") @db.VarChar(500)
+  employees           employees       @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payroll_entries_employee_id_foreign")
+  payroll_periods     payroll_periods @relation(fields: [payroll_period_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payroll_entries_period_id_foreign")
 
   @@index([payroll_period_id], map: "payroll_entries_period_id_foreign")
   @@index([employee_id], map: "payroll_entries_employee_id_foreign")
