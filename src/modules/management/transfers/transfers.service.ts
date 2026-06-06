@@ -157,39 +157,56 @@ export class TransfersService {
                       },
                   ]
                 : []),
-            {
-                OR: [
-                    {
-                        transfer_receipts: {
-                            some: isFilterANumber
-                                ? {
-                                      order_sales: {
-                                          invoice_code: {
-                                              in: isFilterANumber
-                                                  ? [Number(filter)]
-                                                  : undefined,
+            // General free-text filter: matches the from/to account name, the
+            // notes, or any linked folio (sale invoice_code / expense order_code).
+            // When there's no filter we add nothing, so the list isn't narrowed.
+            ...(filter
+                ? [
+                      {
+                          OR: [
+                              {
+                                  accounts_accountsTotransfers_from_account_id: {
+                                      name: { contains: filter },
+                                  },
+                              },
+                              {
+                                  accounts_accountsTotransfers_to_account_id: {
+                                      name: { contains: filter },
+                                  },
+                              },
+                              {
+                                  notes: { contains: filter },
+                              },
+                              // invoice_code is numeric, so only test it when the
+                              // filter parses as a number.
+                              ...(isFilterANumber
+                                  ? [
+                                        {
+                                            transfer_receipts: {
+                                                some: {
+                                                    order_sales: {
+                                                        invoice_code: {
+                                                            in: [Number(filter)],
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    ]
+                                  : []),
+                              {
+                                  transfer_receipts: {
+                                      some: {
+                                          expenses: {
+                                              order_code: { contains: filter },
                                           },
                                       },
-                                  }
-                                : undefined,
-                        },
-                    },
-                    {
-                        transfer_receipts: {
-                            some:
-                                filter && filter !== ''
-                                    ? {
-                                          expenses: {
-                                              order_code: {
-                                                  in: [filter],
-                                              },
-                                          },
-                                      }
-                                    : undefined,
-                        },
-                    },
-                ],
-            },
+                                  },
+                              },
+                          ],
+                      },
+                  ]
+                : []),
         ];
 
         const transfersWhere: Prisma.transfersWhereInput = {
