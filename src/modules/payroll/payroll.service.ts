@@ -55,6 +55,10 @@ export class PayrollService {
     }
 
     async deletePayrollPeriod(id: number): Promise<boolean> {
+        await this.prisma.payroll_entries.updateMany({
+            data: { active: -1 },
+            where: { payroll_period_id: id },
+        });
         await this.prisma.payroll_periods.update({
             data: { active: -1 },
             where: { id },
