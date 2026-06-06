@@ -19,9 +19,10 @@ import {
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => ExpenseResource)
-// @Role('super')
 @Injectable()
 export class ExpenseResourcesResolver {
     constructor(
@@ -30,11 +31,13 @@ export class ExpenseResourcesResolver {
     ) {}
 
     @Query(() => [ExpenseResource])
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getExpenseResources(): Promise<ExpenseResource[]> {
         return this.service.getExpenseResources();
     }
 
     @Query(() => ExpenseResource)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getExpenseResource(
         @Args('ExpenseResourceId') expenseResourceId: number,
     ): Promise<ExpenseResource | null> {
@@ -44,6 +47,7 @@ export class ExpenseResourcesResolver {
     }
 
     @Query(() => PaginatedExpenseResources)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async paginatedExpenseResources(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) datePaginator: DatePaginator,
@@ -88,6 +92,7 @@ export class ExpenseResourcesResolver {
     }
 
     @Subscription(() => ExpenseResource)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async expense_resource() {
         return this.pubSubService.listenForExpenseResource();
     }

@@ -30,6 +30,8 @@ import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/paginati
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { RolesDecorator } from '../../auth/decorators/role.decorator';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => OrderRequest)
 @UseGuards(GqlAuthGuard)
@@ -80,6 +82,7 @@ export class OrderRequestsResolver {
 
     // insert + update === upsert
     @Mutation(() => OrderRequest)
+    @RolesDecorator(RoleId.SALES)
     async upsertOrderRequest(
         @Args('OrderRequestInput') input: OrderRequestInput,
         @CurrentUser() currentUser: User,
@@ -97,6 +100,7 @@ export class OrderRequestsResolver {
     }
 
     @Mutation(() => Boolean)
+    @RolesDecorator(RoleId.SALES)
     async deleteOrderRequest(
         @Args('OrderRequestId') orderRequestId: number,
         @CurrentUser() currentUser: User,

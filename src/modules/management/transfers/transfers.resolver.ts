@@ -41,7 +41,7 @@ export class TransfersResolver {
 
     @Mutation(() => Transfer)
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES)
     async upsertTransfer(
         @Args('TransferUpsertInput') input: TransferUpsertInput,
         @CurrentUser() currentUser: User,
@@ -58,7 +58,7 @@ export class TransfersResolver {
 
     @Mutation(() => Boolean)
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES)
     async deleteTransfer(
         @Args('TransferId') transferId: number,
         @CurrentUser() currentUser: User,
@@ -80,7 +80,7 @@ export class TransfersResolver {
         nullable: true,
     })
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getTransfer(
         @Args('TransferId') id: number,
     ): Promise<Transfer | null> {
@@ -96,7 +96,7 @@ export class TransfersResolver {
 
     @Query(() => PaginatedTransfers)
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async paginatedTransfers(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) datePaginator: DatePaginator,
@@ -175,6 +175,8 @@ export class TransfersResolver {
     }
 
     @Subscription(() => Transfer)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async transfer() {
         return this.pubSubService.listenForTransfer();
     }

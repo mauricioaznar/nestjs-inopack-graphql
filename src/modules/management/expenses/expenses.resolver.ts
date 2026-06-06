@@ -43,7 +43,7 @@ export class ExpensesResolver {
 
     @Mutation(() => Expense)
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES)
     async upsertExpense(
         @Args('ExpenseUpsertInput') input: ExpenseUpsertInput,
         @CurrentUser() currentUser: User,
@@ -60,7 +60,7 @@ export class ExpensesResolver {
 
     @Mutation(() => Boolean)
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES)
     async deleteExpense(
         @Args('ExpenseId') expenseId: number,
         @CurrentUser() currentUser: User,
@@ -82,21 +82,21 @@ export class ExpensesResolver {
         nullable: true,
     })
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getExpense(@Args('ExpenseId') id: number): Promise<Expense | null> {
         return this.service.getExpense({ expense_id: id });
     }
 
     @Query(() => [ExpenseStatus])
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getExpenseStatuses(): Promise<ExpenseStatus[]> {
         return this.service.getExpenseStatuses();
     }
 
     @Query(() => [Expense])
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getExpenses(
         @Args({ nullable: false }) args: GetExpensesQueryArgs,
         @Args({ nullable: false }) datePaginator: DatePaginator,
@@ -112,7 +112,7 @@ export class ExpensesResolver {
 
     @Query(() => [Expense])
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getExpensesWithDisparities(
         @Args({ nullable: false })
         expensesWithDisparitiesQueryArgs: ExpensesWithDisparitiesQueryArgs,
@@ -124,7 +124,7 @@ export class ExpensesResolver {
 
     @Query(() => PaginatedExpenses)
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async paginatedExpenses(
         @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
         @Args({ nullable: false }) datePaginator: DatePaginator,

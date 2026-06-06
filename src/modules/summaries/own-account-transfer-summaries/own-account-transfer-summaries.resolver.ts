@@ -16,7 +16,7 @@ export class OwnAccountTransferSummariesResolver {
 
     @Query(() => [OwnAccountTransferSummary])
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getOwnAccountsTransferSummary(): Promise<
         OwnAccountTransferSummary[]
     > {

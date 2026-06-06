@@ -22,7 +22,7 @@ export class ThirdPartyAccountTransferSummariesResolver {
 
     @Query(() => [ThirdPartyAccountTransferSummary])
     @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.ADMIN)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getThirdPartyAccountsTransferSummary(
         @Args({ nullable: false })
         thirdPArtyAccountTransferQueryArgs: ThirdPartyAccountTransferQueryArgs,

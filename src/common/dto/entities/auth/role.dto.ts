@@ -23,11 +23,17 @@ export class RoleInput {
 }
 
 export enum RoleId {
-    SUPER = 1,
-    ADMIN = 2,
-    GUEST = 3,
-    PRODUCTION = 4,
-    SALES = 5,
+    SUPER = 1, // DB: "Super"
+    ADMIN = 2, // DB: "General"
+    GUEST = 3, // DB: "Asistente General"
+    PRODUCTION = 4, // DB: "Produccion"
+    SALES = 5, // DB: "Ventas"
+    PRODUCTION_ASSISTANT = 6, // DB: "Asistente Produccion"
+    SALES_ASSISTANT = 7, // DB: "Asistente Ventas"
+    EXPENSES = 8, // DB: "Gastos"
+    EXPENSES_ASSISTANT = 9, // DB: "Asistente Gastos"
+    HUMAN_RESOURCES = 10, // DB: "Recursos Humanos"
+    HUMAN_RESOURCES_ASSISTANT = 11, // DB: "Asistente Recursos Humanos"
 }
 
 registerEnumType(RoleId, {

@@ -22,33 +22,39 @@ export class GqlRolesGuard implements CanActivate {
         const { req } = context.getContext();
         const user = req.user as UserWithRoles;
         const userRoleIds = user.user_roles.map((userRole) => userRole.role_id);
-        return requiredRoles.some((role) => {
-            switch (role) {
-                case 1: // super
-                    return userRoleIds.includes(1);
-                case 2: // admin
-                    return userRoleIds.includes(1) || userRoleIds.includes(2);
-                case 3: // guest
-                    return (
-                        userRoleIds.includes(3) ||
-                        userRoleIds.includes(1) ||
-                        userRoleIds.includes(2)
-                    );
-                case 4: // production
-                    return (
-                        userRoleIds.includes(4) ||
-                        userRoleIds.includes(1) ||
-                        userRoleIds.includes(2)
-                    );
-                case 5: // sales
-                    return (
-                        userRoleIds.includes(5) ||
-                        userRoleIds.includes(1) ||
-                        userRoleIds.includes(2)
-                    );
-                default:
-                    return false;
+
+        // Super can do everything, including super-only areas (e.g. Users).
+        if (userRoleIds.includes(RoleId.SUPER)) {
+            return true;
+        }
+
+        // Asistente General (role 3) is a global read-only role: it may run any
+        // non-mutation operation (queries + subscriptions) on any non-super gate,
+        // but can never mutate.
+        if (userRoleIds.includes(RoleId.GUEST)) {
+            const operation = context.getInfo()?.operation?.operation;
+            if (
+                operation !== 'mutation' &&
+                !requiredRoles.includes(RoleId.SUPER)
+            ) {
+                return true;
             }
+        }
+
+        // General (formerly "Admin", role 2) is a global admin: it passes every
+        // domain gate — but NOT a super-only gate.
+        const isGeneralAdmin = userRoleIds.includes(RoleId.ADMIN);
+
+        return requiredRoles.some((role) => {
+            // A super-only gate is satisfied by super alone (handled above).
+            if (role === RoleId.SUPER) {
+                return false;
+            }
+            // General passes any non-super gate; everyone else must hold one of
+            // the exact roles the resolver asks for. To give an "assistant" role
+            // write-but-not-delete, list it on the upsert gate and omit it on the
+            // delete gate.
+            return isGeneralAdmin || userRoleIds.includes(role);
         });
     }
 }
