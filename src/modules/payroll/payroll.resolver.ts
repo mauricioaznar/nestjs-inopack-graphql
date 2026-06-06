@@ -9,6 +9,8 @@ import {
     PayrollPeriodInput,
 } from '../../common/dto/entities';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
+import { RolesDecorator } from '../auth/decorators/role.decorator';
+import { RoleId } from '../../common/dto/entities/auth/role.dto';
 
 @Resolver()
 @UseGuards(GqlAuthGuard)
@@ -19,6 +21,7 @@ export class PayrollResolver {
     // --- Periods ---
 
     @Query(() => [PayrollPeriod])
+    @RolesDecorator(RoleId.HUMAN_RESOURCES, RoleId.HUMAN_RESOURCES_ASSISTANT)
     async getPayrollPeriods(
         @Args({ nullable: false }) args: GetPayrollPeriodsArgs,
     ): Promise<PayrollPeriod[]> {
@@ -26,6 +29,7 @@ export class PayrollResolver {
     }
 
     @Query(() => PayrollPeriod, { nullable: true })
+    @RolesDecorator(RoleId.HUMAN_RESOURCES, RoleId.HUMAN_RESOURCES_ASSISTANT)
     async getPayrollPeriod(
         @Args('PayrollPeriodId', { type: () => Int }) id: number,
     ): Promise<PayrollPeriod | null> {
@@ -33,6 +37,7 @@ export class PayrollResolver {
     }
 
     @Mutation(() => PayrollPeriod)
+    @RolesDecorator(RoleId.HUMAN_RESOURCES)
     async upsertPayrollPeriod(
         @Args('PayrollPeriodInput') input: PayrollPeriodInput,
     ): Promise<PayrollPeriod> {
@@ -40,6 +45,7 @@ export class PayrollResolver {
     }
 
     @Mutation(() => Boolean)
+    @RolesDecorator(RoleId.HUMAN_RESOURCES)
     async deletePayrollPeriod(
         @Args('PayrollPeriodId', { type: () => Int }) id: number,
     ): Promise<boolean> {
@@ -51,6 +57,7 @@ export class PayrollResolver {
     // --- Entries ---
 
     @Query(() => [PayrollEntry])
+    @RolesDecorator(RoleId.HUMAN_RESOURCES, RoleId.HUMAN_RESOURCES_ASSISTANT)
     async getPayrollEntries(
         @Args('PayrollPeriodId', { type: () => Int }) payroll_period_id: number,
     ): Promise<PayrollEntry[]> {
@@ -58,6 +65,7 @@ export class PayrollResolver {
     }
 
     @Query(() => PayrollEntry, { nullable: true })
+    @RolesDecorator(RoleId.HUMAN_RESOURCES, RoleId.HUMAN_RESOURCES_ASSISTANT)
     async getPayrollEntry(
         @Args('PayrollEntryId', { type: () => Int }) id: number,
     ): Promise<PayrollEntry | null> {
@@ -65,6 +73,7 @@ export class PayrollResolver {
     }
 
     @Mutation(() => PayrollEntry)
+    @RolesDecorator(RoleId.HUMAN_RESOURCES)
     async upsertPayrollEntry(
         @Args('PayrollEntryInput') input: PayrollEntryInput,
     ): Promise<PayrollEntry> {
@@ -72,6 +81,7 @@ export class PayrollResolver {
     }
 
     @Mutation(() => Boolean)
+    @RolesDecorator(RoleId.HUMAN_RESOURCES)
     async deletePayrollEntry(
         @Args('PayrollEntryId', { type: () => Int }) id: number,
     ): Promise<boolean> {
