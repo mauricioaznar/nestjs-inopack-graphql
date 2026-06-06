@@ -11,10 +11,11 @@ export class GqlAuthGuard extends AuthGuard('jwt') {
     }
 
     getRequest(context) {
-        const ctx = GqlExecutionContext.create(context).getContext();
-        return ctx.connectionParams
-            ? { headers: ctx.connectionParams }
-            : ctx.req;
+        // The GraphQL context factory (app.module) always exposes a `req` that
+        // carries the auth headers, for both HTTP and WebSocket. Returning that
+        // same object means passport attaches `.user` onto it — exactly where the
+        // roles guard and @CurrentUser read it from.
+        return GqlExecutionContext.create(context).getContext().req;
     }
 
     canActivate(context: ExecutionContext) {

@@ -128,6 +128,7 @@ export class AuthResolver {
 
     @Subscription(() => User)
     @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.SUPER)
     async user() {
         return this.pubSubService.listenForUser();
     }

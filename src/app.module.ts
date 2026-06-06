@@ -33,15 +33,24 @@ import { PayrollModule } from './modules/payroll/payroll.module';
             installSubscriptionHandlers: true,
             subscriptions: {
                 'graphql-ws': {
-                    onConnect: (ctx) => {
+                    onConnect: (ctx: any) => {
                         if (!ctx || !ctx.connectionParams) {
                             throw new ApolloError(
                                 `'Connection params' must be included with the 'authorization' header included`,
                             );
                         }
 
-                        const connectionParams = ctx.connectionParams;
-                        return { connectionParams };
+                        // Do NOT reject a socket that lacks a token here.
+                        // Authentication is enforced per-operation by GqlAuthGuard,
+                        // so an unauthenticated client (e.g. the login screen, where
+                        // the always-on subscriptions still open the lazy socket) may
+                        // connect and simply receive auth errors when it subscribes.
+                        // Stash the auth params on `extra` so the per-operation
+                        // `context` factory below can rebuild a request from them.
+                        if (ctx.extra) {
+                            ctx.extra.connectionParams = ctx.connectionParams;
+                        }
+                        return { connectionParams: ctx.connectionParams };
                     },
                 },
             },
@@ -66,10 +75,21 @@ import { PayrollModule } from './modules/payroll/payroll.module';
                 }
                 return error;
             },
-            context: (ctx) => {
-                return ctx.connection
-                    ? { ...ctx, req: ctx.connection.context }
-                    : { ...ctx, req: ctx.req };
+            context: (ctx: any) => {
+                // HTTP (queries/mutations): the Express request is on ctx.req.
+                if (ctx?.req) {
+                    return { req: ctx.req };
+                }
+                // WebSocket (graphql-ws subscriptions): rebuild a minimal request
+                // whose `headers` carry the auth token, so the same JWT auth guard
+                // and roles guard work exactly as they do over HTTP. The token may
+                // live at the top level, under `extra`, or (legacy) on connection.
+                const connectionParams =
+                    ctx?.connectionParams ??
+                    ctx?.extra?.connectionParams ??
+                    ctx?.connection?.context ??
+                    {};
+                return { req: { headers: connectionParams } };
             },
         }),
         CacheModule.register({ ttl: 0, isGlobal: true }),
