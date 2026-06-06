@@ -82,8 +82,8 @@ model employees {
   order_production_type_id   Int?                         @db.UnsignedInt
   is_leader                  Int                          @default(0)
   employee_category_id       Int?                         @db.UnsignedInt
-  employee_categories        employee_categories?         @relation(fields: [employee_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_category_id_foreign")
   branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_branch_id_foreign")
+  employee_categories        employee_categories?         @relation(fields: [employee_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_category_id_foreign")
   employee_statuses          employee_statuses?           @relation(fields: [employee_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_status_id_foreign")
   employee_type              employee_type?               @relation(fields: [employee_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_type_id_foreign")
   order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_order_production_type_id_foreign")
@@ -101,9 +101,9 @@ model employees {
 model employee_categories {
   id         Int         @id @default(autoincrement()) @db.UnsignedInt
   active     Int         @default(1)
-  name       String      @db.VarChar(100)
   created_at DateTime?   @db.DateTime(0)
   updated_at DateTime?   @db.DateTime(0)
+  name       String      @db.VarChar(100)
   employees  employees[]
 }
 
