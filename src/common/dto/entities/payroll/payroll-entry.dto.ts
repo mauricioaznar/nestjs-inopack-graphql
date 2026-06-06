@@ -92,9 +92,12 @@ export class PayrollEntry extends PayrollEntryBase {
 
     // --- computed fields (resolved at the GraphQL layer) ---
 
-    // area is the employee's category name; is_leader comes from the employee.
+    // area is the employee's category name; is_leader + employee_name come from the employee.
     @Field(() => String, { nullable: false })
     area: string;
+
+    @Field(() => String, { nullable: false })
+    employee_name: string;
 
     @Field(() => Int, { nullable: false })
     is_leader: number;
