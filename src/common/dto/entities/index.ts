@@ -49,6 +49,10 @@ export * from './management/resource.dto';
 export * from './management/resource-category.dto';
 export * from './management/expense-resource.dto';
 
+// payroll
+export * from './payroll/payroll-period.dto';
+export * from './payroll/payroll-entry.dto';
+
 // summaries
 export * from './summaries/expenses-summary.dto';
 export * from './summaries/payments-summary.dto';

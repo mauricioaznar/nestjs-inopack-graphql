@@ -38,6 +38,7 @@ model branches {
   employees         employees[]
   machines          machines[]
   order_productions order_productions[]
+  payroll_periods   payroll_periods[]
   user_branches     user_branches[]
   users             users[]
 }
@@ -80,17 +81,30 @@ model employees {
   credit_required            Int                          @default(0)
   order_production_type_id   Int?                         @db.UnsignedInt
   is_leader                  Int                          @default(0)
+  employee_category_id       Int?                         @db.UnsignedInt
   branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_branch_id_foreign")
+  employee_categories        employee_categories?         @relation(fields: [employee_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_category_id_foreign")
   employee_statuses          employee_statuses?           @relation(fields: [employee_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_status_id_foreign")
   employee_type              employee_type?               @relation(fields: [employee_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_type_id_foreign")
   order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_order_production_type_id_foreign")
   order_production_employees order_production_employees[]
   order_productions          order_productions[]
+  payroll_entries            payroll_entries[]
 
   @@index([branch_id], map: "employees_branch_id_foreign")
   @@index([employee_status_id], map: "employees_employee_status_id_foreign")
   @@index([employee_type_id], map: "employees_employee_type_id_foreign")
   @@index([order_production_type_id], map: "employees_order_production_type_id_foreign")
+  @@index([employee_category_id], map: "employees_employee_category_id_foreign")
+}
+
+model employee_categories {
+  id         Int         @id @default(autoincrement()) @db.UnsignedInt
+  active     Int         @default(1)
+  created_at DateTime?   @db.DateTime(0)
+  updated_at DateTime?   @db.DateTime(0)
+  name       String      @db.VarChar(100)
+  employees  employees[]
 }
 
 model machine_type {
@@ -820,4 +834,55 @@ model expense_resources {
 
   @@index([expense_id], map: "expense_resources_expense_id_foreign")
   @@index([resource_id], map: "expense_resources_resource_id_foreign")
+}
+
+model payroll_periods {
+  id              Int               @id @default(autoincrement()) @db.UnsignedInt
+  active          Int               @default(1)
+  created_at      DateTime?         @db.DateTime(0)
+  updated_at      DateTime?         @db.DateTime(0)
+  branch_id       Int?              @db.UnsignedInt
+  start_date      DateTime          @db.Date
+  end_date        DateTime          @db.Date
+  week_number     Int               @default(0)
+  payroll_entries payroll_entries[]
+  branches        branches?         @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payroll_periods_branch_id_foreign")
+
+  @@index([branch_id], map: "payroll_periods_branch_id_foreign")
+}
+
+model payroll_entries {
+  id                  Int             @id @default(autoincrement()) @db.UnsignedInt
+  active              Int             @default(1)
+  created_at          DateTime?       @db.DateTime(0)
+  updated_at          DateTime?       @db.DateTime(0)
+  payroll_period_id   Int             @db.UnsignedInt
+  employee_id         Int             @db.UnsignedInt
+  estatus             String          @default("ALTA") @db.VarChar(50)
+  control_bono_area   Boolean         @default(false)
+  control_deposito    Boolean         @default(false)
+  sueldo              Float           @default(0) @db.Float
+  jo                  Float           @default(48) @db.Float
+  ht                  Float           @default(0) @db.Float
+  he                  Float           @default(0) @db.Float
+  he_override         Boolean         @default(false)
+  retardos            Int             @default(0)
+  faltas              Int             @default(0)
+  vac                 Float           @default(0) @db.Float
+  dias_festivos       Float           @default(0) @db.Float
+  infonavit           Float           @default(0) @db.Float
+  fonacot             Float           @default(0) @db.Float
+  descuento_prestamos Float           @default(0) @db.Float
+  otros_menos         Float           @default(0) @db.Float
+  entregas_especiales Float           @default(0) @db.Float
+  viajes              Float           @default(0) @db.Float
+  bonos               Float           @default(0) @db.Float
+  otros_mas           Float           @default(0) @db.Float
+  bd                  Float           @default(0) @db.Float
+  observaciones       String          @default("") @db.VarChar(500)
+  employees           employees       @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payroll_entries_employee_id_foreign")
+  payroll_periods     payroll_periods @relation(fields: [payroll_period_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payroll_entries_period_id_foreign")
+
+  @@index([payroll_period_id], map: "payroll_entries_period_id_foreign")
+  @@index([employee_id], map: "payroll_entries_employee_id_foreign")
 }
