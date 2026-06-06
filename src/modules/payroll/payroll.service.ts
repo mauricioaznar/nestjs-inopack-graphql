@@ -55,6 +55,10 @@ export class PayrollService {
     }
 
     async deletePayrollPeriod(id: number): Promise<boolean> {
+        await this.prisma.payroll_entries.updateMany({
+            data: { active: -1 },
+            where: { payroll_period_id: id },
+        });
         await this.prisma.payroll_periods.update({
             data: { active: -1 },
             where: { id },
@@ -141,9 +145,10 @@ export class PayrollService {
     private attachComputedFields(row: any): PayrollEntry {
         const { sueldo, jo, ht, dias_festivos, faltas, control_bono_area } = row;
 
-        // area + is_leader come from the employee, not the entry.
+        // area, is_leader, and employee_name come from the employee, not the entry.
         const area: string = row.employees?.employee_categories?.name ?? '';
         const is_leader: number = row.employees?.is_leader ?? 0;
+        const employee_name: string = row.employees?.fullname ?? '';
 
         // HE — auto-calculated from the doc formula, with a manual override.
         // When he_override is set, trust the entered row.he; otherwise derive it.
@@ -214,6 +219,7 @@ export class PayrollService {
             ...row,
             area,
             is_leader,
+            employee_name,
             he_effective,
             hn,
             he_pay,
