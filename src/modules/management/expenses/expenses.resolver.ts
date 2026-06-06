@@ -32,7 +32,6 @@ import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
-import { formatFloat } from '../../../common/helpers';
 
 @Resolver(() => Expense)
 @Injectable()
@@ -195,9 +194,7 @@ export class ExpensesResolver {
 
     @ResolveField(() => String)
     async compound_order_code(@Parent() expense: Expense): Promise<string> {
-        return expense && expense.order_code
-            ? expense.order_code
-            : `${expense.id} $(${formatFloat(expense.total_with_tax)})`;
+        return expense.order_code;
     }
 
     @ResolveField(() => Boolean)
