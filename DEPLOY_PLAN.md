@@ -1,45 +1,62 @@
 # CI/CD Deployment Plan — nestjs-inopack-graphql
 
-## Context
-- NestJS + Prisma + GraphQL
-- GitHub repo: `mauricioaznar/nestjs-inopack-graphql`
-- No existing CI config or Dockerfile yet
-- Migrations run via custom `ts-node` runner (`src/db/runner.ts`) in addition to Prisma
+## Server facts (audited 2026-06-06)
+
+| Item | Value |
+|---|---|
+| Host | `inoserver-graphql.mauaznar.com` → `134.209.211.151` |
+| OS | Ubuntu 18.04.5 LTS (**EOL** — upgrade to 22.04 is a separate priority task) |
+| Node | v16.20.2 via nvm (EOL Sept 2023 — upgrade after OS upgrade) |
+| Process manager | PM2 (no systemd units for Node apps) |
+| App path | `/root/nestjs-inopack-graphql` |
+| App port | `3008` |
+| Nginx | Proxies `inoserver-graphql.mauaznar.com` → `localhost:3008` (HTTPS, Let's Encrypt) |
+| Database | MySQL 5.7 on `127.0.0.1:3306` |
+| Firewall | ufw installed but **inactive** — all ports open (harden after OS upgrade) |
+| Docker | Not installed |
 
 ---
 
-## Step 1 — Decide deployment target
-Pick one before writing any pipeline:
-- **VPS (e.g. DigitalOcean, Hetzner)** — SSH deploy, PM2 or systemd process manager
-- **Railway / Render / Fly.io** — push-to-deploy PaaS, minimal ops
-- **Docker + any host** — most portable, more setup
+## Current manual deploy (baseline)
 
----
-
-## Step 2 — Add a Dockerfile
-```dockerfile
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM node:20-alpine
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/src/migration ./src/migration
-COPY package*.json ./
-EXPOSE 3000
-CMD ["node", "dist/main"]
+```bash
+ssh root@134.209.211.151
+cd /root/nestjs-inopack-graphql
+git pull
+npm ci
+npm run build
+# run migrations manually
+pm2 restart inopack-graphql
 ```
 
 ---
 
-## Step 3 — Create `.github/workflows/deploy.yml`
-Trigger: push to `master`
+## Three CI/CD approaches
+
+### Option A — Git pull on server ⭐ Start here
+
+**How it works:** GitHub Actions SSHes into the server on every push to `master` and runs the same steps as the manual deploy. Zero new infrastructure required.
+
+**Tradeoff:** Build runs on the production server (uses its CPU/RAM). There is a brief window between `pm2 restart` and the process becoming ready where requests may fail. Good enough for an internal business app.
+
+**Steps to set up:**
+
+1. Generate a dedicated deploy SSH key (on your local machine):
+   ```bash
+   ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/inopack_deploy
+   ```
+
+2. Add the public key to the server:
+   ```bash
+   cat ~/.ssh/inopack_deploy.pub | ssh root@134.209.211.151 "cat >> ~/.ssh/authorized_keys"
+   ```
+
+3. Add these secrets in GitHub → Settings → Secrets and variables → Actions:
+   - `SSH_PRIVATE_KEY` — contents of `~/.ssh/inopack_deploy` (the private key)
+   - `SSH_HOST` — `134.209.211.151`
+   - `SSH_USER` — `root`
+
+4. Create `.github/workflows/deploy.yml` in `nestjs-inopack-graphql`:
 
 ```yaml
 name: Deploy
@@ -52,6 +69,62 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy on server
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash << 'EOF'
+            set -e
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+
+            cd /root/nestjs-inopack-graphql
+            git pull origin master
+            npm ci --omit=dev
+            npm run build
+            node dist/db/runner.js        # custom migration runner
+            pm2 restart inopack-graphql
+            pm2 save
+          EOF
+```
+
+> **Note on migrations:** Replace `node dist/db/runner.js` with your actual migration command. Check `package.json` for the `migration:run:prod` script — if it exists, use `npm run migration:run:prod` instead.
+
+---
+
+### Option B — Build in CI, rsync to server
+
+**How it works:** The CI runner (a fresh Ubuntu VM provided by GitHub) does the heavy lifting — `npm ci + npm run build`. Only the compiled `dist/` and `node_modules/` are synced to the server via rsync. The server just restarts PM2.
+
+**Tradeoff:** Build load moves off production. Faster server-side restart (no compile step there). Requires `rsync` on the server (`apt install rsync`). First sync of `node_modules` is slow; subsequent ones are fast (only diffs).
+
+**Steps to set up:**
+
+Same SSH key setup as Option A (steps 1–3). Additionally:
+
+- Install rsync on the server: `apt install -y rsync`
+
+Add these extra secrets:
+- `SSH_PRIVATE_KEY`, `SSH_HOST`, `SSH_USER` (same as Option A)
+
+`.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -59,39 +132,188 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm ci
-      - run: npm run build
-      - run: npm run lint
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
 
-      # Run migrations against prod DB before swapping
-      # - run: npm run migration:run:prod
-      #   env:
-      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      # Deploy step depends on target (SSH / Docker push / Railway CLI)
+      - name: Sync built artifacts
+        run: |
+          rsync -az --delete \
+            dist/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/root/nestjs-inopack-graphql/dist/
+          rsync -az --delete \
+            node_modules/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/root/nestjs-inopack-graphql/node_modules/
+          rsync -az \
+            package.json prisma/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/root/nestjs-inopack-graphql/
+
+      - name: Run migrations and restart
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash << 'EOF'
+            set -e
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+
+            cd /root/nestjs-inopack-graphql
+            node dist/db/runner.js
+            pm2 restart inopack-graphql
+            pm2 save
+          EOF
+```
+
+> **Note:** The CI build runs on Node 20. If any native modules in `node_modules` are compiled for Node 20/Linux they will work on the server. However, since the server runs Node 16, you may hit compatibility issues. To be safe, match versions: change `node-version: 20` to `node-version: 16` until you upgrade the server.
+
+---
+
+### Option C — Docker
+
+**How it works:** CI builds a Docker image, pushes it to GitHub Container Registry (GHCR, free). The server pulls the image and runs it in a container. Nginx still proxies port 3008.
+
+**Tradeoff:** Most portable and cleanest isolation. Easy rollback (just run the previous image tag). Requires installing Docker on the server. Also requires updating nginx to point at the container's port (or keep the same port mapping). Most setup upfront.
+
+**Steps to set up:**
+
+1. Install Docker on the server:
+   ```bash
+   curl -fsSL https://get.docker.com | bash
+   ```
+
+2. Create `Dockerfile` in `nestjs-inopack-graphql`:
+   ```dockerfile
+   FROM node:20-alpine AS builder
+   WORKDIR /app
+   COPY package*.json ./
+   RUN npm ci
+   COPY . .
+   RUN npm run build
+
+   FROM node:20-alpine
+   WORKDIR /app
+   COPY --from=builder /app/dist ./dist
+   COPY --from=builder /app/node_modules ./node_modules
+   COPY --from=builder /app/prisma ./prisma
+   COPY --from=builder /app/src/db ./src/db
+   COPY package*.json ./
+   EXPOSE 3008
+   CMD ["node", "dist/main"]
+   ```
+
+3. Add secrets in GitHub:
+   - `SSH_PRIVATE_KEY`, `SSH_HOST`, `SSH_USER`
+   - `GHCR_TOKEN` — a GitHub personal access token with `write:packages` scope
+
+4. `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/nestjs-inopack-graphql
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Pull image and restart container
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/nestjs-inopack-graphql
+          SHA: ${{ github.sha }}
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash << EOF
+            set -e
+            docker pull ${IMAGE}:${SHA}
+
+            # run migrations before swapping
+            docker run --rm --network host \
+              --env-file /root/nestjs-inopack-graphql/.env \
+              ${IMAGE}:${SHA} \
+              node dist/db/runner.js
+
+            # stop old container and start new one
+            docker stop inopack-graphql 2>/dev/null || true
+            docker rm   inopack-graphql 2>/dev/null || true
+            docker run -d \
+              --name inopack-graphql \
+              --restart unless-stopped \
+              --network host \
+              --env-file /root/nestjs-inopack-graphql/.env \
+              ${IMAGE}:${SHA}
+
+            # keep last 3 images, prune the rest
+            docker image prune -f
+          EOF
+```
+
+> **Note on `.env`:** The container reads `/root/nestjs-inopack-graphql/.env` from the host via `--env-file`. That file stays on the server and is never in the image or in GitHub.
+
+---
+
+## Migration strategy
+
+All three options use the same pattern: **run migrations before restarting the app**. This means:
+- If the migration fails, the old app keeps running — no downtime.
+- If the migration succeeds but the new app crashes, you need to manually roll back the migration (document the inverse steps).
+
+The current migration runner appears to be `src/db/runner.ts` (compiled to `dist/db/runner.js`). Confirm the correct command by checking `package.json` scripts.
+
+---
+
+## Recommended path
+
+```
+Now     → Implement Option A (1–2 hours, immediate automated deploys)
+Soon    → Upgrade server OS to Ubuntu 22.04 + Node 20
+After   → Revisit Option B or C for cleaner builds
 ```
 
 ---
 
-## Step 4 — Environment secrets in GitHub
-Add these in **Settings → Secrets and variables → Actions**:
-- `DATABASE_URL`
-- `JWT_SECRET` (or whatever your `.env` needs)
-- SSH key or registry token depending on deploy target
+## Open items to resolve before any option
 
----
-
-## Step 5 — Migration strategy decision
-Two options — pick one:
-- **Run migrations in CI before deploy** (safer, rollback if migration fails)
-- **Run migrations on server startup** (`prisma migrate deploy` in the Docker `CMD`)
-
-The current `migration:run:prod` script suggests option 1 is already the pattern.
-
----
-
-## Open questions to answer before starting
-1. Where is the app currently hosted / where do you want to host it?
-2. Is there a running MySQL instance already, or does that need to be provisioned?
-3. Should the pipeline run tests (`test:coverage`) before deploying, or skip for speed?
-4. Is `src/db/runner.ts` (the custom runner) the migration step, or should it be `prisma migrate deploy`?
+- [ ] Confirm migration command: `node dist/db/runner.js` vs `npm run migration:run:prod`
+- [ ] Locate `.env` file on server: likely at `/root/nestjs-inopack-graphql/.env` (not found by audit since it searched `/home /opt /srv /var/www` only)
+- [ ] Decide: should CI run TypeScript tests (`npm run test`) before deploying?
+- [ ] Plan OS upgrade from Ubuntu 18.04 → 22.04 (separate task, high priority)
+- [ ] Enable and configure ufw firewall (only ports 22, 80, 443 should be open publicly)
