@@ -55,7 +55,9 @@ jobs:
 
             docker pull $IMAGE:$SHA
 
-            # Run migrations — abort deploy if they fail
+            # Reset DB from latest dump then run migrations
+            mysql -u root -proot -e "DROP DATABASE inopack; CREATE DATABASE inopack;"
+            mysql -u root -proot inopack < /root/inopack/inopack.sql
             docker run --rm \
               --network host \
               --env-file /root/inopack/.env \
