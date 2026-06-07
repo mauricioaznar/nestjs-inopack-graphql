@@ -249,11 +249,24 @@ Trigger: push to `master`.
 mysql -u root -p inopack < /root/backups/inopack_<timestamp>.sql
 ```
 
+**Server strategy:**
+
+We will create a **brand new DigitalOcean droplet** for production. The old server (`134.209.211.151`) will not be touched or reconfigured — it stays running as-is until the new production droplet is fully working (Docker, workflow, migrations, HTTPS all verified). Only then will the old droplet be destroyed and the DNS updated.
+
+A new subdomain will be assigned to the new droplet (e.g. `api.mauaznar.com` or similar — to be decided). The old `inoserver-graphql.mauaznar.com` DNS record stays pointing at the old server until cutover.
+
 **Still needed before implementing:**
-- [ ] Install Docker on production server (`curl -fsSL https://get.docker.com | bash`)
+- [ ] Create new production droplet (same spec as staging: 2 GB RAM / 1 vCPU, Ubuntu 22.04)
+- [ ] Install Docker, Nginx, MySQL on new droplet
+- [ ] Assign new subdomain DNS A record to new droplet IP
+- [ ] Import production DB dump to new droplet
+- [ ] Configure HTTPS via Certbot on new subdomain
 - [ ] Add GitHub secrets: `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PRIVATE_KEY`
-- [ ] Create `/root/backups/` directory on production server
+- [ ] Create `/root/backups/` directory on new production droplet
 - [ ] Write and test `deploy-production.yml`
+- [ ] Verify full deploy end to end on new droplet
+- [ ] Cut over DNS (`inoserver-graphql.mauaznar.com`) to new droplet IP
+- [ ] Destroy old droplet (`134.209.211.151`) only after cutover is confirmed stable
 
 ---
 
