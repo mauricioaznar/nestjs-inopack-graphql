@@ -23,6 +23,7 @@ import { ActivitiesModule } from './modules/activities/activities.module';
 import { PubSubModule } from './common/modules/pub-sub/pub-sub.module';
 import { ManagementModule } from './modules/management/management.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
+import { ConfigModule } from './modules/config/config.module';
 
 @Module({
     imports: [
@@ -99,6 +100,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
         ManagementModule,
         SalesModule,
         PayrollModule,
+        ConfigModule,
         SummariesModule,
         MemoryTokenModule,
         ActivitiesModule,

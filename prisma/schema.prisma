@@ -473,6 +473,7 @@ model users {
   order_sales    order_sales[]
   user_branches  user_branches[]
   user_roles     user_roles[]
+  user_configs   user_configs?
   branches       branches?       @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_branch_id_foreign")
   roles          roles?          @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_role_id_foreign")
 
@@ -886,4 +887,16 @@ model payroll_entries {
 
   @@index([payroll_period_id], map: "payroll_entries_period_id_foreign")
   @@index([employee_id], map: "payroll_entries_employee_id_foreign")
+}
+
+model user_configs {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  active     Int       @default(1)
+  created_at DateTime? @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  user_id    Int       @unique(map: "user_configs_user_id_unique") @db.UnsignedInt
+  color_mode String    @default("light") @db.VarChar(10)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_configs_user_id_foreign")
+
+  @@index([user_id], map: "user_configs_user_id_foreign")
 }
