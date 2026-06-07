@@ -7,7 +7,7 @@ const MIGRATIONS_DIR = path.join(__dirname, 'migrations');
 function getMigrationFiles(): string[] {
   return fs
     .readdirSync(MIGRATIONS_DIR)
-    .filter((f) => /^\d+-.+\.(ts|js)$/.test(f))
+    .filter((f) => /^\d+-.+\.(ts|js)$/.test(f) && !f.endsWith('.d.ts'))
     .sort();
 }
 

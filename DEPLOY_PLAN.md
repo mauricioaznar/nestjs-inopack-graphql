@@ -292,11 +292,23 @@ jobs:
 
 ## Migration strategy
 
-All three options use the same pattern: **run migrations before restarting the app**. This means:
-- If the migration fails, the old app keeps running — no downtime.
-- If the migration succeeds but the new app crashes, you need to manually roll back the migration (document the inverse steps).
+Migrations run at **deploy time**, not inside the image build. The image is immutable and has no DB connection at build time.
 
-The current migration runner appears to be `src/db/runner.ts` (compiled to `dist/db/runner.js`). Confirm the correct command by checking `package.json` scripts.
+**Docker deploy sequence (Option C):**
+
+```
+1. Build and push new image to GHCR
+2. SSH into server
+3. docker pull <new-image>
+4. docker run --rm <new-image> node dist/db/runner.js   ← migrations in throwaway container
+   - If this exits non-zero → abort deploy, old container keeps serving traffic
+5. docker stop / docker rm old container
+6. docker run -d <new-image>                             ← new container starts
+```
+
+This gives you safe zero-downtime deploys: a failed migration never takes down the running app.
+
+**Rollback:** `docker run -d <previous-sha-image>` — the old image is still in GHCR.
 
 ---
 
