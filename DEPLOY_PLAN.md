@@ -5,7 +5,8 @@
 | Environment | URL | Server | Branch | Status |
 |---|---|---|---|---|
 | Staging | `https://staging-inopack.mauaznar.com` | `162.243.171.217` | `stage` | ✅ Live |
-| Production | `https://inoserver-graphql.mauaznar.com` | `134.209.211.151` | `master` | ⏳ Pending |
+| Production (new) | `https://inopack-api.mauaznar.com` | `159.223.100.185` | `master` | ✅ Live — awaiting DNS cutover |
+| Production (old) | `https://inoserver-graphql.mauaznar.com` | `134.209.211.151` | — | 🔶 Still serving — destroy after cutover |
 
 ---
 
@@ -255,43 +256,47 @@ We will create a **brand new DigitalOcean droplet** for production. The old serv
 
 A new subdomain will be assigned to the new droplet (e.g. `api.mauaznar.com` or similar — to be decided). The old `inoserver-graphql.mauaznar.com` DNS record stays pointing at the old server until cutover.
 
-**Still needed before implementing:**
-- [ ] Create new production droplet (same spec as staging: 2 GB RAM / 1 vCPU, Ubuntu 22.04)
-- [ ] Install Docker, Nginx, MySQL on new droplet
-- [ ] Assign new subdomain DNS A record to new droplet IP
-- [ ] Import production DB dump to new droplet
-- [ ] Configure HTTPS via Certbot on new subdomain
-- [ ] Add GitHub secrets: `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PRIVATE_KEY`
-- [ ] Create `/root/backups/` directory on new production droplet
-- [ ] Write and test `deploy-production.yml`
-- [ ] Verify full deploy end to end on new droplet
-- [ ] Cut over DNS (`inoserver-graphql.mauaznar.com`) to new droplet IP
+**Progress: 9/12 complete (75%)**
+
+- [x] Create new production droplet (2 GB RAM / 1 vCPU, Ubuntu 22.04) — `159.223.100.185`
+- [x] Install Docker, Nginx, MySQL on new droplet
+- [x] Assign new subdomain DNS A record — `inopack-api.mauaznar.com` → `159.223.100.185`
+- [x] Import production DB dump to new droplet
+- [x] Configure HTTPS via Certbot on new subdomain
+- [x] Add GitHub secrets: `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PRIVATE_KEY`, `PROD_DB_PASSWORD`
+- [x] Create `/root/backups/` directory on new production droplet
+- [x] Write and test `deploy-production.yml`
+- [x] Verify full deploy end to end — workflow green, app responding at `https://inopack-api.mauaznar.com`
+- [ ] Disable old systemd node service on new droplet (risk: on reboot it may steal port 3008 before Docker binds)
+- [ ] Cut over DNS (`inoserver-graphql.mauaznar.com`) to new droplet IP (`159.223.100.185`)
 - [ ] Destroy old droplet (`134.209.211.151`) only after cutover is confirmed stable
 
 ---
 
-### Daily automated DB dumps (plan for tomorrow)
+### Daily automated DB dumps (TODO)
 
 Goal: every day, automatically dump the production DB and send the file to two places:
 1. **Staging server** (`/root/inopack/inopack.sql`) — so staging always has recent data
 2. **Google Drive** — long-term offsite backup
 
-**Rough approach:**
-- A cron job on the production server runs `mysqldump` nightly
-- Sends the dump to staging via `scp`
-- Uploads to Google Drive via `rclone` (a CLI tool that supports Google Drive)
+**Decided approach:**
+- Cron job lives on the production server (`crontab -e`)
+- Runs `mysqldump` nightly → saves to `/root/backups/`
+- Sends to staging via `scp` (requires production server's SSH key to be authorized on staging)
+- Uploads to Google Drive via `rclone` (CLI tool with Google Drive support)
+- Prune local backups older than 7 days to avoid filling the disk
 
-**Open questions to resolve tomorrow:**
-- [ ] Where does the cron job live — on the production server itself, or as a GitHub Actions scheduled workflow?
-- [ ] Google Drive authentication — `rclone` needs an OAuth token configured on the server
-- [ ] How many days of backups to keep locally before pruning old files
-- [ ] Should the staging dump refresh also trigger a new staging deploy automatically?
+**Still needed before implementing:**
+- [ ] Decide how many days of local backups to keep
+- [ ] Set up `rclone` with Google Drive OAuth on the production server
+- [ ] Add production server's public key to staging's `~/.ssh/authorized_keys` (so scp works server-to-server)
+- [ ] Decide if a staging dump refresh should also trigger a new staging deploy automatically
 
 ---
 
 ### Other
 
-- [ ] **Upgrade production server** — Ubuntu 18.04 → 22.04, Node 16 → 20 (separate task, do before production Docker deploy).
+- [ ] **Disable old systemd node service on production server** — on reboot the old node process may restart and steal port 3008 before Docker binds it. Find and disable the service: `systemctl list-units | grep node`.
 
 ---
 
