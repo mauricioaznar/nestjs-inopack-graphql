@@ -1,0 +1,83 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [master]
+
+env:
+  IMAGE: ghcr.io/mauricioaznar/nestjs-inopack-graphql
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.PROD_SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to production
+        env:
+          IMAGE: ghcr.io/mauricioaznar/nestjs-inopack-graphql
+          SHA: ${{ github.sha }}
+          HOST: ${{ secrets.PROD_SSH_HOST }}
+          USER: ${{ secrets.PROD_SSH_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+        run: |
+          ssh $USER@$HOST bash << EOF
+            set -e
+
+            # Backup DB before anything else — if this fails the deploy aborts
+            BACKUP_FILE="/root/backups/inopack_\$(date +%Y%m%d_%H%M%S).sql"
+            mysqldump -u root -p"$DB_PASSWORD" inopack > \$BACKUP_FILE
+            echo "Backup saved to \$BACKUP_FILE"
+
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u mauricioaznar --password-stdin
+
+            docker pull $IMAGE:$SHA
+
+            # Run migrations in a throwaway container — if they fail, deploy aborts
+            docker run --rm \
+              --network host \
+              --env-file /root/inopack.env \
+              $IMAGE:$SHA \
+              node dist/db/runner.js
+
+            # Swap containers
+            docker stop inopack-graphql 2>/dev/null || true
+            docker rm   inopack-graphql 2>/dev/null || true
+            docker run -d \
+              --name inopack-graphql \
+              --restart unless-stopped \
+              --network host \
+              --env-file /root/inopack.env \
+              $IMAGE:$SHA
+
+            # Prune old images
+            docker image prune -f
+          EOF
