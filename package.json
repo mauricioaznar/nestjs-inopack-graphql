@@ -22,9 +22,9 @@
     "db:seed": "env-cmd -f ./.env prisma db seed",
     "db:reset": "env-cmd -f ./.env prisma migrate reset",
     "db:resolve": "env-cmd -f ./.env prisma migrate resolve --applied 20221118213733_",
-    "migration:run": "env-cmd -f .env ts-node -r tsconfig-paths/register src/db/runner.ts",
-    "migration:run:dev": "env-cmd -f .env.develop ts-node -r tsconfig-paths/register src/db/runner.ts",
-    "migration:run:prod": "env-cmd -f .env ts-node -r tsconfig-paths/register src/db/runner.ts",
+    "migration:run": "env-cmd -f .env node dist/db/runner.js",
+    "migration:run:dev": "env-cmd -f .env.develop node dist/db/runner.js",
+    "migration:run:prod": "env-cmd -f .env node dist/db/runner.js",
     "migration:create": "ts-node -r tsconfig-paths/register src/db/create.ts"
   },
   "prisma": {
