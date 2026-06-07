@@ -225,9 +225,60 @@ The next push to `stage` will use it automatically.
 
 ## TODO
 
-- [ ] **Production workflow** — create `deploy-production.yml` targeting `134.209.211.151`, triggered on push to `master`. Add `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PRIVATE_KEY` secrets. Install Docker on production server first.
-- [ ] **Production DB dump script** — document the `mysqldump` command from the production server for periodic snapshots.
-- [ ] **Upgrade production server** — Ubuntu 18.04 → 22.04, Node 16 → 20 (separate task).
+### Production deployment workflow (`deploy-production.yml`)
+
+Trigger: push to `master`.
+
+**Planned deploy sequence:**
+
+```
+1. SSH into production server
+2. CREATE a timestamped DB backup  ← safety net before anything changes
+   mysqldump -u root -p inopack > /root/backups/inopack_$(date +%Y%m%d_%H%M%S).sql
+   If this fails → abort entire deploy (do not proceed)
+3. Build Docker image and push to GHCR  ← only after backup confirmed
+4. Pull new image on production server
+5. Run migrations in throwaway container
+   If migrations fail → abort, old container still running, backup available to restore
+6. Swap container
+7. Prune old images
+```
+
+**Why backup first?** If a migration runs bad SQL and corrupts data, you have a clean snapshot taken seconds before the deploy started. Restore with:
+```bash
+mysql -u root -p inopack < /root/backups/inopack_<timestamp>.sql
+```
+
+**Still needed before implementing:**
+- [ ] Install Docker on production server (`curl -fsSL https://get.docker.com | bash`)
+- [ ] Add GitHub secrets: `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PRIVATE_KEY`
+- [ ] Create `/root/backups/` directory on production server
+- [ ] Write and test `deploy-production.yml`
+
+---
+
+### Daily automated DB dumps (plan for tomorrow)
+
+Goal: every day, automatically dump the production DB and send the file to two places:
+1. **Staging server** (`/root/inopack/inopack.sql`) — so staging always has recent data
+2. **Google Drive** — long-term offsite backup
+
+**Rough approach:**
+- A cron job on the production server runs `mysqldump` nightly
+- Sends the dump to staging via `scp`
+- Uploads to Google Drive via `rclone` (a CLI tool that supports Google Drive)
+
+**Open questions to resolve tomorrow:**
+- [ ] Where does the cron job live — on the production server itself, or as a GitHub Actions scheduled workflow?
+- [ ] Google Drive authentication — `rclone` needs an OAuth token configured on the server
+- [ ] How many days of backups to keep locally before pruning old files
+- [ ] Should the staging dump refresh also trigger a new staging deploy automatically?
+
+---
+
+### Other
+
+- [ ] **Upgrade production server** — Ubuntu 18.04 → 22.04, Node 16 → 20 (separate task, do before production Docker deploy).
 
 ---
 
