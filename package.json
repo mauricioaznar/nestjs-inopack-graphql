@@ -1,6 +1,6 @@
 {
   "name": "nestjs-inopack-graphql",
-  "version": "7.0.1",
+  "version": "7.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -47,6 +47,7 @@
     "class-validator": "^0.13.1",
     "dayjs": "^1.11.1",
     "env-cmd": "^10.1.0",
+    "express": "^4.17.1",
     "graphql": "^15.6.0",
     "graphql-relay": "^0.9.0",
     "graphql-subscriptions": "^1.2.1",
@@ -88,7 +89,8 @@
     "ts-loader": "^9.2.6",
     "ts-node": "^10.2.1",
     "tsconfig-paths": "^3.11.0",
-    "typescript": "4.7.x"
+    "typescript": "4.7.x",
+    "webpack": "^5.73.0"
   },
   "jest": {
     "globalSetup": "<rootDir>/common/__tests__/helpers/setup-database.ts",

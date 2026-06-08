@@ -119,6 +119,17 @@ export class OrderAdjustmentsService {
                           ],
                       }
                     : {},
+                orderAdjustmentQueryArgs.product_id
+                    ? {
+                          order_adjustment_products: {
+                              some: {
+                                  product_id:
+                                      orderAdjustmentQueryArgs.product_id,
+                                  active: 1,
+                              },
+                          },
+                      }
+                    : {},
             ],
         };
 

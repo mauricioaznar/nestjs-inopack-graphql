@@ -65,4 +65,7 @@ export class OrderProductionQueryArgs {
 
     @Field(() => Int, { nullable: true })
     machine_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    product_id: number | null;
 }

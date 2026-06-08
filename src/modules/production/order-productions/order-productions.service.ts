@@ -147,6 +147,17 @@ export class OrderProductionsService {
                           },
                       }
                     : {},
+                orderProductionQueryArgs.product_id
+                    ? {
+                          order_production_products: {
+                              some: {
+                                  product_id:
+                                      orderProductionQueryArgs.product_id,
+                                  active: 1,
+                              },
+                          },
+                      }
+                    : {},
                 filter
                     ? {
                           OR: [

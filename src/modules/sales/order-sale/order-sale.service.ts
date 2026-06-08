@@ -136,6 +136,16 @@ export class OrderSaleService {
                 {
                     OR: orderSalesOrWhere,
                 },
+                orderSalesQueryArgs.product_id
+                    ? {
+                          order_sale_products: {
+                              some: {
+                                  product_id: orderSalesQueryArgs.product_id,
+                                  active: 1,
+                              },
+                          },
+                      }
+                    : {},
             ];
 
         if (orderSalesQueryArgs.no_supplement) {

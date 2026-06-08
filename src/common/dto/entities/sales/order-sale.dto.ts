@@ -133,6 +133,9 @@ export class PaginatedOrderSalesQueryArgs {
 
     @Field(() => Boolean, { nullable: true })
     is_transfer_incomplete: boolean;
+
+    @Field(() => Int, { nullable: true })
+    product_id: number | null;
 }
 
 @ArgsType()

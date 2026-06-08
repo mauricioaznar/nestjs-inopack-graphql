@@ -46,4 +46,7 @@ export class OrderAdjustmentQueryArgs {
 
     @Field(() => String, { nullable: true })
     filter?: string | null;
+
+    @Field(() => Int, { nullable: true })
+    product_id?: number | null;
 }
