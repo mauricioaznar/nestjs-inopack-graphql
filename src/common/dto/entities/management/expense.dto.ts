@@ -124,6 +124,9 @@ export class ExpensesQueryArgs {
 
     @Field(() => Int, { nullable: true })
     receipt_type_id: number;
+
+    @Field(() => Int, { nullable: true })
+    resource_id: number;
 }
 
 @ArgsType()
