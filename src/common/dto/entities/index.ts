@@ -49,6 +49,9 @@ export * from './management/resource.dto';
 export * from './management/resource-category.dto';
 export * from './management/expense-resource.dto';
 
+// config
+export * from './config/user-config.dto';
+
 // payroll
 export * from './payroll/payroll-period.dto';
 export * from './payroll/payroll-entry.dto';
