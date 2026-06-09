@@ -29,7 +29,10 @@ import {
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderRequestRemainingProductsService } from '../../../common/services/entities/order-request-remaining-products-service';
-import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    DatePaginator,
+} from '../../../common/dto/pagination';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
@@ -102,6 +105,30 @@ export class OrderSaleService {
                 accounts: {
                     name: {
                         contains: filter,
+                    },
+                },
+            });
+            orderSalesOrWhere.push({
+                order_sale_products: {
+                    some: {
+                        products: {
+                            description: {
+                                contains: filter,
+                            },
+                        },
+                        active: 1,
+                    },
+                },
+            });
+            orderSalesOrWhere.push({
+                order_sale_products: {
+                    some: {
+                        products: {
+                            code: {
+                                contains: filter,
+                            },
+                        },
+                        active: 1,
                     },
                 },
             });
