@@ -35,6 +35,7 @@ lerna-debug.log*
 
 /schema.gql
 .env
+.env.develop
 
 /prisma/migrations/*
 /prisma/migrations
