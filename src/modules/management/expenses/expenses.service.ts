@@ -185,6 +185,17 @@ export class ExpensesService {
                             },
                         },
                     },
+                    {
+                        expense_resources: {
+                            some: {
+                                resources: {
+                                    name: {
+                                        contains: filter,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 ],
             },
         ];
