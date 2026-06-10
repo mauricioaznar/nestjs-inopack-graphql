@@ -178,6 +178,17 @@ export class ExpensesService {
                             },
                         },
                     },
+                    {
+                        expense_resources: {
+                            some: {
+                                resources: {
+                                    name: {
+                                        contains: filter,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 ],
             },
         ];
@@ -198,6 +209,16 @@ export class ExpensesService {
                 supplement_code: '',
             });
         }
+        if (expensesQueryArgs.resource_id) {
+            expensesAndWhere.push({
+                expense_resources: {
+                    some: {
+                        resource_id: expensesQueryArgs.resource_id,
+                    },
+                },
+            });
+        }
+
         if (expensesQueryArgs.is_transfer_incomplete) {
             expensesAndWhere.push({
                 total_with_tax: {

@@ -109,6 +109,20 @@ export class OrderSaleService {
                 },
             });
             orderSalesOrWhere.push({
+                receipt_types: {
+                    name: {
+                        contains: filter,
+                    },
+                },
+            });
+            orderSalesOrWhere.push({
+                order_sale_statuses: {
+                    name: {
+                        contains: filter,
+                    },
+                },
+            });
+            orderSalesOrWhere.push({
                 order_sale_products: {
                     some: {
                         products: {
