@@ -76,6 +76,7 @@ export class PaginatedOrderRequestsQueryArgs {
 export enum OrderRequestsSortableFields {
     order_code = 'order_code',
     estimated_delivery_date = 'estimated_delivery_date',
+    date = 'date',
 }
 
 registerEnumType(OrderRequestsSortableFields, {

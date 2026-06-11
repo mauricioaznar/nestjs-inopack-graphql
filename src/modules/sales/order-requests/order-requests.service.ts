@@ -26,7 +26,10 @@ import {
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
 import { OrderRequestRemainingProductsService } from '../../../common/services/entities/order-request-remaining-products-service';
-import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    DatePaginator,
+} from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
@@ -196,6 +199,10 @@ export class OrderRequestsService {
             } else if (sort_field === 'estimated_delivery_date') {
                 orderBy = {
                     estimated_delivery_date: sort_order,
+                };
+            } else if (sort_field === 'date') {
+                orderBy = {
+                    date: sort_order,
                 };
             }
         }
