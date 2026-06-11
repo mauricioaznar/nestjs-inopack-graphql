@@ -56,9 +56,13 @@ jobs:
 
             docker pull $IMAGE:$SHA
 
-            # Reset DB from latest dump then run migrations
+            # Reset DB from latest dump then run migrations.
+            # /root/inopack/inopack.sql is rsynced from production as a gzipped mysqldump
+            # (see docs/plans/ongoing/backup-replication.md). Stream it through gunzip so
+            # mysql gets plain SQL — piping the gzip header in directly produces
+            # "ASCII '\0' appeared in the statement" because of the NUL in the magic bytes.
             mysql -u root -proot -e "DROP DATABASE inopack; CREATE DATABASE inopack;"
-            mysql -u root -proot inopack < /root/inopack/inopack.sql
+            gunzip -c /root/inopack/inopack.sql | mysql -u root -proot inopack
             docker run --rm \
               --network host \
               --env-file /root/inopack/.env \
