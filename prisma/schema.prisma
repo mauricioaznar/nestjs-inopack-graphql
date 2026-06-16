@@ -668,6 +668,7 @@ model expenses {
   expected_payment_date                  DateTime?           @db.DateTime(0)
   locked                                 Boolean             @default(false)
   order_code                             String              @default("") @db.VarChar(255)
+  invoice_code                           Int                 @default(0)
   account_id                             Int?                @db.UnsignedInt
   receipt_type_id                        Int?                @db.UnsignedInt
   notes                                  String              @default("") @db.VarChar(255)
@@ -716,6 +717,7 @@ model resources {
   current_group_weight     Float                @default(0.00)
   group_weight_strict      Float                @default(0.00)
   include_units_in_summary Boolean              @default(false)
+  unit_price_name          String?              @db.VarChar(255)
   accounts                 accounts[]
   expense_resources        expense_resources[]
   resource_categories      resource_categories? @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")

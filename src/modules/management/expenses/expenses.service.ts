@@ -171,6 +171,17 @@ export class ExpensesService {
                             contains: filter,
                         },
                     },
+                    // invoice_code is an Int, so a text `contains` won't match —
+                    // only compare it when the filter parses to a number.
+                    ...(isFilterANumber && filter
+                        ? [
+                              {
+                                  invoice_code: {
+                                      in: [Number(filter)],
+                                  },
+                              },
+                          ]
+                        : []),
                     {
                         receipt_types: {
                             name: {
@@ -434,6 +445,7 @@ export class ExpensesService {
                     : null,
                 require_order_code: input.require_order_code,
                 order_code: input.order_code.replace(' ', ''),
+                invoice_code: input.invoice_code,
                 receipt_type_id: input.receipt_type_id,
                 expense_status_id: input.expense_status_id,
                 notes: input.notes,
@@ -457,6 +469,7 @@ export class ExpensesService {
                     : null,
                 require_order_code: input.require_order_code,
                 order_code: input.order_code.replace(' ', ''),
+                invoice_code: input.invoice_code,
                 receipt_type_id: input.receipt_type_id,
                 expense_status_id: input.expense_status_id,
                 subtotal: input.subtotal,

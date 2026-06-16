@@ -22,6 +22,9 @@ export class ResourceBase {
     @Field(() => Boolean, { nullable: false })
     include_units_in_summary: boolean;
 
+    @Field(() => String, { nullable: true })
+    unit_price_name: string | null;
+
     @Field(() => Float, { nullable: true })
     current_group_weight: number | null;
 

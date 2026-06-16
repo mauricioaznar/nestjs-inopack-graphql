@@ -29,6 +29,9 @@ export class ExpenseBase {
     @Field(() => String, { nullable: false })
     order_code: string;
 
+    @Field(() => Int, { nullable: false })
+    invoice_code: number;
+
     @Field(() => Date, { nullable: true })
     expected_payment_date: Date | null;
 

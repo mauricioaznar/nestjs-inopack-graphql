@@ -89,6 +89,7 @@ export class ResourcesService {
                 current_group_price: resourceInput.current_group_price || 0,
                 group_weight_strict: resourceInput.group_weight_strict || 0,
                 include_units_in_summary: resourceInput.include_units_in_summary,
+                unit_price_name: resourceInput.unit_price_name,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -99,6 +100,7 @@ export class ResourcesService {
                 current_group_price: resourceInput.current_group_price || 0,
                 group_weight_strict: resourceInput.group_weight_strict || 0,
                 include_units_in_summary: resourceInput.include_units_in_summary,
+                unit_price_name: resourceInput.unit_price_name,
             },
             where: {
                 id: resourceInput.id || 0,
