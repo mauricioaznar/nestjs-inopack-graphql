@@ -560,6 +560,38 @@ export class ExpensesService {
         return expense;
     }
 
+    async getExpenseMaxInvoiceCode(): Promise<number> {
+        const {
+            _max: { invoice_code },
+        } = await this.prisma.expenses.aggregate({
+            _max: {
+                invoice_code: true,
+            },
+        });
+        return invoice_code ? invoice_code : 0;
+    }
+
+    async isExpenseInvoiceCodeOccupied({
+        invoice_code,
+        expense_id,
+    }: {
+        invoice_code: number;
+        expense_id: number | null;
+    }): Promise<boolean> {
+        const expense = await this.prisma.expenses.findFirst({
+            where: {
+                AND: [
+                    { invoice_code: invoice_code },
+                    { active: 1 },
+                ],
+            },
+        });
+
+        return !!expense_id && expense_id >= 0 && expense
+            ? expense.id !== expense_id
+            : !!expense;
+    }
+
     async validateUpsertExpense(input: ExpenseUpsertInput): Promise<void> {
         const errors: string[] = [];
 
@@ -586,6 +618,21 @@ export class ExpensesService {
                 if (input.tax > 0) {
                     errors.push(
                         'Tax can only be set when expense has order receipt type id = 2',
+                    );
+                }
+            }
+        }
+
+        // invoice_code must be unique (0 means not set — skip)
+        {
+            if (input.invoice_code && input.invoice_code > 0) {
+                const occupied = await this.isExpenseInvoiceCodeOccupied({
+                    invoice_code: input.invoice_code,
+                    expense_id: input.id || null,
+                });
+                if (occupied) {
+                    errors.push(
+                        `El folio de factura ${input.invoice_code} ya está en uso`,
                     );
                 }
             }

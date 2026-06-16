@@ -1,6 +1,7 @@
 import {
     Args,
     Float,
+    Int,
     Mutation,
     Parent,
     Query,
@@ -138,6 +139,23 @@ export class ExpensesResolver {
             datePaginator,
             expensesQueryArgs,
             expensesSortArgs,
+        });
+    }
+
+    @Query(() => Float)
+    async getExpenseMaxInvoiceCode(): Promise<number> {
+        return this.service.getExpenseMaxInvoiceCode();
+    }
+
+    @Query(() => Boolean)
+    async isExpenseInvoiceCodeOccupied(
+        @Args('InvoiceCode') invoiceCode: number,
+        @Args('ExpenseId', { nullable: true, type: () => Int })
+        expenseId: number | null,
+    ): Promise<boolean> {
+        return this.service.isExpenseInvoiceCodeOccupied({
+            invoice_code: invoiceCode,
+            expense_id: expenseId,
         });
     }
 
