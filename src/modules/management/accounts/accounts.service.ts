@@ -432,7 +432,7 @@ export class AccountsService {
             SELECT
                 'expense' as type,
                 ${convertToInt('expenses.id', 'id')},
-                expenses.order_code,
+                expenses.external_code,
                 NULL as invoice_code,
                 expenses.date,
                 expenses.expected_payment_date,
