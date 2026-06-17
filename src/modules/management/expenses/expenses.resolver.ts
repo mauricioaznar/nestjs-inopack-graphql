@@ -149,12 +149,12 @@ export class ExpensesResolver {
 
     @Query(() => Boolean)
     async isExpenseInternalCodeOccupied(
-        @Args('InternalCode') invoiceCode: number,
+        @Args('InternalCode') internalCode: number,
         @Args('ExpenseId', { nullable: true, type: () => Int })
         expenseId: number | null,
     ): Promise<boolean> {
         return this.service.isExpenseInternalCodeOccupied({
-            invoice_code: invoiceCode,
+            internal_code: internalCode,
             expense_id: expenseId,
         });
     }
