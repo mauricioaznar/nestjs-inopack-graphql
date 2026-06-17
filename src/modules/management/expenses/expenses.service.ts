@@ -171,12 +171,12 @@ export class ExpensesService {
                             contains: filter,
                         },
                     },
-                    // invoice_code is an Int, so a text `contains` won't match —
+                    // internal_code is an Int, so a text `contains` won't match —
                     // only compare it when the filter parses to a number.
                     ...(isFilterANumber && filter
                         ? [
                               {
-                                  invoice_code: {
+                                  internal_code: {
                                       in: [Number(filter)],
                                   },
                               },
@@ -445,7 +445,7 @@ export class ExpensesService {
                     : null,
                 require_order_code: input.require_order_code,
                 order_code: input.order_code.replace(' ', ''),
-                invoice_code: input.invoice_code,
+                internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
                 expense_status_id: input.expense_status_id,
                 notes: input.notes,
@@ -469,7 +469,7 @@ export class ExpensesService {
                     : null,
                 require_order_code: input.require_order_code,
                 order_code: input.order_code.replace(' ', ''),
-                invoice_code: input.invoice_code,
+                internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
                 expense_status_id: input.expense_status_id,
                 subtotal: input.subtotal,
@@ -560,28 +560,28 @@ export class ExpensesService {
         return expense;
     }
 
-    async getExpenseMaxInvoiceCode(): Promise<number> {
+    async getExpenseMaxInternalCode(): Promise<number> {
         const {
-            _max: { invoice_code },
+            _max: { internal_code },
         } = await this.prisma.expenses.aggregate({
             _max: {
-                invoice_code: true,
+                internal_code: true,
             },
         });
-        return invoice_code ? invoice_code : 0;
+        return internal_code ? internal_code : 0;
     }
 
-    async isExpenseInvoiceCodeOccupied({
-        invoice_code,
+    async isExpenseInternalCodeOccupied({
+        internal_code,
         expense_id,
     }: {
-        invoice_code: number;
+        internal_code: number;
         expense_id: number | null;
     }): Promise<boolean> {
         const expense = await this.prisma.expenses.findFirst({
             where: {
                 AND: [
-                    { invoice_code: invoice_code },
+                    { internal_code: internal_code },
                     { active: 1 },
                 ],
             },
@@ -623,16 +623,16 @@ export class ExpensesService {
             }
         }
 
-        // invoice_code must be unique (0 means not set — skip)
+        // internal_code must be unique (0 means not set — skip)
         {
-            if (input.invoice_code && input.invoice_code > 0) {
-                const occupied = await this.isExpenseInvoiceCodeOccupied({
-                    invoice_code: input.invoice_code,
+            if (input.internal_code && input.internal_code > 0) {
+                const occupied = await this.isExpenseInternalCodeOccupied({
+                    internal_code: input.internal_code,
                     expense_id: input.id || null,
                 });
                 if (occupied) {
                     errors.push(
-                        `El folio de factura ${input.invoice_code} ya está en uso`,
+                        `El folio de factura ${input.internal_code} ya está en uso`,
                     );
                 }
             }

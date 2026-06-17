@@ -30,7 +30,7 @@ export class ExpenseBase {
     order_code: string;
 
     @Field(() => Int, { nullable: false })
-    invoice_code: number;
+    internal_code: number;
 
     @Field(() => Date, { nullable: true })
     expected_payment_date: Date | null;

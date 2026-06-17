@@ -8,7 +8,7 @@ export class UpdateResourcesWithUnitPriceName1781568708185
     );
 
     await queryRunner.query(
-      'ALTER TABLE `expenses` ADD `invoice_code` int NOT NULL DEFAULT 0;',
+      'ALTER TABLE `expenses` ADD `internal_code` int NOT NULL DEFAULT 0;',
     );
   }
 

@@ -668,7 +668,7 @@ model expenses {
   expected_payment_date                  DateTime?           @db.DateTime(0)
   locked                                 Boolean             @default(false)
   order_code                             String              @default("") @db.VarChar(255)
-  invoice_code                           Int                 @default(0)
+  internal_code                          Int                 @default(0)
   account_id                             Int?                @db.UnsignedInt
   receipt_type_id                        Int?                @db.UnsignedInt
   notes                                  String              @default("") @db.VarChar(255)

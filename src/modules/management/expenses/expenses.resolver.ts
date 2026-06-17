@@ -143,17 +143,17 @@ export class ExpensesResolver {
     }
 
     @Query(() => Float)
-    async getExpenseMaxInvoiceCode(): Promise<number> {
-        return this.service.getExpenseMaxInvoiceCode();
+    async getExpenseMaxInternalCode(): Promise<number> {
+        return this.service.getExpenseMaxInternalCode();
     }
 
     @Query(() => Boolean)
-    async isExpenseInvoiceCodeOccupied(
-        @Args('InvoiceCode') invoiceCode: number,
+    async isExpenseInternalCodeOccupied(
+        @Args('InternalCode') invoiceCode: number,
         @Args('ExpenseId', { nullable: true, type: () => Int })
         expenseId: number | null,
     ): Promise<boolean> {
-        return this.service.isExpenseInvoiceCodeOccupied({
+        return this.service.isExpenseInternalCodeOccupied({
             invoice_code: invoiceCode,
             expense_id: expenseId,
         });
