@@ -211,8 +211,8 @@ export class ExpensesResolver {
     }
 
     @ResolveField(() => String)
-    async compound_order_code(@Parent() expense: Expense): Promise<string> {
-        return expense.order_code;
+    async compound_external_code(@Parent() expense: Expense): Promise<string> {
+        return expense.external_code;
     }
 
     @ResolveField(() => Boolean)

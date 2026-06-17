@@ -167,7 +167,7 @@ export class ExpensesService {
                         },
                     },
                     {
-                        order_code: {
+                        external_code: {
                             contains: filter,
                         },
                     },
@@ -213,8 +213,8 @@ export class ExpensesService {
 
         if (noReceipt) {
             expensesAndWhere.push({
-                require_order_code: true,
-                order_code: '',
+                require_external_code: true,
+                external_code: '',
             });
         }
 
@@ -443,8 +443,8 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date
                     ? input.expected_payment_date
                     : null,
-                require_order_code: input.require_order_code,
-                order_code: input.order_code.replace(' ', ''),
+                require_external_code: input.require_external_code,
+                external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
                 expense_status_id: input.expense_status_id,
@@ -467,8 +467,8 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date
                     ? input.expected_payment_date
                     : null,
-                require_order_code: input.require_order_code,
-                order_code: input.order_code.replace(' ', ''),
+                require_external_code: input.require_external_code,
+                external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
                 expense_status_id: input.expense_status_id,
