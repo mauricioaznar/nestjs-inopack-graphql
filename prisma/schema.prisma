@@ -279,6 +279,23 @@ model order_request_products {
   @@index([product_id], map: "order_request_products_product_id_foreign")
 }
 
+model account_products {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  active       Int       @default(1)
+  created_at   DateTime? @db.DateTime(0)
+  updated_at   DateTime? @db.DateTime(0)
+  kilo_price   Float     @default(0.00)
+  group_price  Float     @default(0.00)
+  group_weight Float     @default(0.00)
+  account_id   Int?      @db.UnsignedInt
+  product_id   Int?      @db.UnsignedInt
+  accounts     accounts? @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_products_account_id_foreign")
+  products     products? @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_products_product_id_foreign")
+
+  @@index([account_id], map: "account_products_account_id_foreign")
+  @@index([product_id], map: "account_products_product_id_foreign")
+}
+
 model order_request_statuses {
   id             Int              @id @default(autoincrement()) @db.UnsignedInt
   active         Int              @default(1)
@@ -403,6 +420,7 @@ model products {
   current_group_price        Float                        @default(0.00)
   pleat                      Float?
   include_units_in_summary   Boolean                      @default(true)
+  account_products           account_products[]
   order_adjustment_products  order_adjustment_products[]
   order_production_products  order_production_products[]
   order_production_resources order_production_resources[]
@@ -637,6 +655,7 @@ model accounts {
   resource_id                                   Int?               @db.UnsignedInt
   monitor_balance                               Boolean            @default(false)
   account_contacts                              account_contacts[]
+  account_products                              account_products[]
   resources                                     resources?         @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_resource_id_foreign")
   supplier_type                                 supplier_type?     @relation(fields: [supplier_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suppliers_supplier_type_id_foreign")
   expenses                                      expenses[]

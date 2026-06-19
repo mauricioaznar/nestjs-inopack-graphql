@@ -681,6 +681,65 @@ export class OrderRequestsService {
         //     }
         // }
 
+        // AreProductsInAccountCatalog — every requested product must belong to the
+        // account's product catalog (account_products), and its prices/weight must
+        // match the catalog row exactly (prices are fixed by the catalog).
+        {
+            if (input.account_id) {
+                const accountProducts =
+                    await this.prisma.account_products.findMany({
+                        where: {
+                            account_id: input.account_id,
+                            active: 1,
+                        },
+                    });
+
+                const catalogByProductId = new Map(
+                    accountProducts.map((ap) => [ap.product_id, ap]),
+                );
+
+                input.order_request_products.forEach((orderRequestProduct) => {
+                    const catalogProduct = catalogByProductId.get(
+                        orderRequestProduct.product_id ?? null,
+                    );
+
+                    if (!catalogProduct) {
+                        errors.push(
+                            `product (${orderRequestProduct.product_id}) is not in the account catalog`,
+                        );
+                        return;
+                    }
+
+                    if (
+                        Number(orderRequestProduct.kilo_price) !==
+                        Number(catalogProduct.kilo_price)
+                    ) {
+                        errors.push(
+                            `product (${orderRequestProduct.product_id}) kilo price must match the account catalog (${catalogProduct.kilo_price})`,
+                        );
+                    }
+
+                    if (
+                        Number(orderRequestProduct.group_price) !==
+                        Number(catalogProduct.group_price)
+                    ) {
+                        errors.push(
+                            `product (${orderRequestProduct.product_id}) group price must match the account catalog (${catalogProduct.group_price})`,
+                        );
+                    }
+
+                    if (
+                        Number(orderRequestProduct.group_weight) !==
+                        Number(catalogProduct.group_weight)
+                    ) {
+                        errors.push(
+                            `product (${orderRequestProduct.product_id}) group weight must match the account catalog (${catalogProduct.group_weight})`,
+                        );
+                    }
+                });
+            }
+        }
+
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
