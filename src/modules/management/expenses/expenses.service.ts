@@ -167,10 +167,21 @@ export class ExpensesService {
                         },
                     },
                     {
-                        order_code: {
+                        external_code: {
                             contains: filter,
                         },
                     },
+                    // internal_code is an Int, so a text `contains` won't match —
+                    // only compare it when the filter parses to a number.
+                    ...(isFilterANumber && filter
+                        ? [
+                              {
+                                  internal_code: {
+                                      in: [Number(filter)],
+                                  },
+                              },
+                          ]
+                        : []),
                     {
                         receipt_types: {
                             name: {
@@ -202,8 +213,8 @@ export class ExpensesService {
 
         if (noReceipt) {
             expensesAndWhere.push({
-                require_order_code: true,
-                order_code: '',
+                require_external_code: true,
+                external_code: '',
             });
         }
 
@@ -432,8 +443,9 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date
                     ? input.expected_payment_date
                     : null,
-                require_order_code: input.require_order_code,
-                order_code: input.order_code.replace(' ', ''),
+                require_external_code: input.require_external_code,
+                external_code: input.external_code.replace(' ', ''),
+                internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
                 expense_status_id: input.expense_status_id,
                 notes: input.notes,
@@ -455,8 +467,9 @@ export class ExpensesService {
                 expected_payment_date: input.expected_payment_date
                     ? input.expected_payment_date
                     : null,
-                require_order_code: input.require_order_code,
-                order_code: input.order_code.replace(' ', ''),
+                require_external_code: input.require_external_code,
+                external_code: input.external_code.replace(' ', ''),
+                internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
                 expense_status_id: input.expense_status_id,
                 subtotal: input.subtotal,
@@ -547,6 +560,38 @@ export class ExpensesService {
         return expense;
     }
 
+    async getExpenseMaxInternalCode(): Promise<number> {
+        const {
+            _max: { internal_code },
+        } = await this.prisma.expenses.aggregate({
+            _max: {
+                internal_code: true,
+            },
+        });
+        return internal_code ? internal_code : 0;
+    }
+
+    async isExpenseInternalCodeOccupied({
+        internal_code,
+        expense_id,
+    }: {
+        internal_code: number;
+        expense_id: number | null;
+    }): Promise<boolean> {
+        const expense = await this.prisma.expenses.findFirst({
+            where: {
+                AND: [
+                    { internal_code: internal_code },
+                    { active: 1 },
+                ],
+            },
+        });
+
+        return !!expense_id && expense_id >= 0 && expense
+            ? expense.id !== expense_id
+            : !!expense;
+    }
+
     async validateUpsertExpense(input: ExpenseUpsertInput): Promise<void> {
         const errors: string[] = [];
 
@@ -573,6 +618,21 @@ export class ExpensesService {
                 if (input.tax > 0) {
                     errors.push(
                         'Tax can only be set when expense has order receipt type id = 2',
+                    );
+                }
+            }
+        }
+
+        // internal_code must be unique (0 means not set — skip)
+        {
+            if (input.internal_code && input.internal_code > 0) {
+                const occupied = await this.isExpenseInternalCodeOccupied({
+                    internal_code: input.internal_code,
+                    expense_id: input.id || null,
+                });
+                if (occupied) {
+                    errors.push(
+                        `El folio de factura ${input.internal_code} ya está en uso`,
                     );
                 }
             }

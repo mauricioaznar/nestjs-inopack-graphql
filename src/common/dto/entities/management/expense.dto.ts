@@ -21,13 +21,16 @@ export class ExpenseBase {
     require_supplement: boolean;
 
     @Field(() => Boolean, { nullable: false })
-    require_order_code: boolean;
+    require_external_code: boolean;
 
     @Field(() => String, { nullable: false })
     supplement_code: string;
 
     @Field(() => String, { nullable: false })
-    order_code: string;
+    external_code: string;
+
+    @Field(() => Int, { nullable: false })
+    internal_code: number;
 
     @Field(() => Date, { nullable: true })
     expected_payment_date: Date | null;

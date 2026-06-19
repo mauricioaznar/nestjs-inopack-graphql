@@ -198,7 +198,7 @@ export class TransfersService {
                                   transfer_receipts: {
                                       some: {
                                           expenses: {
-                                              order_code: { contains: filter },
+                                              external_code: { contains: filter },
                                           },
                                       },
                                   },

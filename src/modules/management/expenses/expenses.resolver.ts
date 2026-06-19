@@ -1,6 +1,7 @@
 import {
     Args,
     Float,
+    Int,
     Mutation,
     Parent,
     Query,
@@ -141,6 +142,23 @@ export class ExpensesResolver {
         });
     }
 
+    @Query(() => Float)
+    async getExpenseMaxInternalCode(): Promise<number> {
+        return this.service.getExpenseMaxInternalCode();
+    }
+
+    @Query(() => Boolean)
+    async isExpenseInternalCodeOccupied(
+        @Args('InternalCode') internalCode: number,
+        @Args('ExpenseId', { nullable: true, type: () => Int })
+        expenseId: number | null,
+    ): Promise<boolean> {
+        return this.service.isExpenseInternalCodeOccupied({
+            internal_code: internalCode,
+            expense_id: expenseId,
+        });
+    }
+
     @ResolveField(() => Boolean)
     async is_deletable(
         @Parent() expense: Expense,
@@ -193,8 +211,8 @@ export class ExpensesResolver {
     }
 
     @ResolveField(() => String)
-    async compound_order_code(@Parent() expense: Expense): Promise<string> {
-        return expense.order_code;
+    async compound_external_code(@Parent() expense: Expense): Promise<string> {
+        return expense.external_code;
     }
 
     @ResolveField(() => Boolean)
