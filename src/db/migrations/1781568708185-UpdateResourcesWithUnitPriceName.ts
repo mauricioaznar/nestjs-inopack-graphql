@@ -12,11 +12,11 @@ export class UpdateResourcesWithUnitPriceName1781568708185
     );
 
     await queryRunner.query(
-      'ALTER TABLE `expenses` RENAME COLUMN `order_code` TO `external_code`;',
+      'ALTER TABLE `expenses` CHANGE COLUMN `order_code` `external_code` varchar(255) NOT NULL DEFAULT \'\';',
     );
 
     await queryRunner.query(
-      'ALTER TABLE `expenses` RENAME COLUMN `require_order_code` TO `require_external_code`;',
+      'ALTER TABLE `expenses` CHANGE COLUMN `require_order_code` `require_external_code` tinyint(1) NOT NULL DEFAULT 1;',
     );
   }
 
