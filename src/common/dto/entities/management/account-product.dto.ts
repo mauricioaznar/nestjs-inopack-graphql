@@ -30,12 +30,3 @@ export class AccountProduct extends AccountProductBase {
     @Field(() => Int, { nullable: true })
     account_id?: number | null;
 }
-
-@InputType('AccountProductsUpsertInput')
-export class AccountProductsUpsertInput {
-    @Field(() => Int, { nullable: false })
-    account_id: number;
-
-    @Field(() => [AccountProductInput])
-    account_products: AccountProductInput[];
-}

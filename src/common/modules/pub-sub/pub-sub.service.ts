@@ -151,27 +151,6 @@ export class PubSubService {
         });
     }
 
-    async accountProduct({
-        account,
-        type,
-        userId,
-    }: {
-        account: Account;
-        type: ActivityTypeName;
-        userId: number;
-    }) {
-        await this.pubSub.publish('account_product', {
-            account_product: account,
-        });
-        await this.publishActivity({
-            entity_name: ActivityEntityName.ACCOUNT_PRODUCT,
-            type: type,
-            entity_id: account.id,
-            userId,
-            description: `Catálogo de productos: ${account.abbreviation} (${account.name})`,
-        });
-    }
-
     async user({
         user,
         type,
@@ -385,10 +364,6 @@ export class PubSubService {
 
     async listenForAccount() {
         return this.pubSub.asyncIterator('account');
-    }
-
-    async listenForAccountProduct() {
-        return this.pubSub.asyncIterator('account_product');
     }
 
     async listenForOrderRequest() {

@@ -12,6 +12,7 @@ import { AccountsService } from './accounts.service';
 import {
     Account,
     AccountContact,
+    AccountProduct,
     AccountsQueryArgs,
     AccountTransactionItem,
     AccountUpsertInput,
@@ -120,6 +121,13 @@ export class AccountsResolver {
     @ResolveField(() => [AccountContact])
     async account_contacts(@Parent() account: Account) {
         return this.service.getAccountContacts({
+            account_id: account.id,
+        });
+    }
+
+    @ResolveField(() => [AccountProduct])
+    async account_products(@Parent() account: Account) {
+        return this.service.getAccountProducts({
             account_id: account.id,
         });
     }
