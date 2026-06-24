@@ -17,7 +17,6 @@ import {
     OrderSaleProduct,
     PaginatedOrderRequests,
     PaginatedOrderRequestsQueryArgs,
-    User,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -942,30 +941,5 @@ export class OrderRequestsService {
         // (including Super/General). To edit a locked request, an admin first
         // moves it back to status 1 via updateOrderRequestStatus.
         return previousOrderRequest.order_request_status_id === 1;
-    }
-
-    async doesUserRequiresMoreValidation({
-        current_user_id,
-    }: {
-        current_user_id: number;
-    }): Promise<boolean> {
-        const userRoles = await this.prisma.user_roles.findMany({
-            where: {
-                user_id: current_user_id,
-            },
-            include: {
-                roles: true,
-            },
-        });
-
-        if (!userRoles) {
-            return true;
-        }
-
-        const isUserAdmin = User.isUserAdmin({
-            roles: userRoles.filter((ur) => ur.roles).map((ur) => ur.roles!),
-        });
-
-        return !isUserAdmin;
     }
 }

@@ -1348,31 +1348,6 @@ export class OrderSaleService {
         return previousOrderSale.order_sale_status_id === 2;
     }
 
-    async doesUserRequiresMoreValidation({
-        current_user_id,
-    }: {
-        current_user_id: number;
-    }): Promise<boolean> {
-        const userRoles = await this.prisma.user_roles.findMany({
-            where: {
-                user_id: current_user_id,
-            },
-            include: {
-                roles: true,
-            },
-        });
-
-        if (!userRoles) {
-            return true;
-        }
-
-        const isUserAdmin = User.isUserAdmin({
-            roles: userRoles.filter((ur) => ur.roles).map((ur) => ur.roles!),
-        });
-
-        return !isUserAdmin;
-    }
-
     async isOrderRequestInProduction({
         order_request_id,
     }: {
