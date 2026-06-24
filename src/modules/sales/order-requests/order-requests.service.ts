@@ -335,7 +335,10 @@ export class OrderRequestsService {
                 order_code: input.order_code,
                 estimated_delivery_date: input.estimated_delivery_date,
                 account_id: input.account_id,
-                order_request_status_id: input.order_request_status_id,
+                // Status is no longer part of the input: new requests always start
+                // at the first status (id = 1). Only updateOrderRequestStatus
+                // (admin-only) can change it afterwards.
+                order_request_status_id: 1,
                 priority: 0,
             },
             update: {
@@ -345,7 +348,8 @@ export class OrderRequestsService {
                 order_code: input.order_code,
                 estimated_delivery_date: input.estimated_delivery_date,
                 account_id: input.account_id,
-                order_request_status_id: input.order_request_status_id,
+                // Intentionally omit order_request_status_id so an upsert never
+                // overwrites a status an admin may have set.
                 priority: 0,
             },
             where: {
@@ -427,6 +431,46 @@ export class OrderRequestsService {
         }
 
         return orderRequest;
+    }
+
+    // Admin-only status change, kept separate from upsert so that regular sales
+    // users editing a request can never move its status. Gated at the resolver
+    // with RoleId.ADMIN.
+    async updateOrderRequestStatus({
+        order_request_id,
+        order_request_status_id,
+    }: {
+        order_request_id: number;
+        order_request_status_id: number;
+    }): Promise<OrderRequest> {
+        const orderRequest = await this.getOrderRequest({
+            orderRequestId: order_request_id,
+        });
+
+        if (!orderRequest) {
+            throw new NotFoundException();
+        }
+
+        const orderRequestStatus =
+            await this.prisma.order_request_statuses.findFirst({
+                where: { id: order_request_status_id },
+            });
+
+        if (!orderRequestStatus) {
+            throw new BadRequestException([
+                `order request status (${order_request_status_id}) does not exist`,
+            ]);
+        }
+
+        return this.prisma.order_requests.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                order_request_status_id: order_request_status_id,
+            },
+            where: {
+                id: order_request_id,
+            },
+        });
     }
 
     async validateOrderRequest(

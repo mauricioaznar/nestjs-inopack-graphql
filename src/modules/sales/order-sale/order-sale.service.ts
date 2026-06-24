@@ -660,7 +660,10 @@ export class OrderSaleService {
                 order_code: input.order_code,
                 expected_payment_date: input.expected_payment_date,
                 invoice_code: input.invoice_code,
-                order_sale_status_id: input.order_sale_status_id,
+                // Status is no longer part of the input: new sales always start at
+                // the first status (id = 1). Only updateOrderSaleStatus (admin-only)
+                // can change it afterwards.
+                order_sale_status_id: 1,
                 receipt_type_id: input.receipt_type_id,
                 account_id: input.account_id,
                 order_request_id: input.order_request_id || null,
@@ -685,7 +688,8 @@ export class OrderSaleService {
                 order_request_id: input.order_request_id || null,
                 invoice_code: input.invoice_code,
                 account_id: input.account_id,
-                order_sale_status_id: input.order_sale_status_id,
+                // Intentionally omit order_sale_status_id so an upsert never
+                // overwrites a status an admin may have set.
                 receipt_type_id: input.receipt_type_id,
                 require_supplement: input.require_supplement,
                 require_credit_note: input.require_credit_note,
@@ -779,6 +783,46 @@ export class OrderSaleService {
         }
 
         return orderSale;
+    }
+
+    // Admin-only status change, kept separate from upsert so that regular sales
+    // users editing a sale can never move its status. Gated at the resolver with
+    // RoleId.ADMIN.
+    async updateOrderSaleStatus({
+        order_sale_id,
+        order_sale_status_id,
+    }: {
+        order_sale_id: number;
+        order_sale_status_id: number;
+    }): Promise<OrderSale> {
+        const orderSale = await this.getOrderSale({
+            orderSaleId: order_sale_id,
+        });
+
+        if (!orderSale) {
+            throw new NotFoundException();
+        }
+
+        const orderSaleStatus =
+            await this.prisma.order_sale_statuses.findFirst({
+                where: { id: order_sale_status_id },
+            });
+
+        if (!orderSaleStatus) {
+            throw new BadRequestException([
+                `order sale status (${order_sale_status_id}) does not exist`,
+            ]);
+        }
+
+        return this.prisma.order_sales.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                order_sale_status_id: order_sale_status_id,
+            },
+            where: {
+                id: order_sale_id,
+            },
+        });
     }
 
     async validateOrderSale(

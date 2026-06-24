@@ -107,6 +107,28 @@ export class OrderSaleResolver {
         return orderSale;
     }
 
+    // Admin-only status change. Status is no longer accepted on upsertOrderSale,
+    // so this is the only way to move a sale between statuses.
+    @Mutation(() => OrderSale)
+    @RolesDecorator(RoleId.ADMIN)
+    async updateOrderSaleStatus(
+        @Args('OrderSaleId', { type: () => Int }) orderSaleId: number,
+        @Args('OrderSaleStatusId', { type: () => Int })
+        orderSaleStatusId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<OrderSale> {
+        const orderSale = await this.service.updateOrderSaleStatus({
+            order_sale_id: orderSaleId,
+            order_sale_status_id: orderSaleStatusId,
+        });
+        await this.pubSubService.orderSale({
+            orderSale,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        });
+        return orderSale;
+    }
+
     @Mutation(() => Boolean)
     @RolesDecorator(RoleId.SALES)
     async deleteOrderSale(

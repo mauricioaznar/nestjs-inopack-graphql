@@ -99,6 +99,28 @@ export class OrderRequestsResolver {
         return orderRequest;
     }
 
+    // Admin-only status change. Status is no longer accepted on upsertOrderRequest,
+    // so this is the only way to move a request between statuses.
+    @Mutation(() => OrderRequest)
+    @RolesDecorator(RoleId.ADMIN)
+    async updateOrderRequestStatus(
+        @Args('OrderRequestId', { type: () => Int }) orderRequestId: number,
+        @Args('OrderRequestStatusId', { type: () => Int })
+        orderRequestStatusId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<OrderRequest> {
+        const orderRequest = await this.service.updateOrderRequestStatus({
+            order_request_id: orderRequestId,
+            order_request_status_id: orderRequestStatusId,
+        });
+        await this.pubSubService.orderRequest({
+            orderRequest,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        });
+        return orderRequest;
+    }
+
     @Mutation(() => Boolean)
     @RolesDecorator(RoleId.SALES)
     async deleteOrderRequest(
