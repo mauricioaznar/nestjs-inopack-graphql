@@ -1259,44 +1259,39 @@ export class OrderSaleService {
             orderSaleId: order_sale_id,
         });
 
-        const userRequiresMoreValidation =
-            await this.doesUserRequiresMoreValidation({ current_user_id });
-
-        const { is_sales_user_authorized } = await this.salesLevelValidation({
-            order_sale_id: order_sale_id,
-            current_user_id: current_user_id,
-            order_request_id: order_request_id,
-        });
-
+        // Deletable only while in the first status (id = 1), for ALL roles, with
+        // no dependent transfers/adjustments, and not cancelled.
         return (
-            (userRequiresMoreValidation ? is_sales_user_authorized : true) &&
+            orderSale?.order_sale_status_id === 1 &&
             is_dependencies_count_ok &&
             orderSale?.canceled === false
         );
     }
 
     async isEditable({
-        current_user_id,
         order_sale_id,
-        order_request_id,
     }: {
         order_sale_id?: number | null;
         order_request_id?: number | null;
         current_user_id: number;
     }): Promise<boolean> {
-        const userRequiresMoreValidation =
-            await this.doesUserRequiresMoreValidation({ current_user_id });
-
-        if (!userRequiresMoreValidation) {
+        // New (unsaved) sales — allow.
+        if (!order_sale_id) {
             return true;
         }
 
-        const { is_sales_user_authorized } = await this.salesLevelValidation({
-            current_user_id,
-            order_sale_id,
-            order_request_id,
+        const previousOrderSale = await this.getOrderSale({
+            orderSaleId: order_sale_id,
         });
-        return !is_sales_user_authorized;
+
+        if (!previousOrderSale) {
+            return true;
+        }
+
+        // Editable only while in the first status (id = 1), for ALL roles
+        // (including Super/General). To edit a locked sale, an admin first moves
+        // it back to status 1 via updateOrderSaleStatus.
+        return previousOrderSale.order_sale_status_id === 1;
     }
 
     async salesLevelValidation({
@@ -1351,31 +1346,6 @@ export class OrderSaleService {
         }
 
         return previousOrderSale.order_sale_status_id === 2;
-    }
-
-    async doesUserRequiresMoreValidation({
-        current_user_id,
-    }: {
-        current_user_id: number;
-    }): Promise<boolean> {
-        const userRoles = await this.prisma.user_roles.findMany({
-            where: {
-                user_id: current_user_id,
-            },
-            include: {
-                roles: true,
-            },
-        });
-
-        if (!userRoles) {
-            return true;
-        }
-
-        const isUserAdmin = User.isUserAdmin({
-            roles: userRoles.filter((ur) => ur.roles).map((ur) => ur.roles!),
-        });
-
-        return !isUserAdmin;
     }
 
     async isOrderRequestInProduction({

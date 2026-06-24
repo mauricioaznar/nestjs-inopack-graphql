@@ -17,7 +17,6 @@ import {
     OrderSaleProduct,
     PaginatedOrderRequests,
     PaginatedOrderRequestsQueryArgs,
-    User,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -924,7 +923,6 @@ export class OrderRequestsService {
     }
 
     async isEditable({
-        current_user_id,
         order_request_id,
     }: {
         order_request_id: number;
@@ -934,45 +932,14 @@ export class OrderRequestsService {
             orderRequestId: order_request_id,
         });
 
+        // New (unsaved) requests have no status yet — allow.
         if (!previousOrderRequest) {
             return true;
         }
 
-        const userRequiresMoreValidation =
-            await this.doesUserRequiresMoreValidation({ current_user_id });
-
-        if (userRequiresMoreValidation && previousOrderRequest) {
-            return (
-                !!previousOrderRequest.order_request_status_id &&
-                previousOrderRequest.order_request_status_id === 1
-            );
-        } else {
-            return true;
-        }
-    }
-
-    async doesUserRequiresMoreValidation({
-        current_user_id,
-    }: {
-        current_user_id: number;
-    }): Promise<boolean> {
-        const userRoles = await this.prisma.user_roles.findMany({
-            where: {
-                user_id: current_user_id,
-            },
-            include: {
-                roles: true,
-            },
-        });
-
-        if (!userRoles) {
-            return true;
-        }
-
-        const isUserAdmin = User.isUserAdmin({
-            roles: userRoles.filter((ur) => ur.roles).map((ur) => ur.roles!),
-        });
-
-        return !isUserAdmin;
+        // Editable only while in the first status (id = 1), for ALL roles
+        // (including Super/General). To edit a locked request, an admin first
+        // moves it back to status 1 via updateOrderRequestStatus.
+        return previousOrderRequest.order_request_status_id === 1;
     }
 }
