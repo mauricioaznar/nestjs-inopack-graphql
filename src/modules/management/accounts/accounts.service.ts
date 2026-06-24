@@ -6,6 +6,8 @@ import {
 import {
     Account,
     AccountContact,
+    AccountProduct,
+    AccountProductInput,
     AccountsQueryArgs,
     AccountTransactionItem,
     AccountUpsertInput,
@@ -149,6 +151,10 @@ export class AccountsService {
     }
 
     async upsertAccount(input: AccountUpsertInput): Promise<Account> {
+        // Validate everything before any writes so invalid input never leaves
+        // the account/contacts/catalog partially saved.
+        await this.validateAccount(input);
+
         const account = await this.prisma.accounts.upsert({
             create: {
                 ...getCreatedAtProperty(),
@@ -244,7 +250,193 @@ export class AccountsService {
             }
         }
 
+        await this.syncAccountProducts({
+            account_id: account.id,
+            items: input.account_products,
+        });
+
         return account;
+    }
+
+    // The product catalog is synced the same way as contacts: rows present in
+    // the DB but not in the input are soft-deleted, new rows are created, and
+    // matching rows are updated. group_weight is always re-derived from the
+    // product so the catalog stays consistent with the order-request checks.
+    private async syncAccountProducts({
+        account_id,
+        items,
+    }: {
+        account_id: number;
+        items: AccountProductInput[];
+    }): Promise<void> {
+        const oldItems = account_id
+            ? await this.prisma.account_products.findMany({
+                  where: {
+                      account_id: account_id,
+                      active: 1,
+                  },
+              })
+            : [];
+
+        const {
+            aMinusB: deleteItems,
+            bMinusA: createItems,
+            intersection: updateItems,
+        } = vennDiagram({
+            a: oldItems,
+            b: items,
+            indexProperties: ['id'],
+        });
+
+        for await (const delItem of deleteItems) {
+            if (delItem && delItem.id) {
+                await this.prisma.account_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: { id: delItem.id },
+                });
+            }
+        }
+
+        for await (const createItem of createItems) {
+            const group_weight = await this.getProductGroupWeight({
+                product_id: createItem.product_id,
+            });
+            await this.prisma.account_products.create({
+                data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
+                    account_id: account_id,
+                    product_id: createItem.product_id,
+                    kilo_price: createItem.kilo_price,
+                    group_price: createItem.group_price,
+                    group_weight: group_weight,
+                    active: 1,
+                },
+            });
+        }
+
+        for await (const updateItem of updateItems) {
+            if (updateItem && updateItem.id) {
+                const group_weight = await this.getProductGroupWeight({
+                    product_id: updateItem.product_id,
+                });
+                await this.prisma.account_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        product_id: updateItem.product_id,
+                        kilo_price: updateItem.kilo_price,
+                        group_price: updateItem.group_price,
+                        group_weight: group_weight,
+                        active: 1,
+                    },
+                    where: { id: updateItem.id },
+                });
+            }
+        }
+    }
+
+    private async getProductGroupWeight({
+        product_id,
+    }: {
+        product_id?: number | null;
+    }): Promise<number> {
+        if (!product_id) return 0;
+        const product = await this.prisma.products.findUnique({
+            where: { id: product_id },
+        });
+        return product?.current_group_weight || 0;
+    }
+
+    // Mirrors the account-form yup schema on the backend: name and contact
+    // names are required, plus the catalog rules. All errors are collected and
+    // thrown together so the client sees the full list in one response.
+    private async validateAccount(input: AccountUpsertInput): Promise<void> {
+        const errors: string[] = [];
+
+        // name is required (non-empty).
+        if (!input.name || input.name.trim() === '') {
+            errors.push('name is required');
+        }
+
+        // every contact requires a first and last name.
+        input.account_contacts.forEach((contact, index) => {
+            if (!contact.first_name || contact.first_name.trim() === '') {
+                errors.push(`contact (index: ${index}) requires a first name`);
+            }
+            if (!contact.last_name || contact.last_name.trim() === '') {
+                errors.push(`contact (index: ${index}) requires a last name`);
+            }
+        });
+
+        await this.collectAccountProductErrors({
+            is_client: input.is_client,
+            items: input.account_products,
+            errors,
+        });
+
+        if (errors.length > 0) {
+            throw new BadRequestException(errors);
+        }
+    }
+
+    // Pushes catalog validation errors into the shared list.
+    private async collectAccountProductErrors({
+        is_client,
+        items,
+        errors,
+    }: {
+        is_client: boolean;
+        items: AccountProductInput[];
+        errors: string[];
+    }): Promise<void> {
+        // Only a client account may carry a product catalog.
+        if (items.length > 0 && !is_client) {
+            errors.push('Account is not a client');
+        }
+
+        // A product cannot be repeated in the account catalog.
+        items.forEach(({ product_id: product_id_1 }) => {
+            const count = items.filter(
+                ({ product_id: product_id_2 }) =>
+                    product_id_1 === product_id_2,
+            ).length;
+            if (count >= 2) {
+                errors.push(
+                    `product is not unique (product_id: ${product_id_1})`,
+                );
+            }
+        });
+
+        // Every catalog product must exist and be active.
+        for await (const { product_id } of items) {
+            if (!product_id) {
+                errors.push('product is required');
+                continue;
+            }
+            const product = await this.prisma.products.findFirst({
+                where: { id: product_id, active: 1 },
+            });
+            if (!product) {
+                errors.push(`product (${product_id}) does not exist`);
+            }
+        }
+
+        // Exactly one of kilo price / group price must be non-zero.
+        items.forEach((item, index) => {
+            if (item.group_price !== 0 && item.kilo_price !== 0) {
+                errors.push(
+                    `Only one of kilo price and group price can be different than 0 (index: ${index}, product id: ${item.product_id})`,
+                );
+            }
+            if (item.group_price === 0 && item.kilo_price === 0) {
+                errors.push(
+                    `One of kilo price and group price has to be different than 0 (index: ${index}, product id: ${item.product_id})`,
+                );
+            }
+        });
     }
 
     async getAccountContacts({
@@ -265,6 +457,21 @@ export class AccountsService {
                         active: 1,
                     },
                 ],
+            },
+        });
+    }
+
+    async getAccountProducts({
+        account_id,
+    }: {
+        account_id: number;
+    }): Promise<AccountProduct[]> {
+        if (!account_id) return [];
+
+        return this.prisma.account_products.findMany({
+            where: {
+                account_id: account_id,
+                active: 1,
             },
         });
     }

@@ -8,6 +8,7 @@ import {
     registerEnumType,
 } from '@nestjs/graphql';
 import { AccountContactInput } from './account-contact.dto';
+import { AccountProductInput } from './account-product.dto';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
 import { ProductBase } from '../production/product.dto';
@@ -47,6 +48,9 @@ export class AccountUpsertInput extends AccountBase {
 
     @Field(() => [AccountContactInput])
     account_contacts: AccountContactInput[];
+
+    @Field(() => [AccountProductInput])
+    account_products: AccountProductInput[];
 }
 
 @ObjectType('Account')

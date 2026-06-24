@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TransfersModule } from './transfers/transfers.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { AccountContactsModule } from './account-contacts/account-contacts.module';
+import { AccountProductsModule } from './account-products/account-products.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { ResourcesModule } from './resources/resources.module';
 import { ResourceCategoriesModule } from './resource-categories/resource-categories.module';
@@ -16,6 +17,7 @@ import { SupplierTypesModule } from './supplier-types/supplier-types.module';
         TransfersModule,
         AccountsModule,
         AccountContactsModule,
+        AccountProductsModule,
         ExpenseResourcesModule,
         ExpensesModule,
         ResourcesModule,
