@@ -31,16 +31,23 @@ Every push to `stage` triggers the GitHub Actions workflow:
 The frontend (`react-inopack`) is **not** deployed by this repo's GitHub Actions — it is built and
 hosted by **Netlify**, configured on the Netlify platform (there is no `netlify.toml` in the repo).
 
-- Netlify watches the **`master`** branch of `react-inopack`. Every push/commit to `master` triggers
-  a separate build + deploy on Netlify.
-- The production build's **`REACT_APP_API_URL` = `https://inopack-api.mauaznar.com`** (the new
-  production API). This env var lives on Netlify and was changed manually during the production
-  server switch.
+Netlify builds **two** contexts off `react-inopack`, one per deploy branch. Each context has its own
+`REACT_APP_API_URL` so the frontend talks to the matching backend:
 
-**Why frontend and backend stay in sync:** `ship dev -> master` pushes **both** repos to `master` in
-the same step, so the backend pipeline (graphql) and the Netlify build (react) both pick up the same
-commit's changes and deploy together, pointing at the same backend (`inopack-api`). They stay
-version-matched as long as you always ship both via `ship` (never push one repo's master alone).
+| Branch    | Netlify deploy | `REACT_APP_API_URL`                    | Backend it pairs with        |
+|-----------|----------------|----------------------------------------|------------------------------|
+| `master`  | production     | `https://inopack-api.mauaznar.com`     | prod API (159.223.100.185)   |
+| `stage`   | staging        | `https://staging-inopack.mauaznar.com` | staging API (162.243.171.217)|
+
+These env vars live on Netlify (no `netlify.toml` in the repo) and were set manually during the
+production server switch. Every push/commit to `master` or `stage` triggers a separate Netlify build
++ deploy for that context.
+
+**Why frontend and backend stay in sync:** `ship` pushes **both** repos to the same target branch in
+one step — `ship dev -> master` updates `graphql` + `react` master together; `ship … -> stage` does
+the same for stage. So the backend pipeline (graphql GitHub Actions) and the Netlify build (react)
+each pick up the same commit and deploy together against the same-tier backend. They stay
+version-matched as long as you always ship both via `ship` (never push one repo's branch alone).
 
 **Caveat — deploy-window skew:** the two systems finish at different times (backend pipeline ~2–3
 min; Netlify build ~1–3 min). During a deploy there is a brief window where one side is ahead of the
