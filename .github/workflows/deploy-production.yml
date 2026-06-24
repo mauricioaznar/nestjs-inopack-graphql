@@ -53,25 +53,39 @@ jobs:
           ssh $USER@$HOST bash << EOF
             set -e
 
-            # Backup DB before anything else — if this fails the deploy aborts
+            # Backup DB before anything else — if this fails the deploy aborts.
+            # --single-transaction = consistent snapshot of live InnoDB without
+            # locking; include routines/triggers/events so the dump is restorable.
             BACKUP_FILE="/root/backups/inopack_\$(date +%Y%m%d_%H%M%S).sql"
-            mysqldump -u root -p"$DB_PASSWORD" inopack > \$BACKUP_FILE
+            mysqldump --single-transaction --quick --routines --triggers --events \
+              -u root -p"$DB_PASSWORD" inopack > \$BACKUP_FILE
             echo "Backup saved to \$BACKUP_FILE"
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u mauricioaznar --password-stdin
 
+            # Pull while the old container is still serving — a pull failure aborts
+            # here (set -e) with the app untouched.
             docker pull $IMAGE:$SHA
 
-            # Run migrations in a throwaway container — if they fail, deploy aborts
-            docker run --rm \
-              --network host \
-              --env-file /root/inopack.env \
-              $IMAGE:$SHA \
-              node dist/db/runner.js
-
-            # Swap containers
+            # Quiet window: stop the app so migrations run against a DB nothing is
+            # writing to. Keep the container (no rm yet) so we can restart it if the
+            # migration fails.
             docker stop inopack-graphql 2>/dev/null || true
-            docker rm   inopack-graphql 2>/dev/null || true
+
+            # Migrate. On failure, bring the OLD container back up and abort — a bad
+            # migration is then no worse than a no-op (old version serving again).
+            if ! docker run --rm \
+                 --network host \
+                 --env-file /root/inopack.env \
+                 $IMAGE:$SHA \
+                 node dist/db/runner.js; then
+              echo "Migration failed — restarting previous container"
+              docker start inopack-graphql 2>/dev/null || true
+              exit 1
+            fi
+
+            # Migration OK — swap to the new image.
+            docker rm inopack-graphql 2>/dev/null || true
             docker run -d \
               --name inopack-graphql \
               --restart unless-stopped \
@@ -79,6 +93,8 @@ jobs:
               --env-file /root/inopack.env \
               $IMAGE:$SHA
 
-            # Prune old images
+            # Prune old images, and keep only the 10 newest DB backups so
+            # /root/backups can't fill the disk and break future deploys.
             docker image prune -f
+            ls -t /root/backups/inopack_*.sql 2>/dev/null | tail -n +11 | xargs -r rm --
           EOF

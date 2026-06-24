@@ -61,17 +61,28 @@ jobs:
             # (see docs/plans/ongoing/backup-replication.md). Stream it through gunzip so
             # mysql gets plain SQL — piping the gzip header in directly produces
             # "ASCII '\0' appeared in the statement" because of the NUL in the magic bytes.
+            # Quiet window: stop the app before the DB reset + migrate so nothing
+            # is writing while we mutate the schema. Keep the container (no rm yet)
+            # so we can restart it if the migration fails. Mirrors production so the
+            # stop/migrate/rollback/swap control flow is validated here first.
+            docker stop inopack-graphql 2>/dev/null || true
+
             mysql -u root -proot -e "DROP DATABASE inopack; CREATE DATABASE inopack;"
             gunzip -c /root/inopack/inopack.sql | mysql -u root -proot inopack
-            docker run --rm \
-              --network host \
-              --env-file /root/inopack/.env \
-              $IMAGE:$SHA \
-              node dist/db/runner.js
 
-            # Swap containers
-            docker stop inopack-graphql 2>/dev/null || true
-            docker rm   inopack-graphql 2>/dev/null || true
+            # Migrate. On failure, bring the previous container back up and abort.
+            if ! docker run --rm \
+                 --network host \
+                 --env-file /root/inopack/.env \
+                 $IMAGE:$SHA \
+                 node dist/db/runner.js; then
+              echo "Migration failed — restarting previous container"
+              docker start inopack-graphql 2>/dev/null || true
+              exit 1
+            fi
+
+            # Migration OK — swap to the new image.
+            docker rm inopack-graphql 2>/dev/null || true
             docker run -d \
               --name inopack-graphql \
               --restart unless-stopped \
