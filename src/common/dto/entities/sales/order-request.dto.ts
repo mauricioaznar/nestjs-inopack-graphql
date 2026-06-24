@@ -27,9 +27,6 @@ export class OrderRequestBase {
 
     @Field(() => String, { nullable: false })
     notes: string;
-
-    @Field(() => Int, { nullable: true })
-    order_request_status_id?: number | null;
 }
 
 @InputType('OrderRequestInput')
@@ -48,6 +45,12 @@ export class OrderRequest extends OrderRequestBase {
 
     @Field(() => Date, { nullable: true })
     updated_at?: Date | null;
+
+    // Status is read here but never accepted on OrderRequestInput: upserts
+    // default it to 1 and only the admin-only updateOrderRequestStatus mutation
+    // can change it.
+    @Field(() => Int, { nullable: true })
+    order_request_status_id?: number | null;
 }
 
 @ArgsType()

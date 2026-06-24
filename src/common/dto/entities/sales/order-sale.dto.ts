@@ -20,9 +20,6 @@ export class OrderSaleBase {
     @Field(() => Date, { nullable: true })
     expected_payment_date: Date | null;
 
-    @Field(() => Int, { nullable: true })
-    order_sale_status_id?: number | null;
-
     @Field()
     order_code: number;
 
@@ -82,9 +79,6 @@ export class OrderSaleInput extends OrderSaleBase {
 
     @Field({ nullable: false })
     receipt_type_id: number;
-
-    @Field({ nullable: false })
-    order_sale_status_id: number;
 }
 
 @ObjectType('OrderSale')
@@ -94,6 +88,12 @@ export class OrderSale extends OrderSaleBase {
 
     @Field(() => Date, { nullable: true })
     updated_at?: Date | null;
+
+    // Status is read here but never accepted on OrderSaleInput: upserts default
+    // it to 1 and only the admin-only updateOrderSaleStatus mutation can change
+    // it.
+    @Field(() => Int, { nullable: true })
+    order_sale_status_id?: number | null;
 
     @Field(() => Int, { nullable: true })
     created_by_id: number | null;
