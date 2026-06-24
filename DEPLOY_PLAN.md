@@ -26,6 +26,33 @@ Every push to `stage` triggers the GitHub Actions workflow:
 
 ---
 
+## Frontend deployment (Netlify)
+
+The frontend (`react-inopack`) is **not** deployed by this repo's GitHub Actions — it is built and
+hosted by **Netlify**, configured on the Netlify platform (there is no `netlify.toml` in the repo).
+
+- Netlify watches the **`master`** branch of `react-inopack`. Every push/commit to `master` triggers
+  a separate build + deploy on Netlify.
+- The production build's **`REACT_APP_API_URL` = `https://inopack-api.mauaznar.com`** (the new
+  production API). This env var lives on Netlify and was changed manually during the production
+  server switch.
+
+**Why frontend and backend stay in sync:** `ship dev -> master` pushes **both** repos to `master` in
+the same step, so the backend pipeline (graphql) and the Netlify build (react) both pick up the same
+commit's changes and deploy together, pointing at the same backend (`inopack-api`). They stay
+version-matched as long as you always ship both via `ship` (never push one repo's master alone).
+
+**Caveat — deploy-window skew:** the two systems finish at different times (backend pipeline ~2–3
+min; Netlify build ~1–3 min). During a deploy there is a brief window where one side is ahead of the
+other, which can cause transient errors for **breaking** API changes (e.g. removing an input field)
+until both settle. Prefer shipping breaking changes during a quiet hour.
+
+> **Note on "awaiting DNS cutover" in the Environments table:** app traffic already flows through
+> Netlify → `inopack-api`, so users are on the new backend. The pending DNS cutover only concerns
+> retiring the old `inoserver-graphql.mauaznar.com` domain/server — not where the app points.
+
+---
+
 ## Beginner's guide — what we built and why
 
 This section explains every concept from scratch. If you are new to DevOps, read this before touching anything.
