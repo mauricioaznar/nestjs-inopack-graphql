@@ -825,6 +825,38 @@ export class OrderSaleService {
         });
     }
 
+    // Lets sales users edit a couple of optional fields (notes, expected
+    // payment date) without going through the full status-1 edit lock that
+    // governs the rest of an order sale's fields.
+    async updateOrderSaleDetails({
+        order_sale_id,
+        notes,
+        expected_payment_date,
+    }: {
+        order_sale_id: number;
+        notes: string | null;
+        expected_payment_date: Date | null;
+    }): Promise<OrderSale> {
+        const orderSale = await this.getOrderSale({
+            orderSaleId: order_sale_id,
+        });
+
+        if (!orderSale) {
+            throw new NotFoundException();
+        }
+
+        return this.prisma.order_sales.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                ...(notes !== null && { notes }),
+                expected_payment_date: expected_payment_date,
+            },
+            where: {
+                id: order_sale_id,
+            },
+        });
+    }
+
     async validateOrderSale(
         input: OrderSaleInput,
         current_user_id: number,

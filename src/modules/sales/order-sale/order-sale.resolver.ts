@@ -129,6 +129,28 @@ export class OrderSaleResolver {
         return orderSale;
     }
 
+    @Mutation(() => OrderSale)
+    @RolesDecorator(RoleId.SALES)
+    async updateOrderSaleDetails(
+        @Args('OrderSaleId', { type: () => Int }) orderSaleId: number,
+        @Args('Notes', { type: () => String, nullable: true }) notes: string | null,
+        @Args('ExpectedPaymentDate', { type: () => Date, nullable: true })
+        expectedPaymentDate: Date | null,
+        @CurrentUser() currentUser: User,
+    ): Promise<OrderSale> {
+        const orderSale = await this.service.updateOrderSaleDetails({
+            order_sale_id: orderSaleId,
+            notes,
+            expected_payment_date: expectedPaymentDate,
+        });
+        await this.pubSubService.orderSale({
+            orderSale,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        });
+        return orderSale;
+    }
+
     @Mutation(() => Boolean)
     @RolesDecorator(RoleId.SALES)
     async deleteOrderSale(
