@@ -18,6 +18,7 @@ import {
     OrderRequest,
     OrderSale,
     OrderSaleInput,
+    OrderSaleDetailsInput,
     OrderSaleProduct,
     ReceiptType,
     OrderSalesSortArgs,
@@ -121,6 +122,21 @@ export class OrderSaleResolver {
             order_sale_id: orderSaleId,
             order_sale_status_id: orderSaleStatusId,
         });
+        await this.pubSubService.orderSale({
+            orderSale,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        });
+        return orderSale;
+    }
+
+    @Mutation(() => OrderSale)
+    @RolesDecorator(RoleId.SALES)
+    async updateOrderSaleDetails(
+        @Args('OrderSaleDetailsInput') input: OrderSaleDetailsInput,
+        @CurrentUser() currentUser: User,
+    ): Promise<OrderSale> {
+        const orderSale = await this.service.updateOrderSaleDetails({ input });
         await this.pubSubService.orderSale({
             orderSale,
             type: ActivityTypeName.UPDATE,

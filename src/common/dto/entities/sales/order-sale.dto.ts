@@ -81,6 +81,42 @@ export class OrderSaleInput extends OrderSaleBase {
     receipt_type_id: number;
 }
 
+// Partial input for the lightweight `updateOrderSaleDetails` mutation: the
+// optional, side-effect-free fields a sales user may amend AFTER a sale locks
+// (past status 1) without going through the full upsert. Every field is
+// nullable so an omitted one is skipped (Prisma treats `undefined` as "no
+// change"); the financial fields (tax / automatic_tax_calculation) are
+// deliberately excluded because they would force a totals recompute.
+@InputType('OrderSaleDetailsInput')
+export class OrderSaleDetailsInput {
+    @Field(() => Int)
+    order_sale_id: number;
+
+    @Field(() => String, { nullable: true })
+    notes?: string | null;
+
+    @Field(() => Date, { nullable: true })
+    expected_payment_date?: Date | null;
+
+    @Field(() => Boolean, { nullable: true })
+    require_supplement?: boolean | null;
+
+    @Field(() => String, { nullable: true })
+    supplement_code?: string | null;
+
+    @Field(() => Boolean, { nullable: true })
+    require_credit_note?: boolean | null;
+
+    @Field(() => String, { nullable: true })
+    credit_note_code?: string | null;
+
+    @Field(() => Float, { nullable: true })
+    credit_note_amount?: number | null;
+
+    @Field(() => Boolean, { nullable: true })
+    canceled?: boolean | null;
+}
+
 @ObjectType('OrderSale')
 export class OrderSale extends OrderSaleBase {
     @Field({ nullable: false })
