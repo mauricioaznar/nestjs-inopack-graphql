@@ -13,6 +13,7 @@ import {
     OrderRequest,
     OrderSale,
     OrderSaleInput,
+    OrderSaleDetailsInput,
     OrderSaleProduct,
     ReceiptType,
     OrderSalesSortArgs,
@@ -825,20 +826,21 @@ export class OrderSaleService {
         });
     }
 
-    // Lets sales users edit a couple of optional fields (notes, expected
-    // payment date) without going through the full status-1 edit lock that
-    // governs the rest of an order sale's fields.
+    // Lets sales users edit the optional, side-effect-free fields of a sale
+    // (notes, expected payment date, supplement, credit note, canceled) AFTER
+    // it locks past status 1 — without the full upsert and its edit lock. The
+    // financial fields (tax / automatic_tax_calculation) are intentionally NOT
+    // here: they would force a subtotal/tax/total recompute, which this
+    // lightweight path avoids. Each field is applied only when provided —
+    // Prisma skips `undefined`, and `?? undefined` guards the non-nullable
+    // columns so a stray null never tries to clear them.
     async updateOrderSaleDetails({
-        order_sale_id,
-        notes,
-        expected_payment_date,
+        input,
     }: {
-        order_sale_id: number;
-        notes: string | null;
-        expected_payment_date: Date | null;
+        input: OrderSaleDetailsInput;
     }): Promise<OrderSale> {
         const orderSale = await this.getOrderSale({
-            orderSaleId: order_sale_id,
+            orderSaleId: input.order_sale_id,
         });
 
         if (!orderSale) {
@@ -848,11 +850,22 @@ export class OrderSaleService {
         return this.prisma.order_sales.update({
             data: {
                 ...getUpdatedAtProperty(),
-                ...(notes !== null && { notes }),
-                expected_payment_date: expected_payment_date,
+                notes: input.notes ?? undefined,
+                // expected_payment_date is the one nullable column here, so a
+                // null clears it; only a truly omitted (undefined) field skips.
+                expected_payment_date:
+                    input.expected_payment_date === undefined
+                        ? undefined
+                        : input.expected_payment_date,
+                require_supplement: input.require_supplement ?? undefined,
+                supplement_code: input.supplement_code ?? undefined,
+                require_credit_note: input.require_credit_note ?? undefined,
+                credit_note_code: input.credit_note_code ?? undefined,
+                credit_note_amount: input.credit_note_amount ?? undefined,
+                canceled: input.canceled ?? undefined,
             },
             where: {
-                id: order_sale_id,
+                id: input.order_sale_id,
             },
         });
     }

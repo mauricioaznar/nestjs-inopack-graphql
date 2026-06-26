@@ -18,6 +18,7 @@ import {
     OrderRequest,
     OrderSale,
     OrderSaleInput,
+    OrderSaleDetailsInput,
     OrderSaleProduct,
     ReceiptType,
     OrderSalesSortArgs,
@@ -132,17 +133,10 @@ export class OrderSaleResolver {
     @Mutation(() => OrderSale)
     @RolesDecorator(RoleId.SALES)
     async updateOrderSaleDetails(
-        @Args('OrderSaleId', { type: () => Int }) orderSaleId: number,
-        @Args('Notes', { type: () => String, nullable: true }) notes: string | null,
-        @Args('ExpectedPaymentDate', { type: () => Date, nullable: true })
-        expectedPaymentDate: Date | null,
+        @Args('OrderSaleDetailsInput') input: OrderSaleDetailsInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderSale> {
-        const orderSale = await this.service.updateOrderSaleDetails({
-            order_sale_id: orderSaleId,
-            notes,
-            expected_payment_date: expectedPaymentDate,
-        });
+        const orderSale = await this.service.updateOrderSaleDetails({ input });
         await this.pubSubService.orderSale({
             orderSale,
             type: ActivityTypeName.UPDATE,
