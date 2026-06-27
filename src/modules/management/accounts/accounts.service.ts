@@ -201,6 +201,8 @@ export class AccountsService {
                 supplier_require_external_code:
                     input.supplier_require_external_code,
                 supplier_require_supplement: input.supplier_require_supplement,
+                client_automatic_tax_calculation:
+                    input.client_automatic_tax_calculation,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -219,6 +221,8 @@ export class AccountsService {
                 supplier_require_external_code:
                     input.supplier_require_external_code,
                 supplier_require_supplement: input.supplier_require_supplement,
+                client_automatic_tax_calculation:
+                    input.client_automatic_tax_calculation,
             },
             where: {
                 id: input.id || 0,

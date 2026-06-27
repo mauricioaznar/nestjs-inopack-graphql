@@ -23,6 +23,9 @@ export class AddAccountsCreditDaysAndDefaults1782578843132
     await queryRunner.query(
       'ALTER TABLE accounts ADD `supplier_require_supplement` boolean NOT NULL DEFAULT 0;',
     );
+    await queryRunner.query(
+      'ALTER TABLE accounts ADD `client_automatic_tax_calculation` boolean NOT NULL DEFAULT 0;',
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -43,6 +46,9 @@ export class AddAccountsCreditDaysAndDefaults1782578843132
     );
     await queryRunner.query(
       'ALTER TABLE accounts DROP COLUMN `supplier_require_supplement`;',
+    );
+    await queryRunner.query(
+      'ALTER TABLE accounts DROP COLUMN `client_automatic_tax_calculation`;',
     );
   }
 }

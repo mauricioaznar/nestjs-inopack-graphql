@@ -59,6 +59,9 @@ export class AccountBase {
 
     @Field(() => Boolean, { nullable: false })
     supplier_require_supplement: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    client_automatic_tax_calculation: boolean;
 }
 
 @InputType('AccountUpsertInput')
