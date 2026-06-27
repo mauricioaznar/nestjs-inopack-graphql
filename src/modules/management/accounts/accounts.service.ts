@@ -567,7 +567,12 @@ export class AccountsService {
         const isDeletable = await this.isDeletable({ account_id });
 
         if (!isDeletable) {
-            const { order_requests_count } = await this.getDependenciesCount({
+            const {
+                order_requests_count,
+                order_sales_count,
+                expenses_count,
+                transfers_count,
+            } = await this.getDependenciesCount({
                 account_id,
             });
 
@@ -575,6 +580,15 @@ export class AccountsService {
 
             if (order_requests_count > 0) {
                 errors.push(`order requests count ${order_requests_count}`);
+            }
+            if (order_sales_count > 0) {
+                errors.push(`order sales count ${order_sales_count}`);
+            }
+            if (expenses_count > 0) {
+                errors.push(`expenses count ${expenses_count}`);
+            }
+            if (transfers_count > 0) {
+                errors.push(`transfers count ${transfers_count}`);
             }
 
             throw new BadRequestException(errors);
@@ -611,21 +625,48 @@ export class AccountsService {
         account_id,
     }: {
         account_id: number;
-    }): Promise<{ order_requests_count: number }> {
-        const {
-            _count: { id: orderRequestsCount },
-        } = await this.prisma.order_requests.aggregate({
-            _count: {
-                id: true,
-            },
-            where: {
-                account_id: account_id,
-                active: 1,
-            },
-        });
+    }): Promise<{
+        order_requests_count: number;
+        order_sales_count: number;
+        expenses_count: number;
+        transfers_count: number;
+    }> {
+        // Every table that references this account by id. An account may not be
+        // deleted while any active row still points at it — otherwise the soft
+        // delete (active = -1) orphans live order requests, sales, expenses or
+        // transfers against an inactive account. Transfers reference the account
+        // from EITHER side (from/to), so both columns are checked.
+        const [
+            order_requests_count,
+            order_sales_count,
+            expenses_count,
+            transfers_count,
+        ] = await Promise.all([
+            this.prisma.order_requests.count({
+                where: { account_id: account_id, active: 1 },
+            }),
+            this.prisma.order_sales.count({
+                where: { account_id: account_id, active: 1 },
+            }),
+            this.prisma.expenses.count({
+                where: { account_id: account_id, active: 1 },
+            }),
+            this.prisma.transfers.count({
+                where: {
+                    active: 1,
+                    OR: [
+                        { from_account_id: account_id },
+                        { to_account_id: account_id },
+                    ],
+                },
+            }),
+        ]);
 
         return {
-            order_requests_count: orderRequestsCount,
+            order_requests_count,
+            order_sales_count,
+            expenses_count,
+            transfers_count,
         };
     }
 
@@ -634,11 +675,21 @@ export class AccountsService {
     }: {
         account_id: number;
     }): Promise<boolean> {
-        const { order_requests_count } = await this.getDependenciesCount({
+        const {
+            order_requests_count,
+            order_sales_count,
+            expenses_count,
+            transfers_count,
+        } = await this.getDependenciesCount({
             account_id,
         });
 
-        return order_requests_count === 0;
+        return (
+            order_requests_count === 0 &&
+            order_sales_count === 0 &&
+            expenses_count === 0 &&
+            transfers_count === 0
+        );
     }
 
     async getAccountTransactionHistory({
