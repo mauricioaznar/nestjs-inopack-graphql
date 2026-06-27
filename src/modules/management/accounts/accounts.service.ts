@@ -194,6 +194,13 @@ export class AccountsService {
                 supplier_type_id: input.supplier_type_id || null,
                 resource_id: input.resource_id,
                 monitor_balance: input.monitor_balance,
+                client_credit_days: input.client_credit_days,
+                supplier_credit_days: input.supplier_credit_days,
+                client_require_credit_note: input.client_require_credit_note,
+                client_require_supplement: input.client_require_supplement,
+                supplier_require_external_code:
+                    input.supplier_require_external_code,
+                supplier_require_supplement: input.supplier_require_supplement,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -205,6 +212,13 @@ export class AccountsService {
                 supplier_type_id: input.supplier_type_id || null,
                 resource_id: input.resource_id,
                 monitor_balance: input.monitor_balance,
+                client_credit_days: input.client_credit_days,
+                supplier_credit_days: input.supplier_credit_days,
+                client_require_credit_note: input.client_require_credit_note,
+                client_require_supplement: input.client_require_supplement,
+                supplier_require_external_code:
+                    input.supplier_require_external_code,
+                supplier_require_supplement: input.supplier_require_supplement,
             },
             where: {
                 id: input.id || 0,

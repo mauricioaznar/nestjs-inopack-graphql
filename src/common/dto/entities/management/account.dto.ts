@@ -39,6 +39,26 @@ export class AccountBase {
 
     @Field(() => Int, { nullable: true })
     resource_id: number | null;
+
+    // Credit terms + default flags. The client_* values pre-fill order sales,
+    // the supplier_* values pre-fill expenses, when this account is selected.
+    @Field(() => Int, { nullable: false })
+    client_credit_days: number;
+
+    @Field(() => Int, { nullable: false })
+    supplier_credit_days: number;
+
+    @Field(() => Boolean, { nullable: false })
+    client_require_credit_note: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    client_require_supplement: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    supplier_require_external_code: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    supplier_require_supplement: boolean;
 }
 
 @InputType('AccountUpsertInput')
