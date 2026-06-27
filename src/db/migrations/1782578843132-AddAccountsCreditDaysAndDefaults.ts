@@ -15,7 +15,7 @@ export class AddAccountsCreditDaysAndDefaults1782578843132
       'ALTER TABLE accounts ADD `client_require_credit_note` boolean NOT NULL DEFAULT 0;',
     );
     await queryRunner.query(
-      'ALTER TABLE accounts ADD `client_require_supplement` boolean NOT NULL DEFAULT 0;',
+      'ALTER TABLE accounts ADD `client_require_supplement` boolean NOT NULL DEFAULT 1;',
     );
     await queryRunner.query(
       'ALTER TABLE accounts ADD `supplier_require_external_code` boolean NOT NULL DEFAULT 0;',
@@ -24,7 +24,7 @@ export class AddAccountsCreditDaysAndDefaults1782578843132
       'ALTER TABLE accounts ADD `supplier_require_supplement` boolean NOT NULL DEFAULT 0;',
     );
     await queryRunner.query(
-      'ALTER TABLE accounts ADD `client_automatic_tax_calculation` boolean NOT NULL DEFAULT 0;',
+      'ALTER TABLE accounts ADD `client_automatic_tax_calculation` boolean NOT NULL DEFAULT 1;',
     );
   }
 
