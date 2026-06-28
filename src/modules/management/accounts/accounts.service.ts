@@ -740,7 +740,6 @@ export class AccountsService {
                 CAST(order_sales.order_code AS CHAR) as order_code,
                 order_sales.invoice_code,
                 order_sales.date,
-                order_sales.expected_payment_date,
                 order_sales.notes,
                 ${convertToInt('order_sales.receipt_type_id', 'receipt_type_id')},
                 wtv_s.total as total_with_tax,
@@ -778,7 +777,6 @@ export class AccountsService {
                 expenses.external_code AS order_code,
                 NULL as invoice_code,
                 expenses.date,
-                expenses.expected_payment_date,
                 expenses.notes,
                 ${convertToInt('expenses.receipt_type_id', 'receipt_type_id')},
                 wtv_e.total as total_with_tax,
@@ -814,79 +812,10 @@ export class AccountsService {
             LIMIT 5000
         `);
 
-        const items = res.map((item) => ({
+        return res.map((item) => ({
             ...item,
             date: new Date(item.date),
-            expected_payment_date: item.expected_payment_date
-                ? new Date(item.expected_payment_date)
-                : null,
-            transfers: [] as { amount: number; transferred_date: Date | null; notes: string }[],
         }));
-
-        const saleIds = items
-            .filter((i) => i.type === 'sale')
-            .map((i) => i.id);
-        const expenseIds = items
-            .filter((i) => i.type === 'expense')
-            .map((i) => i.id);
-
-        const receipts =
-            saleIds.length === 0 && expenseIds.length === 0
-                ? []
-                : await this.prisma.transfer_receipts.findMany({
-                      where: {
-                          active: 1,
-                          transfers: { active: 1 },
-                          OR: [
-                              ...(saleIds.length > 0
-                                  ? [{ order_sale_id: { in: saleIds } }]
-                                  : []),
-                              ...(expenseIds.length > 0
-                                  ? [{ expense_id: { in: expenseIds } }]
-                                  : []),
-                          ],
-                      },
-                      include: {
-                          transfers: {
-                              select: { transferred_date: true, amount: true, notes: true },
-                          },
-                      },
-                  });
-
-        receipts.forEach((receipt) => {
-            const item = items.find((i) => {
-                if (i.type === 'sale') {
-                    return Number(i.id) === Number(receipt.order_sale_id);
-                } else {
-                    return Number(i.id) === Number(receipt.expense_id);
-                }
-            });
-            if (item && receipt.transfers) {
-                item.transfers.push({
-                    amount: receipt.amount,
-                    transferred_date: receipt.transfers.transferred_date
-                        ? new Date(receipt.transfers.transferred_date)
-                        : null,
-                    notes: receipt.transfers.notes ?? '',
-                });
-            }
-        });
-
-        // Transfers have no `date` of their own, so order them by
-        // `transferred_date` (newest first); nulls sink to the bottom.
-        items.forEach((item) => {
-            item.transfers.sort((a, b) => {
-                const aTime = a.transferred_date
-                    ? a.transferred_date.getTime()
-                    : -Infinity;
-                const bTime = b.transferred_date
-                    ? b.transferred_date.getTime()
-                    : -Infinity;
-                return bTime - aTime;
-            });
-        });
-
-        return items;
     }
 
     // The account's net balance from all activity *before* `from` — i.e. the

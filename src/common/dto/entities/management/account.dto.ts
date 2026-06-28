@@ -115,18 +115,6 @@ export class PaginatedAccountsSortArgs {
     sort_field: AccountsSortableFields | null;
 }
 
-@ObjectType('AccountItemTransfer')
-export class AccountItemTransfer {
-    @Field(() => Float)
-    amount: number;
-
-    @Field(() => Date, { nullable: true })
-    transferred_date: Date | null;
-
-    @Field(() => String)
-    notes: string;
-}
-
 @ObjectType('AccountTransactionItem')
 export class AccountTransactionItem {
     @Field(() => Int)
@@ -144,9 +132,6 @@ export class AccountTransactionItem {
     @Field(() => Date)
     date: Date;
 
-    @Field(() => Date, { nullable: true })
-    expected_payment_date: Date | null;
-
     @Field(() => String)
     notes: string;
 
@@ -161,9 +146,6 @@ export class AccountTransactionItem {
 
     @Field(() => String, { nullable: true })
     expense_status_color: string | null;
-
-    @Field(() => [AccountItemTransfer])
-    transfers: AccountItemTransfer[];
 }
 
 // A single transfer (payment) as its own ledger row, filtered by its own
