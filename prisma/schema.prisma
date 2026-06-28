@@ -654,6 +654,13 @@ model accounts {
   supplier_type_id                              Int?               @db.UnsignedInt
   resource_id                                   Int?               @db.UnsignedInt
   monitor_balance                               Boolean            @default(false)
+  client_credit_days                            Int                @default(0)
+  supplier_credit_days                          Int                @default(0)
+  client_require_credit_note                    Boolean            @default(false)
+  client_require_supplement                     Boolean            @default(true)
+  supplier_require_external_code                Boolean            @default(false)
+  supplier_require_supplement                   Boolean            @default(false)
+  client_automatic_tax_calculation              Boolean            @default(true)
   account_contacts                              account_contacts[]
   account_products                              account_products[]
   resources                                     resources?         @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_resource_id_foreign")

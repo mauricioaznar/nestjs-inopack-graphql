@@ -10,6 +10,7 @@ import {
     AccountProductInput,
     AccountsQueryArgs,
     AccountTransactionItem,
+    AccountTransferItem,
     AccountUpsertInput,
     PaginatedAccountsQueryArgs,
     PaginatedAccountsSortArgs,
@@ -33,9 +34,20 @@ export class AccountsService {
 
     async getAccounts({
         accountsQueryArgs,
+        clientRestricted = false,
     }: {
         accountsQueryArgs: AccountsQueryArgs;
+        clientRestricted?: boolean;
     }): Promise<Account[]> {
+        // A client-restricted caller (e.g. Ventas) may only ever see client
+        // accounts — any is_supplier/is_own filter they send is ignored here.
+        if (clientRestricted) {
+            return this.prisma.accounts.findMany({
+                where: { active: 1, is_client: true },
+                orderBy: { name: 'asc' },
+            });
+        }
+
         const { is_own, is_client, is_supplier } = accountsQueryArgs;
         const accountsOr: Prisma.accountsWhereInput[] = [];
         if (is_supplier || is_own || is_client) {
@@ -69,10 +81,12 @@ export class AccountsService {
         offsetPaginatorArgs,
         paginatedAccountsQueryArgs,
         paginatedAccountsSortArgs,
+        clientRestricted = false,
     }: {
         offsetPaginatorArgs: OffsetPaginatorArgs;
         paginatedAccountsQueryArgs: PaginatedAccountsQueryArgs;
         paginatedAccountsSortArgs: PaginatedAccountsSortArgs;
+        clientRestricted?: boolean;
     }): Promise<PaginatedProducts> {
         const filter =
             paginatedAccountsQueryArgs.filter !== ''
@@ -81,11 +95,19 @@ export class AccountsService {
 
         const { sort_order, sort_field } = paginatedAccountsSortArgs;
 
+        // Scope to clients when the caller is restricted (enforced) OR when the
+        // page explicitly asks for clients (the Clientes list passes is_client).
+        const requireClient =
+            clientRestricted || paginatedAccountsQueryArgs.is_client === true;
+
         const where: Prisma.accountsWhereInput = {
             AND: [
                 {
                     active: 1,
                 },
+                ...(requireClient
+                    ? [{ is_client: true } as Prisma.accountsWhereInput]
+                    : []),
                 {
                     OR: [
                         {
@@ -137,8 +159,10 @@ export class AccountsService {
 
     async getAccount({
         account_id,
+        clientRestricted = false,
     }: {
         account_id: number;
+        clientRestricted?: boolean;
     }): Promise<Account | null> {
         if (!account_id) return null;
 
@@ -146,6 +170,9 @@ export class AccountsService {
             where: {
                 id: account_id,
                 active: 1,
+                // A restricted caller can only resolve client accounts; any
+                // other id comes back null (guards the /clients/:id route).
+                ...(clientRestricted ? { is_client: true } : {}),
             },
         });
     }
@@ -167,6 +194,15 @@ export class AccountsService {
                 supplier_type_id: input.supplier_type_id || null,
                 resource_id: input.resource_id,
                 monitor_balance: input.monitor_balance,
+                client_credit_days: input.client_credit_days,
+                supplier_credit_days: input.supplier_credit_days,
+                client_require_credit_note: input.client_require_credit_note,
+                client_require_supplement: input.client_require_supplement,
+                supplier_require_external_code:
+                    input.supplier_require_external_code,
+                supplier_require_supplement: input.supplier_require_supplement,
+                client_automatic_tax_calculation:
+                    input.client_automatic_tax_calculation,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -178,6 +214,15 @@ export class AccountsService {
                 supplier_type_id: input.supplier_type_id || null,
                 resource_id: input.resource_id,
                 monitor_balance: input.monitor_balance,
+                client_credit_days: input.client_credit_days,
+                supplier_credit_days: input.supplier_credit_days,
+                client_require_credit_note: input.client_require_credit_note,
+                client_require_supplement: input.client_require_supplement,
+                supplier_require_external_code:
+                    input.supplier_require_external_code,
+                supplier_require_supplement: input.supplier_require_supplement,
+                client_automatic_tax_calculation:
+                    input.client_automatic_tax_calculation,
             },
             where: {
                 id: input.id || 0,
@@ -522,7 +567,12 @@ export class AccountsService {
         const isDeletable = await this.isDeletable({ account_id });
 
         if (!isDeletable) {
-            const { order_requests_count } = await this.getDependenciesCount({
+            const {
+                order_requests_count,
+                order_sales_count,
+                expenses_count,
+                transfers_count,
+            } = await this.getDependenciesCount({
                 account_id,
             });
 
@@ -530,6 +580,15 @@ export class AccountsService {
 
             if (order_requests_count > 0) {
                 errors.push(`order requests count ${order_requests_count}`);
+            }
+            if (order_sales_count > 0) {
+                errors.push(`order sales count ${order_sales_count}`);
+            }
+            if (expenses_count > 0) {
+                errors.push(`expenses count ${expenses_count}`);
+            }
+            if (transfers_count > 0) {
+                errors.push(`transfers count ${transfers_count}`);
             }
 
             throw new BadRequestException(errors);
@@ -566,21 +625,48 @@ export class AccountsService {
         account_id,
     }: {
         account_id: number;
-    }): Promise<{ order_requests_count: number }> {
-        const {
-            _count: { id: orderRequestsCount },
-        } = await this.prisma.order_requests.aggregate({
-            _count: {
-                id: true,
-            },
-            where: {
-                account_id: account_id,
-                active: 1,
-            },
-        });
+    }): Promise<{
+        order_requests_count: number;
+        order_sales_count: number;
+        expenses_count: number;
+        transfers_count: number;
+    }> {
+        // Every table that references this account by id. An account may not be
+        // deleted while any active row still points at it — otherwise the soft
+        // delete (active = -1) orphans live order requests, sales, expenses or
+        // transfers against an inactive account. Transfers reference the account
+        // from EITHER side (from/to), so both columns are checked.
+        const [
+            order_requests_count,
+            order_sales_count,
+            expenses_count,
+            transfers_count,
+        ] = await Promise.all([
+            this.prisma.order_requests.count({
+                where: { account_id: account_id, active: 1 },
+            }),
+            this.prisma.order_sales.count({
+                where: { account_id: account_id, active: 1 },
+            }),
+            this.prisma.expenses.count({
+                where: { account_id: account_id, active: 1 },
+            }),
+            this.prisma.transfers.count({
+                where: {
+                    active: 1,
+                    OR: [
+                        { from_account_id: account_id },
+                        { to_account_id: account_id },
+                    ],
+                },
+            }),
+        ]);
 
         return {
-            order_requests_count: orderRequestsCount,
+            order_requests_count,
+            order_sales_count,
+            expenses_count,
+            transfers_count,
         };
     }
 
@@ -589,18 +675,64 @@ export class AccountsService {
     }: {
         account_id: number;
     }): Promise<boolean> {
-        const { order_requests_count } = await this.getDependenciesCount({
+        const {
+            order_requests_count,
+            order_sales_count,
+            expenses_count,
+            transfers_count,
+        } = await this.getDependenciesCount({
             account_id,
         });
 
-        return order_requests_count === 0;
+        return (
+            order_requests_count === 0 &&
+            order_sales_count === 0 &&
+            expenses_count === 0 &&
+            transfers_count === 0
+        );
     }
 
     async getAccountTransactionHistory({
         account_id,
+        from,
+        until,
+        clientRestricted = false,
     }: {
         account_id: number;
+        from?: string | null;
+        until?: string | null;
+        clientRestricted?: boolean;
     }): Promise<AccountTransactionItem[]> {
+        // Don't leak a non-client account's ledger to a restricted caller.
+        if (clientRestricted) {
+            const clientAccount = await this.prisma.accounts.findFirst({
+                where: { id: account_id, active: 1, is_client: true },
+            });
+            if (!clientAccount) return [];
+        }
+
+        // Server-side date range. The date columns are DATETIME, so the upper
+        // bound compares strictly below the day AFTER `until` to stay inclusive
+        // of the whole `until` day. Values are validated as ISO dates before
+        // interpolation (these go into a raw query).
+        const fromIso = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : null;
+        const untilIso =
+            until && /^\d{4}-\d{2}-\d{2}$/.test(until) ? until : null;
+        const salesDateClause = `${
+            fromIso ? `AND order_sales.date >= '${fromIso}'` : ''
+        } ${
+            untilIso
+                ? `AND order_sales.date < DATE_ADD('${untilIso}', INTERVAL 1 DAY)`
+                : ''
+        }`;
+        const expensesDateClause = `${
+            fromIso ? `AND expenses.date >= '${fromIso}'` : ''
+        } ${
+            untilIso
+                ? `AND expenses.date < DATE_ADD('${untilIso}', INTERVAL 1 DAY)`
+                : ''
+        }`;
+
         const res = await this.prisma.$queryRawUnsafe<AccountTransactionItem[]>(`
             SELECT
                 'sale' as type,
@@ -620,6 +752,7 @@ export class AccountsService {
                     round(sum(order_sales.subtotal + order_sales.tax), 2) total
                 FROM order_sales
                 WHERE order_sales.active = 1
+                AND order_sales.account_id = ${account_id}
                 GROUP BY order_sales.id
             ) AS wtv_s ON wtv_s.order_sale_id = order_sales.id
             LEFT JOIN (
@@ -627,12 +760,15 @@ export class AccountsService {
                     round(sum(transfer_receipts.amount), 2) as total
                 FROM transfers
                 JOIN transfer_receipts ON transfers.id = transfer_receipts.transfer_id
+                JOIN order_sales os_scope ON os_scope.id = transfer_receipts.order_sale_id
                 WHERE transfers.active = 1 AND transfer_receipts.active = 1
+                AND os_scope.account_id = ${account_id}
                 GROUP BY order_sale_id
             ) AS otv_s ON otv_s.order_sale_id = order_sales.id
             WHERE order_sales.active = 1
             AND order_sales.canceled = 0
             AND order_sales.account_id = ${account_id}
+            ${salesDateClause}
 
             UNION ALL
 
@@ -654,6 +790,7 @@ export class AccountsService {
                     round(SUM(expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained), 2) total
                 FROM expenses
                 WHERE expenses.active = 1
+                AND expenses.account_id = ${account_id}
                 GROUP BY expenses.id
             ) AS wtv_e ON wtv_e.id = expenses.id
             LEFT JOIN (
@@ -661,13 +798,16 @@ export class AccountsService {
                     round(sum(transfer_receipts.amount), 2) as total
                 FROM transfers
                 JOIN transfer_receipts ON transfers.id = transfer_receipts.transfer_id
+                JOIN expenses ex_scope ON ex_scope.id = transfer_receipts.expense_id
                 WHERE transfers.active = 1 AND transfer_receipts.active = 1
+                AND ex_scope.account_id = ${account_id}
                 GROUP BY expense_id
             ) AS otv_e ON otv_e.expense_id = expenses.id
             LEFT JOIN expense_statuses ON expense_statuses.id = expenses.expense_status_id
             WHERE expenses.active = 1
             AND expenses.canceled = 0
             AND expenses.account_id = ${account_id}
+            ${expensesDateClause}
 
             ORDER BY
                 date DESC
@@ -747,5 +887,173 @@ export class AccountsService {
         });
 
         return items;
+    }
+
+    // The account's net balance from all activity *before* `from` — i.e. the
+    // carried-forward opening balance for a date-range view. A transaction and
+    // all its transfers belong to the transaction's date bucket (mirroring how
+    // the ledger groups them), so transfers are attributed by their parent's
+    // date, never their own. Net delta = transaction total − its transfers.
+    async getAccountOpeningBalance({
+        account_id,
+        from,
+        clientRestricted = false,
+    }: {
+        account_id: number;
+        from?: string | null;
+        clientRestricted?: boolean;
+    }): Promise<number> {
+        if (clientRestricted) {
+            const clientAccount = await this.prisma.accounts.findFirst({
+                where: { id: account_id, active: 1, is_client: true },
+            });
+            if (!clientAccount) return 0;
+        }
+
+        const fromIso = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : null;
+        // No lower bound → nothing precedes the range → opening balance is 0.
+        if (!fromIso) return 0;
+
+        const rows = await this.prisma.$queryRawUnsafe<
+            { opening_balance: number | null }[]
+        >(`
+            SELECT (
+                IFNULL((SELECT round(sum(s.subtotal + s.tax), 2) FROM order_sales s
+                        WHERE s.active = 1 AND s.canceled = 0 AND s.account_id = ${account_id} AND s.date < '${fromIso}'), 0)
+                - IFNULL((SELECT round(sum(tr.amount), 2) FROM transfer_receipts tr
+                          JOIN transfers t ON t.id = tr.transfer_id
+                          JOIN order_sales s ON s.id = tr.order_sale_id
+                          WHERE tr.active = 1 AND t.active = 1 AND s.active = 1 AND s.canceled = 0 AND s.account_id = ${account_id} AND COALESCE(t.transferred_date, s.date) < '${fromIso}'), 0)
+                + IFNULL((SELECT round(sum(e.subtotal + e.tax - e.tax_retained - e.non_tax_retained), 2) FROM expenses e
+                          WHERE e.active = 1 AND e.canceled = 0 AND e.account_id = ${account_id} AND e.date < '${fromIso}'), 0)
+                - IFNULL((SELECT round(sum(tr.amount), 2) FROM transfer_receipts tr
+                          JOIN transfers t ON t.id = tr.transfer_id
+                          JOIN expenses e ON e.id = tr.expense_id
+                          WHERE tr.active = 1 AND t.active = 1 AND e.active = 1 AND e.canceled = 0 AND e.account_id = ${account_id} AND COALESCE(t.transferred_date, e.date) < '${fromIso}'), 0)
+            ) AS opening_balance
+        `);
+
+        const value = rows?.[0]?.opening_balance;
+        return value ? Number(value) : 0;
+    }
+
+    // Each transfer (payment) for the account as its own row, filtered by its
+    // OWN effective date — transferred_date, falling back to the parent
+    // sale/expense date when it has none. Carries parent folio fields so the
+    // date-ordered statement can render and classify (Anticipo) each row.
+    async getAccountTransfers({
+        account_id,
+        from,
+        until,
+        clientRestricted = false,
+    }: {
+        account_id: number;
+        from?: string | null;
+        until?: string | null;
+        clientRestricted?: boolean;
+    }): Promise<AccountTransferItem[]> {
+        if (clientRestricted) {
+            const clientAccount = await this.prisma.accounts.findFirst({
+                where: { id: account_id, active: 1, is_client: true },
+            });
+            if (!clientAccount) return [];
+        }
+
+        const fromIso = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : null;
+        const untilIso =
+            until && /^\d{4}-\d{2}-\d{2}$/.test(until) ? until : null;
+        const saleDate = `COALESCE(transfers.transferred_date, order_sales.date)`;
+        const expenseDate = `COALESCE(transfers.transferred_date, expenses.date)`;
+        const saleDateClause = `${
+            fromIso ? `AND ${saleDate} >= '${fromIso}'` : ''
+        } ${
+            untilIso
+                ? `AND ${saleDate} < DATE_ADD('${untilIso}', INTERVAL 1 DAY)`
+                : ''
+        }`;
+        const expenseDateClause = `${
+            fromIso ? `AND ${expenseDate} >= '${fromIso}'` : ''
+        } ${
+            untilIso
+                ? `AND ${expenseDate} < DATE_ADD('${untilIso}', INTERVAL 1 DAY)`
+                : ''
+        }`;
+
+        const rows = await this.prisma.$queryRawUnsafe<
+            {
+                amount: number;
+                transferred_date: Date | null;
+                notes: string;
+                parent_type: string;
+                parent_order_code: string;
+                parent_invoice_code: number | null;
+                parent_receipt_type_id: number | null;
+                parent_date: Date | null;
+            }[]
+        >(`
+            SELECT
+                transfer_receipts.amount as amount,
+                transfers.transferred_date as transferred_date,
+                ifnull(transfers.notes, '') as notes,
+                'sale' as parent_type,
+                CAST(order_sales.order_code AS CHAR) as parent_order_code,
+                order_sales.invoice_code as parent_invoice_code,
+                ${convertToInt(
+                    'order_sales.receipt_type_id',
+                    'parent_receipt_type_id',
+                )},
+                order_sales.date as parent_date
+            FROM transfer_receipts
+            JOIN transfers ON transfers.id = transfer_receipts.transfer_id
+            JOIN order_sales ON order_sales.id = transfer_receipts.order_sale_id
+            WHERE transfer_receipts.active = 1 AND transfers.active = 1
+            AND order_sales.active = 1 AND order_sales.canceled = 0
+            AND order_sales.account_id = ${account_id}
+            ${saleDateClause}
+
+            UNION ALL
+
+            SELECT
+                transfer_receipts.amount as amount,
+                transfers.transferred_date as transferred_date,
+                ifnull(transfers.notes, '') as notes,
+                'expense' as parent_type,
+                expenses.external_code as parent_order_code,
+                NULL as parent_invoice_code,
+                ${convertToInt(
+                    'expenses.receipt_type_id',
+                    'parent_receipt_type_id',
+                )},
+                expenses.date as parent_date
+            FROM transfer_receipts
+            JOIN transfers ON transfers.id = transfer_receipts.transfer_id
+            JOIN expenses ON expenses.id = transfer_receipts.expense_id
+            WHERE transfer_receipts.active = 1 AND transfers.active = 1
+            AND expenses.active = 1 AND expenses.canceled = 0
+            AND expenses.account_id = ${account_id}
+            ${expenseDateClause}
+
+            ORDER BY transferred_date DESC
+            LIMIT 5000
+        `);
+
+        return rows.map((row) => ({
+            amount: Number(row.amount),
+            transferred_date: row.transferred_date
+                ? new Date(row.transferred_date)
+                : null,
+            notes: row.notes ?? '',
+            parent_type: row.parent_type,
+            parent_order_code: String(row.parent_order_code ?? ''),
+            parent_invoice_code:
+                row.parent_invoice_code != null
+                    ? Number(row.parent_invoice_code)
+                    : null,
+            parent_receipt_type_id:
+                row.parent_receipt_type_id != null
+                    ? Number(row.parent_receipt_type_id)
+                    : null,
+            parent_date: row.parent_date ? new Date(row.parent_date) : null,
+        }));
     }
 }

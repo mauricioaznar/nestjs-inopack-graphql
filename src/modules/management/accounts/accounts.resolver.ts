@@ -1,5 +1,6 @@
 import {
     Args,
+    Float,
     Mutation,
     Parent,
     Query,
@@ -15,6 +16,7 @@ import {
     AccountProduct,
     AccountsQueryArgs,
     AccountTransactionItem,
+    AccountTransferItem,
     AccountUpsertInput,
     ActivityTypeName,
     PaginatedAccounts,
@@ -22,9 +24,11 @@ import {
     PaginatedAccountsSortArgs,
     Resource,
     User,
+    UserWithRoles,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { isAccountClientRestricted } from '../../../common/helpers';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
@@ -43,27 +47,65 @@ export class AccountsResolver {
     async getAccounts(
         @Args({ nullable: false })
         accountsQueryArgs: AccountsQueryArgs,
+        @CurrentUser() currentUser: UserWithRoles,
     ): Promise<Account[]> {
         return this.service.getAccounts({
             accountsQueryArgs: accountsQueryArgs,
+            clientRestricted: isAccountClientRestricted(currentUser),
         });
     }
 
     @Query(() => Account, { nullable: true })
     async getAccount(
         @Args('AccountId') accountId: number,
+        @CurrentUser() currentUser: UserWithRoles,
     ): Promise<Account | null> {
         return this.service.getAccount({
             account_id: accountId,
+            clientRestricted: isAccountClientRestricted(currentUser),
         });
     }
 
     @Query(() => [AccountTransactionItem])
     async getAccountTransactionHistory(
         @Args('AccountId') accountId: number,
+        @CurrentUser() currentUser: UserWithRoles,
+        @Args('From', { nullable: true }) from?: string,
+        @Args('Until', { nullable: true }) until?: string,
     ): Promise<AccountTransactionItem[]> {
         return this.service.getAccountTransactionHistory({
             account_id: accountId,
+            from: from ?? null,
+            until: until ?? null,
+            clientRestricted: isAccountClientRestricted(currentUser),
+        });
+    }
+
+    @Query(() => Float)
+    async getAccountOpeningBalance(
+        @Args('AccountId') accountId: number,
+        @CurrentUser() currentUser: UserWithRoles,
+        @Args('From', { nullable: true }) from?: string,
+    ): Promise<number> {
+        return this.service.getAccountOpeningBalance({
+            account_id: accountId,
+            from: from ?? null,
+            clientRestricted: isAccountClientRestricted(currentUser),
+        });
+    }
+
+    @Query(() => [AccountTransferItem])
+    async getAccountTransfers(
+        @Args('AccountId') accountId: number,
+        @CurrentUser() currentUser: UserWithRoles,
+        @Args('From', { nullable: true }) from?: string,
+        @Args('Until', { nullable: true }) until?: string,
+    ): Promise<AccountTransferItem[]> {
+        return this.service.getAccountTransfers({
+            account_id: accountId,
+            from: from ?? null,
+            until: until ?? null,
+            clientRestricted: isAccountClientRestricted(currentUser),
         });
     }
 
@@ -74,11 +116,13 @@ export class AccountsResolver {
         paginatedAccountsQueryArgs: PaginatedAccountsQueryArgs,
         @Args({ nullable: false })
         paginatedAccountsSortArgs: PaginatedAccountsSortArgs,
+        @CurrentUser() currentUser: UserWithRoles,
     ): Promise<PaginatedAccounts> {
         return this.service.paginatedAccounts({
             offsetPaginatorArgs,
             paginatedAccountsQueryArgs,
             paginatedAccountsSortArgs,
+            clientRestricted: isAccountClientRestricted(currentUser),
         });
     }
 
@@ -105,7 +149,11 @@ export class AccountsResolver {
         @Args('AccountId') accountId: number,
         @CurrentUser() currentUser: User,
     ): Promise<boolean> {
-        const account = await this.getAccount(accountId);
+        // Admin-gated delete — read straight from the service (no client
+        // restriction; this resolver's getAccount now requires a user).
+        const account = await this.service.getAccount({
+            account_id: accountId,
+        });
         if (!account) {
             throw new NotFoundException();
         }

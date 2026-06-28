@@ -39,6 +39,29 @@ export class AccountBase {
 
     @Field(() => Int, { nullable: true })
     resource_id: number | null;
+
+    // Credit terms + default flags. The client_* values pre-fill order sales,
+    // the supplier_* values pre-fill expenses, when this account is selected.
+    @Field(() => Int, { nullable: false })
+    client_credit_days: number;
+
+    @Field(() => Int, { nullable: false })
+    supplier_credit_days: number;
+
+    @Field(() => Boolean, { nullable: false })
+    client_require_credit_note: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    client_require_supplement: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    supplier_require_external_code: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    supplier_require_supplement: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    client_automatic_tax_calculation: boolean;
 }
 
 @InputType('AccountUpsertInput')
@@ -69,6 +92,9 @@ export class PaginatedAccounts extends OffsetPaginatorResult(Account) {}
 export class PaginatedAccountsQueryArgs {
     @Field(() => String, { nullable: false })
     filter: string;
+
+    @Field(() => Boolean, { nullable: true })
+    is_client: boolean | null;
 }
 
 export enum AccountsSortableFields {
@@ -138,6 +164,37 @@ export class AccountTransactionItem {
 
     @Field(() => [AccountItemTransfer])
     transfers: AccountItemTransfer[];
+}
+
+// A single transfer (payment) as its own ledger row, filtered by its own
+// transferred_date. Carries enough of its parent sale/expense to render the
+// folio and decide whether it's an advance ("Anticipo") in the date-ordered
+// account statement.
+@ObjectType('AccountTransferItem')
+export class AccountTransferItem {
+    @Field(() => Float)
+    amount: number;
+
+    @Field(() => Date, { nullable: true })
+    transferred_date: Date | null;
+
+    @Field(() => String)
+    notes: string;
+
+    @Field(() => String)
+    parent_type: string;
+
+    @Field(() => String)
+    parent_order_code: string;
+
+    @Field(() => Int, { nullable: true })
+    parent_invoice_code: number | null;
+
+    @Field(() => Int, { nullable: true })
+    parent_receipt_type_id: number | null;
+
+    @Field(() => Date, { nullable: true })
+    parent_date: Date | null;
 }
 
 @ArgsType()
