@@ -126,6 +126,9 @@ export class OrderRequestProductsService {
         return res.map((item) => {
             return {
                 ...item,
+                order_request_date: item.order_request_date
+                    ? new Date(item.order_request_date)
+                    : null,
                 order_request_estimated_delivery_date:
                     item.order_request_estimated_delivery_date
                         ? new Date(item.order_request_estimated_delivery_date)
