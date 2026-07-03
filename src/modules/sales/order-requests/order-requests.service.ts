@@ -347,9 +347,9 @@ export class OrderRequestsService {
                 order_code: input.order_code,
                 estimated_delivery_date: input.estimated_delivery_date,
                 account_id: input.account_id,
-                // Intentionally omit order_request_status_id so an upsert never
-                // overwrites a status an admin may have set.
-                priority: 0,
+                // Intentionally omit order_request_status_id and priority so an
+                // upsert never overwrites a status an admin may have set, nor the
+                // manual production-planning order (updateOrderRequestPriority).
             },
             where: {
                 id: input.id || 0,
@@ -465,6 +465,35 @@ export class OrderRequestsService {
             data: {
                 ...getUpdatedAtProperty(),
                 order_request_status_id: order_request_status_id,
+            },
+            where: {
+                id: order_request_id,
+            },
+        });
+    }
+
+    // Manual ordering for the production-planning board. `priority` is a plain
+    // sort rank (lower = higher on the board); the board renumbers a status
+    // bucket client-side and persists each changed request through here.
+    async updateOrderRequestPriority({
+        order_request_id,
+        priority,
+    }: {
+        order_request_id: number;
+        priority: number;
+    }): Promise<OrderRequest> {
+        const orderRequest = await this.getOrderRequest({
+            orderRequestId: order_request_id,
+        });
+
+        if (!orderRequest) {
+            throw new NotFoundException();
+        }
+
+        return this.prisma.order_requests.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                priority: priority,
             },
             where: {
                 id: order_request_id,

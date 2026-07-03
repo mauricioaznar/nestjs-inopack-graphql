@@ -1,7 +1,7 @@
 import { Float, Query, ResolveField, Resolver } from '@nestjs/graphql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { OrderRequestProductsService } from './order-request-products.service';
-import { Public } from '../../auth/decorators/public.decorator';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import {
     OrderRequest,
     OrderRequestProduct,
@@ -10,7 +10,7 @@ import {
 import { OptimizedRequestProduct } from '../../../common/dto/entities/sales/optimized-request-product.dto';
 
 @Resolver(() => OrderRequestProduct)
-@Public()
+@UseGuards(GqlAuthGuard)
 @Injectable()
 export class OrderRequestProductsResolver {
     constructor(private service: OrderRequestProductsService) {}

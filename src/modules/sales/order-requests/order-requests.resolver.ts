@@ -121,6 +121,28 @@ export class OrderRequestsResolver {
         return orderRequest;
     }
 
+    // Manual board ordering. Gated to Produccion (not admin like status): the
+    // production-planning board is a production tool, so Produccion main can
+    // reorder while its assistant stays view-only.
+    @Mutation(() => OrderRequest)
+    @RolesDecorator(RoleId.PRODUCTION)
+    async updateOrderRequestPriority(
+        @Args('OrderRequestId', { type: () => Int }) orderRequestId: number,
+        @Args('Priority', { type: () => Float }) priority: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<OrderRequest> {
+        const orderRequest = await this.service.updateOrderRequestPriority({
+            order_request_id: orderRequestId,
+            priority: priority,
+        });
+        await this.pubSubService.orderRequest({
+            orderRequest,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        });
+        return orderRequest;
+    }
+
     @Mutation(() => Boolean)
     @RolesDecorator(RoleId.SALES)
     async deleteOrderRequest(

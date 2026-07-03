@@ -5,11 +5,23 @@ export class OptimizedRequestProduct {
     @Field(() => Int, { nullable: true })
     order_code?: number | null;
 
+    @Field(() => Int, { nullable: true })
+    order_request_id?: number | null;
+
+    @Field(() => Float, { nullable: true })
+    priority?: number | null;
+
     @Field(() => String, { nullable: false })
     account_name: string;
 
     @Field(() => Date, { nullable: true })
+    order_request_date: Date | null;
+
+    @Field(() => Date, { nullable: true })
     order_request_estimated_delivery_date: Date | null;
+
+    @Field(() => String, { nullable: true })
+    product_description?: string | null;
 
     @Field(() => Int, { nullable: true })
     product_id?: number | null;
