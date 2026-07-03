@@ -124,23 +124,22 @@ export class OrderRequestsResolver {
     // Manual board ordering. Gated to Produccion (not admin like status): the
     // production-planning board is a production tool, so Produccion main can
     // reorder while its assistant stays view-only.
+    //
+    // Deliberately does NOT publish an activity/subscription (the usual
+    // "every mutation logs" convention). Reordering a bucket renumbers many
+    // requests in one gesture — logging each would spam the activity feed and
+    // pop a snackbar per row (subscriptions-provider). It's UI ordering, not a
+    // business change, so it's intentionally exempt from the audit trail.
     @Mutation(() => OrderRequest)
     @RolesDecorator(RoleId.PRODUCTION)
     async updateOrderRequestPriority(
         @Args('OrderRequestId', { type: () => Int }) orderRequestId: number,
         @Args('Priority', { type: () => Float }) priority: number,
-        @CurrentUser() currentUser: User,
     ): Promise<OrderRequest> {
-        const orderRequest = await this.service.updateOrderRequestPriority({
+        return this.service.updateOrderRequestPriority({
             order_request_id: orderRequestId,
             priority: priority,
         });
-        await this.pubSubService.orderRequest({
-            orderRequest,
-            type: ActivityTypeName.UPDATE,
-            userId: currentUser.id,
-        });
-        return orderRequest;
     }
 
     @Mutation(() => Boolean)
