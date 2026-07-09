@@ -420,6 +420,7 @@ model products {
   current_group_price        Float                        @default(0.00)
   pleat                      Float?
   include_units_in_summary   Boolean                      @default(true)
+  exclude_from_financial_summaries Boolean                @default(false)
   account_products           account_products[]
   order_adjustment_products  order_adjustment_products[]
   order_production_products  order_production_products[]
@@ -651,7 +652,6 @@ model accounts {
   is_client                                     Boolean            @default(false)
   is_own                                        Boolean            @default(false)
   requires_order_request                        Boolean            @default(true)
-  supplier_type_id                              Int?               @db.UnsignedInt
   resource_id                                   Int?               @db.UnsignedInt
   monitor_balance                               Boolean            @default(false)
   client_credit_days                            Int                @default(0)
@@ -664,14 +664,12 @@ model accounts {
   account_contacts                              account_contacts[]
   account_products                              account_products[]
   resources                                     resources?         @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_resource_id_foreign")
-  supplier_type                                 supplier_type?     @relation(fields: [supplier_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suppliers_supplier_type_id_foreign")
   expenses                                      expenses[]
   order_requests                                order_requests[]
   order_sales                                   order_sales[]
   transfers_accountsTotransfers_from_account_id transfers[]        @relation("accountsTotransfers_from_account_id")
   transfers_accountsTotransfers_to_account_id   transfers[]        @relation("accountsTotransfers_to_account_id")
 
-  @@index([supplier_type_id], map: "suppliers_supplier_type_id_foreign")
   @@index([resource_id], map: "accounts_resource_id_foreign")
 }
 
@@ -744,10 +742,10 @@ model resources {
   group_weight_strict      Float                @default(0.00)
   include_units_in_summary Boolean              @default(false)
   unit_price_name          String?              @db.VarChar(255)
+  exclude_from_financial_summaries Boolean      @default(false)
   accounts                 accounts[]
   expense_resources        expense_resources[]
   resource_categories      resource_categories? @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
-  supplier_type            supplier_type[]
 
   @@index([resource_category_id], map: "resources_resource_category_id_foreign")
 }
@@ -811,19 +809,6 @@ model transfer_type {
   name        String      @db.VarChar(255)
   description String?     @db.VarChar(255)
   transfers   transfers[]
-}
-
-model supplier_type {
-  id          Int        @id @default(autoincrement()) @db.UnsignedInt
-  active      Int        @default(1)
-  created_at  DateTime?  @db.DateTime(0)
-  updated_at  DateTime?  @db.DateTime(0)
-  name        String     @db.VarChar(255)
-  resource_id Int?       @db.UnsignedInt
-  accounts    accounts[]
-  resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "supplier_type_resource_id_foreign")
-
-  @@index([resource_id], map: "supplier_type_resource_id_foreign")
 }
 
 model order_production_resources {

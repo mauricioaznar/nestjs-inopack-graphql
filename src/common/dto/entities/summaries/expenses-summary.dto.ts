@@ -23,13 +23,12 @@ export class ExpensesSummaryArgs {
     date_group_by: DateGroupBy;
 
     @Field(() => Boolean, { nullable: true })
-    exclude_loans: boolean;
+    exclude_flagged: boolean;
 }
 
 export enum ExpensesSummaryEntitiesGroup {
     account = 'account',
     receipt = 'receipt',
-    supplier_type = 'supplier_type',
 }
 
 registerEnumType(ExpensesSummaryEntitiesGroup, {
@@ -61,12 +60,6 @@ export class ExpensesRecord {
 
     @Field(() => String, { nullable: true })
     receipt_type_name: string | null;
-
-    @Field(() => Int, { nullable: true })
-    supplier_type_id: number | null;
-
-    @Field(() => String, { nullable: true })
-    supplier_type_name: string | null;
 
     @Field(() => Int, { nullable: true })
     day: number;

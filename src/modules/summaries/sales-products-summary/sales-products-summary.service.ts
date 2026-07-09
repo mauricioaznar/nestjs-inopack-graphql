@@ -20,7 +20,7 @@ export class SalesProductsSummaryService {
         month,
         entity_groups,
         date_group_by,
-        exclude_loans,
+        exclude_flagged,
     }: SalesSummaryArgs): Promise<SalesSummary> {
         if (year === null || year === undefined) {
             return {
@@ -99,10 +99,13 @@ export class SalesProductsSummaryService {
             }
         }
 
-        let excludeLoansWhere = '';
-        if (exclude_loans) {
-            excludeLoansWhere = 'and products.id  NOT IN (196)';
-        }
+        // Flagged items (products.exclude_from_financial_summaries, e.g. the
+        // loan product) are excluded via conditional aggregation, not by
+        // dropping the row: units/principal contribute 0, tax still counts.
+        const zeroIfFlagged = (expr: string) =>
+            exclude_flagged
+                ? `if(products.exclude_from_financial_summaries = 1, 0, ${expr})`
+                : expr;
 
         const sales = await this.prisma.$queryRawUnsafe<SalesSummary['sales']>(`
             select sum(ctc.kilos_sold)                  as               kilos_sold,
@@ -121,11 +124,17 @@ export class SalesProductsSummaryService {
                         osp.order_code,
                         osp.order_sales_id,
                         osp.start_date,
-                        if (products.include_units_in_summary = 1,osp.kilos, 0) kilos_sold,
-                        if (products.include_units_in_summary = 1,osp.groups, 0) groups_sold,
-                        osp.subtotal total,
+                        ${zeroIfFlagged(
+                            'if (products.include_units_in_summary = 1,osp.kilos, 0)',
+                        )} kilos_sold,
+                        ${zeroIfFlagged(
+                            'if (products.include_units_in_summary = 1,osp.groups, 0)',
+                        )} groups_sold,
+                        ${zeroIfFlagged('osp.subtotal')} total,
                         osp.fraction * osp.tax tax,
-                        (osp.subtotal + (osp.fraction * osp.tax))  total_with_tax,
+                        (${zeroIfFlagged(
+                            'osp.subtotal',
+                        )} + (osp.fraction * osp.tax))  total_with_tax,
                          products.id product_id,
                          products.description product_name,
                          products.width width,
@@ -203,7 +212,6 @@ export class SalesProductsSummaryService {
                         left join receipt_types
                         on receipt_types.id = osp.receipt_type_id
                         where osp.active = 1
-                        ${excludeLoansWhere}
                 ) as ctc
             where ctc.start_date >= '${startDate}'
               and ctc.start_date < '${endDate}'

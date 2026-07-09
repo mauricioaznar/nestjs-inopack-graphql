@@ -24,7 +24,7 @@ export class ExpenseResourcesSummaryService {
         month,
         entity_groups,
         date_group_by,
-        exclude_loans,
+        exclude_flagged,
     }: ExpenseResourcesSummaryArgs): Promise<ExpenseResourcesSummary> {
         if (year === null || month === undefined) {
             return {
@@ -71,13 +71,6 @@ export class ExpenseResourcesSummaryService {
                     groupByEntityGroup +=
                         'resource_category_id, resource_category_name';
                     break;
-                case 'supplier_type':
-                    selectEntityGroup += `${convertToInt(
-                        'supplier_type_id',
-                    )}, supplier_type_name`;
-                    groupByEntityGroup +=
-                        'supplier_type_id, supplier_type_name';
-                    break;
                 default:
                     break;
             }
@@ -88,10 +81,14 @@ export class ExpenseResourcesSummaryService {
             }
         }
 
-        let excludeLoansWhere = '';
-        if (exclude_loans) {
-            excludeLoansWhere = 'and resources.id NOT IN (14)';
-        }
+        // Flagged resources (resources.exclude_from_financial_summaries, e.g.
+        // the loans resource) are excluded via conditional aggregation, not by
+        // dropping the row: units/principal contribute 0, while the prorated
+        // tax/retention columns still count.
+        const zeroIfFlagged = (expr: string) =>
+            exclude_flagged
+                ? `if(resources.exclude_from_financial_summaries = 1, 0, ${expr})`
+                : expr;
 
         const queryString = `
             select sum(ctc.total)                       as               total,
@@ -106,12 +103,18 @@ export class ExpenseResourcesSummaryService {
                 select
                      date (date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day)) first_day_of_the_week,
                      date(date_add(date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day), interval 6 day)) last_day_of_the_week,
-                     expenses_calc.expense_resource_subtotal total,
-                     if(resources.include_units_in_summary = 1, expenses_calc.units, 0) units_sold,
+                     ${zeroIfFlagged(
+                         'expenses_calc.expense_resource_subtotal',
+                     )} total,
+                     ${zeroIfFlagged(
+                         'if(resources.include_units_in_summary = 1, expenses_calc.units, 0)',
+                     )} units_sold,
                      (expenses_calc.fraction * expenses_calc.expense_tax) tax,
                      (expenses_calc.fraction * expenses_calc.expense_tax_retained) tax_retained,
                      (expenses_calc.fraction * expenses_calc.expense_non_tax_retained) non_tax_retained,
-                     (expenses_calc.expense_resource_subtotal + (expenses_calc.fraction * expenses_calc.expense_tax_calc))  total_with_tax,
+                     (${zeroIfFlagged(
+                         'expenses_calc.expense_resource_subtotal',
+                     )} + (expenses_calc.fraction * expenses_calc.expense_tax_calc))  total_with_tax,
                      expenses_calc.expense_id,
                      expenses.date start_date,
                      resources.name resource_name,
@@ -122,9 +125,7 @@ export class ExpenseResourcesSummaryService {
                      accounts.name account_name,
                      accounts.abbreviation account_abbreviation,
                      receipt_types.id receipt_type_id,
-                     receipt_types.name receipt_type_name,
-                     supplier_type.id supplier_type_id,
-                     supplier_type.name supplier_type_name
+                     receipt_types.name receipt_type_name
                 FROM (
                     SELECT
                             expenses.date start_date,
@@ -157,11 +158,8 @@ export class ExpenseResourcesSummaryService {
                     on resource_categories.id = resources.resource_category_id
                     left join receipt_types
                     on receipt_types.id = expenses.receipt_type_id
-                    left join supplier_type
-                    on supplier_type.id = accounts.supplier_type_id
                     where expenses.active = 1
                     and expenses.canceled = 0
-                    ${excludeLoansWhere}
                 ) as ctc
             where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date

@@ -23,13 +23,12 @@ export class ExpenseResourcesSummaryArgs {
     date_group_by: DateGroupBy;
 
     @Field(() => Boolean, { nullable: true })
-    exclude_loans: boolean;
+    exclude_flagged: boolean;
 }
 
 export enum ExpenseResourcesSummaryEntitiesGroup {
     account = 'account',
     receipt = 'receipt',
-    supplier_type = 'supplier_type',
     resource = 'resource',
     resource_category = 'resource_category',
 }
@@ -72,12 +71,6 @@ export class ExpenseResourcesRecord {
 
     @Field(() => String, { nullable: true })
     receipt_type_name: string | null;
-
-    @Field(() => Int, { nullable: true })
-    supplier_type_id: number | null;
-
-    @Field(() => String, { nullable: true })
-    supplier_type_name: string | null;
 
     @Field(() => Int, { nullable: true })
     resource_id: number | null;

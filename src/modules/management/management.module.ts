@@ -10,7 +10,6 @@ import { TransferReceiptsModule } from './transfer-receipts/transfer-receipts.mo
 import { ReceiptTypeModule } from './receipt-type/receipt-type.module';
 import { ExpenseResourcesModule } from './expense-resources/expense-resources.module';
 import { TransferTypeModule } from './transfer-types/transfer-type.module';
-import { SupplierTypesModule } from './supplier-types/supplier-types.module';
 
 @Module({
     imports: [
@@ -25,7 +24,6 @@ import { SupplierTypesModule } from './supplier-types/supplier-types.module';
         TransferReceiptsModule,
         TransferTypeModule,
         ReceiptTypeModule,
-        SupplierTypesModule,
     ],
 })
 export class ManagementModule {}

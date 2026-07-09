@@ -35,9 +35,6 @@ export class AccountBase {
     is_client: boolean;
 
     @Field(() => Int, { nullable: true })
-    supplier_type_id: number | null;
-
-    @Field(() => Int, { nullable: true })
     resource_id: number | null;
 
     // Credit terms + default flags. The client_* values pre-fill order sales,

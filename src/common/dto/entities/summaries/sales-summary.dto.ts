@@ -23,7 +23,7 @@ export class SalesSummaryArgs {
     date_group_by: DateGroupBy;
 
     @Field(() => Boolean, { nullable: true })
-    exclude_loans: boolean;
+    exclude_flagged: boolean;
 }
 
 export enum SalesSummaryEntitiesGroup {

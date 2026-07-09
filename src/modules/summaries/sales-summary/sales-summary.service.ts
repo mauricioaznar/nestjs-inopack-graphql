@@ -20,7 +20,7 @@ export class SalesSummaryService {
         month,
         entity_groups,
         date_group_by,
-        exclude_loans,
+        exclude_flagged,
     }: SalesSummaryArgs): Promise<SalesSummary> {
         if (year === null || year === undefined) {
             return {
@@ -99,10 +99,17 @@ export class SalesSummaryService {
             }
         }
 
-        let excludeLoansWhere = '';
-        if (exclude_loans) {
-            excludeLoansWhere = 'and products.id  NOT IN (196)';
-        }
+        // Flagged items (products.exclude_from_financial_summaries, e.g. the
+        // loan product) are excluded via conditional aggregation, not by
+        // dropping the row: their kilos/principal contribute 0, but their tax
+        // still counts toward the tax columns.
+        const zeroIfFlagged = (expr: string) =>
+            exclude_flagged
+                ? `if(products.exclude_from_financial_summaries = 1, 0, ${expr})`
+                : expr;
+        const amountExpr =
+            '((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price)';
+        const taxExpr = `(${amountExpr}) * IF(order_sales.receipt_type_id = 2, 0.16, 0)`;
 
         const sales = await this.prisma.$queryRawUnsafe<SalesSummary['sales']>(`
             select sum(ctc.kilos_sold)                  as               kilos_sold,
@@ -132,10 +139,10 @@ export class SalesSummaryService {
                  receipt_types.name receipt_type_name,
                  order_sale_statuses.id status_id,
                  order_sale_statuses.name status_name,
-                 (osp.kilos - ifnull(asp.kilos, 0)) kilos_sold,
-                 ((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price) total,
-                 (((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price)) * IF(order_sales.receipt_type_id = 2, 0.16, 0) tax,
-                 (((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price)) * IF(order_sales.receipt_type_id = 2, 1.16, 1) total_with_tax
+                 ${zeroIfFlagged('(osp.kilos - ifnull(asp.kilos, 0))')} kilos_sold,
+                 ${zeroIfFlagged(amountExpr)} total,
+                 ${taxExpr} tax,
+                 (${zeroIfFlagged(amountExpr)} + ${taxExpr}) total_with_tax
             from order_sales
                 join order_sale_products as osp
                 on osp.order_sale_id = order_sales.id
@@ -171,7 +178,6 @@ export class SalesSummaryService {
                 
                 where osp.active = 1
                 and order_sales.active = 1
-                ${excludeLoansWhere}
                 ) as ctc
             where ctc.start_date >= '${startDate}'
               and ctc.start_date < '${endDate}'

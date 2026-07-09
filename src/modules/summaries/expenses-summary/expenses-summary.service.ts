@@ -25,7 +25,7 @@ export class ExpensesSummaryService {
         month,
         entity_groups,
         date_group_by,
-        exclude_loans,
+        exclude_flagged,
     }: ExpensesSummaryArgs): Promise<ExpensesSummary> {
         if (year === null || month === undefined) {
             return {
@@ -64,13 +64,6 @@ export class ExpensesSummaryService {
                     )}, receipt_type_name`;
                     groupByEntityGroup += 'receipt_type_id, receipt_type_name';
                     break;
-                case 'supplier_type':
-                    selectEntityGroup += `${convertToInt(
-                        'supplier_type_id',
-                    )}, supplier_type_name`;
-                    groupByEntityGroup +=
-                        'supplier_type_id, supplier_type_name';
-                    break;
                 default:
                     break;
             }
@@ -81,10 +74,27 @@ export class ExpensesSummaryService {
             }
         }
 
-        let excludeLoansWhere = '';
-        if (exclude_loans) {
-            excludeLoansWhere = 'and supplier_type.id NOT IN (12)';
-        }
+        // This summary aggregates whole documents, so flagged resources
+        // (resources.exclude_from_financial_summaries, e.g. loans) are
+        // excluded by subtracting their line amounts from the document
+        // principal — mixed documents keep their real portion, and the tax
+        // columns always count in full.
+        const flaggedJoin = exclude_flagged
+            ? `left join (
+                    select expense_resources.expense_id,
+                           sum(expense_resources.units * expense_resources.unit_price) flagged_total
+                    from expense_resources
+                    join resources
+                    on resources.id = expense_resources.resource_id
+                    where expense_resources.active = 1
+                    and resources.exclude_from_financial_summaries = 1
+                    group by expense_resources.expense_id
+                ) as flagged
+                on flagged.expense_id = expenses.id`
+            : '';
+        const minusFlagged = exclude_flagged
+            ? ' - ifnull(flagged.flagged_total, 0)'
+            : '';
 
         const queryString = `
             select sum(ctc.total)                       as               total,
@@ -102,10 +112,8 @@ export class ExpensesSummaryService {
                  accounts.abbreviation account_abbreviation,
                  receipt_types.id receipt_type_id,
                  receipt_types.name receipt_type_name,
-                 supplier_type.id supplier_type_id,
-                 supplier_type.name supplier_type_name,
-                 wtv.total as total_with_tax,
-                 expenses.subtotal as total,
+                 (wtv.total${minusFlagged}) as total_with_tax,
+                 (expenses.subtotal${minusFlagged}) as total,
                  expenses.tax  as tax
             from expenses
                 JOIN
@@ -122,10 +130,8 @@ export class ExpensesSummaryService {
                 on accounts.id = expenses.account_id
                 left join receipt_types
                 on receipt_types.id = expenses.receipt_type_id
-                left join supplier_type
-                on supplier_type.id = accounts.supplier_type_id
+                ${flaggedJoin}
                 where expenses.active = 1
-                ${excludeLoansWhere}
                 ) as ctc
             where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date
