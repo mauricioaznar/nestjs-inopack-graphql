@@ -109,7 +109,12 @@ export class SalesSummaryService {
                 : expr;
         const amountExpr =
             '((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price)';
-        const taxExpr = `(${amountExpr}) * IF(order_sales.receipt_type_id = 2, 0.16, 0)`;
+        // Tax comes from the stored order_sales.tax column, prorated per line
+        // by its share of the document subtotal (same approach as
+        // sales-products-summary) — never recomputed from a hardcoded rate.
+        // Some sales (e.g. certain loans) legitimately carry tax = 0 even on
+        // receipt type 2, and only the stored value knows that.
+        const taxExpr = `(if(order_sales.subtotal != 0, (${amountExpr}) / order_sales.subtotal, 0) * order_sales.tax)`;
 
         const sales = await this.prisma.$queryRawUnsafe<SalesSummary['sales']>(`
             select sum(ctc.kilos_sold)                  as               kilos_sold,
