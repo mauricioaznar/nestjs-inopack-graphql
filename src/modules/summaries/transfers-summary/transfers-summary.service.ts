@@ -49,13 +49,6 @@ export class TransfersSummaryService {
                     groupByEntityGroup +=
                         'account_id, account_name, account_abbreviation';
                     break;
-                case 'supplier_type':
-                    selectEntityGroup += `${convertToInt(
-                        'supplier_type_id',
-                    )}, supplier_type_name`;
-                    groupByEntityGroup +=
-                        'supplier_type_id, supplier_type_name';
-                    break;
                 default:
                     break;
             }
@@ -78,8 +71,6 @@ export class TransfersSummaryService {
                  a1.id account_id,
                  a1.name account_name,
                  a1.abbreviation account_abbreviation,
-                 supplier_type.id supplier_type_id,
-                 supplier_type.name supplier_type_name,
                  transfer_receipts.amount as total
             from transfers
                 join transfer_receipts
@@ -88,8 +79,6 @@ export class TransfersSummaryService {
                 on transfer_receipts.expense_id = expenses.id
                 left join accounts a1
                 on a1.id = expenses.account_id
-                left join supplier_type
-                on supplier_type.id = a1.supplier_type_id
             where transfers.active = 1
             and expenses.active = 1
             and transfers.transfer_type_id = 3

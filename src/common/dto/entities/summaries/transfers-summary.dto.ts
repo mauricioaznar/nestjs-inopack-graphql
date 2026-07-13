@@ -25,7 +25,6 @@ export class TransfersSummaryArgs {
 
 export enum TransfersSummaryEntitiesGroup {
     account = 'account',
-    supplier_type = 'supplier_type',
 }
 
 registerEnumType(TransfersSummaryEntitiesGroup, {
@@ -45,12 +44,6 @@ export class TransfersRecord {
 
     @Field(() => String, { nullable: true })
     account_abbreviation: string | null;
-
-    @Field(() => Int, { nullable: true })
-    supplier_type_id: number | null;
-
-    @Field(() => String, { nullable: true })
-    supplier_type_name: string | null;
 
     @Field(() => Int, { nullable: true })
     day: number;
