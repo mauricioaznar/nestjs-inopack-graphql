@@ -77,8 +77,10 @@ export class ExpensesSummaryService {
         // This summary aggregates whole documents, so flagged resources
         // (resources.exclude_from_financial_summaries, e.g. loans) are
         // excluded by subtracting their line amounts from the document
-        // principal — mixed documents keep their real portion, and the tax
-        // columns always count in full.
+        // principal, and their prorated share (flagged principal / document
+        // subtotal) from the tax/retention part — mixed documents keep their
+        // real portion. Callers that need the tax of flagged items (the
+        // balances page tax comparison) pass exclude_flagged: false.
         const flaggedJoin = exclude_flagged
             ? `left join (
                     select expense_resources.expense_id,
@@ -95,6 +97,14 @@ export class ExpensesSummaryService {
         const minusFlagged = exclude_flagged
             ? ' - ifnull(flagged.flagged_total, 0)'
             : '';
+        const flaggedFraction =
+            'if(expenses.subtotal != 0, ifnull(flagged.flagged_total, 0) / expenses.subtotal, 0)';
+        const taxExpr = exclude_flagged
+            ? `(expenses.tax * (1 - ${flaggedFraction}))`
+            : 'expenses.tax';
+        const totalWithTaxExpr = exclude_flagged
+            ? `(wtv.total - ifnull(flagged.flagged_total, 0) - ((${flaggedFraction}) * (expenses.tax - expenses.tax_retained - expenses.non_tax_retained)))`
+            : 'wtv.total';
 
         const queryString = `
             select sum(ctc.total)                       as               total,
@@ -112,9 +122,9 @@ export class ExpensesSummaryService {
                  accounts.abbreviation account_abbreviation,
                  receipt_types.id receipt_type_id,
                  receipt_types.name receipt_type_name,
-                 (wtv.total${minusFlagged}) as total_with_tax,
+                 ${totalWithTaxExpr} as total_with_tax,
                  (expenses.subtotal${minusFlagged}) as total,
-                 expenses.tax  as tax
+                 ${taxExpr}  as tax
             from expenses
                 JOIN
                 (
@@ -132,6 +142,7 @@ export class ExpensesSummaryService {
                 on receipt_types.id = expenses.receipt_type_id
                 ${flaggedJoin}
                 where expenses.active = 1
+                and expenses.canceled = 0
                 ) as ctc
             where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date

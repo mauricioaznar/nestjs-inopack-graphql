@@ -100,8 +100,10 @@ export class SalesProductsSummaryService {
         }
 
         // Flagged items (products.exclude_from_financial_summaries, e.g. the
-        // loan product) are excluded via conditional aggregation, not by
-        // dropping the row: units/principal contribute 0, tax still counts.
+        // loan product) are excluded entirely: units, principal AND tax all
+        // contribute 0. Callers that need the tax of flagged items (the
+        // balances page tax comparison) pass exclude_flagged: false and read
+        // only the tax column.
         const zeroIfFlagged = (expr: string) =>
             exclude_flagged
                 ? `if(products.exclude_from_financial_summaries = 1, 0, ${expr})`
@@ -131,10 +133,10 @@ export class SalesProductsSummaryService {
                             'if (products.include_units_in_summary = 1,osp.groups, 0)',
                         )} groups_sold,
                         ${zeroIfFlagged('osp.subtotal')} total,
-                        osp.fraction * osp.tax tax,
-                        (${zeroIfFlagged(
-                            'osp.subtotal',
-                        )} + (osp.fraction * osp.tax))  total_with_tax,
+                        ${zeroIfFlagged('osp.fraction * osp.tax')} tax,
+                        ${zeroIfFlagged(
+                            'osp.subtotal + (osp.fraction * osp.tax)',
+                        )}  total_with_tax,
                          products.id product_id,
                          products.description product_name,
                          products.width width,

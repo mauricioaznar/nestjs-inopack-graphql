@@ -100,9 +100,10 @@ export class SalesSummaryService {
         }
 
         // Flagged items (products.exclude_from_financial_summaries, e.g. the
-        // loan product) are excluded via conditional aggregation, not by
-        // dropping the row: their kilos/principal contribute 0, but their tax
-        // still counts toward the tax columns.
+        // loan product) are excluded entirely: kilos, principal AND tax all
+        // contribute 0. Callers that need the tax of flagged items (the
+        // balances page tax comparison) pass exclude_flagged: false and read
+        // only the tax column.
         const zeroIfFlagged = (expr: string) =>
             exclude_flagged
                 ? `if(products.exclude_from_financial_summaries = 1, 0, ${expr})`
@@ -146,8 +147,8 @@ export class SalesSummaryService {
                  order_sale_statuses.name status_name,
                  ${zeroIfFlagged('(osp.kilos - ifnull(asp.kilos, 0))')} kilos_sold,
                  ${zeroIfFlagged(amountExpr)} total,
-                 ${taxExpr} tax,
-                 (${zeroIfFlagged(amountExpr)} + ${taxExpr}) total_with_tax
+                 ${zeroIfFlagged(taxExpr)} tax,
+                 ${zeroIfFlagged(`(${amountExpr}) + ${taxExpr}`)} total_with_tax
             from order_sales
                 join order_sale_products as osp
                 on osp.order_sale_id = order_sales.id
@@ -183,6 +184,7 @@ export class SalesSummaryService {
                 
                 where osp.active = 1
                 and order_sales.active = 1
+                and order_sales.canceled = 0
                 ) as ctc
             where ctc.start_date >= '${startDate}'
               and ctc.start_date < '${endDate}'
