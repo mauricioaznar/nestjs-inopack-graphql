@@ -661,6 +661,7 @@ model accounts {
   supplier_require_external_code                Boolean            @default(false)
   supplier_require_supplement                   Boolean            @default(false)
   client_automatic_tax_calculation              Boolean            @default(true)
+  exclude_from_accountability_export            Boolean            @default(false)
   account_contacts                              account_contacts[]
   account_products                              account_products[]
   resources                                     resources?         @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_resource_id_foreign")
@@ -792,13 +793,14 @@ model transfer_receipts {
 }
 
 model receipt_types {
-  id          Int           @id @default(autoincrement()) @db.UnsignedInt
-  name        String        @db.VarChar(255)
-  active      Int           @default(1)
-  created_at  DateTime?     @db.DateTime(0)
-  updated_at  DateTime?     @db.DateTime(0)
-  expenses    expenses[]
-  order_sales order_sales[]
+  id                               Int           @id @default(autoincrement()) @db.UnsignedInt
+  name                             String        @db.VarChar(255)
+  active                           Int           @default(1)
+  created_at                       DateTime?     @db.DateTime(0)
+  updated_at                       DateTime?     @db.DateTime(0)
+  include_in_accountability_export Boolean       @default(false)
+  expenses                         expenses[]
+  order_sales                      order_sales[]
 }
 
 model transfer_type {

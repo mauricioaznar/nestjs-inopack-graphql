@@ -89,6 +89,8 @@ export class ResourcesService {
                 current_group_price: resourceInput.current_group_price || 0,
                 group_weight_strict: resourceInput.group_weight_strict || 0,
                 include_units_in_summary: resourceInput.include_units_in_summary,
+                exclude_from_financial_summaries:
+                    resourceInput.exclude_from_financial_summaries,
                 unit_price_name: resourceInput.unit_price_name,
             },
             update: {
@@ -100,6 +102,8 @@ export class ResourcesService {
                 current_group_price: resourceInput.current_group_price || 0,
                 group_weight_strict: resourceInput.group_weight_strict || 0,
                 include_units_in_summary: resourceInput.include_units_in_summary,
+                exclude_from_financial_summaries:
+                    resourceInput.exclude_from_financial_summaries,
                 unit_price_name: resourceInput.unit_price_name,
             },
             where: {

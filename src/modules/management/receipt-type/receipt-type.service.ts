@@ -7,6 +7,10 @@ export class ReceiptTypeService {
     constructor(private prisma: PrismaService) {}
 
     async getReceiptTypes(): Promise<ReceiptType[]> {
-        return this.prisma.receipt_types.findMany();
+        return this.prisma.receipt_types.findMany({
+            where: {
+                active: 1,
+            },
+        });
     }
 }
