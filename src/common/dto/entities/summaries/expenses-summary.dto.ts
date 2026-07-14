@@ -29,6 +29,9 @@ export class ExpensesSummaryArgs {
 export enum ExpensesSummaryEntitiesGroup {
     account = 'account',
     receipt = 'receipt',
+    resource = 'resource',
+    resource_category = 'resource_category',
+    expense = 'expense',
 }
 
 registerEnumType(ExpensesSummaryEntitiesGroup, {
@@ -44,7 +47,16 @@ export class ExpensesRecord {
     tax: number;
 
     @Field(() => Float, { nullable: false })
+    tax_retained: number;
+
+    @Field(() => Float, { nullable: false })
+    non_tax_retained: number;
+
+    @Field(() => Float, { nullable: false })
     total_with_tax: number;
+
+    @Field(() => Float, { nullable: false })
+    units_sold: number;
 
     @Field(() => Int, { nullable: true })
     account_id: number | null;
@@ -60,6 +72,24 @@ export class ExpensesRecord {
 
     @Field(() => String, { nullable: true })
     receipt_type_name: string | null;
+
+    @Field(() => Int, { nullable: true })
+    resource_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    resource_name: string | null;
+
+    @Field(() => Int, { nullable: true })
+    resource_category_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    resource_category_name: string | null;
+
+    @Field(() => Int, { nullable: true })
+    expense_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    expense_external_code: string | null;
 
     @Field(() => Int, { nullable: true })
     day: number;

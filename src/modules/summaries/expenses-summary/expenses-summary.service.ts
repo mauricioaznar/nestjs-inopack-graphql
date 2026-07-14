@@ -2,7 +2,6 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
-    getDateRangeSql,
     getDatesInjectionsV2,
     getRangesFromDatePaginator,
 } from '../../../common/helpers';
@@ -64,6 +63,27 @@ export class ExpensesSummaryService {
                     )}, receipt_type_name`;
                     groupByEntityGroup += 'receipt_type_id, receipt_type_name';
                     break;
+                case 'resource':
+                    selectEntityGroup += `${convertToInt(
+                        'resource_id',
+                    )}, resource_name`;
+                    groupByEntityGroup += 'resource_id, resource_name';
+                    break;
+
+                case 'resource_category':
+                    selectEntityGroup += `${convertToInt(
+                        'resource_category_id',
+                    )}, resource_category_name`;
+                    groupByEntityGroup +=
+                        'resource_category_id, resource_category_name';
+                    break;
+
+                case 'expense':
+                    selectEntityGroup += `${convertToInt(
+                        'expense_id',
+                    )}, expense_external_code`;
+                    groupByEntityGroup += 'expense_id, expense_external_code';
+                    break;
                 default:
                     break;
             }
@@ -74,80 +94,97 @@ export class ExpensesSummaryService {
             }
         }
 
-        // This summary aggregates whole documents, so flagged resources
-        // (resources.exclude_from_financial_summaries, e.g. loans) are
-        // excluded by subtracting their line amounts from the document
-        // principal, and their prorated share (flagged principal / document
-        // subtotal) from the tax/retention part — mixed documents keep their
-        // real portion. Callers that need the tax of flagged items (the
-        // balances page tax comparison) pass exclude_flagged: false.
-        const flaggedJoin = exclude_flagged
-            ? `left join (
-                    select expense_resources.expense_id,
-                           sum(expense_resources.units * expense_resources.unit_price) flagged_total
-                    from expense_resources
-                    join resources
-                    on resources.id = expense_resources.resource_id
-                    where expense_resources.active = 1
-                    and resources.exclude_from_financial_summaries = 1
-                    group by expense_resources.expense_id
-                ) as flagged
-                on flagged.expense_id = expenses.id`
-            : '';
-        const minusFlagged = exclude_flagged
-            ? ' - ifnull(flagged.flagged_total, 0)'
-            : '';
-        const flaggedFraction =
-            'if(expenses.subtotal != 0, ifnull(flagged.flagged_total, 0) / expenses.subtotal, 0)';
-        const taxExpr = exclude_flagged
-            ? `(expenses.tax * (1 - ${flaggedFraction}))`
-            : 'expenses.tax';
-        const totalWithTaxExpr = exclude_flagged
-            ? `(wtv.total - ifnull(flagged.flagged_total, 0) - ((${flaggedFraction}) * (expenses.tax - expenses.tax_retained - expenses.non_tax_retained)))`
-            : 'wtv.total';
+        // Flagged resources (resources.exclude_from_financial_summaries, e.g.
+        // the loans resource) are excluded entirely: units, principal AND the
+        // prorated tax/retention columns all contribute 0. Callers that need
+        // the tax of flagged items (the balances page tax comparison) pass
+        // exclude_flagged: false and read only the tax columns.
+        const zeroIfFlagged = (expr: string) =>
+            exclude_flagged
+                ? `if(resources.exclude_from_financial_summaries = 1, 0, ${expr})`
+                : expr;
 
         const queryString = `
             select sum(ctc.total)                       as               total,
                    sum(ctc.tax)                         as               tax,
+                   sum(ctc.tax_retained)                         as               tax_retained,
+                   sum(ctc.non_tax_retained)                         as               non_tax_retained,
                    sum(ctc.total_with_tax)              as               total_with_tax,
+                   sum(ctc.units_sold)              as               units_sold,
                    ${selectEntityGroup}
                    ${selectDateGroup}
             from (
-             select
-                 date (date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day)) first_day_of_the_week,
-                 date(date_add(date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day), interval 6 day)) last_day_of_the_week,
-                 expenses.date start_date,
-                 accounts.id account_id,
-                 accounts.name account_name,
-                 accounts.abbreviation account_abbreviation,
-                 receipt_types.id receipt_type_id,
-                 receipt_types.name receipt_type_name,
-                 ${totalWithTaxExpr} as total_with_tax,
-                 (expenses.subtotal${minusFlagged}) as total,
-                 ${taxExpr}  as tax
-            from expenses
-                JOIN
-                (
-                        SELECT
-                            expenses.id,
-                            round(SUM(expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained), 2) total
-                        FROM expenses
-                        WHERE expenses.active = 1
-                        GROUP BY expenses.id
-                ) AS wtv
-                on wtv.id = expenses.id
-                left join accounts
-                on accounts.id = expenses.account_id
-                left join receipt_types
-                on receipt_types.id = expenses.receipt_type_id
-                ${flaggedJoin}
-                where expenses.active = 1
-                and expenses.canceled = 0
+                select
+                     date (date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day)) first_day_of_the_week,
+                     date(date_add(date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day), interval 6 day)) last_day_of_the_week,
+                     ${zeroIfFlagged(
+                         'expenses_calc.expense_resource_subtotal',
+                     )} total,
+                     ${zeroIfFlagged(
+                         'if(resources.include_units_in_summary = 1, expenses_calc.units, 0)',
+                     )} units_sold,
+                     ${zeroIfFlagged(
+                         '(expenses_calc.fraction * expenses_calc.expense_tax)',
+                     )} tax,
+                     ${zeroIfFlagged(
+                         '(expenses_calc.fraction * expenses_calc.expense_tax_retained)',
+                     )} tax_retained,
+                     ${zeroIfFlagged(
+                         '(expenses_calc.fraction * expenses_calc.expense_non_tax_retained)',
+                     )} non_tax_retained,
+                     ${zeroIfFlagged(
+                         'expenses_calc.expense_resource_subtotal + (expenses_calc.fraction * expenses_calc.expense_tax_calc)',
+                     )}  total_with_tax,
+                     expenses_calc.expense_id,
+                     expenses.external_code expense_external_code,
+                     expenses.date start_date,
+                     resources.name resource_name,
+                     resources.id resource_id,
+                     resource_categories.name resource_category_name,
+                     resource_categories.id resource_category_id,
+                     accounts.id account_id,
+                     accounts.name account_name,
+                     accounts.abbreviation account_abbreviation,
+                     receipt_types.id receipt_type_id,
+                     receipt_types.name receipt_type_name
+                FROM (
+                    SELECT
+                            expenses.date start_date,
+                            expense_resources.id expense_resource_id,
+                            expense_resources.resource_id resource_id,
+                            expenses.id expense_id,
+                            expense_resources.units,
+                            expense_resources.unit_price,
+                            (expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_total,
+                            (expenses.tax) expense_tax,
+                            (expenses.tax_retained) expense_tax_retained,
+                            (expenses.non_tax_retained) expense_non_tax_retained,
+                            (expenses.tax - expenses.tax_retained - expenses.non_tax_retained) expense_tax_calc,
+                            expenses.subtotal expense_subtotal,
+                            if (expenses.subtotal != 0, ((expense_resources.units * expense_resources.unit_price)  / expenses.subtotal), 0) fraction,
+                            (expense_resources.units * expense_resources.unit_price) expense_resource_subtotal
+                        from expenses
+                        join expense_resources
+                        on expense_resources.expense_id = expenses.id
+                        where expenses.active = 1
+                        and expense_resources.active = 1
+                    ) expenses_calc
+                    left join expenses
+                    on expenses_calc.expense_id = expenses.id
+                    left join accounts
+                    on accounts.id = expenses.account_id
+                    left join resources
+                    on resources.id = expenses_calc.resource_id
+                    left join resource_categories
+                    on resource_categories.id = resources.resource_category_id
+                    left join receipt_types
+                    on receipt_types.id = expenses.receipt_type_id
+                    where expenses.active = 1
+                    and expenses.canceled = 0
                 ) as ctc
             where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date
                 < '${formattedEndDate}'
-            
             group by ${groupByEntityGroup} ${groupByDateGroup}
             order by ${orderByDateGroup}
         `;

@@ -89,6 +89,13 @@ export class SalesSummaryService {
                         'product_id, product_name, width, calibre, length, account_id, account_name, account_abbreviation';
                     break;
 
+                case 'orderSale':
+                    selectEntityGroup += `${convertToInt(
+                        'order_sales_id',
+                    )} as order_sale_id, ${convertToInt('order_code')}`;
+                    groupByEntityGroup += 'order_sales_id, order_code';
+                    break;
+
                 default:
                     break;
             }
@@ -100,7 +107,7 @@ export class SalesSummaryService {
         }
 
         // Flagged items (products.exclude_from_financial_summaries, e.g. the
-        // loan product) are excluded entirely: kilos, principal AND tax all
+        // loan product) are excluded entirely: units, principal AND tax all
         // contribute 0. Callers that need the tax of flagged items (the
         // balances page tax comparison) pass exclude_flagged: false and read
         // only the tax column.
@@ -108,83 +115,112 @@ export class SalesSummaryService {
             exclude_flagged
                 ? `if(products.exclude_from_financial_summaries = 1, 0, ${expr})`
                 : expr;
-        const amountExpr =
-            '((osp.kilos - ifnull(asp.kilos, 0)) * osp.kilo_price) + ((osp.groups - ifnull(asp.groups, 0)) * osp.group_price)';
-        // Tax comes from the stored order_sales.tax column, prorated per line
-        // by its share of the document subtotal (same approach as
-        // sales-products-summary) — never recomputed from a hardcoded rate.
-        // Some sales (e.g. certain loans) legitimately carry tax = 0 even on
-        // receipt type 2, and only the stored value knows that.
-        const taxExpr = `(if(order_sales.subtotal != 0, (${amountExpr}) / order_sales.subtotal, 0) * order_sales.tax)`;
 
         const sales = await this.prisma.$queryRawUnsafe<SalesSummary['sales']>(`
             select sum(ctc.kilos_sold)                  as               kilos_sold,
+                   sum(ctc.groups_sold)                 as               groups_sold,
                    sum(ctc.total)                       as               total,
                    sum(ctc.tax)                         as               tax,
                    sum(ctc.total_with_tax)              as               total_with_tax,
                    ${selectEntityGroup}
                    ${selectDateGroup}
             from (
-             select 
-                 date (date_add(order_sales.date, interval -WEEKDAY(order_sales.date) - 1 day)) first_day_of_the_week,
-                 date(date_add(date_add(order_sales.date, interval -WEEKDAY(order_sales.date) - 1 day), interval 6 day)) last_day_of_the_week,
-                 order_sales.date start_date,
-                 products.id product_id,
-                 products.description product_name,
-                 products.width width, 
-                 products.length length,
-                 products.calibre calibre,
-                 products.order_production_type_id order_production_type_id,
-                 order_production_type.name order_production_type_name,
-                 product_categories.id product_category_id,
-                 product_categories.name product_category_name,
-                 accounts.id account_id,
-                 accounts.name account_name,
-                 accounts.abbreviation account_abbreviation,
-                 receipt_types.id receipt_type_id,
-                 receipt_types.name receipt_type_name,
-                 order_sale_statuses.id status_id,
-                 order_sale_statuses.name status_name,
-                 ${zeroIfFlagged('(osp.kilos - ifnull(asp.kilos, 0))')} kilos_sold,
-                 ${zeroIfFlagged(amountExpr)} total,
-                 ${zeroIfFlagged(taxExpr)} tax,
-                 ${zeroIfFlagged(`(${amountExpr}) + ${taxExpr}`)} total_with_tax
-            from order_sales
-                join order_sale_products as osp
-                on osp.order_sale_id = order_sales.id
-                left join products
-                on osp.product_id = products.id
-                left join order_production_type
-                on order_production_type.id = products.order_production_type_id
-                left join product_categories
-                on products.product_category_id = product_categories.id
-                left join accounts
-                on accounts.id = order_sales.account_id
-                left join order_sale_statuses
-                on order_sale_statuses.id = order_sales.order_sale_status_id
-                left join receipt_types
-                on receipt_types.id = order_sales.receipt_type_id
-                left join (
-                    select 
-                        order_adjustment_products.product_id as product_id,
-                        order_adjustments.order_sale_id as order_sale_id,
-                        sum(order_adjustment_products.kilos) as kilos,
-                        sum(order_adjustment_products.groups) as 'groups'
-                    from order_adjustments
-                        join order_adjustment_products
-                        on order_adjustment_products.order_adjustment_id = order_adjustments.id
-                        and order_adjustment_products.active = 1
-                     where order_adjustments.active = 1
-                     and order_adjustments.order_sale_id is not null
-                     and order_adjustment_type_id = 6 
-                     group by order_adjustments.order_sale_id, order_adjustment_products.product_id
-                ) as asp 
-                    on asp.order_sale_id = order_sales.id
-                    and asp.product_id = osp.product_id
-                
-                where osp.active = 1
-                and order_sales.active = 1
-                and order_sales.canceled = 0
+                 select
+                        date (date_add(osp.start_date, interval -WEEKDAY(osp.start_date) - 1 day)) first_day_of_the_week,
+                        date(date_add(date_add(osp.start_date, interval -WEEKDAY(osp.start_date) - 1 day), interval 6 day)) last_day_of_the_week,
+                        osp.active,
+                        osp.fraction,
+                        osp.order_code,
+                        osp.order_sales_id,
+                        osp.start_date,
+                        ${zeroIfFlagged(
+                            'if (products.include_units_in_summary = 1,osp.kilos, 0)',
+                        )} kilos_sold,
+                        ${zeroIfFlagged(
+                            'if (products.include_units_in_summary = 1,osp.groups, 0)',
+                        )} groups_sold,
+                        ${zeroIfFlagged('osp.subtotal')} total,
+                        ${zeroIfFlagged('osp.fraction * osp.tax')} tax,
+                        ${zeroIfFlagged(
+                            'osp.subtotal + (osp.fraction * osp.tax)',
+                        )}  total_with_tax,
+                         products.id product_id,
+                         products.description product_name,
+                         products.width width,
+                         products.length length,
+                         products.calibre calibre,
+                         products.order_production_type_id order_production_type_id,
+                         order_production_type.name order_production_type_name,
+                         product_categories.id product_category_id,
+                         product_categories.name product_category_name,
+                         accounts.id account_id,
+                         accounts.name account_name,
+                         accounts.abbreviation account_abbreviation,
+                         receipt_types.id receipt_type_id,
+                         receipt_types.name receipt_type_name,
+                         order_sale_statuses.id status_id,
+                         order_sale_statuses.name status_name
+                         from (
+                                select
+                                    osp_adj.active,
+                                    order_sales.order_code,
+                                    order_sales.id order_sales_id,
+                                    order_sales.order_sale_status_id,
+                                    osp_adj.product_id,
+                                    order_sales.tax,
+                                    order_sales.account_id,
+                                    order_sales.date start_date,
+                                    order_sales.receipt_type_id,
+                                    osp_adj.kilos,
+                                    osp_adj.groups,
+                                    osp_adj.subtotal,
+                                    if (order_sales.subtotal != 0, osp_adj.subtotal / order_sales.subtotal, 0) fraction
+                                from order_sales
+                                join (
+                                    select
+                                        order_sale_products.active,
+                                        order_sale_products.product_id,
+                                        order_sale_products.order_sale_id,
+                                        (order_sale_products.kilos - ifnull(asp.kilos, 0)) kilos,
+                                        (order_sale_products.groups - ifnull(asp.groups, 0)) 'groups',
+                                        ((order_sale_products.kilos - ifnull(asp.kilos, 0)) * order_sale_products.kilo_price) + ((order_sale_products.groups - ifnull(asp.groups, 0)) * order_sale_products.group_price) subtotal
+                                    from order_sale_products
+                                    left join (
+                                        select
+                                            order_adjustment_products.product_id as product_id,
+                                            order_adjustments.order_sale_id as order_sale_id,
+                                            sum(order_adjustment_products.kilos) as kilos,
+                                            sum(order_adjustment_products.groups) as 'groups'
+                                        from order_adjustments
+                                        join order_adjustment_products
+                                        on order_adjustment_products.order_adjustment_id = order_adjustments.id
+                                        and order_adjustment_products.active = 1
+                                        where order_adjustments.active = 1
+                                        and order_adjustments.order_sale_id is not null
+                                        and order_adjustment_type_id = 6
+                                        group by order_adjustments.order_sale_id, order_adjustment_products.product_id
+                                    ) as asp
+                                    on asp.order_sale_id = order_sale_products.order_sale_id
+                                    and asp.product_id = order_sale_products.product_id
+                                    where order_sale_products.active = 1
+                                ) as osp_adj
+                                on osp_adj.order_sale_id = order_sales.id
+                                where order_sales.canceled = 0
+                                and order_sales.active = 1
+                        ) as osp
+                        left join products
+                        on osp.product_id = products.id
+                        left join order_production_type
+                        on order_production_type.id = products.order_production_type_id
+                        left join product_categories
+                        on products.product_category_id = product_categories.id
+                        left join accounts
+                        on accounts.id = osp.account_id
+                        left join order_sale_statuses
+                        on order_sale_statuses.id = osp.order_sale_status_id
+                        left join receipt_types
+                        on receipt_types.id = osp.receipt_type_id
+                        where osp.active = 1
                 ) as ctc
             where ctc.start_date >= '${startDate}'
               and ctc.start_date < '${endDate}'
