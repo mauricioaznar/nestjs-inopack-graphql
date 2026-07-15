@@ -22,6 +22,9 @@ export class ResourceBase {
     @Field(() => Boolean, { nullable: false })
     include_units_in_summary: boolean;
 
+    @Field(() => Boolean, { nullable: false })
+    exclude_from_financial_summaries: boolean;
+
     @Field(() => String, { nullable: true })
     unit_price_name: string | null;
 

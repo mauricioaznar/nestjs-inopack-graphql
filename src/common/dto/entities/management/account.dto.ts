@@ -80,6 +80,12 @@ export class Account extends AccountBase {
 
     @Field(() => Boolean, { nullable: false })
     is_own: boolean;
+
+    // Read-only flag (seeded by migration on the "Inopack Notas" account, id 38).
+    // Replaces the hardcoded account_id === 38 check in the accountability export
+    // / balances view split. Shown as a disabled checkbox in the account form.
+    @Field(() => Boolean, { nullable: false })
+    exclude_from_accountability_export: boolean;
 }
 
 @ObjectType()

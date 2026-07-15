@@ -32,6 +32,7 @@ export enum SalesSummaryEntitiesGroup {
     receipt = 'receipt',
     product = 'product',
     productAccount = 'productAccount',
+    orderSale = 'orderSale',
 }
 
 registerEnumType(SalesSummaryEntitiesGroup, {
@@ -96,6 +97,12 @@ export class SalesRecord {
 
     @Field(() => String, { nullable: true })
     receipt_type_name: string | null;
+
+    @Field(() => Int, { nullable: true })
+    order_sale_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    order_code: number | null;
 
     @Field(() => Int, { nullable: true })
     status_id: number | null;
