@@ -8,6 +8,7 @@ import { EmployeesSummaryModule } from './employee-summary/employees-summary.mod
 import { ProductionResourcesSummaryModule } from './production-resources-summary/production-resources-summary.module';
 import { OwnAccountTransferSummariesModule } from './own-account-transfer-summaries/own-account-transfer-summaries.module';
 import { ThirdPartyAccountTransferSummariesModule } from './third-party-account-transfer-summaries/third-party-account-transfer-summaries.module';
+import { EmployeePerformanceModule } from './employee-performance/employee-performance.module';
 
 @Module({
     imports: [
@@ -20,6 +21,7 @@ import { ThirdPartyAccountTransferSummariesModule } from './third-party-account-
         TransfersSummaryModule,
         EmployeesSummaryModule,
         ProductionResourcesSummaryModule,
+        EmployeePerformanceModule,
     ],
 })
 export class SummariesModule {}
