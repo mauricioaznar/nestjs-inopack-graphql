@@ -24,6 +24,7 @@ export * from './production/order-production-product.dto';
 export * from './production/order-production-resource.dto';
 export * from './production/raw-material-addition.dto';
 export * from './production/raw-material-addition-item.dto';
+export * from './production/production-plan.dto';
 
 // sales
 export * from './sales/order-request-status.dto';

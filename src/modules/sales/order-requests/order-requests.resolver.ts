@@ -124,9 +124,9 @@ export class OrderRequestsResolver {
         return orderRequest;
     }
 
-    // Manual board ordering. Gated to Produccion (not admin like status): the
-    // production-planning board is a production tool, so Produccion main can
-    // reorder while its assistant stays view-only.
+    // Manual board ordering. Gated to Ventas (not admin like status): the
+    // "Pedidos por surtir" board now lives in the Ventas domain, so Ventas main
+    // can reorder while its assistant stays view-only.
     //
     // Deliberately does NOT publish an activity/subscription (the usual
     // "every mutation logs" convention). Reordering a bucket renumbers many
@@ -134,7 +134,7 @@ export class OrderRequestsResolver {
     // pop a snackbar per row (subscriptions-provider). It's UI ordering, not a
     // business change, so it's intentionally exempt from the audit trail.
     @Mutation(() => OrderRequest)
-    @RolesDecorator(RoleId.PRODUCTION)
+    @RolesDecorator(RoleId.SALES)
     async updateOrderRequestPriority(
         @Args('OrderRequestId', { type: () => Int }) orderRequestId: number,
         @Args('Priority', { type: () => Float }) priority: number,
