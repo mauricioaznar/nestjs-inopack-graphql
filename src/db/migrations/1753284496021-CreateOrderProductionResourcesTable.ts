@@ -1,10 +1,11 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateOrderProductionResourcesTable1753284496021
-  implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `
+    implements MigrationInterface
+{
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            `
           CREATE TABLE \`order_production_resources\`
           (
               \`id\`           int unsigned                                            NOT NULL AUTO_INCREMENT,
@@ -29,8 +30,8 @@ export class CreateOrderProductionResourcesTable1753284496021
             DEFAULT CHARSET = utf8
             COLLATE = utf8_unicode_ci;
       `,
-    );
-  }
+        );
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

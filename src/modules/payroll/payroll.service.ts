@@ -30,12 +30,21 @@ export class PayrollService {
         });
     }
 
-    async upsertPayrollPeriod(input: PayrollPeriodInput): Promise<PayrollPeriod> {
+    async upsertPayrollPeriod(
+        input: PayrollPeriodInput,
+    ): Promise<PayrollPeriod> {
         const startDate = input.start_date ? new Date(input.start_date) : null;
         const endDate = input.end_date ? new Date(input.end_date) : null;
 
-        if (!startDate || isNaN(startDate.getTime()) || !endDate || isNaN(endDate.getTime())) {
-            throw new Error('start_date and end_date are required and must be valid dates');
+        if (
+            !startDate ||
+            isNaN(startDate.getTime()) ||
+            !endDate ||
+            isNaN(endDate.getTime())
+        ) {
+            throw new Error(
+                'start_date and end_date are required and must be valid dates',
+            );
         }
         return this.prisma.payroll_periods.upsert({
             create: {
@@ -72,7 +81,9 @@ export class PayrollService {
         employees: { include: { employee_categories: true } },
     };
 
-    async getPayrollEntries(payroll_period_id: number): Promise<PayrollEntry[]> {
+    async getPayrollEntries(
+        payroll_period_id: number,
+    ): Promise<PayrollEntry[]> {
         const rows = await this.prisma.payroll_entries.findMany({
             where: { payroll_period_id, active: 1 },
             include: PayrollService.entryInclude,
@@ -143,7 +154,8 @@ export class PayrollService {
     // ---------------------------------------------------------------------------
 
     private attachComputedFields(row: any): PayrollEntry {
-        const { sueldo, jo, ht, dias_festivos, faltas, control_bono_area } = row;
+        const { sueldo, jo, ht, dias_festivos, faltas, control_bono_area } =
+            row;
 
         // area, is_leader, and employee_name come from the employee, not the entry.
         const area: string = row.employees?.employee_categories?.name ?? '';
@@ -193,7 +205,9 @@ export class PayrollService {
 
         // BP — area bonus: only the Extrusion category, when the flag is set.
         const bp =
-            area.toLowerCase() === 'extrusion' && control_bono_area ? sueldo * 0.2 : 0;
+            area.toLowerCase() === 'extrusion' && control_bono_area
+                ? sueldo * 0.2
+                : 0;
 
         const total_plus =
             hn +
@@ -211,7 +225,10 @@ export class PayrollService {
             row.otros_mas;
 
         const total_minus =
-            row.infonavit + row.fonacot + row.descuento_prestamos + row.otros_menos;
+            row.infonavit +
+            row.fonacot +
+            row.descuento_prestamos +
+            row.otros_menos;
 
         const total = total_plus - total_minus;
 

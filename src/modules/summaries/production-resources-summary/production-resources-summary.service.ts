@@ -3,7 +3,6 @@ import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { getDateRangeSql, getDatesInjectionsV2 } from '../../../common/helpers';
 import {
-    EmployeesSummaryArgs,
     ProductionResourcesArgs,
     ProductionResourcesSummary,
 } from '../../../common/dto/entities';

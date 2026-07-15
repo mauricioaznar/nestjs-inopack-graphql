@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateTransfersTable1683656394930 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`
       CREATE TABLE \`transfers\` (
         \`id\` int unsigned NOT NULL AUTO_INCREMENT,
         \`active\`     int       NOT NULL DEFAULT '1',
@@ -21,7 +21,7 @@ export class CreateTransfersTable1683656394930 implements MigrationInterface {
         CONSTRAINT \`transfers_to_account_id_foreign\` FOREIGN KEY (\`to_account_id\`) REFERENCES \`clients\` (\`id\`)
       ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
     `);
-  }
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

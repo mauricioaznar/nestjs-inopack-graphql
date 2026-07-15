@@ -1,13 +1,14 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class UpdateExpensesWithSubtotal1713588955279
-  implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `alter table expenses add column \`subtotal\` double(12,2) NOT NULL DEFAULT 0;`,
-    );
+    implements MigrationInterface
+{
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            `alter table expenses add column \`subtotal\` double(12,2) NOT NULL DEFAULT 0;`,
+        );
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         UPDATE
             expenses
         LEFT JOIN (
@@ -27,7 +28,7 @@ export class UpdateExpensesWithSubtotal1713588955279
         where
             expense_sums.total is not null;
       `);
-  }
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

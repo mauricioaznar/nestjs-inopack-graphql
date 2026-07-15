@@ -28,7 +28,10 @@ import {
     User,
     TransferReceipt,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    DatePaginator,
+} from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';

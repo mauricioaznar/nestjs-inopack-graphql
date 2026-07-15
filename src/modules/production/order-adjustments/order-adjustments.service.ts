@@ -20,7 +20,10 @@ import {
 } from '../../../common/dto/entities/production/order-adjustment.dto';
 import { OrderAdjustmentType } from '../../../common/dto/entities/production/order-adjustment-type.dto';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    DatePaginator,
+} from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { OrderSale, OrderSaleProduct } from '../../../common/dto/entities';
 

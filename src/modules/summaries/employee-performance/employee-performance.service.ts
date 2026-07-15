@@ -52,10 +52,7 @@ export class EmployeePerformanceService {
         }
         return this.prisma.$queryRawUnsafe(`
             select
-                ${convertToInt(
-                    'coalesce(ope.employee_id, 0)',
-                    'employee_id',
-                )},
+                ${convertToInt('coalesce(ope.employee_id, 0)', 'employee_id')},
                 coalesce(e.fullname, 'Sin empleado asignado') as employee_name,
                 ${convertToInt('op.id', 'order_production_id')},
                 op.start_date as date,

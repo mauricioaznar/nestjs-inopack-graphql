@@ -17,7 +17,10 @@ import {
     TransferReceipt,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    DatePaginator,
+} from '../../../common/dto/pagination';
 import {
     getCreatedAtProperty,
     getUpdatedAtProperty,
@@ -580,10 +583,7 @@ export class ExpensesService {
     }): Promise<boolean> {
         const expense = await this.prisma.expenses.findFirst({
             where: {
-                AND: [
-                    { internal_code: internal_code },
-                    { active: 1 },
-                ],
+                AND: [{ internal_code: internal_code }, { active: 1 }],
             },
         });
 

@@ -296,6 +296,22 @@ model account_products {
   @@index([product_id], map: "account_products_product_id_foreign")
 }
 
+model account_resources {
+  id         Int        @id @default(autoincrement()) @db.UnsignedInt
+  active     Int        @default(1)
+  created_at DateTime?  @db.DateTime(0)
+  updated_at DateTime?  @db.DateTime(0)
+  unit_price Float      @default(0.00)
+  notes      String     @default("") @db.VarChar(255)
+  account_id Int?       @db.UnsignedInt
+  resource_id Int?      @db.UnsignedInt
+  accounts   accounts?  @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_resources_account_id_foreign")
+  resources  resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_resources_resource_id_foreign")
+
+  @@index([account_id], map: "account_resources_account_id_foreign")
+  @@index([resource_id], map: "account_resources_resource_id_foreign")
+}
+
 model order_request_statuses {
   id             Int              @id @default(autoincrement()) @db.UnsignedInt
   active         Int              @default(1)
@@ -664,6 +680,7 @@ model accounts {
   exclude_from_accountability_export            Boolean            @default(false)
   account_contacts                              account_contacts[]
   account_products                              account_products[]
+  account_resources                             account_resources[]
   resources                                     resources?         @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_resource_id_foreign")
   expenses                                      expenses[]
   order_requests                                order_requests[]
@@ -745,6 +762,7 @@ model resources {
   unit_price_name          String?              @db.VarChar(255)
   exclude_from_financial_summaries Boolean      @default(false)
   accounts                 accounts[]
+  account_resources        account_resources[]
   expense_resources        expense_resources[]
   resource_categories      resource_categories? @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
 

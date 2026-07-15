@@ -1,11 +1,4 @@
-import {
-    Field,
-    Float,
-    InputType,
-    Int,
-    ObjectType,
-    registerEnumType,
-} from '@nestjs/graphql';
+import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { DateGroupBy } from '../../dates/dates';
 
 @InputType('EmployeesSummaryArgs')

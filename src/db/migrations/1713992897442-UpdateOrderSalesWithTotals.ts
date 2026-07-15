@@ -1,30 +1,31 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class UpdateOrderSalesWithTotals1713992897442
-  implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      'ALTER TABLE order_sales ADD `subtotal` double(12, 2) not null default 0;',
-    );
+    implements MigrationInterface
+{
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            'ALTER TABLE order_sales ADD `subtotal` double(12, 2) not null default 0;',
+        );
 
-    await queryRunner.query(
-      'ALTER TABLE order_sales ADD `tax` double(12, 2) not null default 0;',
-    );
+        await queryRunner.query(
+            'ALTER TABLE order_sales ADD `tax` double(12, 2) not null default 0;',
+        );
 
-    await queryRunner.query(
-      'ALTER TABLE order_sales ADD `total_with_tax` double(12, 2) not null default 0;',
-    );
+        await queryRunner.query(
+            'ALTER TABLE order_sales ADD `total_with_tax` double(12, 2) not null default 0;',
+        );
 
-    await queryRunner.query(
-      'ALTER TABLE order_sales ADD `transfer_receipts_total` double(12, 2) not null default 0;',
-    );
+        await queryRunner.query(
+            'ALTER TABLE order_sales ADD `transfer_receipts_total` double(12, 2) not null default 0;',
+        );
 
-    await queryRunner.query(
-      'ALTER TABLE order_sales ADD `transfer_receipts_total_no_adjustments` double(12, 2) not null default 0;',
-    );
+        await queryRunner.query(
+            'ALTER TABLE order_sales ADD `transfer_receipts_total_no_adjustments` double(12, 2) not null default 0;',
+        );
 
-    await queryRunner.query(
-      `
+        await queryRunner.query(
+            `
         UPDATE 
             order_sales, 
             ( 
@@ -41,10 +42,10 @@ export class UpdateOrderSalesWithTotals1713992897442
         SET order_sales.transfer_receipts_total = ztv.total
         WHERE order_sales.id = ztv.order_sale_id;
       `,
-    );
+        );
 
-    await queryRunner.query(
-      `
+        await queryRunner.query(
+            `
         UPDATE 
             order_sales, 
             ( 
@@ -63,10 +64,10 @@ export class UpdateOrderSalesWithTotals1713992897442
         SET order_sales.transfer_receipts_total_no_adjustments = ztv.total
         WHERE order_sales.id = ztv.order_sale_id;
       `,
-    );
+        );
 
-    await queryRunner.query(
-      `
+        await queryRunner.query(
+            `
         UPDATE 
             order_sales, 
             ( 
@@ -85,17 +86,17 @@ export class UpdateOrderSalesWithTotals1713992897442
         SET order_sales.subtotal = round(ztv.total, 2), order_sales.subtotal = round(ztv.tax, 2), order_sales.total_with_tax = round(ztv.total_with_tax, 2)
         WHERE order_sales.id = ztv.order_sale_id;
       `,
-    );
+        );
 
-    // await queryRunner.query(
-    //   `
-    //   UPDATE
-    //       expenses
-    //   SET expenses.total_with_tax = (expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained)
-    //   WHERE expenses.id > 0;
-    // `,
-    // );
-  }
+        // await queryRunner.query(
+        //   `
+        //   UPDATE
+        //       expenses
+        //   SET expenses.total_with_tax = (expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained)
+        //   WHERE expenses.id > 0;
+        // `,
+        // );
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

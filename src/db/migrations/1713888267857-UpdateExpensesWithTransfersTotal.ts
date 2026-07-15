@@ -1,24 +1,25 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class UpdateExpensesWithTransfersTotal1713888267857
-  implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      'ALTER TABLE expenses ADD `transfer_receipts_total` double(12, 2) not null default 0;',
-    );
+    implements MigrationInterface
+{
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            'ALTER TABLE expenses ADD `transfer_receipts_total` double(12, 2) not null default 0;',
+        );
 
-    await queryRunner.query(
-      'ALTER TABLE expenses ADD `transfer_receipts_total_no_adjustments` double(12, 2) not null default 0;',
-    );
+        await queryRunner.query(
+            'ALTER TABLE expenses ADD `transfer_receipts_total_no_adjustments` double(12, 2) not null default 0;',
+        );
 
-    await queryRunner.query(
-      'ALTER TABLE expenses ADD `total_with_tax` double(12, 2) not null default 0;',
-    );
+        await queryRunner.query(
+            'ALTER TABLE expenses ADD `total_with_tax` double(12, 2) not null default 0;',
+        );
 
-    await queryRunner.query(`alter table expenses drop column non_tax;`);
+        await queryRunner.query(`alter table expenses drop column non_tax;`);
 
-    await queryRunner.query(
-      `
+        await queryRunner.query(
+            `
         UPDATE 
             expenses, 
             ( 
@@ -35,10 +36,10 @@ export class UpdateExpensesWithTransfersTotal1713888267857
         SET expenses.transfer_receipts_total = ztv.total
         WHERE expenses.id = ztv.expense_id;
       `,
-    );
+        );
 
-    await queryRunner.query(
-      `
+        await queryRunner.query(
+            `
         UPDATE 
             expenses, 
             ( 
@@ -57,19 +58,19 @@ export class UpdateExpensesWithTransfersTotal1713888267857
         SET expenses.transfer_receipts_total_no_adjustments = ztv.total
         WHERE expenses.id = ztv.expense_id;
       `,
-    );
+        );
 
-    await queryRunner.query(
-      `
+        await queryRunner.query(
+            `
         UPDATE 
             expenses
         SET expenses.total_with_tax = (expenses.subtotal + expenses.tax - expenses.tax_retained - expenses.non_tax_retained)
         WHERE expenses.id > 0;
       `,
-    );
-  }
+        );
+    }
 
-  // and
+    // and
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

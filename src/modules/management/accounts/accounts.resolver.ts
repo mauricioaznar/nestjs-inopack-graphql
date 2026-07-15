@@ -14,6 +14,7 @@ import {
     Account,
     AccountContact,
     AccountProduct,
+    AccountResource,
     AccountsQueryArgs,
     AccountTransactionItem,
     AccountTransferItem,
@@ -175,6 +176,13 @@ export class AccountsResolver {
     @ResolveField(() => [AccountProduct])
     async account_products(@Parent() account: Account) {
         return this.service.getAccountProducts({
+            account_id: account.id,
+        });
+    }
+
+    @ResolveField(() => [AccountResource])
+    async account_resources(@Parent() account: Account) {
+        return this.service.getAccountResources({
             account_id: account.id,
         });
     }

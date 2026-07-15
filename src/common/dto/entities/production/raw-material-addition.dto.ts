@@ -9,7 +9,6 @@ import {
 } from '@nestjs/graphql';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
-import { OrderProductionProductInput } from './order-production-product.dto';
 import { RawMaterialAdditionItemInput } from './raw-material-addition-item.dto';
 
 @ObjectType({ isAbstract: true })

@@ -10,7 +10,6 @@ import {
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ResourcesService } from './resources.service';
 import {
-    AccountsQueryArgs,
     ActivityTypeName,
     PaginatedResources,
     Resource,
@@ -21,7 +20,10 @@ import {
     ResourceUpsertInput,
     User,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    DatePaginator,
+} from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 

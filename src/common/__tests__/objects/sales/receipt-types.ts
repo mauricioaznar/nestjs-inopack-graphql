@@ -1,4 +1,4 @@
-import { ReceiptType, OrderSaleStatus } from '../../../dto/entities';
+import { ReceiptType } from '../../../dto/entities';
 
 export const receiptType1: ReceiptType = {
     id: 1,

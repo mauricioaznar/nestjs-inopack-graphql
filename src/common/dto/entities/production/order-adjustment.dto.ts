@@ -1,7 +1,6 @@
 import { ArgsType, Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { OrderAdjustmentProductInput } from './order-adjustment-product.dto';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
-import { OrderProduction } from './order-production.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })

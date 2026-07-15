@@ -1,9 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateAccountProducts1781887705842 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            `
           CREATE TABLE \`account_products\`
           (
               \`id\`           int unsigned   NOT NULL AUTO_INCREMENT,
@@ -25,12 +25,12 @@ export class CreateAccountProducts1781887705842 implements MigrationInterface {
             DEFAULT CHARSET = utf8
             COLLATE = utf8_unicode_ci;
       `,
-    );
+        );
 
-    // Backfill: one catalog row per (account_id, product_id) from existing active
-    // order-request products. For each pair we take the latest line (max id) so the
-    // seeded price reflects the most recent request. MySQL 5.7 safe (no window functions).
-    await queryRunner.query(`
+        // Backfill: one catalog row per (account_id, product_id) from existing active
+        // order-request products. For each pair we take the latest line (max id) so the
+        // seeded price reflects the most recent request. MySQL 5.7 safe (no window functions).
+        await queryRunner.query(`
         INSERT INTO account_products
             (active, created_at, updated_at, account_id, product_id, kilo_price, group_price, group_weight)
         SELECT
@@ -69,9 +69,9 @@ export class CreateAccountProducts1781887705842 implements MigrationInterface {
            AND latest.product_id = src.product_id
            AND latest.max_id = src.id;
     `);
-  }
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE IF EXISTS \`account_products\`;`);
-  }
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`DROP TABLE IF EXISTS \`account_products\`;`);
+    }
 }

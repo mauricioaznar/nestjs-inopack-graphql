@@ -18,11 +18,7 @@ import {
 } from '../../../common/helpers';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
-import {
-    Branch,
-    GetProductsQueryFields,
-    OrderProductionType,
-} from '../../../common/dto/entities';
+import { Branch, OrderProductionType } from '../../../common/dto/entities';
 import { EmployeeStatus } from '../../../common/dto/entities/production/employee-status.dto';
 
 @Injectable()

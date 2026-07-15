@@ -13,7 +13,10 @@ import {
     TransferReceipt,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    DatePaginator,
+} from '../../../common/dto/pagination';
 import {
     formatFloat,
     getCreatedAtProperty,
@@ -165,9 +168,10 @@ export class TransfersService {
                       {
                           OR: [
                               {
-                                  accounts_accountsTotransfers_from_account_id: {
-                                      name: { contains: filter },
-                                  },
+                                  accounts_accountsTotransfers_from_account_id:
+                                      {
+                                          name: { contains: filter },
+                                      },
                               },
                               {
                                   accounts_accountsTotransfers_to_account_id: {
@@ -186,7 +190,9 @@ export class TransfersService {
                                                 some: {
                                                     order_sales: {
                                                         invoice_code: {
-                                                            in: [Number(filter)],
+                                                            in: [
+                                                                Number(filter),
+                                                            ],
                                                         },
                                                     },
                                                 },
@@ -198,7 +204,9 @@ export class TransfersService {
                                   transfer_receipts: {
                                       some: {
                                           expenses: {
-                                              external_code: { contains: filter },
+                                              external_code: {
+                                                  contains: filter,
+                                              },
                                           },
                                       },
                                   },

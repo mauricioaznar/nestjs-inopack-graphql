@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class RawMaterialAddition1698101151525 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`
           CREATE TABLE \`raw_material_additions\` (
             \`id\` int unsigned NOT NULL AUTO_INCREMENT,
             \`active\`     int       NOT NULL DEFAULT '1',
@@ -16,7 +16,7 @@ export class RawMaterialAddition1698101151525 implements MigrationInterface {
           ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
       CREATE TABLE \`raw_material_addition_items\` (
         \`id\` int unsigned NOT NULL AUTO_INCREMENT,
         \`active\`     int       NOT NULL DEFAULT '1',
@@ -33,7 +33,7 @@ export class RawMaterialAddition1698101151525 implements MigrationInterface {
         CONSTRAINT \`raw_material_addition_item_resource_id_foreign\` FOREIGN KEY (\`resource_id\`) REFERENCES \`resources\` (\`id\`)
       ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
     `);
-  }
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

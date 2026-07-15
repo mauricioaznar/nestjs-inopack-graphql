@@ -1,9 +1,10 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateAccountTypesTable1684859969971
-  implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
+    implements MigrationInterface
+{
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`
               CREATE TABLE \`account_types\` (
                 \`id\` int unsigned NOT NULL AUTO_INCREMENT,
                 \`active\`     int       NOT NULL DEFAULT '1',
@@ -14,65 +15,65 @@ export class CreateAccountTypesTable1684859969971
               ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
             `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             ALTER TABLE \`accounts\` 
                 ADD COLUMN \`account_type_id\` int unsigned, 
                 ADD CONSTRAINT \`accounts_account_type_id_foreign\` FOREIGN KEY (\`account_type_id\`) 
                 REFERENCES \`account_types\`(\`id\`);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         insert into account_types (active, name) values (1, 'Cuenta propia');
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         insert into account_types (active, name) values (1, 'Cliente');
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         insert into account_types (active, name) values (1, 'Proveedor');
     `);
 
-    await queryRunner.query(
-      `update accounts set account_type_id = 2 where id >= 1;`,
-    );
+        await queryRunner.query(
+            `update accounts set account_type_id = 2 where id >= 1;`,
+        );
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         insert into accounts (active, name, abbreviation, account_type_id) values (1, 'Inopack cibanco', 'Cibanco', 1);
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         insert into accounts (active, name, abbreviation, account_type_id) values (1, 'Inopack banorte', 'Banorte', 1);
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         insert into accounts (active, name, abbreviation, account_type_id) values (1, 'Inopack efectivo', 'Efectivo', 1);
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         insert into accounts (active, name, abbreviation, account_type_id) values (1, 'Inopack bancomer', 'Bancomer', 1);
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         insert into accounts (active, name, abbreviation, account_type_id) values (1, 'Comision federal de electicidad', 'CFE', 3);
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         insert into accounts (active, name, abbreviation, account_type_id) values (1, 'Claudia Rivas', 'Claudia', 3);
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         insert into accounts (active, name, abbreviation, account_type_id) values (1, 'Bepensa', 'Bepensa', 3);
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             ALTER TABLE \`expenses\` 
                 ADD COLUMN \`account_id\` int unsigned, 
                 ADD CONSTRAINT \`expenses_account_id_foreign\` FOREIGN KEY (\`account_id\`) 
                 REFERENCES \`accounts\`(\`id\`);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
               CREATE TABLE \`resources\` (
                 \`id\` int unsigned NOT NULL AUTO_INCREMENT,
                 \`active\`     int       NOT NULL DEFAULT '1',
@@ -83,14 +84,14 @@ export class CreateAccountTypesTable1684859969971
               ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
             `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             ALTER TABLE \`expense_resources\` 
                 ADD COLUMN \`resource_id\` int unsigned, 
                 ADD CONSTRAINT \`expense_resources_resource_id_foreign\` FOREIGN KEY (\`resource_id\`) 
                 REFERENCES \`resources\`(\`id\`);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
               CREATE TABLE \`resource_categories\` (
                 \`id\` int unsigned NOT NULL AUTO_INCREMENT,
                 \`active\`     int       NOT NULL DEFAULT '1',
@@ -101,142 +102,142 @@ export class CreateAccountTypesTable1684859969971
               ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
             `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             ALTER TABLE \`resources\` 
                 ADD COLUMN \`resource_category_id\` int unsigned, 
                 ADD CONSTRAINT \`resources_resource_category_id_foreign\` FOREIGN KEY (\`resource_category_id\`) 
                 REFERENCES \`resource_categories\`(\`id\`);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resource_categories\` (id, name) VALUES (1, 'Administrativo');
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resource_categories\` (id, name) VALUES (2, 'Refacciones');
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resource_categories\` (id, name) VALUES (3, 'Transporte');
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resource_categories\` (id, name) VALUES (4, 'Materia prima');
         `);
 
-    // 1 Administrativo
+        // 1 Administrativo
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Energia electrica', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Credito', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Impuestos', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Renta de establecimiento', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Renta de maquinaria', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Contadores', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Rembolsos', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Compra de maquinaria', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Seguridad', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Compresores', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Localizadores', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Tornero', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Filtros de agua', 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Prestamos', 1);
         `);
 
-    // 2 Refacciones
+        // 2 Refacciones
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Baleros', 2);
         `);
 
-    // 3 Transporte
+        // 3 Transporte
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Gasolina', 3);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Flete', 3);
         `);
 
-    // 4 Materia Prima
+        // 4 Materia Prima
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Greña', 4);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
            INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Pellet', 4);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
            INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Empaque', 4);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
            INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Carbonato', 4);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
            INSERT INTO \`resources\` (name, resource_category_id) VALUES ('Pigmento', 4);
         `);
 
-    // Expenses
+        // Expenses
 
-    //cfe 39, 40 claudia, 41 bepensa
+        //cfe 39, 40 claudia, 41 bepensa
 
-    await queryRunner.query(`
+        await queryRunner.query(`
            INSERT INTO \`expenses\` (\`date\`, \`locked\`, \`account_id\`) VALUES ("2023-05-29", false, 39);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
            INSERT INTO \`expense_resources\` (\`amount\`, \`expense_id\`, \`resource_id\`) VALUES (500000, 1, 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
            INSERT INTO \`expense_resources\` (\`amount\`, \`expense_id\`, \`resource_id\`) VALUES (500000, 1, 1);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
               CREATE TABLE \`transfer_receipts\` (
                 \`id\` int unsigned NOT NULL AUTO_INCREMENT,
                 \`active\`     int       NOT NULL DEFAULT '1',
@@ -247,28 +248,28 @@ export class CreateAccountTypesTable1684859969971
               ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
             `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             ALTER TABLE \`transfer_receipts\`
                 ADD COLUMN \`order_sale_id\` int unsigned,
                 ADD CONSTRAINT \`transfer_receipts_order_sale_id_foreign\` FOREIGN KEY (\`order_sale_id\`)
                 REFERENCES \`order_sales\`(\`id\`);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             ALTER TABLE \`transfer_receipts\`
                 ADD COLUMN \`expense_id\` int unsigned,
                 ADD CONSTRAINT \`transfer_receipts_expense_id_foreign\` FOREIGN KEY (\`expense_id\`)
                 REFERENCES \`expenses\`(\`id\`);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             ALTER TABLE \`transfer_receipts\`
                 ADD COLUMN \`transfer_id\` int unsigned,
                 ADD CONSTRAINT \`transfer_receipts_transfer_id_foreign\` FOREIGN KEY (\`transfer_id\`)
                 REFERENCES \`transfers\`(\`id\`);
         `);
 
-    /*
+        /*
 insert into transfers (order_sale_id, amount, from_account_id, transferred_date) SELECT
 	ctv.order_sale_id,
     if (order_sales.order_sale_receipt_type_id = 2, ctv.total * 1.16, ctv.total) as amount,
@@ -300,7 +301,7 @@ join order_requests
 on order_requests.id = order_sales.order_request_id
      */
 
-    /*
+        /*
       UPDATE
     `transfers`,
     (
@@ -312,21 +313,21 @@ WHERE
     `transfers`.`order_sale_id` = `src`.`order_sale_id`
 ;
        */
-    await queryRunner.query(`
+        await queryRunner.query(`
             ALTER TABLE \`expense_resources\`
                 ADD COLUMN \`branch_id\` int unsigned,
                 ADD CONSTRAINT \`transfer_receipts_branch_id_foreign\` FOREIGN KEY (\`branch_id\`)
                 REFERENCES \`branches\`(\`id\`);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             ALTER TABLE \`transfers\`
                 ADD COLUMN \`order_sale_id\` int unsigned,
                 ADD CONSTRAINT \`transfer_order_sale_id_foreign\` FOREIGN KEY (\`order_sale_id\`)
                 REFERENCES \`order_sales\`(\`id\`);
         `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
 insert into transfers (order_sale_id, amount, from_account_id, transferred_date, to_account_id)
         SELECT
             ctv.order_sale_id,
@@ -391,7 +392,7 @@ insert into transfers (order_sale_id, amount, from_account_id, transferred_date,
               on order_requests.id = order_sales.order_request_id
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
          UPDATE
             \`transfers\`,
             (
@@ -403,20 +404,22 @@ insert into transfers (order_sale_id, amount, from_account_id, transferred_date,
             \`transfers\`.\`order_sale_id\` = \`src\`.\`order_sale_id\`
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
       insert into transfer_receipts (order_sale_id, transfer_id, amount)   select transfers.order_sale_id, transfers.id as transfer_id, transfers.amount FROM inopack.transfers;
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
           ALTER TABLE transfers DROP FOREIGN KEY transfer_order_sale_id_foreign;
       `);
 
-    await queryRunner.query(`alter table transfers drop column order_sale_id;`);
+        await queryRunner.query(
+            `alter table transfers drop column order_sale_id;`,
+        );
 
-    await queryRunner.query(
-      `alter table order_sales add column \`expected_payment_date\` datetime DEFAULT NULL;`,
-    );
-  }
+        await queryRunner.query(
+            `alter table order_sales add column \`expected_payment_date\` datetime DEFAULT NULL;`,
+        );
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

@@ -44,6 +44,7 @@ export * from './management/account.dto';
 export * from './management/account-type.dto';
 export * from './management/account-contact.dto';
 export * from './management/account-product.dto';
+export * from './management/account-resource.dto';
 export * from './management/expense-status.dto';
 export * from './management/expense.dto';
 export * from './management/resource.dto';

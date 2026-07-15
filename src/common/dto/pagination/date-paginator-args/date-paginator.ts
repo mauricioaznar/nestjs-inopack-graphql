@@ -2,10 +2,16 @@ import { ArgsType, Field, Int } from '@nestjs/graphql';
 
 @ArgsType()
 export class DatePaginator {
-    @Field(() => String, { nullable: true, description: 'Start date (YYYY-MM-DD)' })
+    @Field(() => String, {
+        nullable: true,
+        description: 'Start date (YYYY-MM-DD)',
+    })
     public start_date?: string | null;
 
-    @Field(() => String, { nullable: true, description: 'End date (YYYY-MM-DD)' })
+    @Field(() => String, {
+        nullable: true,
+        description: 'End date (YYYY-MM-DD)',
+    })
     public end_date?: string | null;
 }
 

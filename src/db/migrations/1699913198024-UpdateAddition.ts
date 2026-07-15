@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class UpdateAddition1699913198024 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`
       CREATE TABLE \`expense_raw_material_additions\` (
         \`id\` int unsigned NOT NULL AUTO_INCREMENT,
         \`active\`     int       NOT NULL DEFAULT '1',
@@ -19,10 +19,10 @@ export class UpdateAddition1699913198024 implements MigrationInterface {
       ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
     `);
 
-    await queryRunner.query(
-      'ALTER TABLE machines ADD `discontinued` boolean not null default 0',
-    );
-  }
+        await queryRunner.query(
+            'ALTER TABLE machines ADD `discontinued` boolean not null default 0',
+        );
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }
