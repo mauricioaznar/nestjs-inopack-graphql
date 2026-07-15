@@ -66,6 +66,7 @@ export class EmployeePerformanceService {
                     'op.order_production_type_id',
                     'order_production_type_id',
                 )},
+                ${convertToInt('pt.product_count', 'product_count')},
                 case
                     when pt.total_kilos > 0
                     then (op.waste / greatest(coalesce(ec.emp_count, 1), 1))
@@ -82,7 +83,10 @@ export class EmployeePerformanceService {
             left join employees e
                 on e.id = ope.employee_id
             join (
-                select order_production_id, sum(kilos) as total_kilos
+                select
+                    order_production_id,
+                    sum(kilos) as total_kilos,
+                    count(distinct product_id) as product_count
                 from order_production_products
                 where active = 1
                 group by order_production_id

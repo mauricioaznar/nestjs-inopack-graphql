@@ -46,4 +46,10 @@ export class MachineProductEmployeeRun {
 
     @Field(() => Int, { nullable: true })
     order_production_type_id: number | null;
+
+    // How many distinct products the parent production made. 1 = a "pure" run
+    // (only this product); > 1 = the production shared time/waste with other
+    // products. Lets the UI optionally exclude shared runs.
+    @Field(() => Int, { nullable: false })
+    product_count: number;
 }
