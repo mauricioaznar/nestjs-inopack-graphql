@@ -11,6 +11,7 @@ import {
     GetOrderRequestsArgs,
     OrderRequest,
     OrderRequestInput,
+    OrderRequestPriorityInput,
     OrderRequestProduct,
     OrderRequestsSortArgs,
     OrderRequestStatus,
@@ -474,31 +475,49 @@ export class OrderRequestsService {
 
     // Manual ordering for the production-planning board. `priority` is a plain
     // sort rank (lower = higher on the board); the board renumbers a status
-    // bucket client-side and persists each changed request through here.
-    async updateOrderRequestPriority({
-        order_request_id,
-        priority,
-    }: {
-        order_request_id: number;
-        priority: number;
-    }): Promise<OrderRequest> {
-        const orderRequest = await this.getOrderRequest({
-            orderRequestId: order_request_id,
-        });
-
-        if (!orderRequest) {
-            throw new NotFoundException();
+    // bucket client-side and sends every changed request in one call. We fetch
+    // all referenced rows up front to validate they exist, then persist the new
+    // ranks in a single transaction so a bucket is renumbered atomically.
+    async updateOrderRequestPriorities(
+        inputs: OrderRequestPriorityInput[],
+    ): Promise<boolean> {
+        if (inputs.length === 0) {
+            return true;
         }
 
-        return this.prisma.order_requests.update({
-            data: {
-                ...getUpdatedAtProperty(),
-                priority: priority,
-            },
+        const ids = inputs.map((input) => input.order_request_id);
+
+        const orderRequests = await this.prisma.order_requests.findMany({
             where: {
-                id: order_request_id,
+                id: { in: ids },
+                active: 1,
             },
         });
+
+        const foundIds = new Set(orderRequests.map((o) => o.id));
+        const missingIds = ids.filter((id) => !foundIds.has(id));
+
+        if (missingIds.length > 0) {
+            throw new NotFoundException(
+                `order requests not found: ${missingIds.join(', ')}`,
+            );
+        }
+
+        await this.prisma.$transaction(
+            inputs.map((input) =>
+                this.prisma.order_requests.update({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        priority: input.priority,
+                    },
+                    where: {
+                        id: input.order_request_id,
+                    },
+                }),
+            ),
+        );
+
+        return true;
     }
 
     async validateOrderRequest(

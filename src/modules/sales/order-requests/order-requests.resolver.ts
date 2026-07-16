@@ -17,6 +17,7 @@ import {
     GetOrderRequestsArgs,
     OrderRequest,
     OrderRequestInput,
+    OrderRequestPriorityInput,
     OrderRequestProduct,
     OrderRequestsSortArgs,
     OrderRequestStatus,
@@ -124,25 +125,29 @@ export class OrderRequestsResolver {
         return orderRequest;
     }
 
-    // Manual board ordering. Gated to Ventas (not admin like status): the
-    // "Pedidos por surtir" board now lives in the Ventas domain, so Ventas main
-    // can reorder while its assistant stays view-only.
+    // Manual board ordering. Gated to Produccion (main), not Ventas: although
+    // the "Pedidos por surtir" board lives under the Ventas nav, reordering the
+    // queue is a production-planning decision, so only Produccion main may
+    // reorder. Ventas, Asistente Ventas, and Asistente Produccion all view the
+    // board read-only (Super/General pass via the guard short-circuit).
+    //
+    // Batch: one drag renumbers a whole status bucket, so the board sends every
+    // changed row at once and the service applies them in a single transaction.
     //
     // Deliberately does NOT publish an activity/subscription (the usual
     // "every mutation logs" convention). Reordering a bucket renumbers many
     // requests in one gesture — logging each would spam the activity feed and
     // pop a snackbar per row (subscriptions-provider). It's UI ordering, not a
     // business change, so it's intentionally exempt from the audit trail.
-    @Mutation(() => OrderRequest)
-    @RolesDecorator(RoleId.SALES)
-    async updateOrderRequestPriority(
-        @Args('OrderRequestId', { type: () => Int }) orderRequestId: number,
-        @Args('Priority', { type: () => Float }) priority: number,
-    ): Promise<OrderRequest> {
-        return this.service.updateOrderRequestPriority({
-            order_request_id: orderRequestId,
-            priority: priority,
-        });
+    @Mutation(() => Boolean)
+    @RolesDecorator(RoleId.PRODUCTION)
+    async updateOrderRequestPriorities(
+        @Args('OrderRequestPrioritiesInput', {
+            type: () => [OrderRequestPriorityInput],
+        })
+        inputs: OrderRequestPriorityInput[],
+    ): Promise<boolean> {
+        return this.service.updateOrderRequestPriorities(inputs);
     }
 
     @Mutation(() => Boolean)
