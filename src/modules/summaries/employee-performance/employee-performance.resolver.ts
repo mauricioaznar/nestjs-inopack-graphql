@@ -2,9 +2,9 @@ import { Args, Int, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { EmployeePerformanceService } from './employee-performance.service';
 import {
+    MachineHourlyRun,
     MachineProduct,
     MachineProductEmployeeRun,
-    MachineProductHourlyRun,
 } from '../../../common/dto/entities';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
@@ -36,15 +36,15 @@ export class EmployeePerformanceResolver {
         });
     }
 
-    @Query(() => [MachineProductHourlyRun])
+    // Machine-level only (no product arg): the hourly view aggregates every
+    // product line on the machine per production.
+    @Query(() => [MachineHourlyRun])
     @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
-    async getMachineProductHourlyRuns(
+    async getMachineHourlyRuns(
         @Args('machineId', { type: () => Int }) machineId: number,
-        @Args('productId', { type: () => Int }) productId: number,
-    ): Promise<MachineProductHourlyRun[]> {
-        return this.service.getMachineProductHourlyRuns({
+    ): Promise<MachineHourlyRun[]> {
+        return this.service.getMachineHourlyRuns({
             machine_id: machineId,
-            product_id: productId,
         });
     }
 }

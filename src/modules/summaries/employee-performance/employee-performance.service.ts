@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
+    MachineHourlyRun,
     MachineProduct,
     MachineProductEmployeeRun,
-    MachineProductHourlyRun,
 } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
@@ -102,22 +102,22 @@ export class EmployeePerformanceService {
         `);
     }
 
-    // Hourly-throughput rows for a machine × product: one row per production, no
-    // employee split. Each side is aggregated in its own derived table first —
-    // joining the product lines and resource lines directly would fan out
-    // (cartesian) and inflate the sums, so we pre-sum per production_id then
-    // join on it. Null hours count as 0 in the denominator (coalesce), per the
-    // user's decision; the client computes kg/hr as totals-over-totals. The
-    // product side drives (which productions have this machine × product); the
-    // resource side is left-joined and coalesced to 0 when absent.
-    async getMachineProductHourlyRuns({
+    // Hourly-throughput rows for a MACHINE: one row per production, no employee
+    // split and no product filter — every active product line on the machine is
+    // summed into the row (product_count says how many distinct products were
+    // mixed). Each side is aggregated in its own derived table first — joining
+    // the product lines and resource lines directly would fan out (cartesian)
+    // and inflate the sums, so we pre-sum per production_id then join on it.
+    // Null hours count as 0 in the denominator (coalesce), per the user's
+    // decision; the client computes kg/hr as totals-over-totals. The product
+    // side drives (which productions ran on this machine); the resource side is
+    // left-joined and coalesced to 0 when absent.
+    async getMachineHourlyRuns({
         machine_id,
-        product_id,
     }: {
         machine_id: number;
-        product_id: number;
-    }): Promise<MachineProductHourlyRun[]> {
-        if (!machine_id || !product_id) {
+    }): Promise<MachineHourlyRun[]> {
+        if (!machine_id) {
             return [];
         }
         return this.prisma.$queryRawUnsafe(`
@@ -127,16 +127,17 @@ export class EmployeePerformanceService {
                 pp.kilos_produced as kilos_produced,
                 pp.hours_produced as hours_produced,
                 coalesce(rr.kilos_resource, 0) as kilos_resource,
-                coalesce(rr.hours_resource, 0) as hours_resource
+                coalesce(rr.hours_resource, 0) as hours_resource,
+                ${convertToInt('pp.product_count', 'product_count')}
             from (
                 select
                     order_production_id,
                     sum(kilos) as kilos_produced,
-                    sum(coalesce(hours, 0)) as hours_produced
+                    sum(coalesce(hours, 0)) as hours_produced,
+                    count(distinct product_id) as product_count
                 from order_production_products
                 where active = 1
                     and machine_id = ${Number(machine_id)}
-                    and product_id = ${Number(product_id)}
                 group by order_production_id
             ) pp
             join order_productions op
