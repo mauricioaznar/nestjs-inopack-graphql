@@ -111,15 +111,24 @@ export class EmployeePerformanceService {
     // Null hours count as 0 in the denominator (coalesce), per the user's
     // decision; the client computes kg/hr as totals-over-totals. The product
     // side drives (which productions ran on this machine); the resource side is
-    // left-joined and coalesced to 0 when absent.
+    // left-joined and coalesced to 0 when absent. from_date (optional) drops
+    // productions started before it — pre-hour-capture corridas would inflate
+    // kg/hr. Strictly validated before interpolation ($queryRawUnsafe): a
+    // malformed value is ignored, not injected.
     async getMachineHourlyRuns({
         machine_id,
+        from_date,
     }: {
         machine_id: number;
+        from_date?: string | null;
     }): Promise<MachineHourlyRun[]> {
         if (!machine_id) {
             return [];
         }
+        const fromDateFilter =
+            from_date && /^\d{4}-\d{2}-\d{2}$/.test(from_date)
+                ? `and op.start_date >= '${from_date}'`
+                : '';
         return this.prisma.$queryRawUnsafe(`
             select
                 ${convertToInt('op.id', 'order_production_id')},
@@ -143,6 +152,7 @@ export class EmployeePerformanceService {
             join order_productions op
                 on op.id = pp.order_production_id
                 and op.active = 1
+                ${fromDateFilter}
             left join (
                 select
                     order_production_id,
