@@ -711,9 +711,9 @@ export class OrderProductionsService {
                             id: employee_id,
                         },
                     });
-                    if (employee && employee.employee_status_id !== 1) {
+                    if (employee && employee.is_inactive) {
                         errors.push(
-                            `employee_id does not have up status (1, employee_status_id: ${employee.employee_status_id})`,
+                            `employee_id is inactive (dado de baja): ${employee_id}`,
                         );
                     }
                 }

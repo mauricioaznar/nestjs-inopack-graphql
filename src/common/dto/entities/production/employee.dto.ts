@@ -19,8 +19,10 @@ export class EmployeeBase {
     @Field()
     last_name: string;
 
-    @Field(() => Int, { nullable: true })
-    employee_status_id: number | null;
+    // Replaces the old employee_statuses table: true = dado de baja (no longer
+    // active), false = de alta. Mirrors products.discontinued.
+    @Field(() => Boolean, { nullable: false })
+    is_inactive: boolean;
 
     @Field(() => Int, { nullable: true })
     order_production_type_id: number | null;
