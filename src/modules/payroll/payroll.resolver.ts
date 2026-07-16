@@ -1,5 +1,5 @@
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PayrollService } from './payroll.service';
 import {
     GetPayrollPeriodsArgs,
@@ -8,12 +8,13 @@ import {
     PayrollPeriod,
     PayrollPeriodInput,
 } from '../../common/dto/entities';
-import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../auth/decorators/role.decorator';
 import { RoleId } from '../../common/dto/entities/auth/role.dto';
 
+// GqlAuthGuard + GqlRolesGuard are registered globally as APP_GUARDs in
+// app.module.ts, so the @RolesDecorator gates below are enforced without any
+// per-resolver @UseGuards.
 @Resolver()
-@UseGuards(GqlAuthGuard)
 @Injectable()
 export class PayrollResolver {
     constructor(private service: PayrollService) {}
