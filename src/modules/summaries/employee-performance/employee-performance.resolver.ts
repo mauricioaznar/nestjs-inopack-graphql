@@ -4,6 +4,7 @@ import { EmployeePerformanceService } from './employee-performance.service';
 import {
     MachineProduct,
     MachineProductEmployeeRun,
+    MachineProductHourlyRun,
 } from '../../../common/dto/entities';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
@@ -30,6 +31,18 @@ export class EmployeePerformanceResolver {
         @Args('productId', { type: () => Int }) productId: number,
     ): Promise<MachineProductEmployeeRun[]> {
         return this.service.getMachineProductEmployeeRuns({
+            machine_id: machineId,
+            product_id: productId,
+        });
+    }
+
+    @Query(() => [MachineProductHourlyRun])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getMachineProductHourlyRuns(
+        @Args('machineId', { type: () => Int }) machineId: number,
+        @Args('productId', { type: () => Int }) productId: number,
+    ): Promise<MachineProductHourlyRun[]> {
+        return this.service.getMachineProductHourlyRuns({
             machine_id: machineId,
             product_id: productId,
         });
