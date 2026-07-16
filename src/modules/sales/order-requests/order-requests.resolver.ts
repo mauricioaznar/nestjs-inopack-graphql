@@ -16,6 +16,7 @@ import {
     Account,
     GetOrderRequestsArgs,
     OrderRequest,
+    OrderRequestDetailsInput,
     OrderRequestInput,
     OrderRequestPriorityInput,
     OrderRequestProduct,
@@ -116,6 +117,27 @@ export class OrderRequestsResolver {
         const orderRequest = await this.service.updateOrderRequestStatus({
             order_request_id: orderRequestId,
             order_request_status_id: orderRequestStatusId,
+        });
+        await this.pubSubService.orderRequest({
+            orderRequest,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        });
+        return orderRequest;
+    }
+
+    // Edit the optional operational fields (notes, estimated delivery date) of a
+    // request. Deliberately NOT status-locked (unlike upsert): operational
+    // metadata must stay editable after the status-1 lock, mirroring
+    // updateOrderSaleDetails.
+    @Mutation(() => OrderRequest)
+    @RolesDecorator(RoleId.SALES)
+    async updateOrderRequestDetails(
+        @Args('OrderRequestDetailsInput') input: OrderRequestDetailsInput,
+        @CurrentUser() currentUser: User,
+    ): Promise<OrderRequest> {
+        const orderRequest = await this.service.updateOrderRequestDetails({
+            input,
         });
         await this.pubSubService.orderRequest({
             orderRequest,

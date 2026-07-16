@@ -53,3 +53,40 @@ export class MachineProductEmployeeRun {
     @Field(() => Int, { nullable: false })
     product_count: number;
 }
+
+// One row per production for the MACHINE-level hourly-throughput view (no
+// employee split, no product filter — all product lines on the machine are
+// summed together). Ratios (kg/hr) are computed client-side as totals-over-
+// totals, not mean-of-ratios. Null hours count as 0 in the denominator (the
+// line's kilos still count in the numerator) — a decision noted verbatim from
+// the user; the UI shows "—" when the summed hours are 0.
+@ObjectType('MachineHourlyRun')
+export class MachineHourlyRun {
+    @Field(() => Int, { nullable: false })
+    order_production_id: number;
+
+    @Field(() => Date, { nullable: true })
+    date: Date | null;
+
+    // Product side: SUM over ALL order_production_products lines for this
+    // machine on the production (active = 1, coalesce(hours, 0)).
+    @Field(() => Float, { nullable: false })
+    kilos_produced: number;
+
+    @Field(() => Float, { nullable: false })
+    hours_produced: number;
+
+    // Resource side: SUM over order_production_resources for the same production
+    // + machine (active = 1, coalesce(hours, 0)); 0/0 when the production has no
+    // resource lines.
+    @Field(() => Float, { nullable: false })
+    kilos_resource: number;
+
+    @Field(() => Float, { nullable: false })
+    hours_resource: number;
+
+    // Distinct products this production ran on the machine — the row aggregates
+    // them all, so the UI surfaces how many were mixed together.
+    @Field(() => Int, { nullable: false })
+    product_count: number;
+}

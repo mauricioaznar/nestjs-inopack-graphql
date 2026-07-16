@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
+    MachineHourlyRun,
     MachineProduct,
     MachineProductEmployeeRun,
 } from '../../../common/dto/entities';
@@ -97,6 +98,71 @@ export class EmployeePerformanceService {
             where opp.active = 1
                 and opp.machine_id = ${Number(machine_id)}
                 and opp.product_id = ${Number(product_id)}
+            order by op.start_date
+        `);
+    }
+
+    // Hourly-throughput rows for a MACHINE: one row per production, no employee
+    // split and no product filter — every active product line on the machine is
+    // summed into the row (product_count says how many distinct products were
+    // mixed). Each side is aggregated in its own derived table first — joining
+    // the product lines and resource lines directly would fan out (cartesian)
+    // and inflate the sums, so we pre-sum per production_id then join on it.
+    // Null hours count as 0 in the denominator (coalesce), per the user's
+    // decision; the client computes kg/hr as totals-over-totals. The product
+    // side drives (which productions ran on this machine); the resource side is
+    // left-joined and coalesced to 0 when absent. from_date (optional) drops
+    // productions started before it — pre-hour-capture corridas would inflate
+    // kg/hr. Strictly validated before interpolation ($queryRawUnsafe): a
+    // malformed value is ignored, not injected.
+    async getMachineHourlyRuns({
+        machine_id,
+        from_date,
+    }: {
+        machine_id: number;
+        from_date?: string | null;
+    }): Promise<MachineHourlyRun[]> {
+        if (!machine_id) {
+            return [];
+        }
+        const fromDateFilter =
+            from_date && /^\d{4}-\d{2}-\d{2}$/.test(from_date)
+                ? `and op.start_date >= '${from_date}'`
+                : '';
+        return this.prisma.$queryRawUnsafe(`
+            select
+                ${convertToInt('op.id', 'order_production_id')},
+                op.start_date as date,
+                pp.kilos_produced as kilos_produced,
+                pp.hours_produced as hours_produced,
+                coalesce(rr.kilos_resource, 0) as kilos_resource,
+                coalesce(rr.hours_resource, 0) as hours_resource,
+                ${convertToInt('pp.product_count', 'product_count')}
+            from (
+                select
+                    order_production_id,
+                    sum(kilos) as kilos_produced,
+                    sum(coalesce(hours, 0)) as hours_produced,
+                    count(distinct product_id) as product_count
+                from order_production_products
+                where active = 1
+                    and machine_id = ${Number(machine_id)}
+                group by order_production_id
+            ) pp
+            join order_productions op
+                on op.id = pp.order_production_id
+                and op.active = 1
+                ${fromDateFilter}
+            left join (
+                select
+                    order_production_id,
+                    sum(kilos) as kilos_resource,
+                    sum(coalesce(hours, 0)) as hours_resource
+                from order_production_resources
+                where active = 1
+                    and machine_id = ${Number(machine_id)}
+                group by order_production_id
+            ) rr on rr.order_production_id = op.id
             order by op.start_date
         `);
     }

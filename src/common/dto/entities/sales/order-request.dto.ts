@@ -51,6 +51,22 @@ export class OrderRequestPriorityInput {
     priority: number;
 }
 
+// Lets sales users edit the optional, operational fields of a request (notes,
+// estimated delivery date) AFTER it locks past status 1 — mirroring
+// OrderSaleDetailsInput. Nullable fields mean "leave unchanged" (Prisma skips
+// undefined), so an omitted field is untouched.
+@InputType('OrderRequestDetailsInput')
+export class OrderRequestDetailsInput {
+    @Field(() => Int)
+    order_request_id: number;
+
+    @Field(() => String, { nullable: true })
+    notes?: string | null;
+
+    @Field(() => Date, { nullable: true })
+    estimated_delivery_date?: Date | null;
+}
+
 @ObjectType('OrderRequest')
 export class OrderRequest extends OrderRequestBase {
     @Field({ nullable: false })

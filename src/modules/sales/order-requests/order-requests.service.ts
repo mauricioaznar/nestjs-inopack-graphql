@@ -10,6 +10,7 @@ import {
     Account,
     GetOrderRequestsArgs,
     OrderRequest,
+    OrderRequestDetailsInput,
     OrderRequestInput,
     OrderRequestPriorityInput,
     OrderRequestProduct,
@@ -469,6 +470,41 @@ export class OrderRequestsService {
             },
             where: {
                 id: order_request_id,
+            },
+        });
+    }
+
+    // Lets sales users edit the optional, operational fields of a request (notes
+    // and estimated delivery date) AFTER it locks past status 1 — mirroring
+    // updateOrderSaleDetails. Deliberately NOT status-locked: operational
+    // metadata must stay correctable once an admin advances the status. Each
+    // field is applied only when provided (Prisma skips undefined);
+    // estimated_delivery_date is nullable, so a null clears it and only a truly
+    // omitted (undefined) field is left untouched.
+    async updateOrderRequestDetails({
+        input,
+    }: {
+        input: OrderRequestDetailsInput;
+    }): Promise<OrderRequest> {
+        const orderRequest = await this.getOrderRequest({
+            orderRequestId: input.order_request_id,
+        });
+
+        if (!orderRequest) {
+            throw new NotFoundException();
+        }
+
+        return this.prisma.order_requests.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                notes: input.notes ?? undefined,
+                estimated_delivery_date:
+                    input.estimated_delivery_date === undefined
+                        ? undefined
+                        : input.estimated_delivery_date,
+            },
+            where: {
+                id: input.order_request_id,
             },
         });
     }
