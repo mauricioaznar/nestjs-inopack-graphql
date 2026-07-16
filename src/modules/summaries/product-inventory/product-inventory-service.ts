@@ -2,7 +2,7 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { ProductInventory } from '../../../common/dto/entities/production/product-inventory.dto';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { Product, ProductionSummary } from '../../../common/dto/entities';
+import { Product } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()

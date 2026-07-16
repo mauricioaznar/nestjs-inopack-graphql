@@ -1,4 +1,4 @@
-import dayjs, { ManipulateType } from 'dayjs';
+import dayjs from 'dayjs';
 
 export function getRangesFromDatePaginator({
     year = 2018,

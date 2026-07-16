@@ -1,6 +1,7 @@
 import {
     ArgsType,
     Field,
+    Float,
     InputType,
     Int,
     ObjectType,
@@ -36,6 +37,18 @@ export class OrderRequestInput extends OrderRequestBase {
 
     @Field(() => [OrderRequestProductInput])
     order_request_products: OrderRequestProductInput[];
+}
+
+// One entry in a batch priority reorder. The board renumbers a whole status
+// bucket in a single drag, so it sends the full list of changed rows at once.
+// `priority` stays Float to match the column's existing type.
+@InputType('OrderRequestPriorityInput')
+export class OrderRequestPriorityInput {
+    @Field(() => Int)
+    order_request_id: number;
+
+    @Field(() => Float)
+    priority: number;
 }
 
 @ObjectType('OrderRequest')

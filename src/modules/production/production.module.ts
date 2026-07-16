@@ -13,6 +13,7 @@ import { EmployeeStatusesModule } from './employee-status/employee-statuses.modu
 import { ProductMaterialsModule } from './product-materials/product-materials.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { OrderProductionResourcesModule } from './order-production-resources/order-production-resources.module';
+import { ProductionPlansModule } from './production-plans/production-plans.module';
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { OrderProductionResourcesModule } from './order-production-resources/ord
         OrderProductionProductsModule,
         OrderProductionResourcesModule,
         OrderProductionEmployeesModule,
+        ProductionPlansModule,
         OrderProductionTypesModule,
         OrderAdjustmentsModule,
         OrderAdjustmentProductsModule,

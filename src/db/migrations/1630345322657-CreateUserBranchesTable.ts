@@ -1,10 +1,11 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateUserBranchesTable1630345322657
-  implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `
+    implements MigrationInterface
+{
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            `
           CREATE TABLE \`user_branches\`
           (
               \`id\`         int unsigned NOT NULL AUTO_INCREMENT,
@@ -23,8 +24,8 @@ export class CreateUserBranchesTable1630345322657
             DEFAULT CHARSET = utf8
             COLLATE = utf8_unicode_ci;
       `,
-    );
-  }
+        );
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

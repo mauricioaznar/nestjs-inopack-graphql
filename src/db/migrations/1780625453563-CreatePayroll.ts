@@ -1,7 +1,6 @@
-import {MigrationInterface, QueryRunner} from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreatePayroll1780625453563 implements MigrationInterface {
-
     public async up(queryRunner: QueryRunner): Promise<void> {
         // =====================================================================
         // PRODUCTION-SAFE seed — employee categories (areas).
@@ -133,9 +132,12 @@ export class CreatePayroll1780625453563 implements MigrationInterface {
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`DROP TABLE IF EXISTS \`payroll_entries\``);
         await queryRunner.query(`DROP TABLE IF EXISTS \`payroll_periods\``);
-        await queryRunner.query(`ALTER TABLE \`employees\` DROP FOREIGN KEY \`employees_employee_category_id_foreign\``);
-        await queryRunner.query(`ALTER TABLE \`employees\` DROP COLUMN \`employee_category_id\``);
+        await queryRunner.query(
+            `ALTER TABLE \`employees\` DROP FOREIGN KEY \`employees_employee_category_id_foreign\``,
+        );
+        await queryRunner.query(
+            `ALTER TABLE \`employees\` DROP COLUMN \`employee_category_id\``,
+        );
         await queryRunner.query(`DROP TABLE IF EXISTS \`employee_categories\``);
     }
-
 }

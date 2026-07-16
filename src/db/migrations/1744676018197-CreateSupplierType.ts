@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateSupplierType1744676018197 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`
               CREATE TABLE \`supplier_type\` (
                 \`id\` int unsigned NOT NULL AUTO_INCREMENT,
                 \`active\`     int       NOT NULL DEFAULT '1',
@@ -13,13 +13,13 @@ export class CreateSupplierType1744676018197 implements MigrationInterface {
               ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
             `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             ALTER TABLE \`accounts\` 
                 ADD COLUMN \`supplier_type_id\` int unsigned, 
                 ADD CONSTRAINT \`suppliers_supplier_type_id_foreign\` FOREIGN KEY (\`supplier_type_id\`) 
                 REFERENCES \`supplier_type\`(\`id\`);
         `);
-  }
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

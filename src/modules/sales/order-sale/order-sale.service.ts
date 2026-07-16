@@ -804,10 +804,11 @@ export class OrderSaleService {
             throw new NotFoundException();
         }
 
-        const orderSaleStatus =
-            await this.prisma.order_sale_statuses.findFirst({
+        const orderSaleStatus = await this.prisma.order_sale_statuses.findFirst(
+            {
                 where: { id: order_sale_status_id },
-            });
+            },
+        );
 
         if (!orderSaleStatus) {
             throw new BadRequestException([

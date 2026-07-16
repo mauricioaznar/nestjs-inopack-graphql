@@ -1,7 +1,8 @@
-import {MigrationInterface, QueryRunner} from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class UpdateExpensesAndSalesWithIncludeUnitsInSummary1764948959077 implements MigrationInterface {
-
+export class UpdateExpensesAndSalesWithIncludeUnitsInSummary1764948959077
+    implements MigrationInterface
+{
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
             ALTER TABLE \`products\`
@@ -9,11 +10,9 @@ export class UpdateExpensesAndSalesWithIncludeUnitsInSummary1764948959077 implem
         `);
 
         await queryRunner.query(
-          'ALTER TABLE resources ADD `include_units_in_summary` boolean NOT NULL DEFAULT 0;',
+            'ALTER TABLE resources ADD `include_units_in_summary` boolean NOT NULL DEFAULT 0;',
         );
     }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-    }
-
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

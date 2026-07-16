@@ -13,7 +13,10 @@ import {
     ResourcesGetQueryArgs,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    DatePaginator,
+} from '../../../common/dto/pagination';
 import {
     getCreatedAtProperty,
     getUpdatedAtProperty,
@@ -88,7 +91,8 @@ export class ResourcesService {
                 current_unit_price: resourceInput.current_unit_price || 0,
                 current_group_price: resourceInput.current_group_price || 0,
                 group_weight_strict: resourceInput.group_weight_strict || 0,
-                include_units_in_summary: resourceInput.include_units_in_summary,
+                include_units_in_summary:
+                    resourceInput.include_units_in_summary,
                 exclude_from_financial_summaries:
                     resourceInput.exclude_from_financial_summaries,
                 unit_price_name: resourceInput.unit_price_name,
@@ -101,7 +105,8 @@ export class ResourcesService {
                 current_unit_price: resourceInput.current_unit_price || 0,
                 current_group_price: resourceInput.current_group_price || 0,
                 group_weight_strict: resourceInput.group_weight_strict || 0,
-                include_units_in_summary: resourceInput.include_units_in_summary,
+                include_units_in_summary:
+                    resourceInput.include_units_in_summary,
                 exclude_from_financial_summaries:
                     resourceInput.exclude_from_financial_summaries,
                 unit_price_name: resourceInput.unit_price_name,

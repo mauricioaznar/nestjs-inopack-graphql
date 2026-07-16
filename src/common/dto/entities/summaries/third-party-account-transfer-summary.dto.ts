@@ -5,7 +5,6 @@ import {
     InputType,
     Int,
     ObjectType,
-    registerEnumType,
 } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })

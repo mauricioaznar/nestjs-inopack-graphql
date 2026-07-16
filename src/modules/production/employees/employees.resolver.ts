@@ -23,9 +23,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import {
     ActivityTypeName,
     Branch,
-    GetProductsQueryFields,
     OrderProductionType,
-    PaginatedProducts,
     User,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';

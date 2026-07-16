@@ -24,6 +24,7 @@ export * from './production/order-production-product.dto';
 export * from './production/order-production-resource.dto';
 export * from './production/raw-material-addition.dto';
 export * from './production/raw-material-addition-item.dto';
+export * from './production/production-plan.dto';
 
 // sales
 export * from './sales/order-request-status.dto';
@@ -44,6 +45,7 @@ export * from './management/account.dto';
 export * from './management/account-type.dto';
 export * from './management/account-contact.dto';
 export * from './management/account-product.dto';
+export * from './management/account-resource.dto';
 export * from './management/expense-status.dto';
 export * from './management/expense.dto';
 export * from './management/resource.dto';

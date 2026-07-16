@@ -1,10 +1,11 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class UpdateOrderProductionResourcesWithProductionProducts1634170744758
-  implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `insert into order_production_resources (
+    implements MigrationInterface
+{
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            `insert into order_production_resources (
                 active,
                 created_at,
                 updated_at,
@@ -29,9 +30,9 @@ export class UpdateOrderProductionResourcesWithProductionProducts1634170744758
             where order_productions.active = 1
             and order_production_products.active =1
             and order_productions.order_production_type_id != products.order_production_type_id;`,
-    );
+        );
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             update order_production_products
             join order_productions on order_productions.id = order_production_products.order_production_id
             join products on products.id = order_production_products.product_id
@@ -40,7 +41,7 @@ export class UpdateOrderProductionResourcesWithProductionProducts1634170744758
             and order_production_products.active =1
             and order_productions.order_production_type_id != products.order_production_type_id;
         `);
-  }
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

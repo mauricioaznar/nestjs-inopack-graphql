@@ -8,6 +8,8 @@ import {
     AccountContact,
     AccountProduct,
     AccountProductInput,
+    AccountResource,
+    AccountResourceInput,
     AccountsQueryArgs,
     AccountTransactionItem,
     AccountTransferItem,
@@ -297,6 +299,11 @@ export class AccountsService {
             items: input.account_products,
         });
 
+        await this.syncAccountResources({
+            account_id: account.id,
+            items: input.account_resources,
+        });
+
         return account;
     }
 
@@ -392,6 +399,79 @@ export class AccountsService {
         return product?.current_group_weight || 0;
     }
 
+    // The supplier resource catalog is synced the same venn-diagram way as the
+    // product catalog: rows present in the DB but not in the input are
+    // soft-deleted, new rows are created, and matching rows are updated. Unlike
+    // the product catalog this one is guideline-only — no group_weight to
+    // derive, no price rules, and duplicate resources are allowed.
+    private async syncAccountResources({
+        account_id,
+        items,
+    }: {
+        account_id: number;
+        items: AccountResourceInput[];
+    }): Promise<void> {
+        const oldItems = account_id
+            ? await this.prisma.account_resources.findMany({
+                  where: {
+                      account_id: account_id,
+                      active: 1,
+                  },
+              })
+            : [];
+
+        const {
+            aMinusB: deleteItems,
+            bMinusA: createItems,
+            intersection: updateItems,
+        } = vennDiagram({
+            a: oldItems,
+            b: items,
+            indexProperties: ['id'],
+        });
+
+        for await (const delItem of deleteItems) {
+            if (delItem && delItem.id) {
+                await this.prisma.account_resources.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: { id: delItem.id },
+                });
+            }
+        }
+
+        for await (const createItem of createItems) {
+            await this.prisma.account_resources.create({
+                data: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
+                    account_id: account_id,
+                    resource_id: createItem.resource_id,
+                    unit_price: createItem.unit_price,
+                    notes: createItem.notes,
+                    active: 1,
+                },
+            });
+        }
+
+        for await (const updateItem of updateItems) {
+            if (updateItem && updateItem.id) {
+                await this.prisma.account_resources.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        resource_id: updateItem.resource_id,
+                        unit_price: updateItem.unit_price,
+                        notes: updateItem.notes,
+                        active: 1,
+                    },
+                    where: { id: updateItem.id },
+                });
+            }
+        }
+    }
+
     // Mirrors the account-form yup schema on the backend: name and contact
     // names are required, plus the catalog rules. All errors are collected and
     // thrown together so the client sees the full list in one response.
@@ -419,6 +499,12 @@ export class AccountsService {
             errors,
         });
 
+        await this.collectAccountResourceErrors({
+            is_supplier: input.is_supplier,
+            items: input.account_resources,
+            errors,
+        });
+
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
@@ -442,8 +528,7 @@ export class AccountsService {
         // A product cannot be repeated in the account catalog.
         items.forEach(({ product_id: product_id_1 }) => {
             const count = items.filter(
-                ({ product_id: product_id_2 }) =>
-                    product_id_1 === product_id_2,
+                ({ product_id: product_id_2 }) => product_id_1 === product_id_2,
             ).length;
             if (count >= 2) {
                 errors.push(
@@ -481,13 +566,44 @@ export class AccountsService {
         });
     }
 
+    // Pushes supplier resource-catalog validation errors into the shared list.
+    // Deliberately minimal: the catalog is guideline-only, so there is NO
+    // uniqueness check (duplicate resources are allowed) and NO price rules (a
+    // 0 unit_price is fine). Only the supplier flag and resource existence are
+    // enforced.
+    private async collectAccountResourceErrors({
+        is_supplier,
+        items,
+        errors,
+    }: {
+        is_supplier: boolean;
+        items: AccountResourceInput[];
+        errors: string[];
+    }): Promise<void> {
+        // Only a supplier account may carry a resource catalog.
+        if (items.length > 0 && !is_supplier) {
+            errors.push('Account is not a supplier');
+        }
+
+        // Every catalog resource must exist and be active.
+        for await (const { resource_id } of items) {
+            if (!resource_id) {
+                errors.push('resource is required');
+                continue;
+            }
+            const resource = await this.prisma.resources.findFirst({
+                where: { id: resource_id, active: 1 },
+            });
+            if (!resource) {
+                errors.push(`resource (${resource_id}) does not exist`);
+            }
+        }
+    }
+
     async getAccountContacts({
         account_id,
     }: {
         account_id: number;
-        
-        
-        
     }): Promise<AccountContact[]> {
         return this.prisma.account_contacts.findMany({
             where: {
@@ -511,6 +627,21 @@ export class AccountsService {
         if (!account_id) return [];
 
         return this.prisma.account_products.findMany({
+            where: {
+                account_id: account_id,
+                active: 1,
+            },
+        });
+    }
+
+    async getAccountResources({
+        account_id,
+    }: {
+        account_id: number;
+    }): Promise<AccountResource[]> {
+        if (!account_id) return [];
+
+        return this.prisma.account_resources.findMany({
             where: {
                 account_id: account_id,
                 active: 1,
@@ -714,7 +845,9 @@ export class AccountsService {
                 : ''
         }`;
 
-        const res = await this.prisma.$queryRawUnsafe<AccountTransactionItem[]>(`
+        const res = await this.prisma.$queryRawUnsafe<
+            AccountTransactionItem[]
+        >(`
             SELECT
                 'sale' as type,
                 ${convertToInt('order_sales.id', 'id')},
@@ -722,7 +855,10 @@ export class AccountsService {
                 order_sales.invoice_code,
                 order_sales.date,
                 order_sales.notes,
-                ${convertToInt('order_sales.receipt_type_id', 'receipt_type_id')},
+                ${convertToInt(
+                    'order_sales.receipt_type_id',
+                    'receipt_type_id',
+                )},
                 wtv_s.total as total_with_tax,
                 ifnull(otv_s.total, 0) as transfer_receipts_total,
                 NULL as expense_status_color

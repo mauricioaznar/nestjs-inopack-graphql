@@ -14,8 +14,6 @@ import {
     Account,
     ActivityTypeName,
     PaginatedTransfers,
-    Resource,
-    ResourceCategory,
     Transfer,
     TransferReceipt,
     TransfersQueryArgs,
@@ -23,7 +21,10 @@ import {
     TransferUpsertInput,
     User,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, DatePaginator } from '../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    DatePaginator,
+} from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';

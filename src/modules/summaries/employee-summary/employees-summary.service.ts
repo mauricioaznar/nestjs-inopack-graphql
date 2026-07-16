@@ -5,8 +5,6 @@ import { getDateRangeSql, getDatesInjectionsV2 } from '../../../common/helpers';
 import {
     EmployeesSummary,
     EmployeesSummaryArgs,
-    ExpensesSummary,
-    ExpensesSummaryArgs,
 } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 

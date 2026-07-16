@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateExpensesTables1684776541931 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`
       CREATE TABLE \`expenses\` (
         \`id\` int unsigned NOT NULL AUTO_INCREMENT,
         \`active\`     int       NOT NULL DEFAULT '1',
@@ -16,7 +16,7 @@ export class CreateExpensesTables1684776541931 implements MigrationInterface {
       ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
       CREATE TABLE \`expense_resources\` (
         \`id\` int unsigned NOT NULL AUTO_INCREMENT,
         \`active\`     int       NOT NULL DEFAULT '1',
@@ -29,7 +29,7 @@ export class CreateExpensesTables1684776541931 implements MigrationInterface {
         CONSTRAINT \`expense_resources_expense_id_foreign\` FOREIGN KEY (\`expense_id\`) REFERENCES \`expenses\` (\`id\`)
       ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
     `);
-  }
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

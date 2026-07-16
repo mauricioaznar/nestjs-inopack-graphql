@@ -4,8 +4,8 @@ import fs from 'fs';
 const name = process.argv[2];
 
 if (!name) {
-  console.error('Usage: npm run migration:create -- <MigrationName>');
-  process.exit(1);
+    console.error('Usage: npm run migration:create -- <MigrationName>');
+    process.exit(1);
 }
 
 const timestamp = Date.now();

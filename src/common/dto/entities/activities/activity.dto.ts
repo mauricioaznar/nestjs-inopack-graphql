@@ -21,6 +21,7 @@ export enum ActivityEntityName {
     RESOURCE = 'resource',
     EXPENSE = 'expenses',
     EXPENSE_RESOURCE = 'expenseResources',
+    PRODUCTION_PLAN = 'productionPlans',
 }
 
 registerEnumType(ActivityEntityName, {

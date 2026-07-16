@@ -1,14 +1,15 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class UpdateOrderSalesWithAutomaticTaxCalculation1735842356893
-  implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      'ALTER TABLE order_sales ADD `automatic_tax_calculation` boolean NOT NULL default 1;',
-    );
+    implements MigrationInterface
+{
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            'ALTER TABLE order_sales ADD `automatic_tax_calculation` boolean NOT NULL default 1;',
+        );
 
-    await queryRunner.query(
-      `
+        await queryRunner.query(
+            `
         UPDATE
             order_sales,
             (
@@ -27,8 +28,8 @@ export class UpdateOrderSalesWithAutomaticTaxCalculation1735842356893
         SET order_sales.subtotal = round(ztv.total, 2), order_sales.tax = round(ztv.tax, 2), order_sales.total_with_tax = round(ztv.total_with_tax, 2)
         WHERE order_sales.id = ztv.order_sale_id;
       `,
-    );
-  }
+        );
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

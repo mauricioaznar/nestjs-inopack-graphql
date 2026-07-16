@@ -3,6 +3,7 @@ import { TransfersModule } from './transfers/transfers.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { AccountContactsModule } from './account-contacts/account-contacts.module';
 import { AccountProductsModule } from './account-products/account-products.module';
+import { AccountResourcesModule } from './account-resources/account-resources.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { ResourcesModule } from './resources/resources.module';
 import { ResourceCategoriesModule } from './resource-categories/resource-categories.module';
@@ -17,6 +18,7 @@ import { TransferTypeModule } from './transfer-types/transfer-type.module';
         AccountsModule,
         AccountContactsModule,
         AccountProductsModule,
+        AccountResourcesModule,
         ExpenseResourcesModule,
         ExpensesModule,
         ResourcesModule,

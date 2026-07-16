@@ -2,10 +2,7 @@ import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable, UseGuards } from '@nestjs/common';
 import { ThirdPartyAccountTransferSummariesService } from './third-party-account-transfer-summaries.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
-import {
-    Account,
-    ExpensesWithDisparitiesQueryArgs,
-} from '../../../common/dto/entities';
+import { Account } from '../../../common/dto/entities';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 import {

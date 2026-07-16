@@ -3,7 +3,6 @@ import { Injectable } from '@nestjs/common';
 import { TransferReceiptsService } from './transfer-receipts.service';
 import {
     TransferReceipt,
-    Resource,
     OrderSale,
     Expense,
     Transfer,

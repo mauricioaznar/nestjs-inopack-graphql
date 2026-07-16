@@ -11,11 +11,9 @@ import {
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { MachinesService } from './machines.service';
 import {
-    Account,
     ActivityTypeName,
     Branch,
     GetMachineQueryFields,
-    GetProductsQueryFields,
     Machine,
     MachineDailyProduction,
     MachinePart,
@@ -26,7 +24,10 @@ import {
     PaginatedMachines,
     User,
 } from '../../../common/dto/entities';
-import { OffsetPaginatorArgs, DatePaginator, YearMonthArgs } from '../../../common/dto/pagination';
+import {
+    OffsetPaginatorArgs,
+    YearMonthArgs,
+} from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';

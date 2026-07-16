@@ -9,9 +9,9 @@ import {
 } from '@nestjs/graphql';
 import { AccountContactInput } from './account-contact.dto';
 import { AccountProductInput } from './account-product.dto';
+import { AccountResourceInput } from './account-resource.dto';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 import { ColumnOrder } from '../../pagination';
-import { ProductBase } from '../production/product.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -71,6 +71,9 @@ export class AccountUpsertInput extends AccountBase {
 
     @Field(() => [AccountProductInput])
     account_products: AccountProductInput[];
+
+    @Field(() => [AccountResourceInput])
+    account_resources: AccountResourceInput[];
 }
 
 @ObjectType('Account')

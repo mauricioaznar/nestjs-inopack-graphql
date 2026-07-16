@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class ChangesForGraphql1656709123734 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`
         CREATE TABLE \`spare_categories\`
             (
               \`id\`           int unsigned                                            NOT NULL AUTO_INCREMENT,
@@ -17,7 +17,7 @@ export class ChangesForGraphql1656709123734 implements MigrationInterface {
             COLLATE = utf8mb4_unicode_ci;
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
             CREATE TABLE \`spares\`
                 (
                   \`id\`           int unsigned                                            NOT NULL AUTO_INCREMENT,
@@ -35,7 +35,7 @@ export class ChangesForGraphql1656709123734 implements MigrationInterface {
                 COLLATE = utf8mb4_unicode_ci;
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
         CREATE TABLE \`machine_sections\`
             (
               \`id\`           int unsigned                                            NOT NULL AUTO_INCREMENT,
@@ -53,7 +53,7 @@ export class ChangesForGraphql1656709123734 implements MigrationInterface {
             COLLATE = utf8mb4_unicode_ci;
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
            CREATE TABLE \`machine_parts\`
                 (
                   \`id\`           int unsigned                                            NOT NULL AUTO_INCREMENT,
@@ -79,7 +79,7 @@ export class ChangesForGraphql1656709123734 implements MigrationInterface {
         
     `);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
 		CREATE TABLE \`machine_compatibilities\`
 			(
 			  \`id\`           int unsigned                                            NOT NULL AUTO_INCREMENT,
@@ -99,7 +99,7 @@ export class ChangesForGraphql1656709123734 implements MigrationInterface {
 			COLLATE = utf8mb4_unicode_ci;
 	`);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
 		CREATE TABLE \`spare_operations\`
 			(
 			  \`id\`           int unsigned                                            NOT NULL AUTO_INCREMENT,
@@ -117,7 +117,7 @@ export class ChangesForGraphql1656709123734 implements MigrationInterface {
 			COLLATE = utf8mb4_unicode_ci;
 	`);
 
-    await queryRunner.query(`
+        await queryRunner.query(`
 		CREATE TABLE \`spare_transactions\`
 		(
 		  \`id\`           int unsigned                                            NOT NULL AUTO_INCREMENT,
@@ -138,34 +138,34 @@ export class ChangesForGraphql1656709123734 implements MigrationInterface {
 		COLLATE = utf8mb4_unicode_ci;
 	`);
 
-    await queryRunner.query(`SET SQL_MODE='ALLOW_INVALID_DATES';`);
-    await queryRunner.query(
-      `ALTER TABLE order_requests MODIFY COLUMN estimated_delivery_date date NULL;`,
-    );
-    await queryRunner.query(
-      `update order_requests set order_requests.estimated_delivery_date = null where order_requests.estimated_delivery_date = '0000-00-00' and id > 0;`,
-    );
-    await queryRunner.query(
-      `alter table order_requests modify column date datetime not null;`,
-    );
-    await queryRunner.query(
-      `alter table order_requests modify column estimated_delivery_date datetime null;`,
-    );
-    await queryRunner.query(
-      `alter table order_sale_payments modify column date_paid datetime not null;`,
-    );
-    await queryRunner.query(
-      `alter table order_adjustment_products drop column name;`,
-    );
+        await queryRunner.query(`SET SQL_MODE='ALLOW_INVALID_DATES';`);
+        await queryRunner.query(
+            `ALTER TABLE order_requests MODIFY COLUMN estimated_delivery_date date NULL;`,
+        );
+        await queryRunner.query(
+            `update order_requests set order_requests.estimated_delivery_date = null where order_requests.estimated_delivery_date = '0000-00-00' and id > 0;`,
+        );
+        await queryRunner.query(
+            `alter table order_requests modify column date datetime not null;`,
+        );
+        await queryRunner.query(
+            `alter table order_requests modify column estimated_delivery_date datetime null;`,
+        );
+        await queryRunner.query(
+            `alter table order_sale_payments modify column date_paid datetime not null;`,
+        );
+        await queryRunner.query(
+            `alter table order_adjustment_products drop column name;`,
+        );
 
-    await queryRunner.query(
-      `alter table order_sales modify column date datetime not null;`,
-    );
+        await queryRunner.query(
+            `alter table order_sales modify column date datetime not null;`,
+        );
 
-    await queryRunner.query(
-      `alter table order_adjustments modify column date datetime not null;`,
-    );
-  }
+        await queryRunner.query(
+            `alter table order_adjustments modify column date datetime not null;`,
+        );
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+    public async down(queryRunner: QueryRunner): Promise<void> {}
 }

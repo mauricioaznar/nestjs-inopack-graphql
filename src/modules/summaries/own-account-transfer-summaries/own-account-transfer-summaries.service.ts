@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { Account, Expense } from '../../../common/dto/entities';
+import { Account } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 import { OwnAccountTransferSummary } from '../../../common/dto/entities/summaries/own-account-transfer-summary.dto';
 

@@ -12,7 +12,6 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { ProductCategory } from '../../../common/dto/entities/production/product-category.dto';
 import { ProductMaterial } from '../../../common/dto/entities/production/product-material.dto';
 import {
-    formatDate,
     getCreatedAtProperty,
     getStringFromDate,
     getUpdatedAtProperty,
@@ -20,7 +19,6 @@ import {
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
-import dayjs from 'dayjs';
 
 @Injectable()
 export class ProductsService {

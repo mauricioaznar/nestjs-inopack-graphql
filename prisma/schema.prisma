@@ -40,6 +40,7 @@ model branches {
   machines          machines[]
   order_productions order_productions[]
   payroll_periods   payroll_periods[]
+  production_plans  production_plans[]
   user_branches     user_branches[]
   users             users[]
 }
@@ -91,6 +92,7 @@ model employees {
   order_production_employees order_production_employees[]
   order_productions          order_productions[]
   payroll_entries            payroll_entries[]
+  production_plan_row_employees production_plan_row_employees[]
 
   @@index([branch_id], map: "employees_branch_id_foreign")
   @@index([employee_status_id], map: "employees_employee_status_id_foreign")
@@ -134,6 +136,7 @@ model machines {
   machine_type               machine_type?                @relation(fields: [machine_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_machine_type_id_foreign")
   order_production_products  order_production_products[]
   order_production_resources order_production_resources[]
+  production_plan_rows       production_plan_rows[]
 
   @@index([order_production_type_id], map: "machine_order_production_type_id_foreign")
   @@index([branch_id], map: "machines_branch_id_foreign")
@@ -260,6 +263,55 @@ model order_productions {
   @@index([order_production_type_id], map: "order_productions_order_production_type_id_foreign")
 }
 
+model production_plans {
+  id                   Int                    @id @default(autoincrement()) @db.UnsignedInt
+  active               Int                    @default(1)
+  created_at           DateTime?              @db.DateTime(0)
+  updated_at           DateTime?              @db.DateTime(0)
+  date                 DateTime               @db.DateTime(0)
+  shift                Int                    @default(1)
+  branch_id            Int?                   @db.UnsignedInt
+  notes                String                 @default("") @db.VarChar(255)
+  branches             branches?              @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "production_plans_branch_id_foreign")
+  production_plan_rows production_plan_rows[]
+
+  @@index([branch_id], map: "production_plans_branch_id_foreign")
+}
+
+model production_plan_rows {
+  id                            Int                             @id @default(autoincrement()) @db.UnsignedInt
+  active                        Int                             @default(1)
+  created_at                    DateTime?                       @db.DateTime(0)
+  updated_at                    DateTime?                       @db.DateTime(0)
+  production_plan_id            Int?                            @db.UnsignedInt
+  machine_id                    Int?                            @db.UnsignedInt
+  product_id                    Int?                            @db.UnsignedInt
+  notes                         String                          @default("") @db.VarChar(255)
+  position                      Int                             @default(0)
+  production_plans              production_plans?               @relation(fields: [production_plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "production_plan_rows_production_plan_id_foreign")
+  machines                      machines?                       @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "production_plan_rows_machine_id_foreign")
+  products                      products?                       @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "production_plan_rows_product_id_foreign")
+  production_plan_row_employees production_plan_row_employees[]
+
+  @@index([production_plan_id], map: "production_plan_rows_production_plan_id_foreign")
+  @@index([machine_id], map: "production_plan_rows_machine_id_foreign")
+  @@index([product_id], map: "production_plan_rows_product_id_foreign")
+}
+
+model production_plan_row_employees {
+  id                     Int                   @id @default(autoincrement()) @db.UnsignedInt
+  active                 Int                   @default(1)
+  created_at             DateTime?             @db.DateTime(0)
+  updated_at             DateTime?             @db.DateTime(0)
+  production_plan_row_id Int?                  @db.UnsignedInt
+  employee_id            Int?                  @db.UnsignedInt
+  production_plan_rows   production_plan_rows? @relation(fields: [production_plan_row_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "production_plan_row_employees_row_id_foreign")
+  employees              employees?            @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "production_plan_row_employees_employee_id_foreign")
+
+  @@index([production_plan_row_id], map: "production_plan_row_employees_row_id_foreign")
+  @@index([employee_id], map: "production_plan_row_employees_employee_id_foreign")
+}
+
 model order_request_products {
   id               Int             @id @default(autoincrement()) @db.UnsignedInt
   active           Int             @default(1)
@@ -294,6 +346,22 @@ model account_products {
 
   @@index([account_id], map: "account_products_account_id_foreign")
   @@index([product_id], map: "account_products_product_id_foreign")
+}
+
+model account_resources {
+  id         Int        @id @default(autoincrement()) @db.UnsignedInt
+  active     Int        @default(1)
+  created_at DateTime?  @db.DateTime(0)
+  updated_at DateTime?  @db.DateTime(0)
+  unit_price Float      @default(0.00)
+  notes      String     @default("") @db.VarChar(255)
+  account_id Int?       @db.UnsignedInt
+  resource_id Int?      @db.UnsignedInt
+  accounts   accounts?  @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_resources_account_id_foreign")
+  resources  resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_resources_resource_id_foreign")
+
+  @@index([account_id], map: "account_resources_account_id_foreign")
+  @@index([resource_id], map: "account_resources_resource_id_foreign")
 }
 
 model order_request_statuses {
@@ -427,6 +495,7 @@ model products {
   order_production_resources order_production_resources[]
   order_request_products     order_request_products[]
   order_sale_products        order_sale_products[]
+  production_plan_rows       production_plan_rows[]
   product_categories         product_categories?          @relation(fields: [product_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_category_id")
   product_materials          product_materials?           @relation(fields: [product_material_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_material_id")
   order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_order_production_type_id_foreign")
@@ -664,6 +733,7 @@ model accounts {
   exclude_from_accountability_export            Boolean            @default(false)
   account_contacts                              account_contacts[]
   account_products                              account_products[]
+  account_resources                             account_resources[]
   resources                                     resources?         @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_resource_id_foreign")
   expenses                                      expenses[]
   order_requests                                order_requests[]
@@ -745,6 +815,7 @@ model resources {
   unit_price_name          String?              @db.VarChar(255)
   exclude_from_financial_summaries Boolean      @default(false)
   accounts                 accounts[]
+  account_resources        account_resources[]
   expense_resources        expense_resources[]
   resource_categories      resource_categories? @relation(fields: [resource_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_resource_category_id_foreign")
 
