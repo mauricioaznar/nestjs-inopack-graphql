@@ -314,6 +314,8 @@ export class ProductionPerformanceService {
                 and op.active = 1
             join machines m
                 on m.id = opp.machine_id
+                and m.active = 1
+                and m.discontinued = 0
             join (
                 select order_production_id, sum(kilos) as total_kilos
                 from order_production_products
@@ -388,6 +390,8 @@ export class ProductionPerformanceService {
                 and e.active = 1
             join machines m
                 on m.id = opp.machine_id
+                and m.active = 1
+                and m.discontinued = 0
             join products
                 on products.id = opp.product_id
                 and products.active = 1
