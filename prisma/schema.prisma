@@ -260,7 +260,8 @@ model production_plans {
   date                 DateTime               @db.DateTime(0)
   shift                Int                    @default(1)
   branch_id            Int?                   @db.UnsignedInt
-  notes                String                 @default("") @db.VarChar(255)
+  notes                String                 @default("") @db.Text
+  product_notes        String                 @default("") @db.Text
   branches             branches?              @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "production_plans_branch_id_foreign")
   production_plan_rows production_plan_rows[]
 
@@ -275,7 +276,7 @@ model production_plan_rows {
   production_plan_id            Int?                            @db.UnsignedInt
   machine_id                    Int?                            @db.UnsignedInt
   product_id                    Int?                            @db.UnsignedInt
-  notes                         String                          @default("") @db.VarChar(255)
+  notes                         String                          @default("") @db.Text
   position                      Int                             @default(0)
   production_plans              production_plans?               @relation(fields: [production_plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "production_plan_rows_production_plan_id_foreign")
   machines                      machines?                       @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "production_plan_rows_machine_id_foreign")

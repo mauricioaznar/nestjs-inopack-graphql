@@ -14,8 +14,14 @@ export class ProductionPlanBase {
     @Field(() => Int, { nullable: true })
     branch_id: number | null;
 
+    // "parejas" notes list — newline-separated bullet items. Kept under the old
+    // `notes` name to avoid a rename cascade; the frontend splits/joins on \n.
     @Field({ nullable: false })
     notes: string;
+
+    // "productos" notes list — newline-separated bullet items.
+    @Field({ nullable: false })
+    product_notes: string;
 }
 
 @ObjectType({ isAbstract: true })
