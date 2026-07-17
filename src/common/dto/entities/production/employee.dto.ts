@@ -38,6 +38,15 @@ export class EmployeeBase {
 export class EmployeeUpsertInput extends EmployeeBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
+
+    // Base weekly salary and the schedule it's stated for (48 or 52.5 hrs).
+    // Nullable so older callers keep working; the service defaults null to 0.
+    // Payroll period creation snapshots these onto each entry's sueldo/jo.
+    @Field(() => Float, { nullable: true })
+    base_salary?: number | null;
+
+    @Field(() => Float, { nullable: true })
+    hours_should_work?: number | null;
 }
 
 @ObjectType('Employee')
@@ -50,6 +59,9 @@ export class Employee extends EmployeeBase {
 
     @Field(() => Float, { nullable: false })
     base_salary: number;
+
+    @Field(() => Float, { nullable: false })
+    hours_should_work: number;
 
     @Field(() => Int, { nullable: true })
     employee_category_id: number | null;

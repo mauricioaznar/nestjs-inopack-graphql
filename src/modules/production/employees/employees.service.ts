@@ -157,6 +157,9 @@ export class EmployeesService {
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
                 is_leader: input.is_leader,
+                // Base pay + schedule feed payroll; null coalesces to 0.
+                base_salary: input.base_salary ?? 0,
+                hours_should_work: input.hours_should_work ?? 0,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -167,6 +170,8 @@ export class EmployeesService {
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
                 is_leader: input.is_leader,
+                base_salary: input.base_salary ?? 0,
+                hours_should_work: input.hours_should_work ?? 0,
             },
             where: {
                 id: input.id || 0,
