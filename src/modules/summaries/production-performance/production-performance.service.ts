@@ -255,6 +255,8 @@ export class ProductionPerformanceService {
                 and op.active = 1
             join products
                 on products.id = opp.product_id
+                and products.active = 1
+                and products.discontinued = 0
             join (
                 select order_production_id, sum(kilos) as total_kilos
                 from order_production_products
@@ -263,7 +265,6 @@ export class ProductionPerformanceService {
             ) pt on pt.order_production_id = op.id
             where opp.active = 1
                 and opp.machine_id = ${Number(machine_id)}
-                and products.discontinued = 0
                 ${sharedFilters}
             group by opp.product_id, products.description
             order by sum(opp.kilos) desc
@@ -321,7 +322,6 @@ export class ProductionPerformanceService {
             ) pt on pt.order_production_id = op.id
             where opp.active = 1
                 and opp.product_id = ${Number(product_id)}
-                and products.discontinued = 0
                 ${sharedFilters}
             group by opp.machine_id, m.name
             order by sum(opp.kilos) desc
@@ -385,10 +385,13 @@ export class ProductionPerformanceService {
                 and ope.active = 1
             left join employees e
                 on e.id = ope.employee_id
+                and e.active = 1
             join machines m
                 on m.id = opp.machine_id
             join products
                 on products.id = opp.product_id
+                and products.active = 1
+                and products.discontinued = 0
             join (
                 select order_production_id, sum(kilos) as total_kilos
                 from order_production_products
@@ -416,7 +419,6 @@ export class ProductionPerformanceService {
             ) combo on combo.machine_id = opp.machine_id
                    and combo.product_id = opp.product_id
             where opp.active = 1
-                and products.discontinued = 0
                 and (e.is_inactive = 0 or e.id is null)
                 ${employeeFilter}
                 ${sharedFilters}
@@ -443,8 +445,9 @@ export class ProductionPerformanceService {
                 and op.active = 1
             join products
                 on products.id = opp.product_id
-            where opp.active = 1
+                and products.active = 1
                 and products.discontinued = 0
+            where opp.active = 1
             order by products.description
         `);
     }
