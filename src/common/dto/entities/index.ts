@@ -63,4 +63,4 @@ export * from './summaries/production-summary.dto';
 export * from './summaries/sales-summary.dto';
 export * from './summaries/employees-summary.dto';
 export * from './summaries/production-resources-summary.dto';
-export * from './summaries/production-performance.dto';
+export * from './summaries/employee-performance.dto';
