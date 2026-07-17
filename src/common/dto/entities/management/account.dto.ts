@@ -29,7 +29,7 @@ export class AccountBase {
     requires_order_request: boolean;
 
     @Field(() => Boolean, { nullable: false })
-    monitor_balance: boolean;
+    monitor_supplier_expenses: boolean;
 
     @Field(() => Boolean, { nullable: false })
     is_client: boolean;

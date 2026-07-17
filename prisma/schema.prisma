@@ -711,7 +711,7 @@ model accounts {
   is_own                                        Boolean            @default(false)
   requires_order_request                        Boolean            @default(true)
   resource_id                                   Int?               @db.UnsignedInt
-  monitor_balance                               Boolean            @default(false)
+  monitor_supplier_expenses                     Boolean            @default(false)
   client_credit_days                            Int                @default(0)
   supplier_credit_days                          Int                @default(0)
   client_require_credit_note                    Boolean            @default(false)

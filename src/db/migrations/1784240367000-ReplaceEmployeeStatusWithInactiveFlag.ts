@@ -5,7 +5,8 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 // ORDER-PRODUCTION ACTIVITY (an active employee stays active only if they appear
 // on an order production in the last 5 months), THEN drop the FK + column + table.
 // Finally, discontinue stale products (no appearance on any order document in the
-// last 5 months).
+// last 5 months) and idle machines (not used in a production in the last 5 months),
+// and rename accounts.monitor_balance -> monitor_supplier_expenses.
 //
 // NOTE — data-driven & run-time-relative: both backfills use a window relative to
 // when the migration runs (CURDATE() - 5 months), so the exact rows affected
@@ -102,6 +103,40 @@ export class ReplaceEmployeeStatusWithInactiveFlag1784240367000
                     AND os.\`date\` >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
               )
         `);
+
+        // 5) Discontinue idle machines: any active machine NOT used in a production
+        //    in the last 5 months — used = appears on an order_production_products
+        //    (produced output) OR order_production_resources (consumed resources)
+        //    row for a production whose start_date is within the window. Idempotent.
+        await queryRunner.query(`
+            UPDATE \`machines\` m
+            SET m.\`discontinued\` = 1
+            WHERE m.\`active\` = 1
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM \`order_production_products\` opp
+                  JOIN \`order_productions\` op ON op.\`id\` = opp.\`order_production_id\`
+                  WHERE opp.\`machine_id\` = m.\`id\`
+                    AND op.\`active\` = 1 AND opp.\`active\` = 1
+                    AND op.\`start_date\` >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM \`order_production_resources\` opr
+                  JOIN \`order_productions\` op2 ON op2.\`id\` = opr.\`order_production_id\`
+                  WHERE opr.\`machine_id\` = m.\`id\`
+                    AND op2.\`active\` = 1 AND opr.\`active\` = 1
+                    AND op2.\`start_date\` >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
+              )
+        `);
+
+        // 6) Rename accounts.monitor_balance -> monitor_supplier_expenses. The
+        //    flag marks accounts whose EXPENSES are monitored on the "Balance de
+        //    proveedores" page (all monitored accounts are suppliers), so
+        //    "balance" was misleading. Structural rename only — values carry over.
+        await queryRunner.query(
+            'ALTER TABLE `accounts` RENAME COLUMN `monitor_balance` TO `monitor_supplier_expenses`',
+        );
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
@@ -109,7 +144,7 @@ export class ReplaceEmployeeStatusWithInactiveFlag1784240367000
         // original per-employee status ids (beyond Alta/Baja) and the pre-migration
         // products.discontinued values aren't recoverable, so down() only reinstates
         // the table + column and maps the flag back to Alta (1) / Baja (2). It does
-        // NOT revert products.discontinued.
+        // NOT revert products.discontinued or machines.discontinued.
         await queryRunner.query(`
             CREATE TABLE \`employee_statuses\` (
                 \`id\`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -138,6 +173,11 @@ export class ReplaceEmployeeStatusWithInactiveFlag1784240367000
         );
         await queryRunner.query(
             'ALTER TABLE `employees` DROP COLUMN `is_inactive`',
+        );
+
+        // Reverse the accounts flag rename.
+        await queryRunner.query(
+            'ALTER TABLE `accounts` RENAME COLUMN `monitor_supplier_expenses` TO `monitor_balance`',
         );
     }
 }

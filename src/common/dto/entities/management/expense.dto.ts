@@ -135,7 +135,7 @@ export class ExpensesQueryArgs {
 @ArgsType()
 export class ExpensesWithDisparitiesQueryArgs {
     @Field(() => Boolean, { nullable: true })
-    monitor_balance: boolean;
+    monitor_supplier_expenses: boolean;
 }
 
 export enum ExpensesSortableFields {

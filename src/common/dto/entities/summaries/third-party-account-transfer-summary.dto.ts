@@ -23,7 +23,7 @@ export class ThirdPartyAccountTransferSummaryBase {
 @ArgsType()
 export class ThirdPartyAccountTransferQueryArgs {
     @Field(() => Boolean, { nullable: true })
-    monitor_balance: boolean;
+    monitor_supplier_expenses: boolean;
 }
 
 @ObjectType('ThirdPartyAccountTransferSummary')

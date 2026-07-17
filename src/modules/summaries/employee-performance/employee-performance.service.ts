@@ -118,9 +118,11 @@ export class EmployeePerformanceService {
     async getMachineHourlyRuns({
         machine_id,
         from_date,
+        product_id,
     }: {
         machine_id: number;
         from_date?: string | null;
+        product_id?: number | null;
     }): Promise<MachineHourlyRun[]> {
         if (!machine_id) {
             return [];
@@ -129,6 +131,15 @@ export class EmployeePerformanceService {
             from_date && /^\d{4}-\d{2}-\d{2}$/.test(from_date)
                 ? `and op.start_date >= '${from_date}'`
                 : '';
+        // Optional product filter: when set, the product side sums ONLY that
+        // product's lines (so kilos/hours + kg/hr reflect the single product and
+        // product_count is 1), and only productions that ran it appear. The
+        // resource side stays whole-production (resources aren't attributable to
+        // one product), so "Consumo kg/hr" remains the machine's total for those
+        // runs — noted in the UI.
+        const productFilter = product_id
+            ? `and product_id = ${Number(product_id)}`
+            : '';
         return this.prisma.$queryRawUnsafe(`
             select
                 ${convertToInt('op.id', 'order_production_id')},
@@ -147,6 +158,7 @@ export class EmployeePerformanceService {
                 from order_production_products
                 where active = 1
                     and machine_id = ${Number(machine_id)}
+                    ${productFilter}
                 group by order_production_id
             ) pp
             join order_productions op

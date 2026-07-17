@@ -288,8 +288,9 @@ export class ExpensesService {
         expensesWithDisparitiesQueryArgs?: ExpensesWithDisparitiesQueryArgs,
     ): Promise<Expense[]> {
         let andWhereMonitorBalance = '';
-        if (expensesWithDisparitiesQueryArgs?.monitor_balance) {
-            andWhereMonitorBalance += 'and accounts.monitor_balance = 1';
+        if (expensesWithDisparitiesQueryArgs?.monitor_supplier_expenses) {
+            andWhereMonitorBalance +=
+                'and accounts.monitor_supplier_expenses = 1';
         }
 
         const res = await this.prisma.$queryRawUnsafe<Expense[]>(`
