@@ -147,6 +147,7 @@ export class ProductionPlansService {
                 shift: input.shift,
                 branch_id: input.branch_id,
                 notes: input.notes,
+                product_notes: input.product_notes,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -154,6 +155,7 @@ export class ProductionPlansService {
                 shift: input.shift,
                 branch_id: input.branch_id,
                 notes: input.notes,
+                product_notes: input.product_notes,
             },
             where: {
                 id: input.id || 0,
