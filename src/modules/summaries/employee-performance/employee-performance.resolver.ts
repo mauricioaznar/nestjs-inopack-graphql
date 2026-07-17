@@ -2,9 +2,13 @@ import { Args, Int, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { EmployeePerformanceService } from './employee-performance.service';
 import {
+    EmployeeComboPerformanceSummary,
     MachineHourlyRun,
     MachineProduct,
     MachineProductEmployeeRun,
+    MachineProductPerformanceSummary,
+    ProductMachinePerformanceSummary,
+    ProductWithRuns,
 } from '../../../common/dto/entities';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
@@ -42,6 +46,79 @@ export class EmployeePerformanceResolver {
     // (kilos in the numerator, 0 in the denominator). productId (optional)
     // narrows the production side to a single product so the calculation reflects
     // just that product instead of every line on the machine.
+    @Query(() => [MachineProductPerformanceSummary])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getMachineProductPerformanceSummary(
+        @Args('machineId', { type: () => Int }) machineId: number,
+        @Args('fromDate', { type: () => String, nullable: true })
+        fromDate: string | null,
+        @Args('toDate', { type: () => String, nullable: true })
+        toDate: string | null,
+        @Args('branchId', { type: () => Int, nullable: true })
+        branchId: number | null,
+        @Args('orderProductionTypeId', { type: () => Int, nullable: true })
+        orderProductionTypeId: number | null,
+    ): Promise<MachineProductPerformanceSummary[]> {
+        return this.service.getMachineProductPerformanceSummary({
+            machine_id: machineId,
+            from_date: fromDate,
+            to_date: toDate,
+            branch_id: branchId,
+            order_production_type_id: orderProductionTypeId,
+        });
+    }
+
+    @Query(() => [ProductMachinePerformanceSummary])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getProductMachinePerformanceSummary(
+        @Args('productId', { type: () => Int }) productId: number,
+        @Args('fromDate', { type: () => String, nullable: true })
+        fromDate: string | null,
+        @Args('toDate', { type: () => String, nullable: true })
+        toDate: string | null,
+        @Args('branchId', { type: () => Int, nullable: true })
+        branchId: number | null,
+        @Args('orderProductionTypeId', { type: () => Int, nullable: true })
+        orderProductionTypeId: number | null,
+    ): Promise<ProductMachinePerformanceSummary[]> {
+        return this.service.getProductMachinePerformanceSummary({
+            product_id: productId,
+            from_date: fromDate,
+            to_date: toDate,
+            branch_id: branchId,
+            order_production_type_id: orderProductionTypeId,
+        });
+    }
+
+    @Query(() => [EmployeeComboPerformanceSummary])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getEmployeeComboPerformanceSummary(
+        @Args('employeeId', { type: () => Int, nullable: true })
+        employeeId: number | null,
+        @Args('fromDate', { type: () => String, nullable: true })
+        fromDate: string | null,
+        @Args('toDate', { type: () => String, nullable: true })
+        toDate: string | null,
+        @Args('branchId', { type: () => Int, nullable: true })
+        branchId: number | null,
+        @Args('orderProductionTypeId', { type: () => Int, nullable: true })
+        orderProductionTypeId: number | null,
+    ): Promise<EmployeeComboPerformanceSummary[]> {
+        return this.service.getEmployeeComboPerformanceSummary({
+            employee_id: employeeId,
+            from_date: fromDate,
+            to_date: toDate,
+            branch_id: branchId,
+            order_production_type_id: orderProductionTypeId,
+        });
+    }
+
+    @Query(() => [ProductWithRuns])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getProductsWithRuns(): Promise<ProductWithRuns[]> {
+        return this.service.getProductsWithRuns();
+    }
+
     @Query(() => [MachineHourlyRun])
     @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
     async getMachineHourlyRuns(
