@@ -263,6 +263,7 @@ export class ProductionPerformanceService {
             ) pt on pt.order_production_id = op.id
             where opp.active = 1
                 and opp.machine_id = ${Number(machine_id)}
+                and products.discontinued = 0
                 ${sharedFilters}
             group by opp.product_id, products.description
             order by sum(opp.kilos) desc
@@ -320,6 +321,7 @@ export class ProductionPerformanceService {
             ) pt on pt.order_production_id = op.id
             where opp.active = 1
                 and opp.product_id = ${Number(product_id)}
+                and products.discontinued = 0
                 ${sharedFilters}
             group by opp.machine_id, m.name
             order by sum(opp.kilos) desc
@@ -414,6 +416,8 @@ export class ProductionPerformanceService {
             ) combo on combo.machine_id = opp.machine_id
                    and combo.product_id = opp.product_id
             where opp.active = 1
+                and products.discontinued = 0
+                and (e.is_inactive = 0 or e.id is null)
                 ${employeeFilter}
                 ${sharedFilters}
             group by
@@ -440,6 +444,7 @@ export class ProductionPerformanceService {
             join products
                 on products.id = opp.product_id
             where opp.active = 1
+                and products.discontinued = 0
             order by products.description
         `);
     }
