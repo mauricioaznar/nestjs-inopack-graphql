@@ -417,11 +417,11 @@ export class ProductionPerformanceService {
                 ${employeeFilter}
                 ${sharedFilters}
             group by
-                coalesce(ope.employee_id, 0),
+                cast(coalesce(ope.employee_id, 0) as decimal(12, 2)),
                 coalesce(e.fullname, 'Sin empleado asignado'),
-                opp.machine_id, m.name,
-                opp.product_id, products.description,
-                combo.combo_runs, combo.combo_kilos
+                cast(opp.machine_id as decimal(12, 2)), m.name,
+                cast(opp.product_id as decimal(12, 2)), products.description,
+                cast(combo.combo_runs as decimal(12, 2)), combo.combo_kilos
             order by sum(opp.kilos) desc
         `);
     }
