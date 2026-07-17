@@ -54,17 +54,11 @@ export class ProductionPerformanceResolver {
         fromDate: string | null,
         @Args('toDate', { type: () => String, nullable: true })
         toDate: string | null,
-        @Args('branchId', { type: () => Int, nullable: true })
-        branchId: number | null,
-        @Args('orderProductionTypeId', { type: () => Int, nullable: true })
-        orderProductionTypeId: number | null,
     ): Promise<MachineProductPerformanceSummary[]> {
         return this.service.getMachineProductPerformanceSummary({
             machine_id: machineId,
             from_date: fromDate,
             to_date: toDate,
-            branch_id: branchId,
-            order_production_type_id: orderProductionTypeId,
         });
     }
 
@@ -76,17 +70,11 @@ export class ProductionPerformanceResolver {
         fromDate: string | null,
         @Args('toDate', { type: () => String, nullable: true })
         toDate: string | null,
-        @Args('branchId', { type: () => Int, nullable: true })
-        branchId: number | null,
-        @Args('orderProductionTypeId', { type: () => Int, nullable: true })
-        orderProductionTypeId: number | null,
     ): Promise<ProductMachinePerformanceSummary[]> {
         return this.service.getProductMachinePerformanceSummary({
             product_id: productId,
             from_date: fromDate,
             to_date: toDate,
-            branch_id: branchId,
-            order_production_type_id: orderProductionTypeId,
         });
     }
 
@@ -99,17 +87,11 @@ export class ProductionPerformanceResolver {
         fromDate: string | null,
         @Args('toDate', { type: () => String, nullable: true })
         toDate: string | null,
-        @Args('branchId', { type: () => Int, nullable: true })
-        branchId: number | null,
-        @Args('orderProductionTypeId', { type: () => Int, nullable: true })
-        orderProductionTypeId: number | null,
     ): Promise<EmployeeComboPerformanceSummary[]> {
         return this.service.getEmployeeComboPerformanceSummary({
             employee_id: employeeId,
             from_date: fromDate,
             to_date: toDate,
-            branch_id: branchId,
-            order_production_type_id: orderProductionTypeId,
         });
     }
 

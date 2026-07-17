@@ -188,25 +188,15 @@ export class ProductionPerformanceService {
     private buildSharedFilters({
         from_date,
         to_date,
-        branch_id,
-        order_production_type_id,
     }: {
         from_date?: string | null;
         to_date?: string | null;
-        branch_id?: number | null;
-        order_production_type_id?: number | null;
     }): string {
         const parts: string[] = [];
         if (from_date && /^\d{4}-\d{2}-\d{2}$/.test(from_date))
             parts.push(`and op.start_date >= '${from_date}'`);
         if (to_date && /^\d{4}-\d{2}-\d{2}$/.test(to_date))
             parts.push(`and op.start_date <= '${to_date}'`);
-        if (branch_id)
-            parts.push(`and op.branch_id = ${Number(branch_id)}`);
-        if (order_production_type_id)
-            parts.push(
-                `and op.order_production_type_id = ${Number(order_production_type_id)}`,
-            );
         return parts.join('\n                ');
     }
 
@@ -218,22 +208,13 @@ export class ProductionPerformanceService {
         machine_id,
         from_date,
         to_date,
-        branch_id,
-        order_production_type_id,
     }: {
         machine_id: number;
         from_date?: string | null;
         to_date?: string | null;
-        branch_id?: number | null;
-        order_production_type_id?: number | null;
     }): Promise<MachineProductPerformanceSummary[]> {
         if (!machine_id) return [];
-        const sharedFilters = this.buildSharedFilters({
-            from_date,
-            to_date,
-            branch_id,
-            order_production_type_id,
-        });
+        const sharedFilters = this.buildSharedFilters({ from_date, to_date });
         return this.prisma.$queryRawUnsafe(`
             select
                 ${convertToInt('opp.product_id', 'product_id')},
@@ -277,22 +258,13 @@ export class ProductionPerformanceService {
         product_id,
         from_date,
         to_date,
-        branch_id,
-        order_production_type_id,
     }: {
         product_id: number;
         from_date?: string | null;
         to_date?: string | null;
-        branch_id?: number | null;
-        order_production_type_id?: number | null;
     }): Promise<ProductMachinePerformanceSummary[]> {
         if (!product_id) return [];
-        const sharedFilters = this.buildSharedFilters({
-            from_date,
-            to_date,
-            branch_id,
-            order_production_type_id,
-        });
+        const sharedFilters = this.buildSharedFilters({ from_date, to_date });
         return this.prisma.$queryRawUnsafe(`
             select
                 ${convertToInt('opp.machine_id', 'machine_id')},
@@ -339,21 +311,12 @@ export class ProductionPerformanceService {
         employee_id,
         from_date,
         to_date,
-        branch_id,
-        order_production_type_id,
     }: {
         employee_id?: number | null;
         from_date?: string | null;
         to_date?: string | null;
-        branch_id?: number | null;
-        order_production_type_id?: number | null;
     }): Promise<EmployeeComboPerformanceSummary[]> {
-        const sharedFilters = this.buildSharedFilters({
-            from_date,
-            to_date,
-            branch_id,
-            order_production_type_id,
-        });
+        const sharedFilters = this.buildSharedFilters({ from_date, to_date });
         const employeeFilter = employee_id
             ? `and ope.employee_id = ${Number(employee_id)}`
             : `and coalesce(ope.employee_id, 0) != 0`;
