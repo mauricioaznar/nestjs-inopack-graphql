@@ -3,7 +3,6 @@ import { UserService } from '../../../modules/auth/user.service';
 import { setupApp } from './setup-app';
 import { orderProductionTypes } from '../objects';
 import { PrismaService } from '../../modules/prisma/prisma.service';
-import { employeeStatuses } from '../objects/maintenance/employee-statuses';
 import { branches } from '../objects/maintenance/branches';
 import { orderAdjustmentTypes } from '../objects/production/order-adjustment-types';
 import { orderRequestStatuses } from '../objects/sales/order-request-statuses';
@@ -47,7 +46,6 @@ export default async function setupDatabase() {
 
     //level 2
     await prismaService.order_production_type.deleteMany();
-    await prismaService.employee_statuses.deleteMany();
     await prismaService.order_request_statuses.deleteMany();
     await prismaService.order_sale_statuses.deleteMany();
     await prismaService.receipt_types.deleteMany();
@@ -72,9 +70,6 @@ export default async function setupDatabase() {
     });
     await prismaService.product_categories.createMany({
         data: productCategories,
-    });
-    await prismaService.employee_statuses.createMany({
-        data: employeeStatuses,
     });
     await prismaService.branches.createMany({
         data: branches,

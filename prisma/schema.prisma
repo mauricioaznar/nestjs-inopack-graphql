@@ -45,15 +45,6 @@ model branches {
   users             users[]
 }
 
-model employee_statuses {
-  id         Int         @id @default(autoincrement()) @db.UnsignedInt
-  name       String      @db.VarChar(255)
-  active     Int         @default(1)
-  created_at DateTime?   @db.DateTime(0)
-  updated_at DateTime?   @db.DateTime(0)
-  employees  employees[]
-}
-
 model employee_type {
   id         Int         @id @default(autoincrement()) @db.UnsignedInt
   active     Int         @default(1)
@@ -74,7 +65,7 @@ model employees {
   updated_at                 DateTime?                    @db.DateTime(0)
   employee_type_id           Int?                         @db.UnsignedInt
   fullname                   String                       @default("") @db.VarChar(255)
-  employee_status_id         Int?                         @db.UnsignedInt
+  is_inactive                Boolean                      @default(false)
   branch_id                  Int?                         @db.UnsignedInt
   base_salary                Float                        @default(0.00)
   hours_should_work          Float                        @default(0.00)
@@ -86,7 +77,6 @@ model employees {
   employee_category_id       Int?                         @db.UnsignedInt
   branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_branch_id_foreign")
   employee_categories        employee_categories?         @relation(fields: [employee_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_category_id_foreign")
-  employee_statuses          employee_statuses?           @relation(fields: [employee_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_status_id_foreign")
   employee_type              employee_type?               @relation(fields: [employee_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_employee_type_id_foreign")
   order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employees_order_production_type_id_foreign")
   order_production_employees order_production_employees[]
@@ -95,7 +85,6 @@ model employees {
   production_plan_row_employees production_plan_row_employees[]
 
   @@index([branch_id], map: "employees_branch_id_foreign")
-  @@index([employee_status_id], map: "employees_employee_status_id_foreign")
   @@index([employee_type_id], map: "employees_employee_type_id_foreign")
   @@index([order_production_type_id], map: "employees_order_production_type_id_foreign")
   @@index([employee_category_id], map: "employees_employee_category_id_foreign")
@@ -722,7 +711,7 @@ model accounts {
   is_own                                        Boolean            @default(false)
   requires_order_request                        Boolean            @default(true)
   resource_id                                   Int?               @db.UnsignedInt
-  monitor_balance                               Boolean            @default(false)
+  monitor_supplier_expenses                     Boolean            @default(false)
   client_credit_days                            Int                @default(0)
   supplier_credit_days                          Int                @default(0)
   client_require_credit_note                    Boolean            @default(false)

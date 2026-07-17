@@ -15,9 +15,9 @@ export class ThirdPartyAccountTransferSummariesService {
         thirdPArtyAccountTransferQueryArgs: ThirdPartyAccountTransferQueryArgs,
     ): Promise<ThirdPartyAccountTransferSummary[]> {
         let andWhereThirdPArtyAccountTransfer = '';
-        if (thirdPArtyAccountTransferQueryArgs.monitor_balance) {
+        if (thirdPArtyAccountTransferQueryArgs.monitor_supplier_expenses) {
             andWhereThirdPArtyAccountTransfer +=
-                'and accounts.monitor_balance = 1';
+                'and accounts.monitor_supplier_expenses = 1';
         }
 
         const res = await this.prisma.$queryRawUnsafe<

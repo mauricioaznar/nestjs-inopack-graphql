@@ -19,7 +19,6 @@ import {
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
 import { Branch, OrderProductionType } from '../../../common/dto/entities';
-import { EmployeeStatus } from '../../../common/dto/entities/production/employee-status.dto';
 
 @Injectable()
 export class EmployeesService {
@@ -39,7 +38,7 @@ export class EmployeesService {
                         active: 1,
                     },
                     {
-                        employee_status_id: excludeDiscontinued ? 1 : undefined,
+                        is_inactive: excludeDiscontinued ? false : undefined,
                     },
                 ],
             },
@@ -154,20 +153,25 @@ export class EmployeesService {
                 first_name: input.first_name,
                 last_name: input.last_name,
                 fullname: `${input.first_name} ${input.last_name}`,
-                employee_status_id: input.employee_status_id,
+                is_inactive: input.is_inactive,
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
                 is_leader: input.is_leader,
+                // Base pay + schedule feed payroll; null coalesces to 0.
+                base_salary: input.base_salary ?? 0,
+                hours_should_work: input.hours_should_work ?? 0,
             },
             update: {
                 ...getUpdatedAtProperty(),
                 first_name: input.first_name,
                 last_name: input.last_name,
                 fullname: `${input.first_name} ${input.last_name}`,
-                employee_status_id: input.employee_status_id,
+                is_inactive: input.is_inactive,
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
                 is_leader: input.is_leader,
+                base_salary: input.base_salary ?? 0,
+                hours_should_work: input.hours_should_work ?? 0,
             },
             where: {
                 id: input.id || 0,
@@ -300,22 +304,6 @@ export class EmployeesService {
         return this.prisma.branches.findFirst({
             where: {
                 id: branch_id,
-            },
-        });
-    }
-
-    async getEmployeeStatus({
-        employee_status_id,
-    }: {
-        employee_status_id: number | null;
-    }): Promise<EmployeeStatus | null> {
-        if (!employee_status_id) {
-            return null;
-        }
-
-        return this.prisma.employee_statuses.findFirst({
-            where: {
-                id: employee_status_id,
             },
         });
     }

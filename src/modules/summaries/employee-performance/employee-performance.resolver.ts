@@ -36,21 +36,25 @@ export class EmployeePerformanceResolver {
         });
     }
 
-    // Machine-level only (no product arg): the hourly view aggregates every
-    // product line on the machine per production. fromDate (YYYY-MM-DD,
-    // optional) drops productions that started before it — corridas predating
-    // reliable hour capture would inflate kg/hr (kilos in the numerator, 0 in
-    // the denominator).
+    // Machine-level hourly view: aggregates the machine's product lines per
+    // production. fromDate (YYYY-MM-DD, optional) drops productions that started
+    // before it — corridas predating reliable hour capture would inflate kg/hr
+    // (kilos in the numerator, 0 in the denominator). productId (optional)
+    // narrows the production side to a single product so the calculation reflects
+    // just that product instead of every line on the machine.
     @Query(() => [MachineHourlyRun])
     @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
     async getMachineHourlyRuns(
         @Args('machineId', { type: () => Int }) machineId: number,
         @Args('fromDate', { type: () => String, nullable: true })
         fromDate: string | null,
+        @Args('productId', { type: () => Int, nullable: true })
+        productId: number | null,
     ): Promise<MachineHourlyRun[]> {
         return this.service.getMachineHourlyRuns({
             machine_id: machineId,
             from_date: fromDate,
+            product_id: productId,
         });
     }
 }

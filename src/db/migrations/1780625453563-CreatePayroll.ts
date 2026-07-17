@@ -108,25 +108,6 @@ export class CreatePayroll1780625453563 implements MigrationInterface {
                     FOREIGN KEY (\`employee_id\`) REFERENCES \`employees\` (\`id\`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         `);
-
-        // =====================================================================
-        // TODO: TEMPORARY TEST DATA — REMOVE BEFORE MERGING feature/payroll
-        // Seeds one payroll period + entries for up to 5 active employees so a
-        // freshly recreated DB has data to test against. All other columns fall
-        // back to their table defaults. Delete this whole block before merge.
-        // =====================================================================
-        await queryRunner.query(`
-            INSERT INTO \`payroll_periods\` (\`start_date\`, \`end_date\`, \`week_number\`, \`branch_id\`)
-            VALUES ('2026-03-25', '2026-03-31', 13, 1);
-        `);
-        await queryRunner.query(`
-            INSERT INTO \`payroll_entries\` (\`payroll_period_id\`, \`employee_id\`, \`sueldo\`)
-            SELECT LAST_INSERT_ID(), \`id\`, \`base_salary\`
-            FROM \`employees\`
-            WHERE \`active\` = 1 AND \`employee_status_id\` = 1 AND \`branch_id\` = 1
-            LIMIT 5;
-        `);
-        // ===================== END TEMPORARY TEST DATA =======================
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
