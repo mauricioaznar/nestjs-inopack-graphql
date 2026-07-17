@@ -1,6 +1,6 @@
 import { Args, Int, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
-import { EmployeePerformanceService } from './employee-performance.service';
+import { ProductionPerformanceService } from './production-performance.service';
 import {
     EmployeeComboPerformanceSummary,
     MachineHourlyRun,
@@ -15,8 +15,8 @@ import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 @Resolver(() => MachineProductEmployeeRun)
 @Injectable()
-export class EmployeePerformanceResolver {
-    constructor(private service: EmployeePerformanceService) {}
+export class ProductionPerformanceResolver {
+    constructor(private service: ProductionPerformanceService) {}
 
     // Production-domain read gate: main + assistant can view (assistants are
     // read-only, and these are queries).

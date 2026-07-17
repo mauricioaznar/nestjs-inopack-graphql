@@ -12,7 +12,7 @@ import {
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
 @Injectable()
-export class EmployeePerformanceService {
+export class ProductionPerformanceService {
     constructor(private prisma: PrismaService) {}
 
     // Distinct products with at least one active run line on the given machine.
