@@ -24,6 +24,14 @@ export class MachineProductEmployeeRun {
     @Field(() => String, { nullable: false })
     employee_name: string;
 
+    // The product this run line made — lets the analysis panel color its series
+    // by product when no product sub-filter is active.
+    @Field(() => Int, { nullable: false })
+    product_id: number;
+
+    @Field(() => String, { nullable: false })
+    product_description: string;
+
     @Field(() => Int, { nullable: false })
     order_production_id: number;
 
@@ -107,52 +115,6 @@ export class ProductMachinePerformanceSummary {
 
     @Field(() => Date, { nullable: true })
     last_run_date: Date | null;
-}
-
-// One row per (employee × machine × product) combo for Tab 3.
-// combo_runs/combo_kilos are the combo-wide totals (machine × product, all employees),
-// joined in SQL — used client-side to compute the índice vs promedio del combo:
-//   (kilos/runs) ÷ (combo_kilos/combo_runs) × 100.
-// employee_id = 0 ("Sin empleado asignado") is excluded when returning the global
-// ranking (employee_id absent) — synthetic rows don't represent real employees.
-@ObjectType('EmployeeComboPerformanceSummary')
-export class EmployeeComboPerformanceSummary {
-    @Field(() => Int, { nullable: false })
-    employee_id: number;
-
-    @Field(() => String, { nullable: false })
-    employee_name: string;
-
-    @Field(() => Int, { nullable: false })
-    machine_id: number;
-
-    @Field(() => String, { nullable: false })
-    machine_name: string;
-
-    @Field(() => Int, { nullable: false })
-    product_id: number;
-
-    @Field(() => String, { nullable: false })
-    product_description: string;
-
-    @Field(() => Int, { nullable: false })
-    runs: number;
-
-    @Field(() => Float, { nullable: false })
-    kilos: number;
-
-    @Field(() => Float, { nullable: false })
-    hours: number;
-
-    @Field(() => Float, { nullable: false })
-    waste_share_total: number;
-
-    // Combo-wide totals (machine × product, all employees) for the índice denominator.
-    @Field(() => Int, { nullable: false })
-    combo_runs: number;
-
-    @Field(() => Float, { nullable: false })
-    combo_kilos: number;
 }
 
 // Distinct products that have at least one active run line — used to populate the

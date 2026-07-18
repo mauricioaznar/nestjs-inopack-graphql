@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
-    EmployeeComboPerformanceSummary,
     MachineHourlyRun,
     MachineProduct,
     MachineProductEmployeeRun,
@@ -40,25 +39,52 @@ export class ProductionPerformanceService {
         `);
     }
 
-    // Raw run rows for a machine × product: one row per (line × linked employee).
-    // Waste is attributed as (production.waste ÷ linked employees) prorated by
-    // the line's kilo share of the production total — matching the employee
-    // dashboard. Productions with no linked employee become a synthetic
-    // "Sin empleado asignado" row (employee_id = 0).
+    // Raw run rows for any combination of machine / product / employee: one row
+    // per (line × linked employee). At least one of the three ids is required
+    // (BadRequest otherwise) — an unfiltered scan of every run line would be
+    // both huge and meaningless. Waste is attributed as (production.waste ÷
+    // linked employees) prorated by the line's kilo share of the production
+    // total — matching the employee dashboard. Productions with no linked
+    // employee become a synthetic "Sin empleado asignado" row (employee_id = 0).
+    // employee_id filters the employee fan-out directly (so the synthetic row is
+    // dropped when a real employee is requested); machine_id/product_id filter
+    // the product line. product_id/product_description are returned so the panel
+    // can color its scatter series by product. All ids are validated with
+    // Number() and dates by regex before interpolation ($queryRawUnsafe).
     async getMachineProductEmployeeRuns({
         machine_id,
         product_id,
+        employee_id,
+        from_date,
+        to_date,
     }: {
-        machine_id: number;
-        product_id: number;
+        machine_id?: number | null;
+        product_id?: number | null;
+        employee_id?: number | null;
+        from_date?: string | null;
+        to_date?: string | null;
     }): Promise<MachineProductEmployeeRun[]> {
-        if (!machine_id || !product_id) {
-            return [];
+        if (!machine_id && !product_id && !employee_id) {
+            throw new BadRequestException(
+                'Se requiere al menos un filtro: máquina, producto o empleado.',
+            );
         }
+        const machineFilter = machine_id
+            ? `and opp.machine_id = ${Number(machine_id)}`
+            : '';
+        const productFilter = product_id
+            ? `and opp.product_id = ${Number(product_id)}`
+            : '';
+        const employeeFilter = employee_id
+            ? `and ope.employee_id = ${Number(employee_id)}`
+            : '';
+        const sharedFilters = this.buildSharedFilters({ from_date, to_date });
         return this.prisma.$queryRawUnsafe(`
             select
                 ${convertToInt('coalesce(ope.employee_id, 0)', 'employee_id')},
                 coalesce(e.fullname, 'Sin empleado asignado') as employee_name,
+                ${convertToInt('opp.product_id', 'product_id')},
+                products.description as product_description,
                 ${convertToInt('op.id', 'order_production_id')},
                 op.start_date as date,
                 opp.kilos as kilos,
@@ -84,6 +110,8 @@ export class ProductionPerformanceService {
                 and ope.active = 1
             left join employees e
                 on e.id = ope.employee_id
+            join products
+                on products.id = opp.product_id
             join (
                 select
                     order_production_id,
@@ -100,50 +128,78 @@ export class ProductionPerformanceService {
                 group by order_production_id
             ) ec on ec.order_production_id = op.id
             where opp.active = 1
-                and opp.machine_id = ${Number(machine_id)}
-                and opp.product_id = ${Number(product_id)}
+                ${machineFilter}
+                ${productFilter}
+                ${employeeFilter}
+                ${sharedFilters}
             order by op.start_date
         `);
     }
 
-    // Hourly-throughput rows for a MACHINE: one row per production, no employee
-    // split and no product filter — every active product line on the machine is
-    // summed into the row (product_count says how many distinct products were
-    // mixed). Each side is aggregated in its own derived table first — joining
-    // the product lines and resource lines directly would fan out (cartesian)
-    // and inflate the sums, so we pre-sum per production_id then join on it.
-    // Null hours count as 0 in the denominator (coalesce), per the user's
-    // decision; the client computes kg/hr as totals-over-totals. The product
-    // side drives (which productions ran on this machine); the resource side is
-    // left-joined and coalesced to 0 when absent. from_date (optional) drops
-    // productions started before it — pre-hour-capture corridas would inflate
-    // kg/hr. Strictly validated before interpolation ($queryRawUnsafe): a
-    // malformed value is ignored, not injected.
+    // Hourly-throughput rows for any machine / product / employee combination:
+    // one row per production, no employee split. Each side is aggregated in its
+    // own derived table first — joining the product lines and resource lines
+    // directly would fan out (cartesian) and inflate the sums, so we pre-sum per
+    // production_id then join on it. Null hours count as 0 in the denominator
+    // (coalesce), per the user's decision; the client computes kg/hr as
+    // totals-over-totals. The product side drives (which productions matched the
+    // filters); the resource side is left-joined and coalesced to 0 when absent.
+    // At least one of the three ids is required (BadRequest otherwise).
+    //
+    // machine_id/product_id narrow the product side (and the resource side by
+    // machine): with a product_id set, the product side sums ONLY that product's
+    // lines so kilos/hours + kg/hr reflect the single product; the resource side
+    // stays whole-production (resources aren't attributable to one product), so
+    // "Consumo kg/hr" remains the total of the matched runs — noted in the UI.
+    // employee_id keeps every production the employee is linked to (EXISTS on
+    // order_production_employees) — consumption is the FULL consumption of those
+    // matched runs, not attributable per employee. from_date/to_date drop
+    // productions outside the window (pre-hour-capture corridas would inflate
+    // kg/hr). All ids validated with Number() and dates by regex before
+    // interpolation ($queryRawUnsafe): a malformed value is ignored, not injected.
     async getMachineHourlyRuns({
         machine_id,
-        from_date,
         product_id,
+        employee_id,
+        from_date,
+        to_date,
     }: {
-        machine_id: number;
-        from_date?: string | null;
+        machine_id?: number | null;
         product_id?: number | null;
+        employee_id?: number | null;
+        from_date?: string | null;
+        to_date?: string | null;
     }): Promise<MachineHourlyRun[]> {
-        if (!machine_id) {
-            return [];
+        if (!machine_id && !product_id && !employee_id) {
+            throw new BadRequestException(
+                'Se requiere al menos un filtro: máquina, producto o empleado.',
+            );
         }
-        const fromDateFilter =
-            from_date && /^\d{4}-\d{2}-\d{2}$/.test(from_date)
-                ? `and op.start_date >= '${from_date}'`
-                : '';
-        // Optional product filter: when set, the product side sums ONLY that
-        // product's lines (so kilos/hours + kg/hr reflect the single product and
-        // product_count is 1), and only productions that ran it appear. The
-        // resource side stays whole-production (resources aren't attributable to
-        // one product), so "Consumo kg/hr" remains the machine's total for those
-        // runs — noted in the UI.
-        const productFilter = product_id
+        const ppMachineFilter = machine_id
+            ? `and machine_id = ${Number(machine_id)}`
+            : '';
+        const ppProductFilter = product_id
             ? `and product_id = ${Number(product_id)}`
             : '';
+        // Resource side is keyed by machine when a machine is selected; without
+        // one it sums every resource line of the matched production (still the
+        // "full consumption of the matched runs").
+        const rrMachineFilter = machine_id
+            ? `and machine_id = ${Number(machine_id)}`
+            : '';
+        // Keep productions where the employee is linked. EXISTS (not a join) so
+        // the row count stays one-per-production regardless of how many other
+        // employees are on the run.
+        const employeeExists = employee_id
+            ? `and exists (
+                    select 1
+                    from order_production_employees ope
+                    where ope.order_production_id = op.id
+                        and ope.active = 1
+                        and ope.employee_id = ${Number(employee_id)}
+                )`
+            : '';
+        const sharedFilters = this.buildSharedFilters({ from_date, to_date });
         return this.prisma.$queryRawUnsafe(`
             select
                 ${convertToInt('op.id', 'order_production_id')},
@@ -161,14 +217,15 @@ export class ProductionPerformanceService {
                     count(distinct product_id) as product_count
                 from order_production_products
                 where active = 1
-                    and machine_id = ${Number(machine_id)}
-                    ${productFilter}
+                    ${ppMachineFilter}
+                    ${ppProductFilter}
                 group by order_production_id
             ) pp
             join order_productions op
                 on op.id = pp.order_production_id
                 and op.active = 1
-                ${fromDateFilter}
+                ${sharedFilters}
+                ${employeeExists}
             left join (
                 select
                     order_production_id,
@@ -176,7 +233,7 @@ export class ProductionPerformanceService {
                     sum(coalesce(hours, 0)) as hours_resource
                 from order_production_resources
                 where active = 1
-                    and machine_id = ${Number(machine_id)}
+                    ${rrMachineFilter}
                 group by order_production_id
             ) rr on rr.order_production_id = op.id
             order by op.start_date
@@ -298,103 +355,6 @@ export class ProductionPerformanceService {
                 and opp.product_id = ${Number(product_id)}
                 ${sharedFilters}
             group by opp.machine_id, m.name
-            order by sum(opp.kilos) desc
-        `);
-    }
-
-    // Tab 3: one row per (employee × machine × product) combo. combo_runs/combo_kilos
-    // are the combo-wide totals (machine × product, all employees) joined in from a
-    // derived table — the client uses them as the índice denominator.
-    // employee_id optional: absent → all employees (global ranking), with the synthetic
-    // "Sin empleado asignado" row (employee_id = 0) excluded.
-    async getEmployeeComboPerformanceSummary({
-        employee_id,
-        from_date,
-        to_date,
-    }: {
-        employee_id?: number | null;
-        from_date?: string | null;
-        to_date?: string | null;
-    }): Promise<EmployeeComboPerformanceSummary[]> {
-        const sharedFilters = this.buildSharedFilters({ from_date, to_date });
-        const employeeFilter = employee_id
-            ? `and ope.employee_id = ${Number(employee_id)}`
-            : `and coalesce(ope.employee_id, 0) != 0`;
-        return this.prisma.$queryRawUnsafe(`
-            select
-                ${convertToInt('coalesce(ope.employee_id, 0)', 'employee_id')},
-                coalesce(e.fullname, 'Sin empleado asignado') as employee_name,
-                ${convertToInt('opp.machine_id', 'machine_id')},
-                m.name as machine_name,
-                ${convertToInt('opp.product_id', 'product_id')},
-                products.description as product_description,
-                ${convertToInt('count(distinct op.id)', 'runs')},
-                sum(opp.kilos) as kilos,
-                sum(coalesce(opp.hours, 0)) as hours,
-                sum(
-                    case
-                        when pt.total_kilos > 0
-                        then (op.waste / greatest(coalesce(ec.emp_count, 1), 1))
-                             * (opp.kilos / pt.total_kilos)
-                        else 0
-                    end
-                ) as waste_share_total,
-                ${convertToInt('combo.combo_runs', 'combo_runs')},
-                combo.combo_kilos as combo_kilos
-            from order_production_products opp
-            join order_productions op
-                on op.id = opp.order_production_id
-                and op.active = 1
-            left join order_production_employees ope
-                on ope.order_production_id = op.id
-                and ope.active = 1
-            left join employees e
-                on e.id = ope.employee_id
-                and e.active = 1
-            join machines m
-                on m.id = opp.machine_id
-                and m.active = 1
-                and m.discontinued = 0
-            join products
-                on products.id = opp.product_id
-                and products.active = 1
-                and products.discontinued = 0
-            join (
-                select order_production_id, sum(kilos) as total_kilos
-                from order_production_products
-                where active = 1
-                group by order_production_id
-            ) pt on pt.order_production_id = op.id
-            left join (
-                select order_production_id, count(*) as emp_count
-                from order_production_employees
-                where active = 1
-                group by order_production_id
-            ) ec on ec.order_production_id = op.id
-            join (
-                select
-                    opp2.machine_id,
-                    opp2.product_id,
-                    count(distinct op2.id) as combo_runs,
-                    sum(opp2.kilos) as combo_kilos
-                from order_production_products opp2
-                join order_productions op2
-                    on op2.id = opp2.order_production_id
-                    and op2.active = 1
-                where opp2.active = 1
-                group by opp2.machine_id, opp2.product_id
-            ) combo on combo.machine_id = opp.machine_id
-                   and combo.product_id = opp.product_id
-            where opp.active = 1
-                and (e.is_inactive = 0 or e.id is null)
-                ${employeeFilter}
-                ${sharedFilters}
-            group by
-                cast(coalesce(ope.employee_id, 0) as decimal(12, 2)),
-                coalesce(e.fullname, 'Sin empleado asignado'),
-                cast(opp.machine_id as decimal(12, 2)), m.name,
-                cast(opp.product_id as decimal(12, 2)), products.description,
-                cast(combo.combo_runs as decimal(12, 2)), combo.combo_kilos
             order by sum(opp.kilos) desc
         `);
     }
