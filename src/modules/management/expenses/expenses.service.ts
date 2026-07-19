@@ -26,7 +26,9 @@ import {
 } from '../../../common/dto/pagination';
 import {
     getCreatedAtProperty,
+    getCreatedByProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
@@ -430,7 +432,10 @@ export class ExpensesService {
         });
     }
 
-    async upsertExpense(input: ExpenseUpsertInput): Promise<Expense> {
+    async upsertExpense(
+        input: ExpenseUpsertInput,
+        { current_user_id }: { current_user_id?: number | null } = {},
+    ): Promise<Expense> {
         await this.validateUpsertExpense(input);
 
         const total_with_tax = round(
@@ -444,6 +449,8 @@ export class ExpensesService {
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 date: input.date,
                 locked: input.locked,
                 account_id: input.account_id,
@@ -468,6 +475,7 @@ export class ExpensesService {
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 date: input.date,
                 locked: input.locked,
                 account_id: input.account_id,
@@ -748,8 +756,10 @@ export class ExpensesService {
 
     async deleteExpense({
         expense_id,
+        current_user_id,
     }: {
         expense_id: number;
+        current_user_id?: number | null;
     }): Promise<boolean> {
         const expense = await this.getExpense({ expense_id: expense_id });
 
@@ -775,6 +785,7 @@ export class ExpensesService {
         await this.prisma.expenses.update({
             data: {
                 active: -1,
+                ...getUpdatedByProperty(current_user_id),
             },
             where: {
                 id: expense_id,
@@ -1015,6 +1026,7 @@ export class ExpensesService {
 
     async generateRecurringExpenses(
         input: GenerateRecurringExpenseInput[],
+        { current_user_id }: { current_user_id?: number | null } = {},
     ): Promise<GenerateRecurringExpensesResult> {
         const createdIds: number[] = [];
         const skippedIds: number[] = [];
@@ -1104,6 +1116,8 @@ export class ExpensesService {
                     data: {
                         ...getCreatedAtProperty(),
                         ...getUpdatedAtProperty(),
+                        ...getCreatedByProperty(current_user_id),
+                        ...getUpdatedByProperty(current_user_id),
                         date: targetDate,
                         expected_payment_date: expectedPaymentDate,
                         locked: false,

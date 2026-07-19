@@ -22,7 +22,9 @@ import {
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 import {
     getCreatedAtProperty,
+    getCreatedByProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
@@ -178,7 +180,10 @@ export class AccountsService {
         });
     }
 
-    async upsertAccount(input: AccountUpsertInput): Promise<Account> {
+    async upsertAccount(
+        input: AccountUpsertInput,
+        { current_user_id }: { current_user_id?: number | null } = {},
+    ): Promise<Account> {
         // Validate everything before any writes so invalid input never leaves
         // the account/contacts/catalog partially saved.
         await this.validateAccount(input);
@@ -187,6 +192,8 @@ export class AccountsService {
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 name: input.name,
                 abbreviation: input.abbreviation,
                 requires_order_request: input.requires_order_request,
@@ -208,6 +215,7 @@ export class AccountsService {
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 name: input.name,
                 abbreviation: input.abbreviation,
                 requires_order_request: input.requires_order_request,
@@ -671,8 +679,10 @@ export class AccountsService {
 
     async deletesAccount({
         account_id,
+        current_user_id,
     }: {
         account_id: number;
+        current_user_id?: number | null;
     }): Promise<boolean> {
         const account = await this.getAccount({ account_id });
 
@@ -727,6 +737,7 @@ export class AccountsService {
         await this.prisma.accounts.update({
             data: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 active: -1,
             },
             where: {

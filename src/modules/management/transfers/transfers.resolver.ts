@@ -31,6 +31,7 @@ import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 import { TransferType } from '../../../common/dto/entities/management/transfer-type.dto';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => Transfer)
 @Injectable()
@@ -38,6 +39,7 @@ export class TransfersResolver {
     constructor(
         private service: TransfersService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Mutation(() => Transfer)
@@ -47,7 +49,9 @@ export class TransfersResolver {
         @Args('TransferUpsertInput') input: TransferUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
-        const transfer = await this.service.upsertTransfer(input);
+        const transfer = await this.service.upsertTransfer(input, {
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.transfer({
             transfer,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
@@ -68,6 +72,7 @@ export class TransfersResolver {
         if (!transfer) throw new NotFoundException();
         await this.service.deleteTransfer({
             transfer_id: transfer.id,
+            current_user_id: currentUser.id,
         });
         await this.pubSubService.transfer({
             transfer,
@@ -172,6 +177,20 @@ export class TransfersResolver {
     ): Promise<number> {
         return this.service.getTransferReceiptsTotal({
             transfer_id: transfer.id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async created_by(@Parent() transfer: Transfer): Promise<User | null> {
+        return this.auditUsersService.getCreatedBy({
+            created_by_id: transfer.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(@Parent() transfer: Transfer): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: transfer.updated_by_id,
         });
     }
 

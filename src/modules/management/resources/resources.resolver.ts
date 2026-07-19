@@ -26,6 +26,7 @@ import {
 } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => Resource)
 @Injectable()
@@ -33,6 +34,7 @@ export class ResourcesResolver {
     constructor(
         private service: ResourcesService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Mutation(() => Resource)
@@ -40,7 +42,9 @@ export class ResourcesResolver {
         @Args('ResourceUpsertInput') input: ResourceUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
-        const resource = await this.service.upsertResource(input);
+        const resource = await this.service.upsertResource(input, {
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.resource({
             resource,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
@@ -59,6 +63,7 @@ export class ResourcesResolver {
         if (!resource) throw new NotFoundException();
         await this.service.deleteResource({
             resource_id: resource.id,
+            current_user_id: currentUser.id,
         });
         await this.pubSubService.resource({
             resource,
@@ -130,6 +135,20 @@ export class ResourcesResolver {
     ): Promise<ResourceCategory | null> {
         return this.service.getResourceCategory({
             resource_category_id: resource.resource_category_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async created_by(@Parent() resource: Resource): Promise<User | null> {
+        return this.auditUsersService.getCreatedBy({
+            created_by_id: resource.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(@Parent() resource: Resource): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: resource.updated_by_id,
         });
     }
 

@@ -19,7 +19,9 @@ import {
 } from '../../../common/dto/pagination';
 import {
     getCreatedAtProperty,
+    getCreatedByProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
 
@@ -78,6 +80,7 @@ export class ResourcesService {
 
     async upsertResource(
         resourceInput: ResourceUpsertInput,
+        { current_user_id }: { current_user_id?: number | null } = {},
     ): Promise<Resource> {
         await this.validateUpsertResource(resourceInput);
 
@@ -85,6 +88,8 @@ export class ResourcesService {
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 name: resourceInput.name,
                 resource_category_id: resourceInput.resource_category_id,
                 current_group_weight: resourceInput.current_group_weight || 0,
@@ -99,6 +104,7 @@ export class ResourcesService {
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 name: resourceInput.name,
                 resource_category_id: resourceInput.resource_category_id,
                 current_group_weight: resourceInput.current_group_weight || 0,
@@ -206,8 +212,10 @@ export class ResourcesService {
 
     async deleteResource({
         resource_id,
+        current_user_id,
     }: {
         resource_id: number;
+        current_user_id?: number | null;
     }): Promise<boolean> {
         const resource = await this.getResource({ resource_id: resource_id });
 
@@ -218,6 +226,7 @@ export class ResourcesService {
         await this.prisma.resources.update({
             data: {
                 active: -1,
+                ...getUpdatedByProperty(current_user_id),
             },
             where: {
                 id: resource_id,

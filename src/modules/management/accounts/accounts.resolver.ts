@@ -34,6 +34,7 @@ import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => Account)
 @Injectable()
@@ -133,7 +134,9 @@ export class AccountsResolver {
         @Args('AccountUpsertInput') input: AccountUpsertInput,
         @CurrentUser() currentUser: User,
     ): Promise<Account> {
-        const account = await this.service.upsertAccount(input);
+        const account = await this.service.upsertAccount(input, {
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.account({
             account,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
@@ -157,7 +160,10 @@ export class AccountsResolver {
         if (!account) {
             throw new NotFoundException();
         }
-        await this.service.deletesAccount({ account_id: accountId });
+        await this.service.deletesAccount({
+            account_id: accountId,
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.account({
             account,
             type: ActivityTypeName.DELETE,
@@ -204,6 +210,20 @@ export class AccountsResolver {
         return account.abbreviation !== ''
             ? `${account.name} (${account.abbreviation})`
             : account.name;
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async created_by(@Parent() account: Account): Promise<User | null> {
+        return this.auditUsersService.getCreatedBy({
+            created_by_id: account.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(@Parent() account: Account): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: account.updated_by_id,
+        });
     }
 
     @Subscription(() => Account)

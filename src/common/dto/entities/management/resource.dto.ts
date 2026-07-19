@@ -51,6 +51,13 @@ export class ResourceUpsertInput extends ResourceBase {
 export class Resource extends ResourceBase {
     @Field({ nullable: false })
     id: number;
+
+    // Audit stamps — server-side only, never part of the upsert input.
+    @Field(() => Int, { nullable: true })
+    created_by_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    updated_by_id: number | null;
 }
 
 @ObjectType()

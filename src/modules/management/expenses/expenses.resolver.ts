@@ -40,6 +40,7 @@ import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => Expense)
 @Injectable()
@@ -47,6 +48,7 @@ export class ExpensesResolver {
     constructor(
         private service: ExpensesService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Mutation(() => Expense)
@@ -56,7 +58,9 @@ export class ExpensesResolver {
         @Args('ExpenseUpsertInput') input: ExpenseUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
-        const expense = await this.service.upsertExpense(input);
+        const expense = await this.service.upsertExpense(input, {
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.expense({
             expense,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
@@ -77,6 +81,7 @@ export class ExpensesResolver {
         if (!expense) throw new NotFoundException();
         await this.service.deleteExpense({
             expense_id: expense.id,
+            current_user_id: currentUser.id,
         });
         await this.pubSubService.expense({
             expense,
@@ -252,7 +257,9 @@ export class ExpensesResolver {
         input: GenerateRecurringExpenseInput[],
         @CurrentUser() currentUser: User,
     ): Promise<GenerateRecurringExpensesResult> {
-        const result = await this.service.generateRecurringExpenses(input);
+        const result = await this.service.generateRecurringExpenses(input, {
+            current_user_id: currentUser.id,
+        });
 
         for (const expenseId of result.created_ids) {
             const expense = await this.service.getExpense({
@@ -268,6 +275,20 @@ export class ExpensesResolver {
         }
 
         return result;
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async created_by(@Parent() expense: Expense): Promise<User | null> {
+        return this.auditUsersService.getCreatedBy({
+            created_by_id: expense.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(@Parent() expense: Expense): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: expense.updated_by_id,
+        });
     }
 
     @Subscription(() => Expense)

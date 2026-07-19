@@ -92,6 +92,13 @@ export class Account extends AccountBase {
     // / balances view split. Shown as a disabled checkbox in the account form.
     @Field(() => Boolean, { nullable: false })
     exclude_from_accountability_export: boolean;
+
+    // Audit stamps — server-side only, never part of the upsert input.
+    @Field(() => Int, { nullable: true })
+    created_by_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    updated_by_id: number | null;
 }
 
 @ObjectType()
