@@ -38,6 +38,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => OrderSale)
 @UseGuards(GqlAuthGuard)
@@ -46,6 +47,7 @@ export class OrderSaleResolver {
     constructor(
         private service: OrderSaleService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Query(() => OrderSale, { nullable: true })
@@ -251,10 +253,19 @@ export class OrderSaleResolver {
         });
     }
 
+    // The MANUAL "Generada por" field — a business value the user picks, not an
+    // audit stamp. Left on the service's own getCreatedBy deliberately.
     @ResolveField(() => User, { nullable: true })
     async created_by(@Parent() orderSale: OrderSale): Promise<User | null> {
         return this.service.getCreatedBy({
             created_by_id: orderSale.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(@Parent() orderSale: OrderSale): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: orderSale.updated_by_id,
         });
     }
 

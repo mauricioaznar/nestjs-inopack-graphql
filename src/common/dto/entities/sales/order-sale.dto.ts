@@ -142,6 +142,12 @@ export class OrderSale extends OrderSaleBase {
 
     @Field(() => Float, { nullable: false })
     total_with_tax: number;
+
+    // Audit stamp — server-side only. NOTE: order_sales has no auto-stamped
+    // created_by_id; the created_by_id above is the MANUAL "Generada por"
+    // business field that the user picks on the form.
+    @Field(() => Int, { nullable: true })
+    updated_by_id: number | null;
 }
 
 @ObjectType()

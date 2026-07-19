@@ -26,6 +26,7 @@ import {
 import {
     getCreatedAtProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
@@ -657,6 +658,9 @@ export class OrderSaleService {
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                // updated_by only: order_sales' created_by_id is the MANUAL
+                // "Generada por" business field, set from input below.
+                ...getUpdatedByProperty(current_user_id),
                 date: input.date,
                 order_code: input.order_code,
                 expected_payment_date: input.expected_payment_date,
@@ -683,6 +687,7 @@ export class OrderSaleService {
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 date: input.date,
                 order_code: input.order_code,
                 expected_payment_date: input.expected_payment_date,
@@ -1275,6 +1280,7 @@ export class OrderSaleService {
         await this.prisma.order_sales.update({
             data: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 active: -1,
             },
             where: {

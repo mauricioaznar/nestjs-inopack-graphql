@@ -380,8 +380,9 @@ export class MachinesService {
 
         await this.prisma.machines.update({
             data: {
-                active: -1,
+                ...getUpdatedAtProperty(),
                 ...getUpdatedByProperty(current_user_id),
+                active: -1,
             },
             where: {
                 id: machine_id,
