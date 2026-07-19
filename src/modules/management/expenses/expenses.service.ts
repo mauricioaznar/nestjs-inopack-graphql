@@ -11,9 +11,12 @@ import {
     ExpensesSortArgs,
     ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
+    GenerateRecurringExpenseInput,
+    GenerateRecurringExpensesResult,
     GetExpensesQueryArgs,
     PaginatedExpenses,
     ReceiptType,
+    RecurringExpenseCandidate,
     TransferReceipt,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
@@ -841,5 +844,232 @@ export class ExpensesService {
 
     async isEditable({ expense_id }: { expense_id: number }): Promise<boolean> {
         return true;
+    }
+
+    async getRecurringExpenseCandidates({
+        year,
+        month,
+    }: {
+        year: number;
+        month: number;
+    }): Promise<RecurringExpenseCandidate[]> {
+        const accounts = await this.prisma.accounts.findMany({
+            where: {
+                active: 1,
+                is_supplier: true,
+                supplier_recurring_expenses: true,
+            },
+        });
+
+        const candidates: RecurringExpenseCandidate[] = [];
+
+        for (const account of accounts) {
+            const sourceExpenses = await this.findSourceExpenses(
+                account.id,
+                year,
+                month,
+            );
+
+            if (sourceExpenses.length === 0) continue;
+
+            const alreadyGeneratedSet = await this.getAlreadyGeneratedSet(
+                account.id,
+                year,
+                month,
+            );
+
+            for (const expense of sourceExpenses) {
+                const expenseResources =
+                    await this.prisma.expense_resources.findMany({
+                        where: {
+                            expense_id: expense.id,
+                            active: 1,
+                        },
+                    });
+
+                candidates.push({
+                    expense_id: expense.id,
+                    account_id: account.id,
+                    account_name: account.name,
+                    date: expense.date,
+                    notes: expense.notes,
+                    subtotal: expense.subtotal,
+                    tax: expense.tax,
+                    tax_retained: expense.tax_retained,
+                    non_tax_retained: expense.non_tax_retained,
+                    receipt_type_id: expense.receipt_type_id,
+                    require_supplement: expense.require_supplement,
+                    require_external_code: expense.require_external_code,
+                    expense_resources: expenseResources,
+                    already_generated: alreadyGeneratedSet.has(expense.id),
+                });
+            }
+        }
+
+        return candidates;
+    }
+
+    private async findSourceExpenses(
+        accountId: number,
+        targetYear: number,
+        targetMonth: number,
+    ) {
+        for (let i = 1; i <= 3; i++) {
+            let sourceYear = targetYear;
+            let sourceMonth = targetMonth - i;
+            if (sourceMonth <= 0) {
+                sourceMonth += 12;
+                sourceYear -= 1;
+            }
+
+            const startDate = new Date(sourceYear, sourceMonth - 1, 1);
+            const endDate = new Date(sourceYear, sourceMonth, 1);
+
+            const expenses = await this.prisma.expenses.findMany({
+                where: {
+                    account_id: accountId,
+                    active: 1,
+                    canceled: false,
+                    date: {
+                        gte: startDate,
+                        lt: endDate,
+                    },
+                },
+                orderBy: { date: 'asc' },
+            });
+
+            if (expenses.length > 0) return expenses;
+        }
+
+        return [];
+    }
+
+    private async getAlreadyGeneratedSet(
+        accountId: number,
+        targetYear: number,
+        targetMonth: number,
+    ): Promise<Set<number>> {
+        const startDate = new Date(targetYear, targetMonth - 1, 1);
+        const endDate = new Date(targetYear, targetMonth, 1);
+
+        const generated = await this.prisma.expenses.findMany({
+            where: {
+                account_id: accountId,
+                active: 1,
+                generated_from_expense_id: { not: null },
+                date: {
+                    gte: startDate,
+                    lt: endDate,
+                },
+            },
+            select: { generated_from_expense_id: true },
+        });
+
+        return new Set(
+            generated
+                .map((e) => e.generated_from_expense_id)
+                .filter((id): id is number => id !== null),
+        );
+    }
+
+    async generateRecurringExpenses(
+        input: GenerateRecurringExpenseInput[],
+    ): Promise<GenerateRecurringExpensesResult> {
+        const createdIds: number[] = [];
+        const skippedIds: number[] = [];
+
+        await this.prisma.$transaction(async (tx) => {
+            for (const item of input) {
+                const source = await tx.expenses.findFirst({
+                    where: { id: item.source_expense_id, active: 1 },
+                });
+
+                if (!source) {
+                    throw new BadRequestException(
+                        `Source expense ${item.source_expense_id} not found`,
+                    );
+                }
+
+                const targetDate = new Date(item.date);
+                const targetYear = targetDate.getFullYear();
+                const targetMonth = targetDate.getMonth();
+                const monthStart = new Date(targetYear, targetMonth, 1);
+                const monthEnd = new Date(targetYear, targetMonth + 1, 1);
+
+                const duplicate = await tx.expenses.findFirst({
+                    where: {
+                        account_id: source.account_id,
+                        active: 1,
+                        generated_from_expense_id: item.source_expense_id,
+                        date: { gte: monthStart, lt: monthEnd },
+                    },
+                });
+
+                if (duplicate) {
+                    skippedIds.push(item.source_expense_id);
+                    continue;
+                }
+
+                const subtotal = round(
+                    item.expense_resources.reduce(
+                        (acc, r) => acc + r.units * r.unit_price,
+                        0,
+                    ),
+                );
+
+                const totalWithTax = round(
+                    subtotal +
+                        source.tax -
+                        source.non_tax_retained -
+                        source.tax_retained,
+                );
+
+                const expense = await tx.expenses.create({
+                    data: {
+                        ...getCreatedAtProperty(),
+                        ...getUpdatedAtProperty(),
+                        date: targetDate,
+                        expected_payment_date: null,
+                        locked: false,
+                        account_id: source.account_id,
+                        receipt_type_id: source.receipt_type_id,
+                        notes: source.notes,
+                        subtotal: subtotal,
+                        tax: source.tax,
+                        tax_retained: source.tax_retained,
+                        non_tax_retained: source.non_tax_retained,
+                        total_with_tax: totalWithTax,
+                        require_supplement: source.require_supplement,
+                        supplement_code: '',
+                        require_external_code: source.require_external_code,
+                        external_code: '',
+                        internal_code: 0,
+                        canceled: false,
+                        resources_total: subtotal,
+                        expense_status_id: null,
+                        transfer_receipts_total: 0,
+                        transfer_receipts_total_no_adjustments: 0,
+                        generated_from_expense_id: item.source_expense_id,
+                    },
+                });
+
+                await tx.expense_resources.createMany({
+                    data: item.expense_resources.map((r) => ({
+                        ...getCreatedAtProperty(),
+                        ...getUpdatedAtProperty(),
+                        expense_id: expense.id,
+                        resource_id: r.resource_id,
+                        units: r.units,
+                        unit_price: r.unit_price,
+                        notes: r.notes || '',
+                        date: r.date || null,
+                    })),
+                });
+
+                createdIds.push(expense.id);
+            }
+        });
+
+        return { created_ids: createdIds, skipped_ids: skippedIds };
     }
 }

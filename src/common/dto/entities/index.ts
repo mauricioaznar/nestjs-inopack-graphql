@@ -51,6 +51,7 @@ export * from './management/expense.dto';
 export * from './management/resource.dto';
 export * from './management/resource-category.dto';
 export * from './management/expense-resource.dto';
+export * from './management/recurring-expense.dto';
 
 // payroll
 export * from './payroll/payroll-period.dto';

@@ -201,6 +201,8 @@ export class AccountsService {
                 supplier_require_external_code:
                     input.supplier_require_external_code,
                 supplier_require_supplement: input.supplier_require_supplement,
+                supplier_recurring_expenses:
+                    input.supplier_recurring_expenses,
                 client_automatic_tax_calculation:
                     input.client_automatic_tax_calculation,
             },
@@ -220,6 +222,8 @@ export class AccountsService {
                 supplier_require_external_code:
                     input.supplier_require_external_code,
                 supplier_require_supplement: input.supplier_require_supplement,
+                supplier_recurring_expenses:
+                    input.supplier_recurring_expenses,
                 client_automatic_tax_calculation:
                     input.client_automatic_tax_calculation,
             },

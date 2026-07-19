@@ -58,6 +58,9 @@ export class AccountBase {
     supplier_require_supplement: boolean;
 
     @Field(() => Boolean, { nullable: false })
+    supplier_recurring_expenses: boolean;
+
+    @Field(() => Boolean, { nullable: false })
     client_automatic_tax_calculation: boolean;
 }
 

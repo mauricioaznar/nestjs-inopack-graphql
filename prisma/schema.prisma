@@ -719,6 +719,7 @@ model accounts {
   client_require_supplement                     Boolean            @default(true)
   supplier_require_external_code                Boolean            @default(false)
   supplier_require_supplement                   Boolean            @default(false)
+  supplier_recurring_expenses                   Boolean            @default(false)
   client_automatic_tax_calculation              Boolean            @default(true)
   exclude_from_accountability_export            Boolean            @default(false)
   account_contacts                              account_contacts[]
@@ -770,15 +771,19 @@ model expenses {
   resources_total                        Float?              @default(0.00)
   expense_status_id                      Int?                @db.UnsignedInt
   internal_code                          Int                 @default(0)
+  generated_from_expense_id              Int?                @db.UnsignedInt
   expense_resources                      expense_resources[]
   accounts                               accounts?           @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_account_id_foreign")
   expense_statuses                       expense_statuses?   @relation(fields: [expense_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_expense_status_id_foreign")
   receipt_types                          receipt_types?      @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_receipt_type_foreign")
+  generated_from_expense                 expenses?           @relation("expense_provenance", fields: [generated_from_expense_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "expenses_generated_from_expense_id_foreign")
+  generated_expenses                     expenses[]          @relation("expense_provenance")
   transfer_receipts                      transfer_receipts[]
 
   @@index([account_id], map: "expenses_account_id_foreign")
   @@index([receipt_type_id], map: "expenses_receipt_type_foreign")
   @@index([expense_status_id], map: "expenses_expense_status_id_foreign")
+  @@index([generated_from_expense_id], map: "expenses_generated_from_expense_id_idx")
 }
 
 model resource_categories {

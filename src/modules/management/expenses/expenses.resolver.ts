@@ -21,9 +21,13 @@ import {
     ExpensesSortArgs,
     ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
+    GenerateRecurringExpenseInput,
+    GenerateRecurringExpensesResult,
     GetExpensesQueryArgs,
     PaginatedExpenses,
     ReceiptType,
+    RecurringExpenseCandidate,
+    RecurringExpenseCandidatesArgs,
     TransferReceipt,
     User,
 } from '../../../common/dto/entities';
@@ -226,6 +230,44 @@ export class ExpensesResolver {
         return this.service.isEditable({
             expense_id: expense.id,
         });
+    }
+
+    @Query(() => [RecurringExpenseCandidate])
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
+    async getRecurringExpenseCandidates(
+        @Args({ nullable: false }) args: RecurringExpenseCandidatesArgs,
+    ): Promise<RecurringExpenseCandidate[]> {
+        return this.service.getRecurringExpenseCandidates({
+            year: args.year,
+            month: args.month,
+        });
+    }
+
+    @Mutation(() => GenerateRecurringExpensesResult)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.EXPENSES)
+    async generateRecurringExpenses(
+        @Args('input', { type: () => [GenerateRecurringExpenseInput] })
+        input: GenerateRecurringExpenseInput[],
+        @CurrentUser() currentUser: User,
+    ): Promise<GenerateRecurringExpensesResult> {
+        const result = await this.service.generateRecurringExpenses(input);
+
+        for (const expenseId of result.created_ids) {
+            const expense = await this.service.getExpense({
+                expense_id: expenseId,
+            });
+            if (expense) {
+                await this.pubSubService.expense({
+                    expense,
+                    type: ActivityTypeName.CREATE,
+                    userId: currentUser.id,
+                });
+            }
+        }
+
+        return result;
     }
 
     @Subscription(() => Expense)
