@@ -27,10 +27,10 @@ export class ProductionPerformanceResolver {
         return this.service.getMachineProducts({ machine_id: machineId });
     }
 
-    // Raw run rows for any machine / product / employee combination (at least
-    // one id required — the service throws BadRequest otherwise). Feeds the
-    // analysis panel's scatter + per-employee ranking; the ids/dates come from
-    // whichever filters are active.
+    // Raw run rows for any machine / product combination (at least one id
+    // required — the service throws BadRequest otherwise). Feeds the analysis
+    // panel's scatter + per-employee series; the ids/dates come from whichever
+    // filters are active.
     @Query(() => [MachineProductEmployeeRun])
     @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
     async getMachineProductEmployeeRuns(
@@ -38,8 +38,6 @@ export class ProductionPerformanceResolver {
         machineId: number | null,
         @Args('productId', { type: () => Int, nullable: true })
         productId: number | null,
-        @Args('employeeId', { type: () => Int, nullable: true })
-        employeeId: number | null,
         @Args('fromDate', { type: () => String, nullable: true })
         fromDate: string | null,
         @Args('toDate', { type: () => String, nullable: true })
@@ -48,7 +46,6 @@ export class ProductionPerformanceResolver {
         return this.service.getMachineProductEmployeeRuns({
             machine_id: machineId,
             product_id: productId,
-            employee_id: employeeId,
             from_date: fromDate,
             to_date: toDate,
         });
@@ -95,9 +92,9 @@ export class ProductionPerformanceResolver {
     }
 
     // Hourly-throughput rows (produced vs consumed kg/hr) for any machine /
-    // product / employee combination (at least one id required). Feeds the
-    // panel's KPI headline and the "Corridas" table. fromDate/toDate bound the
-    // window server-side (the panel no longer filters dates client-side).
+    // product combination (at least one id required). Feeds the panel's KPI
+    // headline and the "Corridas" table. fromDate/toDate bound the window
+    // server-side (the panel no longer filters dates client-side).
     @Query(() => [MachineHourlyRun])
     @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
     async getMachineHourlyRuns(
@@ -105,8 +102,6 @@ export class ProductionPerformanceResolver {
         machineId: number | null,
         @Args('productId', { type: () => Int, nullable: true })
         productId: number | null,
-        @Args('employeeId', { type: () => Int, nullable: true })
-        employeeId: number | null,
         @Args('fromDate', { type: () => String, nullable: true })
         fromDate: string | null,
         @Args('toDate', { type: () => String, nullable: true })
@@ -115,7 +110,6 @@ export class ProductionPerformanceResolver {
         return this.service.getMachineHourlyRuns({
             machine_id: machineId,
             product_id: productId,
-            employee_id: employeeId,
             from_date: fromDate,
             to_date: toDate,
         });

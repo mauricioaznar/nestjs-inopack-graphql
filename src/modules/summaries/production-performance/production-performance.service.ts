@@ -39,34 +39,31 @@ export class ProductionPerformanceService {
         `);
     }
 
-    // Raw run rows for any combination of machine / product / employee: one row
-    // per (line × linked employee). At least one of the three ids is required
+    // Raw run rows for any combination of machine / product: one row per
+    // (line × linked employee). At least one of the two ids is required
     // (BadRequest otherwise) — an unfiltered scan of every run line would be
     // both huge and meaningless. Waste is attributed as (production.waste ÷
     // linked employees) prorated by the line's kilo share of the production
     // total — matching the employee dashboard. Productions with no linked
     // employee become a synthetic "Sin empleado asignado" row (employee_id = 0).
-    // employee_id filters the employee fan-out directly (so the synthetic row is
-    // dropped when a real employee is requested); machine_id/product_id filter
-    // the product line. product_id/product_description are returned so the panel
-    // can color its scatter series by product. All ids are validated with
-    // Number() and dates by regex before interpolation ($queryRawUnsafe).
+    // machine_id/product_id filter the product line. product_id/product_description
+    // are returned so the panel can color its scatter series by product. All ids
+    // are validated with Number() and dates by regex before interpolation
+    // ($queryRawUnsafe).
     async getMachineProductEmployeeRuns({
         machine_id,
         product_id,
-        employee_id,
         from_date,
         to_date,
     }: {
         machine_id?: number | null;
         product_id?: number | null;
-        employee_id?: number | null;
         from_date?: string | null;
         to_date?: string | null;
     }): Promise<MachineProductEmployeeRun[]> {
-        if (!machine_id && !product_id && !employee_id) {
+        if (!machine_id && !product_id) {
             throw new BadRequestException(
-                'Se requiere al menos un filtro: máquina, producto o empleado.',
+                'Se requiere al menos un filtro: máquina o producto.',
             );
         }
         const machineFilter = machine_id
@@ -74,9 +71,6 @@ export class ProductionPerformanceService {
             : '';
         const productFilter = product_id
             ? `and opp.product_id = ${Number(product_id)}`
-            : '';
-        const employeeFilter = employee_id
-            ? `and ope.employee_id = ${Number(employee_id)}`
             : '';
         const sharedFilters = this.buildSharedFilters({ from_date, to_date });
         return this.prisma.$queryRawUnsafe(`
@@ -130,13 +124,12 @@ export class ProductionPerformanceService {
             where opp.active = 1
                 ${machineFilter}
                 ${productFilter}
-                ${employeeFilter}
                 ${sharedFilters}
             order by op.start_date
         `);
     }
 
-    // Hourly-throughput rows for any machine / product / employee combination:
+    // Hourly-throughput rows for any machine / product combination:
     // one row per production, no employee split. Each side is aggregated in its
     // own derived table first — joining the product lines and resource lines
     // directly would fan out (cartesian) and inflate the sums, so we pre-sum per
@@ -144,35 +137,31 @@ export class ProductionPerformanceService {
     // (coalesce), per the user's decision; the client computes kg/hr as
     // totals-over-totals. The product side drives (which productions matched the
     // filters); the resource side is left-joined and coalesced to 0 when absent.
-    // At least one of the three ids is required (BadRequest otherwise).
+    // At least one of the two ids is required (BadRequest otherwise).
     //
     // machine_id/product_id narrow the product side (and the resource side by
     // machine): with a product_id set, the product side sums ONLY that product's
     // lines so kilos/hours + kg/hr reflect the single product; the resource side
     // stays whole-production (resources aren't attributable to one product), so
     // "Consumo kg/hr" remains the total of the matched runs — noted in the UI.
-    // employee_id keeps every production the employee is linked to (EXISTS on
-    // order_production_employees) — consumption is the FULL consumption of those
-    // matched runs, not attributable per employee. from_date/to_date drop
-    // productions outside the window (pre-hour-capture corridas would inflate
-    // kg/hr). All ids validated with Number() and dates by regex before
-    // interpolation ($queryRawUnsafe): a malformed value is ignored, not injected.
+    // from_date/to_date drop productions outside the window (pre-hour-capture
+    // corridas would inflate kg/hr). All ids validated with Number() and dates by
+    // regex before interpolation ($queryRawUnsafe): a malformed value is ignored,
+    // not injected.
     async getMachineHourlyRuns({
         machine_id,
         product_id,
-        employee_id,
         from_date,
         to_date,
     }: {
         machine_id?: number | null;
         product_id?: number | null;
-        employee_id?: number | null;
         from_date?: string | null;
         to_date?: string | null;
     }): Promise<MachineHourlyRun[]> {
-        if (!machine_id && !product_id && !employee_id) {
+        if (!machine_id && !product_id) {
             throw new BadRequestException(
-                'Se requiere al menos un filtro: máquina, producto o empleado.',
+                'Se requiere al menos un filtro: máquina o producto.',
             );
         }
         const ppMachineFilter = machine_id
@@ -186,18 +175,6 @@ export class ProductionPerformanceService {
         // "full consumption of the matched runs").
         const rrMachineFilter = machine_id
             ? `and machine_id = ${Number(machine_id)}`
-            : '';
-        // Keep productions where the employee is linked. EXISTS (not a join) so
-        // the row count stays one-per-production regardless of how many other
-        // employees are on the run.
-        const employeeExists = employee_id
-            ? `and exists (
-                    select 1
-                    from order_production_employees ope
-                    where ope.order_production_id = op.id
-                        and ope.active = 1
-                        and ope.employee_id = ${Number(employee_id)}
-                )`
             : '';
         const sharedFilters = this.buildSharedFilters({ from_date, to_date });
         return this.prisma.$queryRawUnsafe(`
@@ -225,7 +202,6 @@ export class ProductionPerformanceService {
                 on op.id = pp.order_production_id
                 and op.active = 1
                 ${sharedFilters}
-                ${employeeExists}
             left join (
                 select
                     order_production_id,
