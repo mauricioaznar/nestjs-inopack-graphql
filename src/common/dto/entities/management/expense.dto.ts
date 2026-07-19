@@ -83,6 +83,9 @@ export class Expense extends ExpenseBase {
     @Field({ nullable: false })
     id: number;
 
+    @Field(() => Int, { nullable: true })
+    generated_from_expense_id: number | null;
+
     @Field(() => Float, { nullable: false })
     transfer_receipts_total: number;
 

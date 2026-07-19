@@ -982,6 +982,12 @@ export class ExpensesService {
             for (const item of input) {
                 const source = await tx.expenses.findFirst({
                     where: { id: item.source_expense_id, active: 1 },
+                    include: {
+                        transfer_receipts: {
+                            where: { active: 1 },
+                            include: { transfers: true },
+                        },
+                    },
                 });
 
                 if (!source) {
@@ -1033,12 +1039,46 @@ export class ExpensesService {
                         item.tax_retained,
                 );
 
+                // Derive the expected payment date from the source expense's
+                // transfer history: take the day-of-month of its latest
+                // transfer and project it onto the month being generated.
+                // If the source was never paid via a transfer, fall back to
+                // the generated expense's own date.
+                const transferDates = (source.transfer_receipts ?? [])
+                    .map((tr) => tr.transfers?.transferred_date)
+                    .filter(
+                        (d): d is Date => d !== null && d !== undefined,
+                    );
+
+                let expectedPaymentDate: Date;
+                if (transferDates.length > 0) {
+                    const lastTransferDate = new Date(
+                        Math.max(...transferDates.map((d) => d.getTime())),
+                    );
+                    const daysInTargetMonth = new Date(
+                        targetYear,
+                        targetMonth + 1,
+                        0,
+                    ).getDate();
+                    const clampedDay = Math.min(
+                        lastTransferDate.getDate(),
+                        daysInTargetMonth,
+                    );
+                    expectedPaymentDate = new Date(
+                        targetYear,
+                        targetMonth,
+                        clampedDay,
+                    );
+                } else {
+                    expectedPaymentDate = targetDate;
+                }
+
                 const expense = await tx.expenses.create({
                     data: {
                         ...getCreatedAtProperty(),
                         ...getUpdatedAtProperty(),
                         date: targetDate,
-                        expected_payment_date: null,
+                        expected_payment_date: expectedPaymentDate,
                         locked: false,
                         account_id: source.account_id,
                         receipt_type_id: source.receipt_type_id,
