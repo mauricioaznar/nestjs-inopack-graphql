@@ -42,6 +42,7 @@ export class AccountsResolver {
     constructor(
         private service: AccountsService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Query(() => [Account])
