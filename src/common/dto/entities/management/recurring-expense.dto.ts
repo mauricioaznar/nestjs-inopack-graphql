@@ -88,6 +88,15 @@ export class GenerateRecurringExpenseInput {
     @Field(() => Date, { nullable: false })
     date: Date;
 
+    @Field(() => Float, { nullable: false })
+    tax: number;
+
+    @Field(() => Float, { nullable: false })
+    tax_retained: number;
+
+    @Field(() => Float, { nullable: false })
+    non_tax_retained: number;
+
     @Field(() => [GenerateRecurringExpenseResourceInput])
     expense_resources: GenerateRecurringExpenseResourceInput[];
 }

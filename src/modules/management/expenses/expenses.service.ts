@@ -990,6 +990,15 @@ export class ExpensesService {
                     );
                 }
 
+                // Same rule as validateUpsertExpense: tax is only allowed on
+                // receipt type 2. The clone keeps the source's receipt type,
+                // so the edited tax must obey it too.
+                if (source.receipt_type_id !== 2 && item.tax > 0) {
+                    throw new BadRequestException(
+                        'Tax can only be set when expense has order receipt type id = 2',
+                    );
+                }
+
                 const targetDate = new Date(item.date);
                 const targetYear = targetDate.getFullYear();
                 const targetMonth = targetDate.getMonth();
@@ -1019,9 +1028,9 @@ export class ExpensesService {
 
                 const totalWithTax = round(
                     subtotal +
-                        source.tax -
-                        source.non_tax_retained -
-                        source.tax_retained,
+                        item.tax -
+                        item.non_tax_retained -
+                        item.tax_retained,
                 );
 
                 const expense = await tx.expenses.create({
@@ -1035,9 +1044,9 @@ export class ExpensesService {
                         receipt_type_id: source.receipt_type_id,
                         notes: source.notes,
                         subtotal: subtotal,
-                        tax: source.tax,
-                        tax_retained: source.tax_retained,
-                        non_tax_retained: source.non_tax_retained,
+                        tax: item.tax,
+                        tax_retained: item.tax_retained,
+                        non_tax_retained: item.non_tax_retained,
                         total_with_tax: totalWithTax,
                         require_supplement: source.require_supplement,
                         supplement_code: '',
