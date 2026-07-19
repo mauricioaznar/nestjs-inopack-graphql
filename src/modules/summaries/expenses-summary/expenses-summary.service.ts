@@ -25,6 +25,7 @@ export class ExpensesSummaryService {
         entity_groups,
         date_group_by,
         exclude_flagged,
+        include_canceled,
     }: ExpensesSummaryArgs): Promise<ExpensesSummary> {
         if (year === null || month === undefined) {
             return {
@@ -104,6 +105,13 @@ export class ExpensesSummaryService {
                 ? `if(resources.exclude_from_financial_summaries = 1, 0, ${expr})`
                 : expr;
 
+        // Canceled expenses are filtered out unless the caller opts in. Default
+        // (false/undefined) reproduces the previous hardcoded `canceled = 0`,
+        // so existing consumers are unaffected.
+        const canceledCondition = include_canceled
+            ? ''
+            : 'and expenses.canceled = 0';
+
         const queryString = `
             select sum(ctc.total)                       as               total,
                    sum(ctc.tax)                         as               tax,
@@ -180,7 +188,7 @@ export class ExpensesSummaryService {
                     left join receipt_types
                     on receipt_types.id = expenses.receipt_type_id
                     where expenses.active = 1
-                    and expenses.canceled = 0
+                    ${canceledCondition}
                 ) as ctc
             where ctc.start_date >= '${formattedStartDate}'
               and ctc.start_date
