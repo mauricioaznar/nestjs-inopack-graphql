@@ -35,6 +35,13 @@ export class MachineUpsertInput extends MachineBase {
 export class Machine extends MachineBase {
     @Field({ nullable: false })
     id: number;
+
+    // Audit stamps — server-side only, never part of the upsert input.
+    @Field(() => Int, { nullable: true })
+    created_by_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    updated_by_id: number | null;
 }
 
 @ObjectType('MachineDailyProduction')

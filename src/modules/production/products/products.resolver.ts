@@ -29,6 +29,7 @@ import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => Product)
 @UseGuards(GqlAuthGuard)
@@ -38,6 +39,7 @@ export class ProductsResolver {
     constructor(
         private productsService: ProductsService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Query(() => [Product])
@@ -77,7 +79,9 @@ export class ProductsResolver {
         @Args('ProductUpsertInput') input: ProductUpsertInput,
         @CurrentUser() currentUser: User,
     ): Promise<Product> {
-        const product = await this.productsService.upsertInput(input);
+        const product = await this.productsService.upsertInput(input, {
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.product({
             product,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
@@ -96,7 +100,10 @@ export class ProductsResolver {
         if (!product) {
             throw new NotFoundException();
         }
-        await this.productsService.deleteProduct({ product_id: productId });
+        await this.productsService.deleteProduct({
+            product_id: productId,
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.product({
             product,
             type: ActivityTypeName.DELETE,
@@ -150,6 +157,20 @@ export class ProductsResolver {
     ): Promise<OrderProductionProduct[]> {
         return this.productsService.getOrderProductionProducts({
             product_id: product.id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async created_by(@Parent() product: Product): Promise<User | null> {
+        return this.auditUsersService.getCreatedBy({
+            created_by_id: product.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(@Parent() product: Product): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: product.updated_by_id,
         });
     }
 

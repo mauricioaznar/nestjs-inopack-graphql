@@ -13,6 +13,8 @@ import { ProductCategory } from '../../../common/dto/entities/production/product
 import { ProductMaterial } from '../../../common/dto/entities/production/product-material.dto';
 import {
     getCreatedAtProperty,
+    getCreatedByProperty,
+    getUpdatedByProperty,
     getStringFromDate,
     getUpdatedAtProperty,
 } from '../../../common/helpers';
@@ -239,13 +241,18 @@ export class ProductsService {
     }
 
     // update or insert
-    async upsertInput(input: ProductUpsertInput): Promise<Product> {
+    async upsertInput(
+        input: ProductUpsertInput,
+        { current_user_id }: { current_user_id?: number | null } = {},
+    ): Promise<Product> {
         await this.validateAndCleanUpsertInput(input);
 
         return this.prisma.products.upsert({
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 calibre: input.calibre || 0,
                 discontinued: input.discontinued,
                 internal_description: input.internal_description,
@@ -267,6 +274,7 @@ export class ProductsService {
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 calibre: input.calibre || 0,
                 code: input.code,
                 discontinued: input.discontinued,
@@ -456,7 +464,13 @@ export class ProductsService {
         );
     }
 
-    async deleteProduct({ product_id }: { product_id: number }): Promise<void> {
+    async deleteProduct({
+        product_id,
+        current_user_id,
+    }: {
+        product_id: number;
+        current_user_id?: number | null;
+    }): Promise<void> {
         const product = await this.prisma.products.findUnique({
             where: {
                 id: product_id,
@@ -509,6 +523,7 @@ export class ProductsService {
         await this.prisma.products.update({
             data: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 active: -1,
             },
             where: {
