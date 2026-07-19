@@ -40,6 +40,13 @@ export class RecurringExpenseCandidate {
     @Field(() => Int, { nullable: true })
     receipt_type_id: number | null;
 
+    // Suggested payment date computed from the source expense's transfer
+    // history (latest transfer day-of-month projected onto the target month).
+    // Null when the source has no transfers — the UI then falls back to the
+    // expense date. The user can override the suggestion before generating.
+    @Field(() => Date, { nullable: true })
+    suggested_payment_date: Date | null;
+
     @Field(() => Boolean)
     require_supplement: boolean;
 
@@ -87,6 +94,12 @@ export class GenerateRecurringExpenseInput {
 
     @Field(() => Date, { nullable: false })
     date: Date;
+
+    // Expected payment date, chosen by the user in the dialog (prefilled from
+    // the candidate's suggested_payment_date). Nullable: when omitted the
+    // service falls back to the transfer-based computation, then the expense date.
+    @Field(() => Date, { nullable: true })
+    expected_payment_date: Date | null;
 
     @Field(() => Float, { nullable: false })
     tax: number;

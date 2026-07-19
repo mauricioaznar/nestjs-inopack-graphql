@@ -887,6 +887,10 @@ export class ExpensesService {
                         },
                     });
 
+                const transferDates = (expense.transfer_receipts ?? [])
+                    .map((tr) => tr.transfers?.transferred_date)
+                    .filter((d): d is Date => d !== null && d !== undefined);
+
                 candidates.push({
                     expense_id: expense.id,
                     account_id: account.id,
@@ -898,6 +902,11 @@ export class ExpensesService {
                     tax_retained: expense.tax_retained,
                     non_tax_retained: expense.non_tax_retained,
                     receipt_type_id: expense.receipt_type_id,
+                    suggested_payment_date: this.projectPaymentDate(
+                        transferDates,
+                        year,
+                        month - 1,
+                    ),
                     require_supplement: expense.require_supplement,
                     require_external_code: expense.require_external_code,
                     expense_resources: expenseResources,
@@ -936,12 +945,44 @@ export class ExpensesService {
                     },
                 },
                 orderBy: { date: 'asc' },
+                include: {
+                    transfer_receipts: {
+                        where: { active: 1 },
+                        include: { transfers: true },
+                    },
+                },
             });
 
             if (expenses.length > 0) return expenses;
         }
 
         return [];
+    }
+
+    // Suggested payment date for a recurring expense: the day-of-month of the
+    // source's LATEST transfer, projected onto the month being generated
+    // (clamped to that month's length). Returns null when the source was never
+    // paid via a transfer — callers then fall back to the expense date.
+    // `targetMonth` is 0-indexed (JS Date convention).
+    private projectPaymentDate(
+        transferDates: Date[],
+        targetYear: number,
+        targetMonth: number,
+    ): Date | null {
+        const valid = transferDates.filter(
+            (d) => d !== null && d !== undefined,
+        );
+        if (valid.length === 0) return null;
+        const last = new Date(
+            Math.max(...valid.map((d) => new Date(d).getTime())),
+        );
+        const daysInTargetMonth = new Date(
+            targetYear,
+            targetMonth + 1,
+            0,
+        ).getDate();
+        const clampedDay = Math.min(last.getDate(), daysInTargetMonth);
+        return new Date(targetYear, targetMonth, clampedDay);
     }
 
     private async getAlreadyGeneratedSet(
@@ -1039,38 +1080,24 @@ export class ExpensesService {
                         item.tax_retained,
                 );
 
-                // Derive the expected payment date from the source expense's
-                // transfer history: take the day-of-month of its latest
-                // transfer and project it onto the month being generated.
-                // If the source was never paid via a transfer, fall back to
-                // the generated expense's own date.
-                const transferDates = (source.transfer_receipts ?? [])
-                    .map((tr) => tr.transfers?.transferred_date)
-                    .filter(
-                        (d): d is Date => d !== null && d !== undefined,
-                    );
-
+                // Expected payment date: honor the value the user chose in the
+                // dialog (prefilled from the suggestion). If none was sent, fall
+                // back to the transfer-based suggestion, then to the expense date.
                 let expectedPaymentDate: Date;
-                if (transferDates.length > 0) {
-                    const lastTransferDate = new Date(
-                        Math.max(...transferDates.map((d) => d.getTime())),
-                    );
-                    const daysInTargetMonth = new Date(
-                        targetYear,
-                        targetMonth + 1,
-                        0,
-                    ).getDate();
-                    const clampedDay = Math.min(
-                        lastTransferDate.getDate(),
-                        daysInTargetMonth,
-                    );
-                    expectedPaymentDate = new Date(
-                        targetYear,
-                        targetMonth,
-                        clampedDay,
-                    );
+                if (item.expected_payment_date) {
+                    expectedPaymentDate = new Date(item.expected_payment_date);
                 } else {
-                    expectedPaymentDate = targetDate;
+                    const transferDates = (source.transfer_receipts ?? [])
+                        .map((tr) => tr.transfers?.transferred_date)
+                        .filter(
+                            (d): d is Date => d !== null && d !== undefined,
+                        );
+                    expectedPaymentDate =
+                        this.projectPaymentDate(
+                            transferDates,
+                            targetYear,
+                            targetMonth,
+                        ) ?? targetDate;
                 }
 
                 const expense = await tx.expenses.create({
