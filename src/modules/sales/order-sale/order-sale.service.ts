@@ -20,12 +20,13 @@ import {
     OrderSaleStatus,
     PaginatedOrderSales,
     PaginatedOrderSalesQueryArgs,
-    User,
     TransferReceipt,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
+    getCreatedByProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
@@ -586,17 +587,6 @@ export class OrderSaleService {
         });
     }
 
-    async getCreatedBy({
-        created_by_id,
-    }: {
-        created_by_id?: number | null;
-    }): Promise<User | null> {
-        if (!created_by_id) return null;
-        return this.prisma.users.findFirst({
-            where: { id: created_by_id },
-        });
-    }
-
     async upsertOrderSale({
         input,
         current_user_id,
@@ -657,6 +647,8 @@ export class OrderSaleService {
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 date: input.date,
                 order_code: input.order_code,
                 expected_payment_date: input.expected_payment_date,
@@ -679,10 +671,10 @@ export class OrderSaleService {
                 subtotal: round(subtotal),
                 tax: round(tax),
                 total_with_tax: round(total_with_tax),
-                created_by_id: input.created_by_id,
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 date: input.date,
                 order_code: input.order_code,
                 expected_payment_date: input.expected_payment_date,
@@ -703,7 +695,6 @@ export class OrderSaleService {
                 subtotal: round(subtotal),
                 tax: round(tax),
                 total_with_tax: round(total_with_tax),
-                created_by_id: input.created_by_id,
             },
             where: {
                 id: input.id || 0,
@@ -1275,6 +1266,7 @@ export class OrderSaleService {
         await this.prisma.order_sales.update({
             data: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 active: -1,
             },
             where: {

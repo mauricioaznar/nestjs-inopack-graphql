@@ -37,6 +37,7 @@ import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => OrderRequest)
 @UseGuards(GqlAuthGuard)
@@ -45,6 +46,7 @@ export class OrderRequestsResolver {
     constructor(
         private service: OrderRequestsService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Query(() => OrderRequest, { nullable: true })
@@ -279,6 +281,24 @@ export class OrderRequestsResolver {
     ): Promise<OrderRequestStatus | null> {
         return this.service.getOrderRequestStatus({
             order_request_status_id: orderRequest.order_request_status_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async created_by(
+        @Parent() orderRequest: OrderRequest,
+    ): Promise<User | null> {
+        return this.auditUsersService.getCreatedBy({
+            created_by_id: orderRequest.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(
+        @Parent() orderRequest: OrderRequest,
+    ): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: orderRequest.updated_by_id,
         });
     }
 

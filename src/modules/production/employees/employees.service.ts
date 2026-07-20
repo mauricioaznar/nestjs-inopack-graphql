@@ -14,7 +14,9 @@ import {
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
     getCreatedAtProperty,
+    getCreatedByProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
 } from '../../../common/helpers';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
@@ -143,13 +145,18 @@ export class EmployeesService {
         });
     }
 
-    async upsertEmployee(input: EmployeeUpsertInput): Promise<Employee> {
+    async upsertEmployee(
+        input: EmployeeUpsertInput,
+        { current_user_id }: { current_user_id?: number | null } = {},
+    ): Promise<Employee> {
         await this.validateEmployeeUpsert(input);
 
         return this.prisma.employees.upsert({
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 first_name: input.first_name,
                 last_name: input.last_name,
                 fullname: `${input.first_name} ${input.last_name}`,
@@ -163,6 +170,7 @@ export class EmployeesService {
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 first_name: input.first_name,
                 last_name: input.last_name,
                 fullname: `${input.first_name} ${input.last_name}`,
@@ -202,8 +210,10 @@ export class EmployeesService {
 
     async deletesEmployee({
         employee_id,
+        current_user_id,
     }: {
         employee_id: number;
+        current_user_id?: number | null;
     }): Promise<boolean> {
         const employee = await this.getEmployee({ employeeId: employee_id });
 
@@ -234,6 +244,7 @@ export class EmployeesService {
         await this.prisma.employees.update({
             data: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 active: -1,
             },
             where: {

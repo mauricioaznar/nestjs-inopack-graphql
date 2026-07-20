@@ -30,6 +30,7 @@ import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { EmployeeType } from '../../../common/dto/entities/production/employee-type.dto';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => Employee)
 @UseGuards(GqlAuthGuard)
@@ -38,6 +39,7 @@ export class EmployeesResolver {
     constructor(
         private service: EmployeesService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Query(() => [Employee])
@@ -80,7 +82,9 @@ export class EmployeesResolver {
         @Args('EmployeeUpsertInput') input: EmployeeUpsertInput,
         @CurrentUser() currentUser: User,
     ): Promise<Employee> {
-        const employee = await this.service.upsertEmployee(input);
+        const employee = await this.service.upsertEmployee(input, {
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.employee({
             employee,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
@@ -100,6 +104,7 @@ export class EmployeesResolver {
 
         await this.service.deletesEmployee({
             employee_id: employeeId,
+            current_user_id: currentUser.id,
         });
         await this.pubSubService.employee({
             employee,
@@ -125,6 +130,20 @@ export class EmployeesResolver {
     ): Promise<EmployeeType | null> {
         return this.service.getOrderProductionType({
             order_production_type_id: employee.order_production_type_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async created_by(@Parent() employee: Employee): Promise<User | null> {
+        return this.auditUsersService.getCreatedBy({
+            created_by_id: employee.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(@Parent() employee: Employee): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: employee.updated_by_id,
         });
     }
 

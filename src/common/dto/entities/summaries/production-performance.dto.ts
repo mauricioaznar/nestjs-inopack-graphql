@@ -24,6 +24,14 @@ export class MachineProductEmployeeRun {
     @Field(() => String, { nullable: false })
     employee_name: string;
 
+    // The product this run line made — lets the analysis panel color its series
+    // by product when no product sub-filter is active.
+    @Field(() => Int, { nullable: false })
+    product_id: number;
+
+    @Field(() => String, { nullable: false })
+    product_description: string;
+
     @Field(() => Int, { nullable: false })
     order_production_id: number;
 
@@ -52,6 +60,72 @@ export class MachineProductEmployeeRun {
     // products. Lets the UI optionally exclude shared runs.
     @Field(() => Int, { nullable: false })
     product_count: number;
+}
+
+// One row per product for a selected machine's overview table (Tab 1).
+// kg/hr and merma % are computed client-side (totals-over-totals). waste_share_total
+// is already prorated by kilo share WITHOUT the employee-count divisor — that divisor
+// only exists to split waste among employees in the fan-out query.
+@ObjectType('MachineProductPerformanceSummary')
+export class MachineProductPerformanceSummary {
+    @Field(() => Int, { nullable: false })
+    product_id: number;
+
+    @Field(() => String, { nullable: false })
+    product_description: string;
+
+    @Field(() => Int, { nullable: false })
+    runs: number;
+
+    @Field(() => Float, { nullable: false })
+    kilos: number;
+
+    @Field(() => Float, { nullable: false })
+    hours: number;
+
+    @Field(() => Float, { nullable: false })
+    waste_share_total: number;
+
+    @Field(() => Date, { nullable: true })
+    last_run_date: Date | null;
+}
+
+// One row per machine for a selected product's overview table (Tab 2).
+// Índice vs promedio = machine kg/hr ÷ product-wide kg/hr × 100, computed client-side
+// from the rows returned (product-wide = sum(kilos)/sum(hours) across all rows).
+@ObjectType('ProductMachinePerformanceSummary')
+export class ProductMachinePerformanceSummary {
+    @Field(() => Int, { nullable: false })
+    machine_id: number;
+
+    @Field(() => String, { nullable: false })
+    machine_name: string;
+
+    @Field(() => Int, { nullable: false })
+    runs: number;
+
+    @Field(() => Float, { nullable: false })
+    kilos: number;
+
+    @Field(() => Float, { nullable: false })
+    hours: number;
+
+    @Field(() => Float, { nullable: false })
+    waste_share_total: number;
+
+    @Field(() => Date, { nullable: true })
+    last_run_date: Date | null;
+}
+
+// Distinct products that have at least one active run line — used to populate the
+// product picker in Tab 2 (mirror of MachineProduct without the machine filter).
+@ObjectType('ProductWithRuns')
+export class ProductWithRuns {
+    @Field(() => Int, { nullable: false })
+    id: number;
+
+    @Field(() => String, { nullable: false })
+    description: string;
 }
 
 // One row per production for the MACHINE-level hourly-throughput view (no

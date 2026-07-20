@@ -24,6 +24,12 @@ export class ExpensesSummaryArgs {
 
     @Field(() => Boolean, { nullable: true })
     exclude_flagged: boolean;
+
+    // Canceled expenses are excluded by default, matching the historical
+    // behavior of this query (the SQL used to hardcode canceled = 0). The
+    // Resumen de gastos page flips this on for investigation only.
+    @Field(() => Boolean, { nullable: true })
+    include_canceled: boolean;
 }
 
 export enum ExpensesSummaryEntitiesGroup {

@@ -20,7 +20,9 @@ import {
 import {
     formatFloat,
     getCreatedAtProperty,
+    getCreatedByProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { Prisma } from '@prisma/client';
@@ -328,6 +330,7 @@ export class TransfersService {
 
     async upsertTransfer(
         transferInput: TransferUpsertInput,
+        { current_user_id }: { current_user_id?: number | null } = {},
     ): Promise<Transfer> {
         await this.validateUpsertTransfer(transferInput);
 
@@ -335,6 +338,8 @@ export class TransfersService {
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 amount: transferInput.amount,
                 from_account_id: transferInput.from_account_id,
                 to_account_id: transferInput.to_account_id,
@@ -346,6 +351,7 @@ export class TransfersService {
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 amount: transferInput.amount,
                 from_account_id: transferInput.from_account_id,
                 to_account_id: transferInput.to_account_id,
@@ -839,8 +845,10 @@ export class TransfersService {
 
     async deleteTransfer({
         transfer_id,
+        current_user_id,
     }: {
         transfer_id: number;
+        current_user_id?: number | null;
     }): Promise<boolean> {
         const transfer = await this.getTransfer({ transfer_id: transfer_id });
         const transferReceipts = await this.getTransferReceipts({
@@ -854,6 +862,7 @@ export class TransfersService {
         await this.prisma.transfers.update({
             data: {
                 active: -1,
+                ...getUpdatedByProperty(current_user_id),
             },
             where: {
                 id: transfer_id,

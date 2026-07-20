@@ -22,7 +22,9 @@ import {
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
+    getCreatedByProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
@@ -331,6 +333,8 @@ export class OrderRequestsService {
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 notes: input.notes,
                 date: input.date,
                 order_code: input.order_code,
@@ -344,6 +348,7 @@ export class OrderRequestsService {
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 notes: input.notes,
                 date: input.date,
                 order_code: input.order_code,
@@ -922,6 +927,7 @@ export class OrderRequestsService {
         await this.prisma.order_requests.updateMany({
             data: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 active: -1,
             },
             where: {

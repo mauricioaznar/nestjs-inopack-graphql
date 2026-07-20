@@ -83,6 +83,9 @@ export class Expense extends ExpenseBase {
     @Field({ nullable: false })
     id: number;
 
+    @Field(() => Int, { nullable: true })
+    generated_from_expense_id: number | null;
+
     @Field(() => Float, { nullable: false })
     transfer_receipts_total: number;
 
@@ -91,6 +94,13 @@ export class Expense extends ExpenseBase {
 
     @Field(() => Float, { nullable: false })
     total_with_tax: number;
+
+    // Audit stamps — server-side only, never part of the upsert input.
+    @Field(() => Int, { nullable: true })
+    created_by_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    updated_by_id: number | null;
 }
 
 @ArgsType()

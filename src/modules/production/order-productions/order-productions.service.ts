@@ -14,7 +14,9 @@ import {
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 import {
     getCreatedAtProperty,
+    getCreatedByProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { OrderProductionEmployee } from '../../../common/dto/entities/production/order-production-employee.dto';
@@ -263,6 +265,7 @@ export class OrderProductionsService {
 
     async upsertOrderProduction(
         input: OrderProductionInput,
+        { current_user_id }: { current_user_id?: number | null } = {},
     ): Promise<OrderProduction> {
         await this.validateOrderProduction(input);
 
@@ -270,6 +273,8 @@ export class OrderProductionsService {
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 start_date: input.start_date,
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
@@ -278,6 +283,7 @@ export class OrderProductionsService {
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 start_date: input.start_date,
                 branch_id: input.branch_id,
                 order_production_type_id: input.order_production_type_id,
@@ -744,8 +750,10 @@ export class OrderProductionsService {
 
     async deleteOrderProduction({
         order_production_id,
+        current_user_id,
     }: {
         order_production_id: number;
+        current_user_id?: number | null;
     }): Promise<boolean> {
         const orderProduction = await this.getOrderProduction({
             order_production_id,
@@ -758,6 +766,7 @@ export class OrderProductionsService {
         await this.prisma.order_productions.update({
             data: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 active: -1,
             },
             where: {

@@ -33,6 +33,7 @@ import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => OrderProduction)
 @UseGuards(GqlAuthGuard)
@@ -41,6 +42,7 @@ export class OrderProductionsResolver {
     constructor(
         private service: OrderProductionsService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Query(() => OrderProduction)
@@ -72,7 +74,10 @@ export class OrderProductionsResolver {
         @Args('OrderProductionInput') input: OrderProductionInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderProduction> {
-        const orderProduction = await this.service.upsertOrderProduction(input);
+        const orderProduction = await this.service.upsertOrderProduction(
+            input,
+            { current_user_id: currentUser.id },
+        );
         await this.pubSubService.orderProduction({
             orderProduction: orderProduction,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
@@ -93,6 +98,7 @@ export class OrderProductionsResolver {
         if (!orderProduction) throw new NotFoundException();
         await this.service.deleteOrderProduction({
             order_production_id: orderProductionId,
+            current_user_id: currentUser.id,
         });
         await this.pubSubService.orderProduction({
             orderProduction,
@@ -151,6 +157,24 @@ export class OrderProductionsResolver {
     ): Promise<Branch | null> {
         return this.service.getBranch({
             branch_id: orderProduction.branch_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async created_by(
+        @Parent() orderProduction: OrderProduction,
+    ): Promise<User | null> {
+        return this.auditUsersService.getCreatedBy({
+            created_by_id: orderProduction.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(
+        @Parent() orderProduction: OrderProduction,
+    ): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: orderProduction.updated_by_id,
         });
     }
 

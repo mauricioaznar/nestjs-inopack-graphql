@@ -25,7 +25,9 @@ import { PaginatedOrderProductions } from '../../../common/dto/entities/producti
 import { Prisma } from '@prisma/client';
 import {
     getCreatedAtProperty,
+    getCreatedByProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
 } from '../../../common/helpers';
 
 @Injectable()
@@ -69,13 +71,18 @@ export class MachinesService {
         });
     }
 
-    async upsertMachine(machineInput: MachineUpsertInput): Promise<Machine> {
+    async upsertMachine(
+        machineInput: MachineUpsertInput,
+        { current_user_id }: { current_user_id?: number | null } = {},
+    ): Promise<Machine> {
         await this.validateUpsertMachine(machineInput);
 
         return this.prisma.machines.upsert({
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 name: machineInput.name,
                 branch_id: machineInput.branch_id,
                 order_production_type_id: machineInput.order_production_type_id,
@@ -83,6 +90,7 @@ export class MachinesService {
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 name: machineInput.name,
                 branch_id: machineInput.branch_id,
                 order_production_type_id: machineInput.order_production_type_id,
@@ -337,8 +345,10 @@ export class MachinesService {
 
     async deleteMachine({
         machine_id,
+        current_user_id,
     }: {
         machine_id: number;
+        current_user_id?: number | null;
     }): Promise<boolean> {
         const machine = await this.getMachine({ machine_id: machine_id });
 
@@ -370,6 +380,8 @@ export class MachinesService {
 
         await this.prisma.machines.update({
             data: {
+                ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 active: -1,
             },
             where: {

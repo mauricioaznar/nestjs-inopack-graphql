@@ -32,6 +32,7 @@ import {
 } from '../../../common/dto/entities';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => OrderAdjustment)
 @UseGuards(GqlAuthGuard)
@@ -40,6 +41,7 @@ export class OrderAdjustmentsResolver {
     constructor(
         private service: OrderAdjustmentsService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Query(() => OrderAdjustment, { nullable: true })
@@ -76,7 +78,10 @@ export class OrderAdjustmentsResolver {
         @Args('OrderAdjustmentInput') input: OrderAdjustmentInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderAdjustment> {
-        const orderAdjustment = await this.service.upsertOrderAdjustment(input);
+        const orderAdjustment = await this.service.upsertOrderAdjustment(
+            input,
+            { current_user_id: currentUser.id },
+        );
         await this.pubSubService.orderAdjustment({
             orderAdjustment,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
@@ -99,6 +104,7 @@ export class OrderAdjustmentsResolver {
         }
         await this.service.deleteOrderAdjustment({
             order_adjustment_id: orderAdjustment.id,
+            current_user_id: currentUser.id,
         });
         await this.pubSubService.orderAdjustment({
             orderAdjustment,
@@ -158,6 +164,24 @@ export class OrderAdjustmentsResolver {
         @Parent() orderAdjustment: OrderAdjustment,
     ): Promise<boolean> {
         return true;
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async created_by(
+        @Parent() orderAdjustment: OrderAdjustment,
+    ): Promise<User | null> {
+        return this.auditUsersService.getCreatedBy({
+            created_by_id: orderAdjustment.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(
+        @Parent() orderAdjustment: OrderAdjustment,
+    ): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: orderAdjustment.updated_by_id,
+        });
     }
 
     @Subscription(() => OrderAdjustment)

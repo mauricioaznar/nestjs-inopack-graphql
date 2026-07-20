@@ -51,6 +51,7 @@ export * from './management/expense.dto';
 export * from './management/resource.dto';
 export * from './management/resource-category.dto';
 export * from './management/expense-resource.dto';
+export * from './management/recurring-expense.dto';
 
 // payroll
 export * from './payroll/payroll-period.dto';
@@ -63,4 +64,4 @@ export * from './summaries/production-summary.dto';
 export * from './summaries/sales-summary.dto';
 export * from './summaries/employees-summary.dto';
 export * from './summaries/production-resources-summary.dto';
-export * from './summaries/employee-performance.dto';
+export * from './summaries/production-performance.dto';

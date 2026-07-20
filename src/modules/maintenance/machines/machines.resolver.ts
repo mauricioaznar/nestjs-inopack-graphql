@@ -32,6 +32,7 @@ import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
+import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => Machine)
 @Injectable()
@@ -39,6 +40,7 @@ export class MachinesResolver {
     constructor(
         private service: MachinesService,
         private pubSubService: PubSubService,
+        private auditUsersService: AuditUsersService,
     ) {}
 
     @Mutation(() => Machine)
@@ -46,7 +48,9 @@ export class MachinesResolver {
         @Args('MachineUpsertInput') input: MachineUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
-        const machine = await this.service.upsertMachine(input);
+        const machine = await this.service.upsertMachine(input, {
+            current_user_id: currentUser.id,
+        });
         await this.pubSubService.machine({
             machine,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
@@ -152,6 +156,7 @@ export class MachinesResolver {
         if (!machine) throw new NotFoundException();
         await this.service.deleteMachine({
             machine_id: machineId,
+            current_user_id: currentUser.id,
         });
         await this.pubSubService.machine({
             machine,
@@ -159,6 +164,20 @@ export class MachinesResolver {
             userId: currentUser.id,
         });
         return true;
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async created_by(@Parent() machine: Machine): Promise<User | null> {
+        return this.auditUsersService.getCreatedBy({
+            created_by_id: machine.created_by_id,
+        });
+    }
+
+    @ResolveField(() => User, { nullable: true })
+    async updated_by(@Parent() machine: Machine): Promise<User | null> {
+        return this.auditUsersService.getUpdatedBy({
+            updated_by_id: machine.updated_by_id,
+        });
     }
 
     @Subscription(() => Machine)

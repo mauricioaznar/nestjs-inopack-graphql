@@ -80,6 +80,13 @@ export class OrderRequest extends OrderRequestBase {
     // can change it.
     @Field(() => Int, { nullable: true })
     order_request_status_id?: number | null;
+
+    // Audit stamps — server-side only, never part of the upsert input.
+    @Field(() => Int, { nullable: true })
+    created_by_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    updated_by_id: number | null;
 }
 
 @ArgsType()

@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import {
     getCreatedAtProperty,
+    getCreatedByProperty,
     getUpdatedAtProperty,
+    getUpdatedByProperty,
     vennDiagram,
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
@@ -272,6 +274,7 @@ export class OrderAdjustmentsService {
 
     async upsertOrderAdjustment(
         input: OrderAdjustmentInput,
+        { current_user_id }: { current_user_id?: number | null } = {},
     ): Promise<OrderAdjustment> {
         await this.validateOrderAdjustment(input);
 
@@ -279,12 +282,15 @@ export class OrderAdjustmentsService {
             create: {
                 ...getCreatedAtProperty(),
                 ...getUpdatedAtProperty(),
+                ...getCreatedByProperty(current_user_id),
+                ...getUpdatedByProperty(current_user_id),
                 date: input.date,
                 order_adjustment_type_id: input.order_adjustment_type_id,
                 order_sale_id: input.order_sale_id,
             },
             update: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 date: input.date,
                 order_adjustment_type_id: input.order_adjustment_type_id,
                 order_sale_id: input.order_sale_id,
@@ -499,12 +505,15 @@ export class OrderAdjustmentsService {
 
     async deleteOrderAdjustment({
         order_adjustment_id,
+        current_user_id,
     }: {
         order_adjustment_id: number;
+        current_user_id?: number | null;
     }): Promise<boolean> {
         await this.prisma.order_adjustments.update({
             data: {
                 ...getUpdatedAtProperty(),
+                ...getUpdatedByProperty(current_user_id),
                 active: -1,
             },
             where: {
