@@ -3,9 +3,9 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 /**
  * Audit columns (created_by_id / updated_by_id) on the 11 core entities.
  *
- * `order_sales` is the exception: it ALREADY has a MANUAL `created_by_id`
- * ("Generada por" — a business field the user picks), so it gets only
- * `updated_by_id` here. Do not auto-stamp its created_by_id.
+ * `order_sales` is the exception only in DDL terms: it already had a
+ * `created_by_id` column (formerly the manual "Generada por" picker, now
+ * repurposed as the auto-stamp), so it needs `updated_by_id` alone here.
  */
 export class AddCreatedByAndUpdatedByAuditColumns1784500000000
     implements MigrationInterface
@@ -36,7 +36,8 @@ export class AddCreatedByAndUpdatedByAuditColumns1784500000000
             `);
         }
 
-        // order_sales keeps its existing manual created_by_id untouched.
+        // order_sales already has a created_by_id column (added by
+        // 1757522259820), so only updated_by_id is new here.
         await queryRunner.query(`
             ALTER TABLE \`order_sales\`
                 ADD COLUMN \`updated_by_id\` int unsigned default null,

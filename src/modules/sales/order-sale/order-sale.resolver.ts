@@ -253,11 +253,9 @@ export class OrderSaleResolver {
         });
     }
 
-    // The MANUAL "Generada por" field — a business value the user picks, not an
-    // audit stamp. Left on the service's own getCreatedBy deliberately.
     @ResolveField(() => User, { nullable: true })
     async created_by(@Parent() orderSale: OrderSale): Promise<User | null> {
-        return this.service.getCreatedBy({
+        return this.auditUsersService.getCreatedBy({
             created_by_id: orderSale.created_by_id,
         });
     }

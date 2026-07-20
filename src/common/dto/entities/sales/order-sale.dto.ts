@@ -53,9 +53,6 @@ export class OrderSaleBase {
     @Field(() => Int, { nullable: true })
     account_id: number | null;
 
-    @Field(() => Int, { nullable: true })
-    created_by_id: number | null;
-
     @Field(() => Boolean, { nullable: false })
     canceled: boolean;
 
@@ -131,9 +128,6 @@ export class OrderSale extends OrderSaleBase {
     @Field(() => Int, { nullable: true })
     order_sale_status_id?: number | null;
 
-    @Field(() => Int, { nullable: true })
-    created_by_id: number | null;
-
     @Field(() => Float, { nullable: false })
     transfer_receipts_total: number;
 
@@ -143,9 +137,11 @@ export class OrderSale extends OrderSaleBase {
     @Field(() => Float, { nullable: false })
     total_with_tax: number;
 
-    // Audit stamp — server-side only. NOTE: order_sales has no auto-stamped
-    // created_by_id; the created_by_id above is the MANUAL "Generada por"
-    // business field that the user picks on the form.
+    // Audit stamps — server-side only, never client-supplied, so they live on
+    // the concrete ObjectType rather than the shared (also-InputType) base.
+    @Field(() => Int, { nullable: true })
+    created_by_id: number | null;
+
     @Field(() => Int, { nullable: true })
     updated_by_id: number | null;
 }

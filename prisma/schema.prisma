@@ -591,7 +591,6 @@ model users {
   user_roles     user_roles[]
 
   // created_by / updated_by audit back-relations (feature/general-updates-mistical).
-  // order_sales.created_by stays the MANUAL "Generada por" business field.
   accounts_created_by          accounts[]          @relation("accounts_created_by")
   accounts_updated_by          accounts[]          @relation("accounts_updated_by")
   employees_created_by         employees[]         @relation("employees_created_by")
