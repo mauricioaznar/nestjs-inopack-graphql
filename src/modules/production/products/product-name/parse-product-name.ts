@@ -57,7 +57,7 @@ const COLORS: Array<[string, string[]]> = [
     ['Azul', ['azul']],
     ['Roja', ['roja', 'rojo']],
     ['de Colores', ['de colores', 'colores', 'de color', 'color']],
-    ['Natural', ['natural', 'natutal']], // 'Natutal' = known typo (id 201)
+    ['Natural', ['naturales', 'natural', 'natutal']], // 'Natutal' = known typo (id 201)
 ];
 
 // Bag "Línea" and Bobina "Uso" share the slot. Order matters (longest/most-specific first).
@@ -124,6 +124,27 @@ function matchToken(
         }
     }
     return null;
+}
+
+/**
+ * Find EVERY catalog token present in `hay`, in table order (one alias per token).
+ * Used for Línea, which can carry two words at once — e.g. `para Basura` + `USO RUDO`
+ * — that combine into a compound token (decided 2026-07-20: keep both).
+ */
+function matchAllTokens(
+    hay: string,
+    table: Array<[string, string[]]>,
+): Array<{ token: string; alias: string }> {
+    const out: Array<{ token: string; alias: string }> = [];
+    for (const [token, aliases] of table) {
+        for (const alias of aliases) {
+            if (wordIncludes(hay, alias)) {
+                out.push({ token, alias });
+                break;
+            }
+        }
+    }
+    return out;
 }
 
 /** Whole-word-ish contains: avoids "color" matching inside "colores" incorrectly, etc. */
@@ -224,6 +245,10 @@ export function parseProductName(row: ProductRow): ParseResult {
     }
 
     // --- dimensions (column authoritative; flag mismatch) --------------------
+    // Rollos punteados display the printed CUT width; the column stores tube width
+    // = 2× that (decided 2026-07-20). When detected, the display width is overridden
+    // to the cut width and Phase 3 corrects the column.
+    let cutWidthOverride: number | null = null;
     const dimsInName = nameDims(lower);
     for (const d of dimsInName) consume(`${d.w}x${d.h}`), consume(`${d.w} x ${d.h}`);
     if (row.width != null && row.length != null && dimsInName.length > 0) {
@@ -234,12 +259,14 @@ export function parseProductName(row: ProductRow): ParseResult {
                 (approx(d.w, w) && approx(d.h, l)) ||
                 (approx(d.w, l) && approx(d.h, w)), // width/length swapped in column
         );
-        // Rollos punteados store tube width = 2× the cut width printed in the name.
-        const doubled = !exact && dimsInName.some((d) => approx(d.w * 2, w));
-        if (doubled) {
+        const doubledDim = !exact
+            ? dimsInName.find((d) => approx(d.w * 2, w))
+            : undefined;
+        if (doubledDim) {
+            cutWidthOverride = doubledDim.w;
             flags.push(
-                `tube/cut width: column width ${w} = 2× name width — proposed name uses the COLUMN width; ` +
-                    `confirm whether the display should show cut width instead (plan open question 4)`,
+                `tube/cut width: column width ${w} = 2× cut width ${doubledDim.w}; ` +
+                    `display uses the CUT width (${doubledDim.w}) — Phase 3 stores cut width in the column`,
             );
         } else if (!exact) {
             flags.push(
@@ -256,7 +283,7 @@ export function parseProductName(row: ProductRow): ParseResult {
         return { slots, flags, leftover };
     }
 
-    const slots = parseBag(row, lower, name, consume, flags);
+    const slots = parseBag(row, lower, name, consume, flags, cutWidthOverride);
     collectLeftover(residue, leftover);
     return { slots, flags, leftover };
 
@@ -326,6 +353,7 @@ function parseBag(
     name: string,
     consume: (a: string) => void,
     flags: string[],
+    cutWidthOverride: number | null,
 ): ProductNameSlots {
     // --- Tipo ---------------------------------------------------------------
     let tipo: string | null = null;
@@ -350,28 +378,33 @@ function parseBag(
     consume('bolsas'); // plural forms
     consume('bolsa');
 
-    // --- Color --------------------------------------------------------------
+    // --- Color (name only; NEVER inferred from material — decided 2026-07-20) --
     let color: string | null = null;
     const cm = matchToken(lower, COLORS);
     if (cm) {
         color = cm.token;
         consume(cm.alias);
-    } else if (row.material === 'Natural reciclado') {
-        color = 'Natural Reciclado';
-        flags.push('color inferred from material (Natural reciclado) — confirm');
-    } else if (row.material === 'Virgen') {
-        color = 'Natural';
-        flags.push('color inferred from material (Virgen -> Natural) — confirm');
-    } else if (row.material === 'Color reciclado') {
-        color = 'Negra';
-        flags.push('color inferred from material (Color reciclado -> Negra) — confirm');
     } else {
-        flags.push('color not determined — set manually');
+        // Leave color blank for Mauricio to set by hand; offer a suggestion (not applied).
+        const suggest =
+            row.material === 'Natural reciclado'
+                ? 'Natural Reciclado'
+                : row.material === 'Virgen'
+                ? 'Natural'
+                : row.material === 'Color reciclado'
+                ? 'Negra'
+                : null;
+        flags.push(
+            `color not in name — set by hand${
+                suggest ? ` (material '${row.material}' suggests ${suggest})` : ''
+            }`,
+        );
     }
 
-    // --- Línea --------------------------------------------------------------
-    const lin = matchToken(lower, LINEAS);
-    if (lin) consume(lin.alias);
+    // --- Línea (keep every línea word — compound, decided 2026-07-20) ---------
+    const lins = matchAllTokens(lower, LINEAS);
+    for (const m of lins) consume(m.alias);
+    const linea = lins.length ? lins.map((m) => m.token).join(' ') : null;
 
     // --- Modelo (camisetas) -------------------------------------------------
     let modelo: string | null = null;
@@ -400,9 +433,9 @@ function parseBag(
         family: 'bag',
         tipo,
         color,
-        linea: lin ? lin.token : null,
+        linea,
         modelo,
-        width: row.width ?? null,
+        width: cutWidthOverride ?? row.width ?? null,
         length: row.length ?? null,
         pleat: row.pleat ?? null,
         calibre: row.calibre ?? null,
