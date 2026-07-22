@@ -596,6 +596,19 @@ export class OrderSaleService {
     }): Promise<OrderSale> {
         await this.validateOrderSale(input, current_user_id);
 
+        const receiptType = await this.prisma.receipt_types.findFirst({
+            where: { id: input.receipt_type_id, active: 1 },
+        });
+
+        if (input.automatic_tax_calculation && !receiptType) {
+            throw new BadRequestException(
+                `Receipt type ${input.receipt_type_id} not found or inactive`,
+            );
+        }
+
+        const taxRate = receiptType ? Number(receiptType.tax_rate) : 0;
+        const taxMultiplier = 1 + taxRate;
+
         const { subtotal, tax, total_with_tax } =
             !input.automatic_tax_calculation
                 ? {
@@ -606,24 +619,14 @@ export class OrderSaleService {
                 : input.order_sale_products.reduce(
                       (acc, osp) => {
                           const kiloSubtotal = osp.kilo_price * osp.kilos;
-
-                          const kiloTax =
-                              kiloSubtotal *
-                              (input.receipt_type_id === 2 ? 0.16 : 0);
-
+                          const kiloTax = kiloSubtotal * taxRate;
                           const kiloProductTotal =
-                              kiloSubtotal *
-                              (input.receipt_type_id === 2 ? 1.16 : 1);
+                              kiloSubtotal * taxMultiplier;
 
                           const groupSubtotal = osp.group_price * osp.groups;
-
-                          const groupTax =
-                              groupSubtotal *
-                              (input.receipt_type_id === 2 ? 0.16 : 0);
-
+                          const groupTax = groupSubtotal * taxRate;
                           const groupProductTotal =
-                              groupSubtotal *
-                              (input.receipt_type_id === 2 ? 1.16 : 1);
+                              groupSubtotal * taxMultiplier;
 
                           const subtotal = kiloSubtotal + groupSubtotal;
                           const tax = kiloTax + groupTax;

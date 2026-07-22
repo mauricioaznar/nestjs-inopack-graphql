@@ -690,6 +690,12 @@ export class AccountsService {
             throw new NotFoundException();
         }
 
+        if (account.is_own) {
+            throw new BadRequestException(
+                'Cannot delete an INOPACK-owned account',
+            );
+        }
+
         const isDeletable = await this.isDeletable({ account_id });
 
         if (!isDeletable) {
@@ -802,6 +808,15 @@ export class AccountsService {
     }: {
         account_id: number;
     }): Promise<boolean> {
+        const account = await this.prisma.accounts.findUnique({
+            where: { id: account_id },
+            select: { is_own: true },
+        });
+
+        if (account?.is_own) {
+            return false;
+        }
+
         const {
             order_requests_count,
             order_sales_count,

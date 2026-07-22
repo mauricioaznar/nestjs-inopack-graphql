@@ -223,6 +223,12 @@ export class ResourcesService {
             throw new NotFoundException();
         }
 
+        if (resource?.exclude_from_financial_summaries) {
+            throw new BadRequestException(
+                'Cannot delete a resource used in financial summary classification',
+            );
+        }
+
         await this.prisma.resources.update({
             data: {
                 active: -1,
@@ -241,6 +247,15 @@ export class ResourcesService {
     }: {
         resource_id: number;
     }): Promise<boolean> {
+        const resource = await this.prisma.resources.findUnique({
+            where: { id: resource_id },
+            select: { exclude_from_financial_summaries: true },
+        });
+
+        if (resource?.exclude_from_financial_summaries) {
+            return false;
+        }
+
         return true;
     }
 
