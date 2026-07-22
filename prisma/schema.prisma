@@ -952,6 +952,7 @@ model receipt_types {
   created_at                       DateTime?     @db.DateTime(0)
   updated_at                       DateTime?     @db.DateTime(0)
   include_in_accountability_export Boolean       @default(false)
+  tax_rate                         Decimal       @default(0.0000) @db.Decimal(5, 4)
   expenses                         expenses[]
   order_sales                      order_sales[]
 }
