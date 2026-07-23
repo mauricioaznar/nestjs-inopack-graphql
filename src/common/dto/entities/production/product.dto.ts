@@ -34,9 +34,6 @@ export class ProductBase {
     @Field(() => Boolean, { nullable: false })
     include_units_in_summary: boolean;
 
-    @Field(() => Boolean, { nullable: false })
-    exclude_from_financial_summaries: boolean;
-
     @Field(() => Float, { nullable: false })
     width: number;
 

@@ -15,7 +15,11 @@ export class AddTaxRateToReceiptTypes1784592000000
        WHERE \`id\` = 2 AND \`active\` = 1;
     `);
 
-        const affected = result?.affectedRows ?? result?.changedRows ?? 0;
+        // TypeORM's MySQL driver can return either the update packet directly
+        // or [packet, fields]; both forms must validate the catalog seed.
+        const updatePacket = Array.isArray(result) ? result[0] : result;
+        const affected =
+            updatePacket?.affectedRows ?? updatePacket?.changedRows ?? 0;
         if (affected !== 1) {
             throw new Error(
                 `Expected to seed tax_rate on exactly 1 receipt type (id 2), but ${affected} rows were affected. ` +

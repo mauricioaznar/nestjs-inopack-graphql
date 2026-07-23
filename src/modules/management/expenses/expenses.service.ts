@@ -475,6 +475,7 @@ export class ExpensesService {
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
+                reconciliation_only: input.reconciliation_only,
                 resources_total: input.resources_total,
             },
             update: {
@@ -500,6 +501,7 @@ export class ExpensesService {
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
+                reconciliation_only: input.reconciliation_only,
                 resources_total: input.resources_total,
             },
             where: {
@@ -1148,6 +1150,7 @@ export class ExpensesService {
                         external_code: '',
                         internal_code: 0,
                         canceled: false,
+                        reconciliation_only: source.reconciliation_only,
                         resources_total: subtotal,
                         expense_status_id: null,
                         transfer_receipts_total: 0,

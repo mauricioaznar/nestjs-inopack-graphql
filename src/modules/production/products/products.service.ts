@@ -269,8 +269,6 @@ export class ProductsService {
                 current_group_price: input.current_group_price,
                 pleat: input.pleat,
                 include_units_in_summary: input.include_units_in_summary,
-                exclude_from_financial_summaries:
-                    input.exclude_from_financial_summaries,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -291,8 +289,6 @@ export class ProductsService {
                 current_group_price: input.current_group_price,
                 pleat: input.pleat,
                 include_units_in_summary: input.include_units_in_summary,
-                exclude_from_financial_summaries:
-                    input.exclude_from_financial_summaries,
             },
             where: {
                 id: input.id || 0,
@@ -479,12 +475,6 @@ export class ProductsService {
 
         if (!product) {
             throw new BadRequestException(['Product not found']);
-        }
-
-        if (product.exclude_from_financial_summaries) {
-            throw new BadRequestException([
-                'Cannot delete a product used in financial summary classification',
-            ]);
         }
 
         const isDeletable = await this.isDeletable({
@@ -677,15 +667,6 @@ export class ProductsService {
     }: {
         product_id: number;
     }): Promise<boolean> {
-        const product = await this.prisma.products.findUnique({
-            where: { id: product_id },
-            select: { exclude_from_financial_summaries: true },
-        });
-
-        if (product?.exclude_from_financial_summaries) {
-            return false;
-        }
-
         const {
             order_requests_count,
             order_productions_count,

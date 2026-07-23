@@ -469,6 +469,7 @@ model order_sales {
   transfer_receipts_total                Float                 @default(0.00)
   transfer_receipts_total_no_adjustments Float                 @default(0.00)
   automatic_tax_calculation              Boolean               @default(true)
+  reconciliation_only                    Boolean               @default(false)
   created_by_id                          Int?                  @db.UnsignedInt
   updated_by_id                          Int?                  @db.UnsignedInt
   order_adjustments                      order_adjustments[]
@@ -511,7 +512,6 @@ model products {
   current_group_price        Float                        @default(0.00)
   pleat                      Float?
   include_units_in_summary   Boolean                      @default(true)
-  exclude_from_financial_summaries Boolean                @default(false)
   created_by_id              Int?                         @db.UnsignedInt
   updated_by_id              Int?                         @db.UnsignedInt
   created_by_user            users?                       @relation("products_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_created_by_id_foreign")
@@ -841,6 +841,7 @@ model expenses {
   expense_status_id                      Int?                @db.UnsignedInt
   internal_code                          Int                 @default(0)
   generated_from_expense_id              Int?                @db.UnsignedInt
+  reconciliation_only                    Boolean             @default(false)
   created_by_id                          Int?                @db.UnsignedInt
   updated_by_id                          Int?                @db.UnsignedInt
   created_by_user                        users?              @relation("expenses_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_created_by_id_foreign")
@@ -883,7 +884,6 @@ model resources {
   group_weight_strict      Float                @default(0.00)
   include_units_in_summary Boolean              @default(false)
   unit_price_name          String?              @db.VarChar(255)
-  exclude_from_financial_summaries Boolean      @default(false)
   created_by_id            Int?                 @db.UnsignedInt
   updated_by_id            Int?                 @db.UnsignedInt
   created_by_user          users?               @relation("resources_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_created_by_id_foreign")

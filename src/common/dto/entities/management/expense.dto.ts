@@ -67,6 +67,9 @@ export class ExpenseBase {
 
     @Field(() => Boolean, { nullable: false })
     canceled: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    reconciliation_only: boolean;
 }
 
 @InputType('ExpenseUpsertInput')
