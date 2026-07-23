@@ -402,11 +402,15 @@ export class ExpensesService {
             return null;
         }
 
-        return this.prisma.receipt_types.findFirst({
+        const receiptType = await this.prisma.receipt_types.findFirst({
             where: {
                 id: receipt_type_id,
             },
         });
+
+        return receiptType
+            ? { ...receiptType, tax_rate: Number(receiptType.tax_rate) }
+            : null;
     }
 
     async getExpenseResources({

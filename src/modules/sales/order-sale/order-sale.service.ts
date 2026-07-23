@@ -518,11 +518,15 @@ export class OrderSaleService {
     }: {
         receipt_type_id?: number | null;
     }): Promise<ReceiptType | null> {
-        return this.prisma.receipt_types.findFirst({
+        const receiptType = await this.prisma.receipt_types.findFirst({
             where: {
                 id: receipt_type_id || 0,
             },
         });
+
+        return receiptType
+            ? { ...receiptType, tax_rate: Number(receiptType.tax_rate) }
+            : null;
     }
 
     async getOrderRequest({
