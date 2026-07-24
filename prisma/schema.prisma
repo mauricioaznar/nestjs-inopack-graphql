@@ -785,10 +785,13 @@ model accounts {
   supplier_recurring_expenses                   Boolean            @default(false)
   client_automatic_tax_calculation              Boolean            @default(true)
   exclude_from_accountability_export            Boolean            @default(false)
+  merged_into_account_id                        Int?               @db.UnsignedInt
   created_by_id                                 Int?               @db.UnsignedInt
   updated_by_id                                 Int?               @db.UnsignedInt
   created_by_user                               users?             @relation("accounts_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_created_by_id_foreign")
   updated_by_user                               users?             @relation("accounts_updated_by", fields: [updated_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_updated_by_id_foreign")
+  merged_into_account                           accounts?          @relation("account_merges", fields: [merged_into_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_merged_into_account_id_foreign")
+  merged_accounts                               accounts[]         @relation("account_merges")
   account_contacts                              account_contacts[]
   account_products                              account_products[]
   account_resources                             account_resources[]
@@ -802,6 +805,7 @@ model accounts {
   @@index([resource_id], map: "accounts_resource_id_foreign")
   @@index([created_by_id], map: "accounts_created_by_id_foreign")
   @@index([updated_by_id], map: "accounts_updated_by_id_foreign")
+  @@index([merged_into_account_id], map: "accounts_merged_into_account_id_idx")
 }
 
 model expense_statuses {
