@@ -23,7 +23,7 @@ export class ExpensesSummaryArgs {
     date_group_by: DateGroupBy;
 
     @Field(() => Boolean, { nullable: true })
-    exclude_flagged: boolean;
+    include_reconciliation_only: boolean;
 
     // Canceled expenses are excluded by default, matching the historical
     // behavior of this query (the SQL used to hardcode canceled = 0). The

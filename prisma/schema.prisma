@@ -469,6 +469,7 @@ model order_sales {
   transfer_receipts_total                Float                 @default(0.00)
   transfer_receipts_total_no_adjustments Float                 @default(0.00)
   automatic_tax_calculation              Boolean               @default(true)
+  reconciliation_only                    Boolean               @default(false)
   created_by_id                          Int?                  @db.UnsignedInt
   updated_by_id                          Int?                  @db.UnsignedInt
   order_adjustments                      order_adjustments[]
@@ -511,7 +512,6 @@ model products {
   current_group_price        Float                        @default(0.00)
   pleat                      Float?
   include_units_in_summary   Boolean                      @default(true)
-  exclude_from_financial_summaries Boolean                @default(false)
   created_by_id              Int?                         @db.UnsignedInt
   updated_by_id              Int?                         @db.UnsignedInt
   created_by_user            users?                       @relation("products_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_created_by_id_foreign")
@@ -785,10 +785,13 @@ model accounts {
   supplier_recurring_expenses                   Boolean            @default(false)
   client_automatic_tax_calculation              Boolean            @default(true)
   exclude_from_accountability_export            Boolean            @default(false)
+  merged_into_account_id                        Int?               @db.UnsignedInt
   created_by_id                                 Int?               @db.UnsignedInt
   updated_by_id                                 Int?               @db.UnsignedInt
   created_by_user                               users?             @relation("accounts_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_created_by_id_foreign")
   updated_by_user                               users?             @relation("accounts_updated_by", fields: [updated_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_updated_by_id_foreign")
+  merged_into_account                           accounts?          @relation("account_merges", fields: [merged_into_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_merged_into_account_id_foreign")
+  merged_accounts                               accounts[]         @relation("account_merges")
   account_contacts                              account_contacts[]
   account_products                              account_products[]
   account_resources                             account_resources[]
@@ -802,6 +805,7 @@ model accounts {
   @@index([resource_id], map: "accounts_resource_id_foreign")
   @@index([created_by_id], map: "accounts_created_by_id_foreign")
   @@index([updated_by_id], map: "accounts_updated_by_id_foreign")
+  @@index([merged_into_account_id], map: "accounts_merged_into_account_id_idx")
 }
 
 model expense_statuses {
@@ -841,6 +845,7 @@ model expenses {
   expense_status_id                      Int?                @db.UnsignedInt
   internal_code                          Int                 @default(0)
   generated_from_expense_id              Int?                @db.UnsignedInt
+  reconciliation_only                    Boolean             @default(false)
   created_by_id                          Int?                @db.UnsignedInt
   updated_by_id                          Int?                @db.UnsignedInt
   created_by_user                        users?              @relation("expenses_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_created_by_id_foreign")
@@ -883,7 +888,6 @@ model resources {
   group_weight_strict      Float                @default(0.00)
   include_units_in_summary Boolean              @default(false)
   unit_price_name          String?              @db.VarChar(255)
-  exclude_from_financial_summaries Boolean      @default(false)
   created_by_id            Int?                 @db.UnsignedInt
   updated_by_id            Int?                 @db.UnsignedInt
   created_by_user          users?               @relation("resources_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resources_created_by_id_foreign")
@@ -952,6 +956,7 @@ model receipt_types {
   created_at                       DateTime?     @db.DateTime(0)
   updated_at                       DateTime?     @db.DateTime(0)
   include_in_accountability_export Boolean       @default(false)
+  tax_rate                         Decimal       @default(0.0000) @db.Decimal(5, 4)
   expenses                         expenses[]
   order_sales                      order_sales[]
 }

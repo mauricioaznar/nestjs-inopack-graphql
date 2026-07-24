@@ -98,8 +98,6 @@ export class ResourcesService {
                 group_weight_strict: resourceInput.group_weight_strict || 0,
                 include_units_in_summary:
                     resourceInput.include_units_in_summary,
-                exclude_from_financial_summaries:
-                    resourceInput.exclude_from_financial_summaries,
                 unit_price_name: resourceInput.unit_price_name,
             },
             update: {
@@ -113,8 +111,6 @@ export class ResourcesService {
                 group_weight_strict: resourceInput.group_weight_strict || 0,
                 include_units_in_summary:
                     resourceInput.include_units_in_summary,
-                exclude_from_financial_summaries:
-                    resourceInput.exclude_from_financial_summaries,
                 unit_price_name: resourceInput.unit_price_name,
             },
             where: {
@@ -217,8 +213,6 @@ export class ResourcesService {
         resource_id: number;
         current_user_id?: number | null;
     }): Promise<boolean> {
-        const resource = await this.getResource({ resource_id: resource_id });
-
         if (!resource_id) {
             throw new NotFoundException();
         }
@@ -241,7 +235,7 @@ export class ResourcesService {
     }: {
         resource_id: number;
     }): Promise<boolean> {
-        return true;
+        return resource_id > 0;
     }
 
     async isEditable({

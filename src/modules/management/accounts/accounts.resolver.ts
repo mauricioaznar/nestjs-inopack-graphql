@@ -19,6 +19,7 @@ import {
     AccountTransactionItem,
     AccountTransferItem,
     AccountUpsertInput,
+    SimilarAccountName,
     ActivityTypeName,
     PaginatedAccounts,
     PaginatedAccountsQueryArgs,
@@ -65,6 +66,20 @@ export class AccountsResolver {
         return this.service.getAccount({
             account_id: accountId,
             clientRestricted: isAccountClientRestricted(currentUser),
+        });
+    }
+
+    @Query(() => [SimilarAccountName])
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
+    async getSimilarAccountNames(
+        @Args('Name') name: string,
+        @Args('ExcludeAccountId', { nullable: true })
+        excludeAccountId?: number,
+    ): Promise<SimilarAccountName[]> {
+        return this.service.getSimilarAccountNames({
+            name,
+            exclude_account_id: excludeAccountId,
         });
     }
 
@@ -204,6 +219,11 @@ export class AccountsResolver {
     @ResolveField(() => Boolean, { nullable: false })
     async is_deletable(@Parent() account: Account) {
         return this.service.isDeletable({ account_id: account.id });
+    }
+
+    @ResolveField(() => [SimilarAccountName])
+    async similar_name_matches(@Parent() account: Account) {
+        return account.similar_name_matches || [];
     }
 
     @ResolveField(() => String, { nullable: false })

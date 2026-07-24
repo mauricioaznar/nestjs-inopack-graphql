@@ -518,11 +518,15 @@ export class OrderSaleService {
     }: {
         receipt_type_id?: number | null;
     }): Promise<ReceiptType | null> {
-        return this.prisma.receipt_types.findFirst({
+        const receiptType = await this.prisma.receipt_types.findFirst({
             where: {
                 id: receipt_type_id || 0,
             },
         });
+
+        return receiptType
+            ? { ...receiptType, tax_rate: Number(receiptType.tax_rate) }
+            : null;
     }
 
     async getOrderRequest({
@@ -596,6 +600,19 @@ export class OrderSaleService {
     }): Promise<OrderSale> {
         await this.validateOrderSale(input, current_user_id);
 
+        const receiptType = await this.prisma.receipt_types.findFirst({
+            where: { id: input.receipt_type_id, active: 1 },
+        });
+
+        if (input.automatic_tax_calculation && !receiptType) {
+            throw new BadRequestException(
+                `Receipt type ${input.receipt_type_id} not found or inactive`,
+            );
+        }
+
+        const taxRate = receiptType ? Number(receiptType.tax_rate) : 0;
+        const taxMultiplier = 1 + taxRate;
+
         const { subtotal, tax, total_with_tax } =
             !input.automatic_tax_calculation
                 ? {
@@ -606,24 +623,14 @@ export class OrderSaleService {
                 : input.order_sale_products.reduce(
                       (acc, osp) => {
                           const kiloSubtotal = osp.kilo_price * osp.kilos;
-
-                          const kiloTax =
-                              kiloSubtotal *
-                              (input.receipt_type_id === 2 ? 0.16 : 0);
-
+                          const kiloTax = kiloSubtotal * taxRate;
                           const kiloProductTotal =
-                              kiloSubtotal *
-                              (input.receipt_type_id === 2 ? 1.16 : 1);
+                              kiloSubtotal * taxMultiplier;
 
                           const groupSubtotal = osp.group_price * osp.groups;
-
-                          const groupTax =
-                              groupSubtotal *
-                              (input.receipt_type_id === 2 ? 0.16 : 0);
-
+                          const groupTax = groupSubtotal * taxRate;
                           const groupProductTotal =
-                              groupSubtotal *
-                              (input.receipt_type_id === 2 ? 1.16 : 1);
+                              groupSubtotal * taxMultiplier;
 
                           const subtotal = kiloSubtotal + groupSubtotal;
                           const tax = kiloTax + groupTax;
@@ -667,6 +674,7 @@ export class OrderSaleService {
                 credit_note_amount: input.credit_note_amount,
                 notes: input.notes,
                 canceled: input.canceled,
+                reconciliation_only: input.reconciliation_only,
                 automatic_tax_calculation: input.automatic_tax_calculation,
                 subtotal: round(subtotal),
                 tax: round(tax),
@@ -692,6 +700,7 @@ export class OrderSaleService {
                 automatic_tax_calculation: input.automatic_tax_calculation,
                 notes: input.notes,
                 canceled: input.canceled,
+                reconciliation_only: input.reconciliation_only,
                 subtotal: round(subtotal),
                 tax: round(tax),
                 total_with_tax: round(total_with_tax),

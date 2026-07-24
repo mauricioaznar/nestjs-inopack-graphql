@@ -1,6 +1,6 @@
 {
   "name": "nestjs-inopack-graphql",
-  "version": "7.22.0",
+  "version": "7.24.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -20,6 +20,7 @@
     "db:introspect": "env-cmd -f .env prisma db pull",
     "db:format": "env-cmd -f ./.env prisma format",
     "db:seed": "env-cmd -f ./.env prisma db seed",
+    "accounts:discover-duplicates": "env-cmd -f .env ts-node -r tsconfig-paths/register src/tools/discover-duplicate-accounts.ts",
     "db:resolve": "env-cmd -f ./.env prisma migrate resolve --applied 20221118213733_",
     "migration:run": "env-cmd -f .env node dist/db/runner.js",
     "migration:run:dev": "env-cmd -f .env.develop node dist/db/runner.js",

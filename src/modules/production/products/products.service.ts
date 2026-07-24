@@ -269,8 +269,6 @@ export class ProductsService {
                 current_group_price: input.current_group_price,
                 pleat: input.pleat,
                 include_units_in_summary: input.include_units_in_summary,
-                exclude_from_financial_summaries:
-                    input.exclude_from_financial_summaries,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -291,8 +289,6 @@ export class ProductsService {
                 current_group_price: input.current_group_price,
                 pleat: input.pleat,
                 include_units_in_summary: input.include_units_in_summary,
-                exclude_from_financial_summaries:
-                    input.exclude_from_financial_summaries,
             },
             where: {
                 id: input.id || 0,

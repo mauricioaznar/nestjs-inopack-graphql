@@ -402,11 +402,15 @@ export class ExpensesService {
             return null;
         }
 
-        return this.prisma.receipt_types.findFirst({
+        const receiptType = await this.prisma.receipt_types.findFirst({
             where: {
                 id: receipt_type_id,
             },
         });
+
+        return receiptType
+            ? { ...receiptType, tax_rate: Number(receiptType.tax_rate) }
+            : null;
     }
 
     async getExpenseResources({
@@ -471,6 +475,7 @@ export class ExpensesService {
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
+                reconciliation_only: input.reconciliation_only,
                 resources_total: input.resources_total,
             },
             update: {
@@ -496,6 +501,7 @@ export class ExpensesService {
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
+                reconciliation_only: input.reconciliation_only,
                 resources_total: input.resources_total,
             },
             where: {
@@ -624,14 +630,22 @@ export class ExpensesService {
             }
         }
 
-        // tax can only be set when order receipt type id = 2
+        // tax can only be set when the receipt type applies tax
         {
-            if (input.receipt_type_id !== 2) {
-                if (input.tax > 0) {
-                    errors.push(
-                        'Tax can only be set when expense has order receipt type id = 2',
-                    );
-                }
+            let appliesTax = false;
+            if (input.receipt_type_id) {
+                const expenseReceiptType =
+                    await this.prisma.receipt_types.findFirst({
+                        where: { id: input.receipt_type_id },
+                    });
+                appliesTax =
+                    !!expenseReceiptType &&
+                    Number(expenseReceiptType.tax_rate) > 0;
+            }
+            if (!appliesTax && input.tax > 0) {
+                errors.push(
+                    'Tax can only be set when receipt type applies tax',
+                );
             }
         }
 
@@ -1036,6 +1050,7 @@ export class ExpensesService {
                 const source = await tx.expenses.findFirst({
                     where: { id: item.source_expense_id, active: 1 },
                     include: {
+                        receipt_types: true,
                         transfer_receipts: {
                             where: { active: 1 },
                             include: { transfers: true },
@@ -1049,12 +1064,12 @@ export class ExpensesService {
                     );
                 }
 
-                // Same rule as validateUpsertExpense: tax is only allowed on
-                // receipt type 2. The clone keeps the source's receipt type,
-                // so the edited tax must obey it too.
-                if (source.receipt_type_id !== 2 && item.tax > 0) {
+                const sourceAppliesTax =
+                    !!source.receipt_types &&
+                    Number(source.receipt_types.tax_rate) > 0;
+                if (!sourceAppliesTax && item.tax > 0) {
                     throw new BadRequestException(
-                        'Tax can only be set when expense has order receipt type id = 2',
+                        'Tax can only be set when receipt type applies tax',
                     );
                 }
 
@@ -1135,6 +1150,7 @@ export class ExpensesService {
                         external_code: '',
                         internal_code: 0,
                         canceled: false,
+                        reconciliation_only: source.reconciliation_only,
                         resources_total: subtotal,
                         expense_status_id: null,
                         transfer_receipts_total: 0,

@@ -30,6 +30,12 @@ import {
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
+import {
+    ACCOUNT_NAME_FUZZY_MIN_LENGTH,
+    ACCOUNT_NAME_FUZZY_THRESHOLD,
+    accountNameSimilarity,
+    normalizeAccountName,
+} from '../../../common/helpers/accounts/account-name-similarity';
 
 @Injectable()
 export class AccountsService {
@@ -180,6 +186,88 @@ export class AccountsService {
         });
     }
 
+    async getSimilarAccountNames({
+        name,
+        exclude_account_id,
+    }: {
+        name: string;
+        exclude_account_id?: number | null;
+    }): Promise<
+        {
+            id: number;
+            name: string;
+            abbreviation: string;
+            reason: string;
+            similarity: number;
+        }[]
+    > {
+        const normalizedName = normalizeAccountName(name);
+        if (!normalizedName) return [];
+
+        const accounts = await this.prisma.accounts.findMany({
+            where: {
+                active: 1,
+                id: exclude_account_id ? { not: exclude_account_id } : undefined,
+            },
+            select: {
+                id: true,
+                name: true,
+                abbreviation: true,
+            },
+            orderBy: { id: 'asc' },
+        });
+
+        return accounts
+            .map((account) => {
+                const candidateName = normalizeAccountName(account.name);
+                const similarity = accountNameSimilarity(
+                    normalizedName,
+                    candidateName,
+                );
+                const exact = normalizedName === candidateName;
+                const partial =
+                    !exact &&
+                    normalizedName.length >= ACCOUNT_NAME_FUZZY_MIN_LENGTH &&
+                    (candidateName.includes(normalizedName) ||
+                        normalizedName.includes(candidateName));
+                const fuzzy =
+                    !exact &&
+                    !partial &&
+                    normalizedName.length >= ACCOUNT_NAME_FUZZY_MIN_LENGTH &&
+                    candidateName.length >= ACCOUNT_NAME_FUZZY_MIN_LENGTH &&
+                    similarity >= ACCOUNT_NAME_FUZZY_THRESHOLD;
+
+                if (!exact && !partial && !fuzzy) return null;
+
+                return {
+                    ...account,
+                    reason: exact
+                        ? 'normalized_exact'
+                        : partial
+                        ? 'partial'
+                        : 'fuzzy',
+                    similarity: Number(similarity.toFixed(4)),
+                };
+            })
+            .filter(
+                (
+                    account,
+                ): account is {
+                    id: number;
+                    name: string;
+                    abbreviation: string;
+                    reason: string;
+                    similarity: number;
+                } => account !== null,
+            )
+            .sort(
+                (left, right) =>
+                    left.reason.localeCompare(right.reason) ||
+                    left.name.localeCompare(right.name) ||
+                    left.id - right.id,
+            );
+    }
+
     async upsertAccount(
         input: AccountUpsertInput,
         { current_user_id }: { current_user_id?: number | null } = {},
@@ -187,6 +275,13 @@ export class AccountsService {
         // Validate everything before any writes so invalid input never leaves
         // the account/contacts/catalog partially saved.
         await this.validateAccount(input);
+
+        const previousAccount = input.id
+            ? await this.prisma.accounts.findUnique({
+                  where: { id: input.id },
+                  select: { name: true },
+              })
+            : null;
 
         const account = await this.prisma.accounts.upsert({
             create: {
@@ -316,7 +411,18 @@ export class AccountsService {
             items: input.account_resources,
         });
 
-        return account;
+        const normalizedNameChanged =
+            !previousAccount ||
+            normalizeAccountName(previousAccount.name) !==
+                normalizeAccountName(input.name);
+        const similar_name_matches = normalizedNameChanged
+            ? await this.getSimilarAccountNames({
+                  name: account.name,
+                  exclude_account_id: account.id,
+              })
+            : [];
+
+        return { ...account, similar_name_matches };
     }
 
     // The product catalog is synced the same way as contacts: rows present in
@@ -690,6 +796,12 @@ export class AccountsService {
             throw new NotFoundException();
         }
 
+        if (account.is_own) {
+            throw new BadRequestException(
+                'Cannot delete an INOPACK-owned account',
+            );
+        }
+
         const isDeletable = await this.isDeletable({ account_id });
 
         if (!isDeletable) {
@@ -802,6 +914,15 @@ export class AccountsService {
     }: {
         account_id: number;
     }): Promise<boolean> {
+        const account = await this.prisma.accounts.findUnique({
+            where: { id: account_id },
+            select: { is_own: true },
+        });
+
+        if (account?.is_own) {
+            return false;
+        }
+
         const {
             order_requests_count,
             order_sales_count,

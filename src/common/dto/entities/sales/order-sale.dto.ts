@@ -57,6 +57,9 @@ export class OrderSaleBase {
     canceled: boolean;
 
     @Field(() => Boolean, { nullable: false })
+    reconciliation_only: boolean;
+
+    @Field(() => Boolean, { nullable: false })
     automatic_tax_calculation: boolean;
 
     @Field(() => Float, { nullable: false })

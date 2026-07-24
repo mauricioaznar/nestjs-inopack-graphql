@@ -79,6 +79,24 @@ export class AccountUpsertInput extends AccountBase {
     account_resources: AccountResourceInput[];
 }
 
+@ObjectType('SimilarAccountName')
+export class SimilarAccountName {
+    @Field(() => Int)
+    id: number;
+
+    @Field()
+    name: string;
+
+    @Field()
+    abbreviation: string;
+
+    @Field()
+    reason: string;
+
+    @Field(() => Float)
+    similarity: number;
+}
+
 @ObjectType('Account')
 export class Account extends AccountBase {
     @Field({ nullable: false })
@@ -99,6 +117,12 @@ export class Account extends AccountBase {
 
     @Field(() => Int, { nullable: true })
     updated_by_id: number | null;
+
+    // Populated by upsertAccount only when the name's normalized value changed.
+    // It keeps the post-save response authoritative without turning a warning
+    // into a server-side uniqueness restriction.
+    @Field(() => [SimilarAccountName])
+    similar_name_matches?: SimilarAccountName[];
 }
 
 @ObjectType()
