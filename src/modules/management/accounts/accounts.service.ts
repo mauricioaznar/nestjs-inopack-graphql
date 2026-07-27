@@ -300,8 +300,6 @@ export class AccountsService {
                 supplier_credit_days: input.supplier_credit_days,
                 client_require_credit_note: input.client_require_credit_note,
                 client_require_supplement: input.client_require_supplement,
-                supplier_require_external_code:
-                    input.supplier_require_external_code,
                 supplier_require_supplement: input.supplier_require_supplement,
                 supplier_recurring_expenses:
                     input.supplier_recurring_expenses,
@@ -322,8 +320,6 @@ export class AccountsService {
                 supplier_credit_days: input.supplier_credit_days,
                 client_require_credit_note: input.client_require_credit_note,
                 client_require_supplement: input.client_require_supplement,
-                supplier_require_external_code:
-                    input.supplier_require_external_code,
                 supplier_require_supplement: input.supplier_require_supplement,
                 supplier_recurring_expenses:
                     input.supplier_recurring_expenses,
