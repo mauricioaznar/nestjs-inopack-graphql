@@ -6,11 +6,48 @@ import { roles } from '../../common/__tests__/objects/auth/roles';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { createHash } from 'crypto';
 import { jwtConstants } from '../../common/constants/jwt';
+import { TokenPair } from '../../common/dto/entities';
 
 // The service stores a digest, never the raw token, so the tests have to hash
 // the same way to look a row up.
 function sha256(value: string): string {
     return createHash('sha256').update(value).digest('hex');
+}
+
+// Runs `competing` inside a rotation's *critical section* — the window between
+// the presented row being revoked and its successor being inserted. That window
+// is what Phase 1.6.1 closes, and the two tests using this helper are the only
+// ones that reach it: the older race tests spy on `readActiveUser`, which runs
+// before the revoke, so they cover the branch decision and not the interleaving.
+//
+// `issueTokenPair` is the seam because it is the last step of a rotation, after
+// the revoke, and since 1.6.1 it runs inside the transaction holding the family
+// lock.
+//
+// The competing operation is deliberately **not awaited here**. Once the family
+// lock exists it blocks until the rotation commits, so awaiting it inside the
+// seam would deadlock the test instead of exercising it. The delay gives it time
+// to reach its write (before the fix) or to block on the lock (after it); the
+// caller awaits the result once the rotation has finished.
+function raceInsideRotation(competing: () => Promise<unknown>) {
+    let competingResult: Promise<unknown> = Promise.resolve();
+
+    const seam = jest.spyOn(authService as any, 'issueTokenPair');
+    // Args are spread rather than named so this seam does not depend on
+    // `issueTokenPair`'s signature: it has to run unchanged against the
+    // pre-1.6.1 implementation, or it cannot show the test failing first.
+    seam.mockImplementationOnce((async (...args: any[]) => {
+        competingResult = competing().catch((error) => error);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        return (authService as any).issueTokenPair(...args);
+    }) as any);
+
+    return {
+        async finish() {
+            seam.mockRestore();
+            return competingResult;
+        },
+    };
 }
 
 let app: INestApplication;
@@ -289,6 +326,33 @@ describe('refresh tokens', () => {
             expect(live).toBe(2);
         });
 
+        it('a rotation that loses the window is not told its session is dead', async () => {
+            // The mirror image of the logout test: same window, competing
+            // rotation instead of a logout. The grace window has to be open for
+            // this to be meaningful — with it pinned to 0 the loser is supposed
+            // to fail.
+            const pair = await createUserAndLogin(
+                'refreshrotatewindow@email.com',
+            );
+
+            const race = raceInsideRotation(() =>
+                authService.rotateRefreshToken(pair.refreshToken),
+            );
+
+            await expect(
+                authService.rotateRefreshToken(pair.refreshToken),
+            ).resolves.toBeTruthy();
+            const loser = await race.finish();
+
+            // Before 1.6.1 the loser read the row mid-window: revoked, and with
+            // no live successor in the family *yet*, which reads as "this
+            // session is over". So it threw 401 — and since a 401 is precisely
+            // what makes the controller clear the refresh cookie, that response
+            // would have deleted the cookie the winner had just set.
+            expect(loser).not.toBeInstanceOf(Error);
+            expect((loser as TokenPair).refreshToken).toBeTruthy();
+        });
+
         it('does not let the grace window resurrect a logged-out session', async () => {
             // The window only covers a race, which always leaves a live token in
             // the family. Logout revokes every row, so there is nothing to race
@@ -383,6 +447,34 @@ describe('refresh tokens', () => {
         const live = await prisma.refresh_tokens.count({
             where: { family_id: spent?.family_id, revoked_at: null },
         });
+        expect(live).toBe(0);
+    });
+
+    it('a logout inside the rotation window still ends the session', async () => {
+        const pair = await createUserAndLogin('refreshlogoutwindow@email.com');
+
+        const race = raceInsideRotation(() =>
+            authService.logout(pair.refreshToken),
+        );
+
+        // The rotation itself succeeds: it is a legitimate refresh that had
+        // already won its row before the logout arrived. What must not survive
+        // is the *session*.
+        await expect(
+            authService.rotateRefreshToken(pair.refreshToken),
+        ).resolves.toBeTruthy();
+        await race.finish();
+
+        const spent = await prisma.refresh_tokens.findFirst({
+            where: { token_hash: sha256(pair.refreshToken) },
+        });
+        const live = await prisma.refresh_tokens.count({
+            where: { family_id: spent?.family_id, revoked_at: null },
+        });
+        // Before 1.6.1 this was 1. The logout landed between the revoke and the
+        // insert, found no live row to revoke, and returned success — then the
+        // rotation inserted a live successor into the session the user had just
+        // been told was over.
         expect(live).toBe(0);
     });
 

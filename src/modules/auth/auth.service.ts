@@ -13,6 +13,7 @@ import {
 } from '../../common/dto/entities';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes, randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { jwtConstants } from '../../common/constants/jwt';
 
@@ -23,6 +24,19 @@ interface TokenSubject {
     id: number;
     email: string;
     user_roles: { role_id?: number | null }[];
+}
+
+// Every write to a refresh-token family goes through one of these, so the same
+// code serves a standalone call (`this.prisma`) and a call already inside a
+// transaction (`tx`). `PrismaService` is a `PrismaClient` and satisfies it.
+type PrismaClientLike = Prisma.TransactionClient;
+
+// What `lockFamily` returns: the family's rows as they exist *now*, read under
+// `FOR UPDATE`. Deliberately not a Prisma model read — see `lockFamily`.
+interface LockedFamilyRow {
+    id: number;
+    revoked_at: Date | null;
+    expires_at: Date;
 }
 
 @Injectable()
@@ -95,7 +109,8 @@ export class AuthService {
 
         // A new login starts a new family: signing in on a phone must not be
         // collateral damage when the laptop's session is revoked for theft.
-        return this.issueTokenPair({
+        // No lock needed — a brand-new `family_id` has no other writer.
+        return this.issueTokenPair(this.prisma, {
             user,
             familyId: randomUUID(),
             meta,
@@ -113,91 +128,101 @@ export class AuthService {
             throw new UnauthorizedException();
         }
 
-        const stored = await this.prisma.refresh_tokens.findUnique({
+        // Only to learn *which* family to lock. `family_id` and `user_id` never
+        // change once a row is written, so reading them outside the lock is
+        // safe; every field the decision below turns on (`revoked_at`,
+        // `expires_at`) is re-read under it.
+        const presented = await this.prisma.refresh_tokens.findUnique({
             where: { token_hash: this.hashRefreshToken(rawToken) },
         });
-        if (!stored) {
+        if (!presented) {
             throw new UnauthorizedException();
         }
 
-        const now = new Date();
+        // Deliberately outside the transaction. It reads `users`, not this
+        // family, so it is not part of the invariant the lock protects, and
+        // holding a row lock across an unrelated query would lengthen the
+        // critical section every concurrent rotation has to wait behind.
+        const user = await this.readActiveUser(presented.user_id);
 
-        if (stored.revoked_at) {
-            if (
-                !(await this.isBenignRotationRace(
-                    stored.revoked_at,
-                    stored.family_id,
-                    now,
-                ))
-            ) {
-                // Either the reuse is too old to be a race, or the session is
-                // already over. We cannot tell a replayed copy from the honest
-                // client holding the same value, so the whole family goes.
-                await this.revokeFamily(stored.family_id);
-                throw new UnauthorizedException();
+        // `null` means "something was revoked and the caller gets a 401". The
+        // failure paths cannot simply throw from inside the callback: an
+        // exception rolls the transaction back, which would undo the very
+        // revocation being performed — theft detection would then revoke the
+        // family and immediately give it back.
+        const pair = await this.prisma.$transaction(async (tx) => {
+            const family = await this.lockFamily(tx, presented.family_id);
+            const stored = family.find(
+                (row) => Number(row.id) === presented.id,
+            );
+            if (!stored) {
+                return null;
             }
-            // Benign race — fall through and issue a new pair in this family.
-        }
 
-        if (stored.expires_at.getTime() <= now.getTime()) {
-            // Just expired, not stolen — kill this row, leave the family alone.
-            await this.revokeToken(stored.id);
-            throw new UnauthorizedException();
-        }
+            const now = new Date();
 
-        const user = await this.readActiveUser(stored.user_id);
-        if (!user) {
-            await this.revokeFamily(stored.family_id);
-            throw new UnauthorizedException();
-        }
-
-        if (!stored.revoked_at) {
-            // Conditional, not a plain update: `logout` can revoke this row —
-            // and with it the whole family — between the read at the top of this
-            // method and this write. An unconditional revoke would then insert a
-            // live successor into a dead family, and the session the user just
-            // ended would come back. `count === 1` means this request won the
-            // race and owns the successor.
-            const { count } = await this.prisma.refresh_tokens.updateMany({
-                data: { revoked_at: now, updated_at: now },
-                where: { id: stored.id, revoked_at: null },
-            });
-
-            if (count === 0) {
-                // Somebody else revoked the row first. Deliberately *not* an
-                // automatic 401: a concurrent rotation from a second tab is the
-                // same benign race the branch above forgives, and telling that
-                // tab its session is dead is exactly the false positive the
-                // grace window exists to prevent. So re-read and apply the same
-                // decision — a rotation leaves a live successor and this request
-                // falls through to get its own pair; a logout leaves nothing
-                // live and this correctly fails.
-                const current = await this.prisma.refresh_tokens.findUnique({
-                    where: { id: stored.id },
-                });
-                if (
-                    !current?.revoked_at ||
-                    !(await this.isBenignRotationRace(
-                        current.revoked_at,
-                        current.family_id,
-                        new Date(),
-                    ))
-                ) {
-                    throw new UnauthorizedException();
+            if (stored.revoked_at) {
+                if (!this.isBenignRotationRace(stored.revoked_at, family, now)) {
+                    // Either the reuse is too old to be a race, or the session
+                    // is already over. We cannot tell a replayed copy from the
+                    // honest client holding the same value, so the whole family
+                    // goes.
+                    await this.revokeFamilyLocked(tx, presented.family_id);
+                    return null;
                 }
+                // Benign race — fall through and issue a new pair in this
+                // family. Reaching here under the lock means the winner has
+                // already committed its successor, so the liveness test above
+                // saw it. That is what stops an honest second tab being told
+                // its session is dead.
             }
-        }
 
-        return this.issueTokenPair({
-            user,
-            familyId: stored.family_id,
-            meta,
+            if (stored.expires_at.getTime() <= now.getTime()) {
+                // Just expired, not stolen — kill this row, leave the family
+                // alone.
+                await this.revokeToken(tx, presented.id);
+                return null;
+            }
+
+            if (!user) {
+                await this.revokeFamilyLocked(tx, presented.family_id);
+                return null;
+            }
+
+            if (!stored.revoked_at) {
+                // Unconditional on purpose. `stored` came from the locking read
+                // above and no other writer can revoke it while this
+                // transaction holds the family lock, so the conditional
+                // `updateMany` Phase 1.5.4 used has nothing left to guard
+                // against — the lock, not the WHERE clause, is what makes this
+                // safe now.
+                await this.revokeToken(tx, presented.id);
+            }
+
+            // Inside the transaction, so the revoke above and this insert commit
+            // together. That is the whole point of 1.6.1: a logout can no longer
+            // land between them, see an empty family, report success, and then
+            // be undone by the successor appearing a moment later.
+            return this.issueTokenPair(tx, {
+                user,
+                familyId: presented.family_id,
+                meta,
+            });
         });
+
+        if (!pair) {
+            throw new UnauthorizedException();
+        }
+        return pair;
     }
 
     // Logout is authenticated by the cookie itself, so an expired access token
     // still ends the session properly. An unknown token is not an error: the
     // desired end state (this browser holds no live session) already holds.
+    //
+    // The revocation goes through `revokeFamily`, which takes the family lock —
+    // so a logout racing a rotation now waits for that rotation to commit and
+    // then revokes its successor too, instead of revoking an empty family.
     async logout(rawToken: string | null): Promise<void> {
         if (!rawToken) {
             return;
@@ -212,32 +237,91 @@ export class AuthService {
     }
 
     // Ends one session (one device / one rotation chain).
+    //
+    // Takes the family lock, and must: a transaction around rotation alone would
+    // exclude nothing, because the writer rotation needs to be excluded *by* is
+    // this one. Revoking without the lock is what let a logout slip between a
+    // rotation's revoke and its insert, revoke an empty family, and report a
+    // success the successor then quietly undid.
     async revokeFamily(familyId: string): Promise<void> {
-        await this.prisma.refresh_tokens.updateMany({
-            data: { revoked_at: new Date(), updated_at: new Date() },
-            where: { family_id: familyId, revoked_at: null },
+        await this.prisma.$transaction(async (tx) => {
+            await this.lockFamily(tx, familyId);
+            await this.revokeFamilyLocked(tx, familyId);
         });
     }
 
     // Ends every session a user has. Not wired to anything yet; Phase 3 calls it
     // on password change, and it is what an admin "cerrar sesiones" action would
     // use.
+    //
+    // Locks by `user_id` rather than by family: a user's rows are a superset of
+    // any one family's, so this contends on the same physical rows as
+    // `lockFamily` and the two serialize correctly.
     async revokeAllForUser(userId: number): Promise<void> {
-        await this.prisma.refresh_tokens.updateMany({
-            data: { revoked_at: new Date(), updated_at: new Date() },
-            where: { user_id: userId, revoked_at: null },
+        await this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`
+                SELECT id
+                FROM refresh_tokens
+                WHERE user_id = ${userId}
+                FOR UPDATE
+            `;
+            const now = new Date();
+            await tx.refresh_tokens.updateMany({
+                data: { revoked_at: now, updated_at: now },
+                where: { user_id: userId, revoked_at: null },
+            });
         });
     }
 
-    private async issueTokenPair({
-        user,
-        familyId,
-        meta,
-    }: {
-        user: TokenSubject;
-        familyId: string;
-        meta: SessionMeta;
-    }): Promise<TokenPair> {
+    // Locks every row of one family for the rest of the caller's transaction and
+    // returns their current state. Two jobs in one statement on purpose:
+    //
+    // A locking read returns the latest committed rows, but a *plain* read
+    // afterwards would be served from this transaction's REPEATABLE READ
+    // snapshot and could still show the pre-lock state. Reading the columns the
+    // caller needs directly out of the `FOR UPDATE` result sidesteps that
+    // entirely, so the decision is provably made on post-lock data.
+    private async lockFamily(
+        tx: PrismaClientLike,
+        familyId: string,
+    ): Promise<LockedFamilyRow[]> {
+        return tx.$queryRaw<LockedFamilyRow[]>`
+            SELECT id, revoked_at, expires_at
+            FROM refresh_tokens
+            WHERE family_id = ${familyId}
+            FOR UPDATE
+        `;
+    }
+
+    // Assumes the caller already holds the family lock. Split from
+    // `revokeFamily` so rotation can revoke inside the transaction it is already
+    // holding instead of deadlocking against itself.
+    private async revokeFamilyLocked(
+        tx: PrismaClientLike,
+        familyId: string,
+    ): Promise<void> {
+        const now = new Date();
+        await tx.refresh_tokens.updateMany({
+            data: { revoked_at: now, updated_at: now },
+            where: { family_id: familyId, revoked_at: null },
+        });
+    }
+
+    // `client` is `this.prisma` on the login path and the open transaction on the
+    // rotation path, so the successor row is written inside whatever unit of work
+    // the caller established.
+    private async issueTokenPair(
+        client: PrismaClientLike,
+        {
+            user,
+            familyId,
+            meta,
+        }: {
+            user: TokenSubject;
+            familyId: string;
+            meta: SessionMeta;
+        },
+    ): Promise<TokenPair> {
         // Opaque random bytes, not a JWT. A refresh token carries no claims —
         // its only job is to name a row in the database, and that row is the
         // authority. That is precisely what lets us revoke it, which a JWT
@@ -248,7 +332,7 @@ export class AuthService {
             now.getTime() + jwtConstants.refreshTtlDays * 24 * 60 * 60 * 1000,
         );
 
-        await this.prisma.refresh_tokens.create({
+        await client.refresh_tokens.create({
             data: {
                 user_id: user.id,
                 token_hash: this.hashRefreshToken(refreshToken),
@@ -284,9 +368,11 @@ export class AuthService {
     // takes effect: at most one access-token lifetime after the change, rather
     // than never.
     //
-    // Its own method rather than an inline query because it is the last read
-    // before the successor is written — i.e. the seam the concurrency test in
-    // `auth.service.test.ts` opens to reproduce "logout landed mid-rotation".
+    // Its own method because `auth.service.test.ts` spies on it to interleave a
+    // competing operation into a rotation. Since 1.6.1 it runs *before* the
+    // family lock is taken, so that seam is a pre-lock one: those tests show the
+    // rotation makes the right decision when it finds the family already
+    // changed. The seam *inside* the critical section is `issueTokenPair`.
     private async readActiveUser(userId: number) {
         return this.prisma.users.findFirst({
             include: { user_roles: { where: { active: 1 } } },
@@ -305,29 +391,30 @@ export class AuthService {
     // that won it inserted one. Logout, theft revocation and `revokeAllForUser`
     // revoke every row instead, so an empty family is the signal that the
     // session is over.
-    private async isBenignRotationRace(
+    // Takes the locked family rows rather than querying: they are the post-lock
+    // truth, and re-reading here would reintroduce exactly the snapshot problem
+    // `lockFamily` exists to avoid. Synchronous as a result.
+    private isBenignRotationRace(
         revokedAt: Date,
-        familyId: string,
+        family: LockedFamilyRow[],
         now: Date,
-    ): Promise<boolean> {
+    ): boolean {
         const revokedMsAgo = now.getTime() - revokedAt.getTime();
         if (revokedMsAgo > jwtConstants.refreshReuseGraceSeconds * 1000) {
             return false;
         }
-        return (
-            (await this.prisma.refresh_tokens.count({
-                where: {
-                    family_id: familyId,
-                    revoked_at: null,
-                    expires_at: { gt: now },
-                },
-            })) > 0
+        return family.some(
+            (row) => !row.revoked_at && row.expires_at.getTime() > now.getTime(),
         );
     }
 
-    private async revokeToken(id: number): Promise<void> {
-        await this.prisma.refresh_tokens.update({
-            data: { revoked_at: new Date(), updated_at: new Date() },
+    private async revokeToken(
+        client: PrismaClientLike,
+        id: number,
+    ): Promise<void> {
+        const now = new Date();
+        await client.refresh_tokens.update({
+            data: { revoked_at: now, updated_at: now },
             where: { id },
         });
     }

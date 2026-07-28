@@ -7,7 +7,6 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { AuthService } from './auth.service';
 import {
     ActivityTypeName,
     CreateUserInput,
@@ -26,7 +25,6 @@ import { RolesDecorator } from './decorators/role.decorator';
 @Injectable()
 export class AuthResolver {
     constructor(
-        private authService: AuthService,
         private userService: UserService,
         private pubSubService: PubSubService,
     ) {}
