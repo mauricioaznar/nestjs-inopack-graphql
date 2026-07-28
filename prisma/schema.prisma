@@ -588,6 +588,7 @@ model users {
   fullname       String          @db.VarChar(255)
   branch_id      Int?            @db.UnsignedInt
   activities     activities[]
+  refresh_tokens refresh_tokens[]
   user_branches  user_branches[]
   user_roles     user_roles[]
 
@@ -620,6 +621,27 @@ model users {
 
   @@index([branch_id], map: "users_branch_id_foreign")
   @@index([role_id], map: "users_role_id_foreign")
+}
+
+// Mirrors src/db/migrations/1785024000000-CreateRefreshTokens.ts. One row per
+// issued refresh token; rows sharing a `family_id` are one login session's
+// rotation chain. `token_hash` is a SHA-256 hex digest — the raw token lives
+// only in the httpOnly cookie.
+model refresh_tokens {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  user_id    Int       @db.UnsignedInt
+  token_hash String    @unique(map: "refresh_tokens_token_hash_unique") @db.Char(64)
+  family_id  String    @db.Char(36)
+  expires_at DateTime  @db.DateTime(0)
+  revoked_at DateTime? @db.DateTime(0)
+  created_at DateTime? @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  user_agent String?   @db.VarChar(255)
+  ip         String?   @db.VarChar(45)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "refresh_tokens_user_id_foreign")
+
+  @@index([user_id], map: "refresh_tokens_user_id_foreign")
+  @@index([family_id], map: "refresh_tokens_family_id_index")
 }
 
 model machine_compatibilities {

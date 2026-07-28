@@ -108,6 +108,23 @@ export interface AccessTokenPayload {
     role_ids: number[];
 }
 
+// What a login or a rotation produces. Only `accessToken` ever reaches the
+// response body; the refresh token is written straight into an httpOnly cookie
+// so no JavaScript on the page can read it (that is the whole point of moving
+// off localStorage).
+export interface TokenPair {
+    accessToken: string;
+    refreshToken: string;
+    refreshExpiresAt: Date;
+}
+
+// Whatever we can learn about the client that opened this session. Purely
+// informational today; it is what a future "active sessions" screen would list.
+export interface SessionMeta {
+    userAgent?: string | null;
+    ip?: string | null;
+}
+
 // What `req.user` is after `JwtStrategy#validate` — i.e. what `@CurrentUser()`
 // and the role guard receive. `id` mirrors the payload's `sub` so the ~50
 // existing `currentUser.id` call sites keep working unchanged.

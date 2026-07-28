@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LocalStrategy } from './strategies/local.strategy';
+import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -20,14 +20,17 @@ import { RoleService } from './role.service';
         }),
         FilesModule,
     ],
-    // No controllers: the legacy REST `POST /auth/login` and `GET /auth/users`
-    // were removed (nothing consumed them, and `users` returned every user row
-    // including password hashes). Phase 1 reintroduces `auth.controller.ts` for
-    // the httpOnly refresh-cookie endpoints.
+    // `auth.controller.ts` is back, but only for the httpOnly refresh-cookie
+    // endpoints (login / refresh / logout). The legacy `GET /auth/users` route
+    // deleted in Phase 0 — it returned every user row including password
+    // hashes — is not coming back.
+    controllers: [AuthController],
     providers: [
         AuthService,
         UserService,
-        LocalStrategy,
+        // `LocalStrategy` used to sit here. It was registered but never used —
+        // nothing ever applied `AuthGuard('local')` — so it was deleted along
+        // with its file when this module gained the REST controller.
         JwtStrategy,
         AuthResolver,
         RoleResolver,
