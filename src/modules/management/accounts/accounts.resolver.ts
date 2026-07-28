@@ -26,7 +26,7 @@ import {
     PaginatedAccountsSortArgs,
     Resource,
     User,
-    UserWithRoles,
+    AuthenticatedUser,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -50,7 +50,7 @@ export class AccountsResolver {
     async getAccounts(
         @Args({ nullable: false })
         accountsQueryArgs: AccountsQueryArgs,
-        @CurrentUser() currentUser: UserWithRoles,
+        @CurrentUser() currentUser: AuthenticatedUser,
     ): Promise<Account[]> {
         return this.service.getAccounts({
             accountsQueryArgs: accountsQueryArgs,
@@ -61,7 +61,7 @@ export class AccountsResolver {
     @Query(() => Account, { nullable: true })
     async getAccount(
         @Args('AccountId') accountId: number,
-        @CurrentUser() currentUser: UserWithRoles,
+        @CurrentUser() currentUser: AuthenticatedUser,
     ): Promise<Account | null> {
         return this.service.getAccount({
             account_id: accountId,
@@ -86,7 +86,7 @@ export class AccountsResolver {
     @Query(() => [AccountTransactionItem])
     async getAccountTransactionHistory(
         @Args('AccountId') accountId: number,
-        @CurrentUser() currentUser: UserWithRoles,
+        @CurrentUser() currentUser: AuthenticatedUser,
         @Args('From', { nullable: true }) from?: string,
         @Args('Until', { nullable: true }) until?: string,
     ): Promise<AccountTransactionItem[]> {
@@ -101,7 +101,7 @@ export class AccountsResolver {
     @Query(() => Float)
     async getAccountOpeningBalance(
         @Args('AccountId') accountId: number,
-        @CurrentUser() currentUser: UserWithRoles,
+        @CurrentUser() currentUser: AuthenticatedUser,
         @Args('From', { nullable: true }) from?: string,
     ): Promise<number> {
         return this.service.getAccountOpeningBalance({
@@ -114,7 +114,7 @@ export class AccountsResolver {
     @Query(() => [AccountTransferItem])
     async getAccountTransfers(
         @Args('AccountId') accountId: number,
-        @CurrentUser() currentUser: UserWithRoles,
+        @CurrentUser() currentUser: AuthenticatedUser,
         @Args('From', { nullable: true }) from?: string,
         @Args('Until', { nullable: true }) until?: string,
     ): Promise<AccountTransferItem[]> {
@@ -133,7 +133,7 @@ export class AccountsResolver {
         paginatedAccountsQueryArgs: PaginatedAccountsQueryArgs,
         @Args({ nullable: false })
         paginatedAccountsSortArgs: PaginatedAccountsSortArgs,
-        @CurrentUser() currentUser: UserWithRoles,
+        @CurrentUser() currentUser: AuthenticatedUser,
     ): Promise<PaginatedAccounts> {
         return this.service.paginatedAccounts({
             offsetPaginatorArgs,

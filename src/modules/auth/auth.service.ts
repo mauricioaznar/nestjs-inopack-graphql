@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import {
     AccessToken,
+    AccessTokenPayload,
     LoginInput,
     UserWithRoles,
 } from '../../common/dto/entities';
@@ -24,10 +25,17 @@ export class AuthService {
     }): Promise<UserWithRoles | null> {
         const user = await this.prisma.users.findFirst({
             include: {
-                user_roles: true,
+                // Only live role assignments may reach the token — a revoked
+                // role must not keep granting access.
+                user_roles: {
+                    where: { active: 1 },
+                },
             },
             where: {
                 email: email,
+                // A deactivated / soft-deleted user (`active = -1`) could log in
+                // before this line existed.
+                active: 1,
             },
         });
         if (!user) {
@@ -57,9 +65,15 @@ export class AuthService {
                 'Could not log-in with the provided credentials',
             );
         }
-        const { ...rest } = res;
+        const payload: AccessTokenPayload = {
+            sub: res.id,
+            email: res.email,
+            role_ids: res.user_roles
+                .map((userRole) => userRole.role_id)
+                .filter((roleId): roleId is number => roleId != null),
+        };
         return {
-            accessToken: this.jwtService.sign({ ...rest }),
+            accessToken: this.jwtService.sign(payload),
         };
     }
 }

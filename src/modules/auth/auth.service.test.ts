@@ -3,15 +3,18 @@ import { UserService } from './user.service';
 import { setupApp } from '../../common/__tests__/helpers/setup-app';
 import { AuthService } from './auth.service';
 import { roles } from '../../common/__tests__/objects/auth/roles';
+import { PrismaService } from '../../common/modules/prisma/prisma.service';
 
 let app: INestApplication;
 let userService: UserService;
 let authService: AuthService;
+let prisma: PrismaService;
 
 beforeAll(async () => {
     app = await setupApp();
     userService = app.get(UserService);
     authService = app.get(AuthService);
+    prisma = app.get(PrismaService);
 });
 
 afterAll(async () => {
@@ -45,6 +48,51 @@ describe('validates user', () => {
         });
 
         expect(userWithRoles).toBeFalsy();
+    });
+
+    it('returns null if the user is deactivated', async () => {
+        const user = await userService.create({
+            email: 'deactivateduser@email.com',
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'password123',
+            roles: roles,
+        });
+
+        // Soft-delete convention: live rows are `active = 1`.
+        await prisma.users.update({
+            data: { active: -1 },
+            where: { id: user.id },
+        });
+
+        const userWithRoles = await authService.validateUser({
+            email: user.email,
+            password: 'password123',
+        });
+
+        expect(userWithRoles).toBeFalsy();
+    });
+
+    it('excludes revoked role assignments from the token roles', async () => {
+        const user = await userService.create({
+            email: 'revokedroleuser@email.com',
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'password123',
+            roles: roles,
+        });
+
+        await prisma.user_roles.updateMany({
+            data: { active: -1 },
+            where: { user_id: user.id },
+        });
+
+        const userWithRoles = await authService.validateUser({
+            email: user.email,
+            password: 'password123',
+        });
+
+        expect(userWithRoles?.user_roles).toHaveLength(0);
     });
 });
 

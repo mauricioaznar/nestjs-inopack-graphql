@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 import { GqlExecutionContext } from '@nestjs/graphql';
-import { UserWithRoles } from '../../../common/dto/entities';
+import { AuthenticatedUser } from '../../../common/dto/entities';
 
 @Injectable()
 export class GqlRolesGuard implements CanActivate {
@@ -20,8 +20,8 @@ export class GqlRolesGuard implements CanActivate {
 
         const context = GqlExecutionContext.create(ctx);
         const { req } = context.getContext();
-        const user = req.user as UserWithRoles;
-        const userRoleIds = user.user_roles.map((userRole) => userRole.role_id);
+        const user = req.user as AuthenticatedUser;
+        const userRoleIds = user.role_ids;
 
         // Super can do everything, including super-only areas (e.g. Users).
         if (userRoleIds.includes(RoleId.SUPER)) {

@@ -7,7 +7,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from '../../common/constants/jwt';
 import { AuthResolver } from './auth.resolver';
 import { FilesModule } from '../files/files.module';
-import { AuthController } from './auth.controller';
 import { UserService } from './user.service';
 import { RoleResolver } from './role.resolver';
 import { RoleService } from './role.service';
@@ -21,7 +20,10 @@ import { RoleService } from './role.service';
         }),
         FilesModule,
     ],
-    controllers: [AuthController],
+    // No controllers: the legacy REST `POST /auth/login` and `GET /auth/users`
+    // were removed (nothing consumed them, and `users` returned every user row
+    // including password hashes). Phase 1 reintroduces `auth.controller.ts` for
+    // the httpOnly refresh-cookie endpoints.
     providers: [
         AuthService,
         UserService,

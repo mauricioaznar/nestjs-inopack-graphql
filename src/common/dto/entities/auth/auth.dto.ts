@@ -98,3 +98,21 @@ export class AccessToken {
     @Field({ nullable: false })
     accessToken: string;
 }
+
+// What the access token actually carries. Deliberately minimal: a JWT is only
+// base64 — everything in it is readable by anyone holding the token, and it is
+// copied on every single request. The whole `users` row used to travel in here.
+export interface AccessTokenPayload {
+    sub: number;
+    email: string;
+    role_ids: number[];
+}
+
+// What `req.user` is after `JwtStrategy#validate` — i.e. what `@CurrentUser()`
+// and the role guard receive. `id` mirrors the payload's `sub` so the ~50
+// existing `currentUser.id` call sites keep working unchanged.
+export interface AuthenticatedUser {
+    id: number;
+    email: string;
+    role_ids: number[];
+}
