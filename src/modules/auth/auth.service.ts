@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import {
-    AccessToken,
     AccessTokenPayload,
     LoginInput,
     SessionMeta,
@@ -72,23 +71,6 @@ export class AuthService {
         };
     }
 
-    // Legacy GraphQL entry point: access token only, no refresh cookie. A
-    // GraphQL mutation cannot set an httpOnly cookie through the upload link,
-    // which is exactly why login moved to REST (`POST /auth/login`). Kept for
-    // the cutover window only — delete it with the frontend's generated
-    // `useLoginMutation` once Phase 1 has been exercised, and before Phase 2,
-    // whose login throttling is applied to the REST route and would be bypassed
-    // by this one.
-    async login(userInput: LoginInput): Promise<AccessToken> {
-        const user = await this.validateUser(userInput);
-        if (!user) {
-            throw new BadRequestException(
-                'Could not log-in with the provided credentials',
-            );
-        }
-        return { accessToken: this.signAccessToken(user) };
-    }
-
     // REST login: full token pair. The caller (auth.controller) is responsible
     // for putting `refreshToken` into the cookie and returning only the access
     // token in the body.
@@ -141,28 +123,13 @@ export class AuthService {
         const now = new Date();
 
         if (stored.revoked_at) {
-            const revokedMsAgo = now.getTime() - stored.revoked_at.getTime();
-            const isWithinGrace =
-                revokedMsAgo <= jwtConstants.refreshReuseGraceSeconds * 1000;
-
-            // The grace window only covers one situation: two tabs sharing a
-            // cookie, one of which rotated a moment ago. That situation always
-            // leaves a *live successor* in the family. Logout, theft revocation
-            // and `revokeAllForUser` kill every row instead, so a dead family is
-            // how we tell "benign race" from "this session was deliberately
-            // ended" — without it, a logout could be undone by a stale tab, and
-            // theft detection would hand the thief a fresh pair.
-            const familyIsStillLive = isWithinGrace
-                ? (await this.prisma.refresh_tokens.count({
-                      where: {
-                          family_id: stored.family_id,
-                          revoked_at: null,
-                          expires_at: { gt: now },
-                      },
-                  })) > 0
-                : false;
-
-            if (!familyIsStillLive) {
+            if (
+                !(await this.isBenignRotationRace(
+                    stored.revoked_at,
+                    stored.family_id,
+                    now,
+                ))
+            ) {
                 // Either the reuse is too old to be a race, or the session is
                 // already over. We cannot tell a replayed copy from the honest
                 // client holding the same value, so the whole family goes.
@@ -178,21 +145,47 @@ export class AuthService {
             throw new UnauthorizedException();
         }
 
-        // Re-read the user on every rotation instead of trusting the row. This
-        // is the point where deactivating a user or revoking a role actually
-        // takes effect: at most one access-token lifetime after the change,
-        // rather than never.
-        const user = await this.prisma.users.findFirst({
-            include: { user_roles: { where: { active: 1 } } },
-            where: { id: stored.user_id, active: 1 },
-        });
+        const user = await this.readActiveUser(stored.user_id);
         if (!user) {
             await this.revokeFamily(stored.family_id);
             throw new UnauthorizedException();
         }
 
         if (!stored.revoked_at) {
-            await this.revokeToken(stored.id);
+            // Conditional, not a plain update: `logout` can revoke this row —
+            // and with it the whole family — between the read at the top of this
+            // method and this write. An unconditional revoke would then insert a
+            // live successor into a dead family, and the session the user just
+            // ended would come back. `count === 1` means this request won the
+            // race and owns the successor.
+            const { count } = await this.prisma.refresh_tokens.updateMany({
+                data: { revoked_at: now, updated_at: now },
+                where: { id: stored.id, revoked_at: null },
+            });
+
+            if (count === 0) {
+                // Somebody else revoked the row first. Deliberately *not* an
+                // automatic 401: a concurrent rotation from a second tab is the
+                // same benign race the branch above forgives, and telling that
+                // tab its session is dead is exactly the false positive the
+                // grace window exists to prevent. So re-read and apply the same
+                // decision — a rotation leaves a live successor and this request
+                // falls through to get its own pair; a logout leaves nothing
+                // live and this correctly fails.
+                const current = await this.prisma.refresh_tokens.findUnique({
+                    where: { id: stored.id },
+                });
+                if (
+                    !current?.revoked_at ||
+                    !(await this.isBenignRotationRace(
+                        current.revoked_at,
+                        current.family_id,
+                        new Date(),
+                    ))
+                ) {
+                    throw new UnauthorizedException();
+                }
+            }
         }
 
         return this.issueTokenPair({
@@ -284,6 +277,52 @@ export class AuthService {
                 .filter((roleId): roleId is number => roleId != null),
         };
         return this.jwtService.sign(payload);
+    }
+
+    // Re-read the user on every rotation instead of trusting the refresh row.
+    // This is the point where deactivating a user or revoking a role actually
+    // takes effect: at most one access-token lifetime after the change, rather
+    // than never.
+    //
+    // Its own method rather than an inline query because it is the last read
+    // before the successor is written — i.e. the seam the concurrency test in
+    // `auth.service.test.ts` opens to reproduce "logout landed mid-rotation".
+    private async readActiveUser(userId: number) {
+        return this.prisma.users.findFirst({
+            include: { user_roles: { where: { active: 1 } } },
+            where: { id: userId, active: 1 },
+        });
+    }
+
+    // The one decision that separates "two tabs raced" from "this session was
+    // deliberately ended", used by both places that can find a revoked row: the
+    // client re-presenting an already-spent token, and a rotation that lost the
+    // race to revoke its own row. They must never drift apart — treating a
+    // logout as a race resurrects the session, and treating a race as a logout
+    // signs honest users out.
+    //
+    // A race always leaves a *live successor* in the family, because the request
+    // that won it inserted one. Logout, theft revocation and `revokeAllForUser`
+    // revoke every row instead, so an empty family is the signal that the
+    // session is over.
+    private async isBenignRotationRace(
+        revokedAt: Date,
+        familyId: string,
+        now: Date,
+    ): Promise<boolean> {
+        const revokedMsAgo = now.getTime() - revokedAt.getTime();
+        if (revokedMsAgo > jwtConstants.refreshReuseGraceSeconds * 1000) {
+            return false;
+        }
+        return (
+            (await this.prisma.refresh_tokens.count({
+                where: {
+                    family_id: familyId,
+                    revoked_at: null,
+                    expires_at: { gt: now },
+                },
+            })) > 0
+        );
     }
 
     private async revokeToken(id: number): Promise<void> {

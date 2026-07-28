@@ -15,6 +15,10 @@ export class UserBase {
     last_name: string;
 }
 
+// No GraphQL consumer any more — the `login` mutation was deleted, so this input
+// type is no longer reachable from any resolver and never reaches the generated
+// schema. It survives as the shape `AuthController` validates its request body
+// into, which is the only place credentials are accepted now.
 @InputType('loginInput')
 export class LoginInput {
     @Field()
@@ -91,12 +95,6 @@ export class UserWithRoles extends User {
     }[];
 
     password?: string;
-}
-
-@ObjectType('AccessToken')
-export class AccessToken {
-    @Field({ nullable: false })
-    accessToken: string;
 }
 
 // What the access token actually carries. Deliberately minimal: a JWT is only

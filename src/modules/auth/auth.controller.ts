@@ -3,14 +3,17 @@ import {
     Body,
     Controller,
     HttpCode,
+    HttpException,
     HttpStatus,
     Post,
     Req,
     Res,
+    UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
+import { AllowedOriginGuard } from './guards/allowed-origin.guard';
 import { SessionMeta, TokenPair } from '../../common/dto/entities';
 import {
     clearRefreshCookie,
@@ -27,7 +30,13 @@ import {
 // `req` on a plain HTTP route (the same reason `FilesController` is public).
 // These endpoints therefore authenticate themselves: `login` by password,
 // `refresh` and `logout` by the refresh cookie.
+//
+// `AllowedOriginGuard` is applied at the class level so it covers all three
+// routes and cannot be forgotten on a fourth — these are the only routes a
+// browser sends the refresh cookie to, which is exactly what makes them the
+// CSRF targets.
 @Controller('auth')
+@UseGuards(AllowedOriginGuard)
 export class AuthController {
     constructor(private authService: AuthService) {}
 
@@ -65,9 +74,16 @@ export class AuthController {
             );
             return this.respondWithPair(res, pair);
         } catch (error) {
-            // The cookie we were sent is worthless — drop it so the browser
-            // stops replaying it on every reload.
-            clearRefreshCookie(res);
+            // Only a genuine 401 may destroy the cookie. A 401 means the token
+            // really is worthless, so dropping it stops the browser replaying it
+            // on every reload. Anything else — a database blip, a bug — is
+            // transient, and clearing the cookie for it would turn five seconds
+            // of downtime into "everyone mid-refresh is permanently logged
+            // out". Let those propagate as a 500 with the cookie intact; the
+            // client retries and recovers.
+            if (isUnauthorized(error)) {
+                clearRefreshCookie(res);
+            }
             throw error;
         }
     }
@@ -94,6 +110,16 @@ export class AuthController {
         setRefreshCookie(res, pair.refreshToken, pair.refreshExpiresAt);
         return { accessToken: pair.accessToken };
     }
+}
+
+// `UnauthorizedException` is an `HttpException` with status 401, and so is
+// anything else that means the same thing — matching on the status rather than
+// the class keeps this true for whatever the service throws next.
+function isUnauthorized(error: unknown): boolean {
+    return (
+        error instanceof HttpException &&
+        error.getStatus() === HttpStatus.UNAUTHORIZED
+    );
 }
 
 function readCredentials(body: unknown): { email: string; password: string } {

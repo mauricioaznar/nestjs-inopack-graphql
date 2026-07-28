@@ -114,7 +114,11 @@ describe('logins user', () => {
             roles: roles,
         });
 
-        const { accessToken } = await authService.login({
+        // `loginWithCredentials` is the only login path now — the GraphQL
+        // `login` mutation and `AuthService#login` were deleted, because Phase 2
+        // throttles the REST route and an unthrottled mutation beside it would
+        // be a way straight around the rate limit.
+        const { accessToken } = await authService.loginWithCredentials({
             email: 'loginuseremail@email.com',
             password: 'password123',
         });
@@ -126,7 +130,7 @@ describe('logins user', () => {
         expect.hasAssertions();
 
         try {
-            await authService.login({
+            await authService.loginWithCredentials({
                 email: 'loginuserinvalidemail@email.com',
                 password: 'password123',
             });
@@ -246,6 +250,45 @@ describe('refresh tokens', () => {
             ).resolves.toBeTruthy();
         });
 
+        it('a rotation that loses the race to another rotation still gets its own pair', async () => {
+            // The mirror image of the logout test below: the conditional revoke
+            // must not simply 401 when it loses, or the second tab of an honest
+            // two-tab session would be told its session is dead — the exact
+            // false positive this window exists to prevent.
+            const pair = await createUserAndLogin('refreshrotaterace@email.com');
+
+            const readActiveUser = jest.spyOn(
+                authService as any,
+                'readActiveUser',
+            );
+            readActiveUser.mockImplementationOnce(((userId: number) =>
+                // A competing rotation of the same token lands first: it spends
+                // the row and leaves a live successor behind.
+                authService
+                    .rotateRefreshToken(pair.refreshToken)
+                    .then(() => (authService as any).readActiveUser(userId))) as any);
+
+            try {
+                const loser = await authService.rotateRefreshToken(
+                    pair.refreshToken,
+                );
+                expect(loser.refreshToken).toBeTruthy();
+            } finally {
+                readActiveUser.mockRestore();
+            }
+
+            const spent = await prisma.refresh_tokens.findFirst({
+                where: { token_hash: sha256(pair.refreshToken) },
+            });
+            // Both successors are live and belong to the same session. That is
+            // harmless — deliberately not prevented (see the plan's "what not to
+            // do").
+            const live = await prisma.refresh_tokens.count({
+                where: { family_id: spent?.family_id, revoked_at: null },
+            });
+            expect(live).toBe(2);
+        });
+
         it('does not let the grace window resurrect a logged-out session', async () => {
             // The window only covers a race, which always leaves a live token in
             // the family. Logout revokes every row, so there is nothing to race
@@ -303,6 +346,44 @@ describe('refresh tokens', () => {
         await expect(
             authService.rotateRefreshToken(pair.refreshToken),
         ).rejects.toThrow();
+    });
+
+    it('a logout concurrent with a rotation leaves no live token in the family', async () => {
+        const pair = await createUserAndLogin('refreshlogoutrace@email.com');
+
+        // The race cannot be produced with real concurrency here, so we open the
+        // window deliberately. Rotation re-reads the user *after* validating the
+        // refresh row and *before* writing its successor, which is exactly the
+        // gap the conditional revoke closes — so logging out from inside that
+        // read reproduces "logout landed mid-rotation".
+        const readActiveUser = jest.spyOn(authService as any, 'readActiveUser');
+        readActiveUser.mockImplementationOnce(((userId: number) =>
+            authService
+                .logout(pair.refreshToken)
+                // The once-implementation is spent by now, so this re-entry
+                // reaches the real method.
+                .then(() => (authService as any).readActiveUser(userId))) as any);
+
+        try {
+            // Before the fix this resolved: the rotation revoked its row
+            // unconditionally and inserted a live successor into a family the
+            // user had just ended.
+            await expect(
+                authService.rotateRefreshToken(pair.refreshToken),
+            ).rejects.toThrow();
+        } finally {
+            readActiveUser.mockRestore();
+        }
+
+        const spent = await prisma.refresh_tokens.findFirst({
+            where: { token_hash: sha256(pair.refreshToken) },
+        });
+        expect(spent).toBeTruthy();
+
+        const live = await prisma.refresh_tokens.count({
+            where: { family_id: spent?.family_id, revoked_at: null },
+        });
+        expect(live).toBe(0);
     });
 
     it('logout on an unknown token is a no-op', async () => {
