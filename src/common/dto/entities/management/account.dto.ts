@@ -52,9 +52,6 @@ export class AccountBase {
     client_require_supplement: boolean;
 
     @Field(() => Boolean, { nullable: false })
-    supplier_require_external_code: boolean;
-
-    @Field(() => Boolean, { nullable: false })
     supplier_require_supplement: boolean;
 
     @Field(() => Boolean, { nullable: false })

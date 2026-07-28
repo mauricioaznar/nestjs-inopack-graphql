@@ -454,6 +454,7 @@ model order_sales {
   order_request_id                       Int?                  @db.UnsignedInt
   receipt_type_id                        Int?                  @db.UnsignedInt
   invoice_code                           Int                   @default(0)
+  require_invoice_code                   Boolean               @default(false)
   expected_payment_date                  DateTime?             @db.DateTime(0)
   credit_note_code                       String                @default("") @db.VarChar(255)
   credit_note_amount                     Float                 @default(0.00)
@@ -780,7 +781,6 @@ model accounts {
   supplier_credit_days                          Int                @default(0)
   client_require_credit_note                    Boolean            @default(false)
   client_require_supplement                     Boolean            @default(true)
-  supplier_require_external_code                Boolean            @default(false)
   supplier_require_supplement                   Boolean            @default(false)
   supplier_recurring_expenses                   Boolean            @default(false)
   client_automatic_tax_calculation              Boolean            @default(true)

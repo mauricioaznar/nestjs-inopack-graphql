@@ -26,6 +26,9 @@ export class OrderSaleBase {
     @Field()
     invoice_code: number;
 
+    @Field(() => Boolean, { nullable: false })
+    require_invoice_code: boolean;
+
     @Field(() => Int, { nullable: true })
     receipt_type_id?: number | null;
 
