@@ -21,6 +21,23 @@ import {
     setRefreshCookie,
 } from './refresh-cookie';
 
+/*
+ * LEARNING MAP — the browser/API boundary
+ *
+ * The controller is intentionally thin. Each endpoint translates HTTP into an
+ * `AuthService` call, then decides where the two returned credentials belong:
+ *
+ *     access token  -> JSON response body -> frontend memory
+ *     refresh token -> Set-Cookie header  -> browser-managed httpOnly cookie
+ *
+ * JavaScript can read the first credential but cannot read the second. On a
+ * later refresh or logout request, the browser attaches the cookie
+ * automatically and this controller reads it from the request.
+ *
+ * Follow one complete login in this order:
+ * `login` -> `AuthService.loginWithCredentials` -> `respondWithPair`.
+ */
+
 // REST, not GraphQL, on purpose: these three endpoints exist to move an
 // httpOnly cookie, and a cookie needs a stable URL path to be scoped to. The
 // GraphQL transport cannot set one portably through the upload link.

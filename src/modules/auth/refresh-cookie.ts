@@ -1,5 +1,15 @@
 import { Request, Response } from 'express';
 
+/*
+ * The refresh cookie belongs to the browser, not to React.
+ *
+ * `setRefreshCookie` and `clearRefreshCookie` produce response headers. The
+ * browser applies those headers to its cookie store. `readRefreshCookie` reads
+ * the cookie back from a later request. Because the cookie is `httpOnly`, no
+ * frontend function can inspect, copy, or delete its value directly; frontend
+ * requests use `credentials: 'include'` and let the browser handle it.
+ */
+
 export const REFRESH_COOKIE_NAME = 'refresh_token';
 
 // Scoped to `/auth`, not to `/` — the browser then attaches the refresh token

@@ -7,6 +7,17 @@ import {
     AuthenticatedUser,
 } from '../../../common/dto/entities';
 
+/*
+ * This is the access-token checkpoint for protected API operations.
+ * Passport extracts `Authorization: Bearer <access token>`, verifies the JWT
+ * signature and expiry using the configuration below, and only then calls
+ * `validate`. The returned object becomes `req.user`, which is what
+ * `@CurrentUser()` and `GqlRolesGuard` use later in the request.
+ *
+ * Refresh-token validation does not happen here. It is stateful and DB-backed,
+ * so it belongs to `AuthService.rotateRefreshToken` instead.
+ */
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor() {

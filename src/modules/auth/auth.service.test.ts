@@ -4,6 +4,7 @@ import { setupApp } from '../../common/__tests__/helpers/setup-app';
 import { AuthService } from './auth.service';
 import { roles } from '../../common/__tests__/objects/auth/roles';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
+import { PrismaClient } from '@prisma/client';
 import { createHash } from 'crypto';
 import { jwtConstants } from '../../common/constants/jwt';
 import { TokenPair } from '../../common/dto/entities';
@@ -12,6 +13,15 @@ import { TokenPair } from '../../common/dto/entities';
 // the same way to look a row up.
 function sha256(value: string): string {
     return createHash('sha256').update(value).digest('hex');
+}
+
+// A promise plus the function that settles it.
+function deferred() {
+    let resolve!: () => void;
+    const promise = new Promise<void>((settle) => {
+        resolve = settle;
+    });
+    return { promise, resolve };
 }
 
 // Runs `competing` inside a rotation's *critical section* — the window between
@@ -24,21 +34,63 @@ function sha256(value: string): string {
 // the revoke, and since 1.6.1 it runs inside the transaction holding the family
 // lock.
 //
-// The competing operation is deliberately **not awaited here**. Once the family
-// lock exists it blocks until the rotation commits, so awaiting it inside the
-// seam would deadlock the test instead of exercising it. The delay gives it time
-// to reach its write (before the fix) or to block on the lock (after it); the
-// caller awaits the result once the rotation has finished.
+// There is deliberately **no sleep here**. A fixed delay would only *assume* the
+// competing operation reached the window — under a slow database or a starved
+// connection pool it could still be queued, and the pre-fix implementation would
+// then pass the test for the wrong reason. Instead the seam waits for whichever
+// of two events happens first, and exactly one of them is possible per
+// implementation:
+//
+//   * the competitor **finishes** — the only outcome before the fix, where
+//     nothing blocks it. Reaching here then means its revoke has committed,
+//     which is precisely the interleaving under test; or
+//   * the competitor **reaches `lockFamily`** — the only outcome after the fix,
+//     where it must block there, because this rotation already holds that
+//     family's lock. Waiting for it to finish would deadlock instead.
+//
+// The `lockFamily` spy is armed here rather than up front so that it observes
+// the competitor's call and not the rotation's own, and it is skipped entirely
+// when the method does not exist — which is what lets this run unchanged against
+// the pre-1.6.1 service and show the tests failing first.
+//
+// ⚠️ The latch resolves on *entry* to `lockFamily`, before the locking query is
+// issued — deliberately, since resolving after would wait on a call that cannot
+// return until this rotation commits, i.e. a deadlock. So it coordinates the
+// interleaving but proves **nothing** about the lock itself: if `lockFamily`
+// still existed and no longer locked anything, these two tests could pass
+// anyway. The test that proves the row lock actually blocks a competitor is
+// `the family lock blocks a second transaction on the same family` below, and
+// the pair of them only means what it claims **together**.
 function raceInsideRotation(competing: () => Promise<unknown>) {
     let competingResult: Promise<unknown> = Promise.resolve();
 
     const seam = jest.spyOn(authService as any, 'issueTokenPair');
-    // Args are spread rather than named so this seam does not depend on
-    // `issueTokenPair`'s signature: it has to run unchanged against the
-    // pre-1.6.1 implementation, or it cannot show the test failing first.
+    // Args are spread rather than named so the seam does not depend on
+    // `issueTokenPair`'s signature, which 1.6.1 changed.
     seam.mockImplementationOnce((async (...args: any[]) => {
+        const reachedLock = deferred();
+        const originalLockFamily = (authService as any).lockFamily;
+        const lockSpy =
+            typeof originalLockFamily === 'function'
+                ? jest
+                      .spyOn(authService as any, 'lockFamily')
+                      .mockImplementation((async (...lockArgs: any[]) => {
+                          reachedLock.resolve();
+                          return originalLockFamily.apply(
+                              authService,
+                              lockArgs,
+                          );
+                      }) as any)
+                : null;
+
         competingResult = competing().catch((error) => error);
-        await new Promise((resolve) => setTimeout(resolve, 250));
+        await Promise.race([competingResult, reachedLock.promise]);
+
+        if (lockSpy) {
+            // Only affects later calls; the competitor is already inside the
+            // real method, blocked on the lock.
+            lockSpy.mockRestore();
+        }
         return (authService as any).issueTokenPair(...args);
     }) as any);
 
@@ -476,6 +528,62 @@ describe('refresh tokens', () => {
         // rotation inserted a live successor into the session the user had just
         // been told was over.
         expect(live).toBe(0);
+    });
+
+    it('the family lock blocks a second transaction on the same family', async () => {
+        // The two race tests coordinate on `lockFamily` being *entered*, which
+        // says nothing about whether it locks — they would still pass if the
+        // method survived with its `FOR UPDATE` removed. This is the test that
+        // closes that hole, and it is the only one here that observes the row
+        // lock directly rather than through rotation logic.
+        //
+        // Deterministic by construction: the contender is given a one-second
+        // `innodb_lock_wait_timeout`, so a genuinely contended lock fails fast
+        // and *says why*, instead of being inferred from how long something
+        // took. Without a real lock it acquires immediately and the test fails.
+        const pair = await createUserAndLogin('refreshfamilylock@email.com');
+        const stored = await prisma.refresh_tokens.findFirst({
+            where: { token_hash: sha256(pair.refreshToken) },
+        });
+        const familyId = String(stored?.family_id);
+
+        // Its own client, so the short lock timeout cannot leak onto a pooled
+        // connection the rest of the suite goes on to reuse. `lockFamily` takes
+        // its client as an argument, so it works unchanged against this one.
+        const contender = new PrismaClient();
+        let acquiredWhileHeld = false;
+        let contendedError: unknown = null;
+
+        try {
+            await prisma.$transaction(async (tx) => {
+                await (authService as any).lockFamily(tx, familyId);
+
+                contendedError = await contender
+                    .$transaction(async (tx2) => {
+                        await tx2.$executeRawUnsafe(
+                            'SET SESSION innodb_lock_wait_timeout = 1',
+                        );
+                        await (authService as any).lockFamily(tx2, familyId);
+                        acquiredWhileHeld = true;
+                        return null;
+                    })
+                    .catch((error) => error);
+            });
+        } finally {
+            await contender.$disconnect();
+        }
+
+        expect(acquiredWhileHeld).toBe(false);
+        // The message is what discriminates a real lock from `lockFamily`
+        // simply throwing for some unrelated reason.
+        expect(String(contendedError)).toMatch(/lock wait timeout/i);
+
+        // ...and the lock is released on commit, not held forever.
+        await expect(
+            prisma.$transaction(async (tx) =>
+                (authService as any).lockFamily(tx, familyId),
+            ),
+        ).resolves.toBeDefined();
     });
 
     it('logout on an unknown token is a no-op', async () => {

@@ -17,6 +17,31 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { jwtConstants } from '../../common/constants/jwt';
 
+/*
+ * LEARNING MAP — backend session lifecycle
+ *
+ * Read the public methods in this order:
+ *
+ * 1. `loginWithCredentials` checks the password and creates a new session.
+ * 2. `rotateRefreshToken` keeps that session alive without asking for the
+ *    password again. It spends the old refresh token and creates a new one.
+ * 3. `logout` ends the session represented by the refresh-token family.
+ *
+ * Two different tokens are involved:
+ *
+ * - The access token is a short-lived signed JWT. The frontend sends it on
+ *   GraphQL requests, and the API can validate it without querying the DB.
+ * - The refresh token is a long-lived random secret. Only its SHA-256 hash is
+ *   stored in the DB; the browser carries the raw value in an httpOnly cookie.
+ *
+ * A `family_id` means "one login session". Every rotation adds a row to the
+ * same family. Revoking the family therefore signs out that device/session,
+ * while a separate login on another device has a different family.
+ *
+ * This service never writes cookies or HTTP responses. `AuthController` owns
+ * that transport boundary and splits the `TokenPair` returned here.
+ */
+
 // The minimum a token needs to describe its bearer. Both `validateUser`'s return
 // and a freshly re-read user row satisfy it, which is why rotation can reuse the
 // same signing path as login.
