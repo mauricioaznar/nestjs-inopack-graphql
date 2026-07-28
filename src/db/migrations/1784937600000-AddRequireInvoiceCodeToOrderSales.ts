@@ -111,6 +111,14 @@ export class AddRequireInvoiceCodeToOrderSales1784937600000
             );
         }
 
+        // Receipt type 1 is non-taxable, so its sales cannot carry a complemento.
+        // Clear the requirement on the historical rows that predate this rule.
+        await queryRunner.query(`
+            UPDATE \`order_sales\`
+            SET \`require_supplement\` = 0
+            WHERE \`receipt_type_id\` = 1;
+        `);
+
         // Folio requirements belong to each sale/expense and are initialized
         // exclusively by receipt_types.applies_tax. Remove legacy account-level
         // defaults so account selection cannot compete with receipt selection.
