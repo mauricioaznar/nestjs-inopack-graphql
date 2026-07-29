@@ -74,12 +74,12 @@ export class AddAccountTaxRequirements1785348109789
         `);
         this.assertAffectedAccounts(noTaxResult, 25, 'tax exceptions');
 
-        // These client accounts use receipt type 2 without an invoice code or
-        // tax, so neither value is required by default.
-        const clientNoInvoiceCodeOrTaxResult = await queryRunner.query(`
+        // These client accounts do not require an invoice folio, but taxable
+        // receipt type 2 still requires IVA.
+        const clientNoInvoiceCodeResult = await queryRunner.query(`
             UPDATE accounts
             SET client_requires_invoice_code = 0,
-                client_requires_tax = 0
+                client_requires_tax = 1
             WHERE id IN (
                 100, -- Raul Fernando Aznar Ceballos
                 87,  -- Servicios comerciales interamerica
@@ -95,10 +95,60 @@ export class AddAccountTaxRequirements1785348109789
             );
         `);
         this.assertAffectedAccounts(
-            clientNoInvoiceCodeOrTaxResult,
+            clientNoInvoiceCodeResult,
             11,
-            'client invoice-code/tax exceptions',
+            'client invoice-code exceptions',
         );
+
+        // Receipt type 2 is the taxable receipt type. Backfill the new document
+        // flag before applying the approved account-specific exceptions below.
+        await queryRunner.query(`
+            UPDATE order_sales
+            SET require_tax = 1
+            WHERE receipt_type_id = 2;
+        `);
+        await queryRunner.query(`
+            UPDATE expenses
+            SET require_tax = 1
+            WHERE receipt_type_id = 2;
+        `);
+
+        // Keep historical taxable expenses aligned with the seven approved
+        // supplier accounts that require IVA but not an external folio.
+        await queryRunner.query(`
+            UPDATE expenses
+            SET require_external_code = 0,
+                require_tax = 1
+            WHERE receipt_type_id = 2
+              AND account_id IN (155, 100, 59, 222, 56, 186, 135);
+        `);
+
+        // Keep historical taxable expenses aligned with the approved suppliers
+        // that require an external folio but do not require IVA.
+        await queryRunner.query(`
+            UPDATE expenses
+            SET require_external_code = 1,
+                require_tax = 0
+            WHERE receipt_type_id = 2
+              AND account_id IN (
+                  58, 70, 54, 122, 92, 382, 42, 150, 189, 219,
+                  159, 290, 281, 152, 226, 364, 317, 294, 269,
+                  268, 259, 235, 224, 137, 94
+              );
+        `);
+
+        // Keep historical taxable sales aligned with the approved clients that
+        // do not require an invoice folio but do require IVA.
+        await queryRunner.query(`
+            UPDATE order_sales
+            SET require_invoice_code = 0,
+                require_tax = 1
+            WHERE receipt_type_id = 2
+              AND account_id IN (
+                  100, 87, 56, 189, 264, 265,
+                  280, 133, 181, 208, 150
+              );
+        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
