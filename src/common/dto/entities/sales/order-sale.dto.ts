@@ -29,6 +29,9 @@ export class OrderSaleBase {
     @Field(() => Boolean, { nullable: false })
     require_invoice_code: boolean;
 
+    @Field(() => Boolean, { nullable: false })
+    require_tax: boolean;
+
     @Field(() => Int, { nullable: true })
     receipt_type_id?: number | null;
 

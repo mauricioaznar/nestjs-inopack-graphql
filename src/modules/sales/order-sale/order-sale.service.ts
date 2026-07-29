@@ -661,6 +661,7 @@ export class OrderSaleService {
                 expected_payment_date: input.expected_payment_date,
                 invoice_code: input.invoice_code,
                 require_invoice_code: input.require_invoice_code,
+                require_tax: input.require_tax,
                 // Status is no longer part of the input: new sales always start at
                 // the first status (id = 1). Only updateOrderSaleStatus (admin-only)
                 // can change it afterwards.
@@ -690,6 +691,7 @@ export class OrderSaleService {
                 order_request_id: input.order_request_id || null,
                 invoice_code: input.invoice_code,
                 require_invoice_code: input.require_invoice_code,
+                require_tax: input.require_tax,
                 account_id: input.account_id,
                 // Intentionally omit order_sale_status_id so an upsert never
                 // overwrites a status an admin may have set.

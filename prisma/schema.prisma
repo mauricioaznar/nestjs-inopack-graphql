@@ -455,6 +455,7 @@ model order_sales {
   receipt_type_id                        Int?                  @db.UnsignedInt
   invoice_code                           Int                   @default(0)
   require_invoice_code                   Boolean               @default(false)
+  require_tax                            Boolean               @default(false)
   expected_payment_date                  DateTime?             @db.DateTime(0)
   credit_note_code                       String                @default("") @db.VarChar(255)
   credit_note_amount                     Float                 @default(0.00)
@@ -781,7 +782,11 @@ model accounts {
   supplier_credit_days                          Int                @default(0)
   client_require_credit_note                    Boolean            @default(false)
   client_require_supplement                     Boolean            @default(true)
+  client_requires_invoice_code                  Boolean            @default(true)
+  client_requires_tax                           Boolean            @default(true)
   supplier_require_supplement                   Boolean            @default(false)
+  supplier_requires_external_code               Boolean            @default(true)
+  supplier_requires_tax                         Boolean            @default(true)
   supplier_recurring_expenses                   Boolean            @default(false)
   client_automatic_tax_calculation              Boolean            @default(true)
   exclude_from_accountability_export            Boolean            @default(false)
@@ -841,6 +846,7 @@ model expenses {
   transfer_receipts_total_no_adjustments Float               @default(0.00)
   total_with_tax                         Float               @default(0.00)
   require_external_code                  Boolean             @default(true)
+  require_tax                            Boolean             @default(false)
   resources_total                        Float?              @default(0.00)
   expense_status_id                      Int?                @db.UnsignedInt
   internal_code                          Int                 @default(0)

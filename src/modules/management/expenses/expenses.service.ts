@@ -462,6 +462,7 @@ export class ExpensesService {
                     ? input.expected_payment_date
                     : null,
                 require_external_code: input.require_external_code,
+                require_tax: input.require_tax,
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
@@ -488,6 +489,7 @@ export class ExpensesService {
                     ? input.expected_payment_date
                     : null,
                 require_external_code: input.require_external_code,
+                require_tax: input.require_tax,
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
