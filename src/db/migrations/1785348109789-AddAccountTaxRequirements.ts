@@ -20,23 +20,66 @@ export class AddAccountTaxRequirements1785348109789
             ADD COLUMN require_tax tinyint(1) NOT NULL DEFAULT '0' AFTER require_external_code;
         `);
 
-        // These supplier accounts use taxable receipts but do not require an
-        // external folio by default.
+        // These supplier accounts require neither an external folio, IVA, nor a
+        // complemento by default.
         const noExternalCodeResult = await queryRunner.query(`
             UPDATE accounts
-            SET supplier_requires_external_code = 0,
+            SET supplier_require_supplement = 0,
+                supplier_requires_external_code = 0,
+                supplier_requires_tax = 0
+            WHERE id IN (
+                100, -- Raul Fernando Aznar Ceballos
+                59,  -- Nominas Cheques
+                56,  -- Banorte
+                186, -- AB&C Leasing
+                135, -- Control Integral de Combustibles
+                313, -- Luis Acosta
+                32,  -- Jorge Moller
+                375, -- Ix
+                387, -- Hector
+                328, -- Guillermo Santiago
+                299, -- Gastos administrativos
+                301, -- Fletes Smurfit
+                352, -- Fletes
+                297, -- Flete Zamudio
+                53,  -- Fidecomiso de energia
+                265, -- Fernando Aznar Rivas
+                377, -- Fabian (Chiapas)
+                363, -- Erick Ambrossi
+                362, -- Erasmo Sotelo
+                342, -- Duero
+                341, -- Diego Partida
+                133, -- DESCONOCIDO
+                296, -- Caja Chica
+                142, -- Angel Zamudio
+                340, -- Alfonso Allud
+                329, -- Alberto Aznar
+                338  -- Alan May
+            );
+        `);
+        this.assertAffectedAccounts(
+            noExternalCodeResult,
+            27,
+            'no-folio, no-tax, and no-supplement exceptions',
+        );
+
+        // These Cheques suppliers require both an external folio and IVA, but
+        // do not require a complemento.
+        const chequeFolioAndTaxResult = await queryRunner.query(`
+            UPDATE accounts
+            SET supplier_require_supplement = 0,
+                supplier_requires_external_code = 1,
                 supplier_requires_tax = 1
             WHERE id IN (
                 155, -- Mauricio Aznar Rivas - Cheques
-                100, -- Raul Fernando Aznar Ceballos
-                59,  -- Nominas Cheques
-                222, -- Fernando Aznar Rivas - Cheques
-                56,  -- Banorte
-                186, -- AB&C Leasing
-                135  -- Control Integral de Combustibles
+                222  -- Fernando Aznar Rivas - Cheques
             );
         `);
-        this.assertAffectedAccounts(noExternalCodeResult, 7, 'folio exceptions');
+        this.assertAffectedAccounts(
+            chequeFolioAndTaxResult,
+            2,
+            'Cheques folio-and-tax exceptions',
+        );
 
         // These supplier accounts require an external folio but do not require
         // tax by default.
@@ -74,12 +117,42 @@ export class AddAccountTaxRequirements1785348109789
         `);
         this.assertAffectedAccounts(noTaxResult, 25, 'tax exceptions');
 
-        // These client accounts do not require an invoice folio, but taxable
-        // receipt type 2 still requires IVA.
+        // Most clients require a complemento but not a credit note. Normalize
+        // those defaults before applying the two hardcoded exception groups.
+        await queryRunner.query(`
+            UPDATE accounts
+            SET client_require_supplement = 1,
+                client_require_credit_note = 0
+            WHERE is_client = 1;
+        `);
+
+        // These three clients require both a complemento and a credit note.
+        const creditNoteAndSupplementResult = await queryRunner.query(`
+            UPDATE accounts
+            SET client_require_supplement = 1,
+                client_require_credit_note = 1
+            WHERE id IN (
+                4,  -- Proveedora del Panadero
+                9,  -- Abarrotera del Duero S.A. de C.V.
+                11  -- Compañia Mayorista de Abarrotes SA de CV
+            );
+        `);
+        this.assertAffectedAccounts(
+            creditNoteAndSupplementResult,
+            3,
+            'credit-note and supplement exceptions',
+        );
+
+        // These client accounts require neither an invoice folio nor IVA by
+        // default. They also disable the related supplement, credit-note, and
+        // automatic-tax defaults.
         const clientNoInvoiceCodeResult = await queryRunner.query(`
             UPDATE accounts
-            SET client_requires_invoice_code = 0,
-                client_requires_tax = 1
+            SET client_require_credit_note = 0,
+                client_require_supplement = 0,
+                client_requires_invoice_code = 0,
+                client_requires_tax = 0,
+                client_automatic_tax_calculation = 0
             WHERE id IN (
                 100, -- Raul Fernando Aznar Ceballos
                 87,  -- Servicios comerciales interamerica
@@ -101,53 +174,70 @@ export class AddAccountTaxRequirements1785348109789
         );
 
         // Receipt type 2 is the taxable receipt type. Backfill the new document
-        // flag before applying the approved account-specific exceptions below.
+        // tax flag and preserve the folio requirement evidenced by a captured
+        // historical invoice code before applying approved account exceptions.
         await queryRunner.query(`
             UPDATE order_sales
             SET require_tax = 1
             WHERE receipt_type_id = 2;
         `);
         await queryRunner.query(`
-            UPDATE expenses
-            SET require_tax = 1
-            WHERE receipt_type_id = 2;
-        `);
-
-        // Keep historical taxable expenses aligned with the seven approved
-        // supplier accounts that require IVA but not an external folio.
-        await queryRunner.query(`
-            UPDATE expenses
-            SET require_external_code = 0,
-                require_tax = 1
+            UPDATE order_sales
+            SET require_invoice_code = 1
             WHERE receipt_type_id = 2
-              AND account_id IN (155, 100, 59, 222, 56, 186, 135);
+              AND invoice_code <> 0;
         `);
-
-        // Keep historical taxable expenses aligned with the approved suppliers
-        // that require an external folio but do not require IVA.
+        // Apply every supplier account's three receipt requirements
+        // independently to all historical expenses. Non-taxable receipts cannot
+        // require an external folio, IVA, or a complemento.
         await queryRunner.query(`
-            UPDATE expenses
-            SET require_external_code = 1,
-                require_tax = 0
-            WHERE receipt_type_id = 2
-              AND account_id IN (
-                  58, 70, 54, 122, 92, 382, 42, 150, 189, 219,
-                  159, 290, 281, 152, 226, 364, 317, 294, 269,
-                  268, 259, 235, 224, 137, 94
-              );
+            UPDATE expenses e
+            INNER JOIN accounts a ON a.id = e.account_id
+            SET e.require_external_code = CASE
+                    WHEN e.receipt_type_id = 2 THEN a.supplier_requires_external_code
+                    ELSE 0
+                END,
+                e.require_tax = CASE
+                    WHEN e.receipt_type_id = 2 THEN a.supplier_requires_tax
+                    ELSE 0
+                END,
+                e.require_supplement = CASE
+                    WHEN e.receipt_type_id = 2 THEN a.supplier_require_supplement
+                    ELSE 0
+                END
+            WHERE a.is_supplier = 1;
         `);
 
         // Keep historical taxable sales aligned with the approved clients that
-        // do not require an invoice folio but do require IVA.
+        // require neither an invoice folio nor IVA.
         await queryRunner.query(`
             UPDATE order_sales
             SET require_invoice_code = 0,
-                require_tax = 1
+                require_tax = 0
             WHERE receipt_type_id = 2
               AND account_id IN (
                   100, 87, 56, 189, 264, 265,
                   280, 133, 181, 208, 150
               );
+        `);
+
+        // Apply each client account's complemento and credit-note defaults
+        // independently to recent historical sales. Non-taxable receipts cannot
+        // require either one. Preserve every captured code and amount.
+        await queryRunner.query(`
+            UPDATE order_sales os
+            INNER JOIN accounts a ON a.id = os.account_id
+            SET os.require_supplement = CASE
+                    WHEN os.receipt_type_id = 2 THEN a.client_require_supplement
+                    ELSE 0
+                END,
+                os.require_credit_note = CASE
+                    WHEN os.receipt_type_id = 2 THEN a.client_require_credit_note
+                    ELSE 0
+                END
+            WHERE os.date >= '2026-01-01 00:00:00'
+              AND os.date <= NOW()
+              AND a.is_client = 1;
         `);
     }
 
