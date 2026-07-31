@@ -67,6 +67,44 @@ export class OrderRequestsService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getOrderRequest, which is a bare row read with many callers that must not
+    // pay for a child fetch.
+    //
+    // No `active: 1` on the request itself, so a snapshot still works after the
+    // soft delete. But `active: 1` on the CHILD lines is load-bearing: lines are
+    // soft-deleted rather than removed, so an unfiltered snapshot would ship a
+    // removed line with only its `active` flag changed — and the React differ
+    // ignores `active`, which would make the deletion vanish from the audit
+    // entirely. See docs/features/ongoing/feature-activities-audit.md §2c-1.
+    async getOrderRequestSnapshot({
+        order_request_id,
+    }: {
+        order_request_id: number;
+    }): Promise<unknown> {
+        return this.prisma.order_requests.findUnique({
+            where: {
+                id: order_request_id,
+            },
+            include: {
+                order_request_products: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async getOrderRequest({
         orderRequestId,
     }: {

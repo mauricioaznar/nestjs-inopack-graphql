@@ -49,13 +49,26 @@ export class TransfersResolver {
         @Args('TransferUpsertInput') input: TransferUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.service.getTransferSnapshot({
+                  transfer_id: input.id,
+              })
+            : null;
         const transfer = await this.service.upsertTransfer(input, {
             current_user_id: currentUser.id,
+        });
+        const newData = await this.service.getTransferSnapshot({
+            transfer_id: transfer.id,
         });
         await this.pubSubService.transfer({
             transfer,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
 
         return transfer;
@@ -70,6 +83,13 @@ export class TransfersResolver {
     ): Promise<boolean> {
         const transfer = await this.getTransfer(transferId);
         if (!transfer) throw new NotFoundException();
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the transfer and its receipts all carry active = -1 and the snapshot
+        // would come back with no children. newData stays null — "deleted" is
+        // what the dialog should show, not "active went 1 -> -1".
+        const oldData = await this.service.getTransferSnapshot({
+            transfer_id: transfer.id,
+        });
         await this.service.deleteTransfer({
             transfer_id: transfer.id,
             current_user_id: currentUser.id,
@@ -78,6 +98,8 @@ export class TransfersResolver {
             transfer,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }

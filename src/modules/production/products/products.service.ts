@@ -47,6 +47,25 @@ export class ProductsService {
         });
     }
 
+    // Audit snapshot for the activity trail. Flat: nothing in the products
+    // upsert writes child rows — account_products, order_sale_products and the
+    // rest merely point back at a product and are audited by the entity that
+    // owns them.
+    //
+    // No `active: 1`, unlike getProduct, so a snapshot still works after the
+    // soft delete.
+    async getProductSnapshot({
+        product_id,
+    }: {
+        product_id: number;
+    }): Promise<unknown> {
+        return this.prisma.products.findUnique({
+            where: {
+                id: product_id,
+            },
+        });
+    }
+
     async getOrderProductionProducts({
         product_id,
     }: {

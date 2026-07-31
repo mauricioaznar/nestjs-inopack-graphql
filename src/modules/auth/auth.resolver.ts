@@ -86,10 +86,18 @@ export class AuthResolver {
     ) {
         const user = await this.userService.create(input);
 
+        // Always a create, so there is no prior state: oldData is null and the
+        // whole snapshot renders as added. getUserSnapshot — never the raw row —
+        // because `users` holds password and remember_token.
+        const newData = await this.userService.getUserSnapshot({
+            user_id: user.id,
+        });
         await this.pubSubService.user({
             user,
             userId: currentUser.id,
             type: ActivityTypeName.CREATE,
+            oldData: null,
+            newData,
         });
 
         return user;
@@ -102,12 +110,22 @@ export class AuthResolver {
         @Args('UpdateUserInput') input: UpdateUserInput,
         @CurrentUser() currentUser: User,
     ) {
+        // Audit: capture the row BEFORE the write. getUserSnapshot — never the
+        // raw row — because `users` holds password and remember_token.
+        const oldData = await this.userService.getUserSnapshot({
+            user_id: input.id,
+        });
         const user = await this.userService.update(input);
+        const newData = await this.userService.getUserSnapshot({
+            user_id: user.id,
+        });
 
         await this.pubSubService.user({
             user,
             userId: currentUser.id,
             type: ActivityTypeName.UPDATE,
+            oldData,
+            newData,
         });
 
         return user;

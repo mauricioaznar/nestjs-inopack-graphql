@@ -74,14 +74,27 @@ export class OrderProductionsResolver {
         @Args('OrderProductionInput') input: OrderProductionInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderProduction> {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.service.getOrderProductionSnapshot({
+                  order_production_id: input.id,
+              })
+            : null;
         const orderProduction = await this.service.upsertOrderProduction(
             input,
             { current_user_id: currentUser.id },
         );
+        const newData = await this.service.getOrderProductionSnapshot({
+            order_production_id: orderProduction.id,
+        });
         await this.pubSubService.orderProduction({
             orderProduction: orderProduction,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return orderProduction;
     }
@@ -96,6 +109,13 @@ export class OrderProductionsResolver {
             order_production_id: orderProductionId,
         });
         if (!orderProduction) throw new NotFoundException();
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the production and all three child collections carry active = -1 and
+        // the snapshot would come back with no children. newData stays null —
+        // "deleted" is what the dialog should show, not "active went 1 -> -1".
+        const oldData = await this.service.getOrderProductionSnapshot({
+            order_production_id: orderProductionId,
+        });
         await this.service.deleteOrderProduction({
             order_production_id: orderProductionId,
             current_user_id: currentUser.id,
@@ -104,6 +124,8 @@ export class OrderProductionsResolver {
             orderProduction,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }

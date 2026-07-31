@@ -150,13 +150,26 @@ export class AccountsResolver {
         @Args('AccountUpsertInput') input: AccountUpsertInput,
         @CurrentUser() currentUser: User,
     ): Promise<Account> {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.service.getAccountSnapshot({
+                  account_id: input.id,
+              })
+            : null;
         const account = await this.service.upsertAccount(input, {
             current_user_id: currentUser.id,
+        });
+        const newData = await this.service.getAccountSnapshot({
+            account_id: account.id,
         });
         await this.pubSubService.account({
             account,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return account;
     }
@@ -176,6 +189,13 @@ export class AccountsResolver {
         if (!account) {
             throw new NotFoundException();
         }
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the account and all three child collections carry active = -1 and the
+        // snapshot would come back with no children. newData stays null —
+        // "deleted" is what the dialog should show, not "active went 1 -> -1".
+        const oldData = await this.service.getAccountSnapshot({
+            account_id: accountId,
+        });
         await this.service.deletesAccount({
             account_id: accountId,
             current_user_id: currentUser.id,
@@ -184,6 +204,8 @@ export class AccountsResolver {
             account,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }

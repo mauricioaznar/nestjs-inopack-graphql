@@ -94,14 +94,27 @@ export class OrderRequestsResolver {
         @Args('OrderRequestInput') input: OrderRequestInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderRequest> {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.service.getOrderRequestSnapshot({
+                  order_request_id: input.id,
+              })
+            : null;
         const orderRequest = await this.service.upsertOrderRequest({
             input,
             current_user_id: currentUser.id,
+        });
+        const newData = await this.service.getOrderRequestSnapshot({
+            order_request_id: orderRequest.id,
         });
         await this.pubSubService.orderRequest({
             orderRequest,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return orderRequest;
     }
@@ -116,14 +129,22 @@ export class OrderRequestsResolver {
         orderRequestStatusId: number,
         @CurrentUser() currentUser: User,
     ): Promise<OrderRequest> {
+        const oldData = await this.service.getOrderRequestSnapshot({
+            order_request_id: orderRequestId,
+        });
         const orderRequest = await this.service.updateOrderRequestStatus({
             order_request_id: orderRequestId,
             order_request_status_id: orderRequestStatusId,
+        });
+        const newData = await this.service.getOrderRequestSnapshot({
+            order_request_id: orderRequest.id,
         });
         await this.pubSubService.orderRequest({
             orderRequest,
             type: ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return orderRequest;
     }
@@ -138,13 +159,21 @@ export class OrderRequestsResolver {
         @Args('OrderRequestDetailsInput') input: OrderRequestDetailsInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderRequest> {
+        const oldData = await this.service.getOrderRequestSnapshot({
+            order_request_id: input.order_request_id,
+        });
         const orderRequest = await this.service.updateOrderRequestDetails({
             input,
+        });
+        const newData = await this.service.getOrderRequestSnapshot({
+            order_request_id: orderRequest.id,
         });
         await this.pubSubService.orderRequest({
             orderRequest,
             type: ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return orderRequest;
     }
@@ -186,6 +215,13 @@ export class OrderRequestsResolver {
         if (!orderRequest) {
             throw new NotFoundException();
         }
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the request and its lines all carry active = -1 and the snapshot would
+        // come back with no children. newData stays null — "deleted" is what the
+        // dialog should show, not "active went 1 -> -1".
+        const oldData = await this.service.getOrderRequestSnapshot({
+            order_request_id: orderRequestId,
+        });
         await this.service.deleteOrderRequest({
             order_request_id: orderRequestId,
             current_user_id: currentUser.id,
@@ -194,6 +230,8 @@ export class OrderRequestsResolver {
             orderRequest,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }

@@ -82,13 +82,26 @@ export class EmployeesResolver {
         @Args('EmployeeUpsertInput') input: EmployeeUpsertInput,
         @CurrentUser() currentUser: User,
     ): Promise<Employee> {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.service.getEmployeeSnapshot({
+                  employee_id: input.id,
+              })
+            : null;
         const employee = await this.service.upsertEmployee(input, {
             current_user_id: currentUser.id,
+        });
+        const newData = await this.service.getEmployeeSnapshot({
+            employee_id: employee.id,
         });
         await this.pubSubService.employee({
             employee,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return employee;
     }
@@ -102,6 +115,12 @@ export class EmployeesResolver {
         const employee = await this.service.getEmployee({ employeeId });
         if (!employee) throw new NotFoundException();
 
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the row carries active = -1. newData stays null — "deleted" is what
+        // the dialog should show, not "active went 1 -> -1".
+        const oldData = await this.service.getEmployeeSnapshot({
+            employee_id: employeeId,
+        });
         await this.service.deletesEmployee({
             employee_id: employeeId,
             current_user_id: currentUser.id,
@@ -110,6 +129,8 @@ export class EmployeesResolver {
             employee,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }

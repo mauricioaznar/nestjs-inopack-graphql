@@ -46,6 +46,64 @@ export class TransfersService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getTransfer, which is a bare row read used all over this service and must
+    // not pay for a child fetch.
+    //
+    // No `active: 1` on the transfer itself, so a snapshot still works after the
+    // soft delete. But `active: 1` on the CHILD rows is load-bearing: receipts
+    // are soft-deleted rather than removed, so an unfiltered snapshot would ship
+    // a removed receipt with only its `active` flag changed — and the React
+    // differ ignores `active`, which would make the deletion vanish from the
+    // audit entirely. See
+    // docs/features/ongoing/feature-activities-audit.md §2c-1.
+    //
+    // transfer_receipts ARE included here, which is the opposite of the call
+    // made for sales and expenses — and deliberately so. On a sale a receipt is
+    // an incoming payment owned by some other transfer, so it belongs to that
+    // entity's audit. On a transfer the receipts are the transfer's OWN
+    // allocation lines: upsertTransfer creates and updates them and
+    // deleteTransfer soft-deletes them, exactly as order_sale_products behave on
+    // a sale. Which sale or expense the money was applied to is the single most
+    // audit-relevant thing a transfer records, and it lives only on these rows.
+    //
+    // The related rows are trimmed to their identifying codes: the snapshot
+    // stores them as they were AT THE TIME, so an old audit entry never displays
+    // a code the record only acquired later.
+    async getTransferSnapshot({
+        transfer_id,
+    }: {
+        transfer_id: number;
+    }): Promise<unknown> {
+        return this.prisma.transfers.findUnique({
+            where: {
+                id: transfer_id,
+            },
+            include: {
+                transfer_receipts: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        order_sales: {
+                            select: {
+                                id: true,
+                                order_code: true,
+                            },
+                        },
+                        expenses: {
+                            select: {
+                                id: true,
+                                external_code: true,
+                                internal_code: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async getTransfers({
         datePaginator,
     }: {

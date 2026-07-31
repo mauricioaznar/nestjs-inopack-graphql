@@ -31,10 +31,16 @@ export class PubSubService {
         product,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         product: Product;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('product', { product: product });
         await this.publishActivity({
@@ -43,6 +49,8 @@ export class PubSubService {
             entity_id: product.id,
             userId,
             description: `Producto: ${product.external_description} (${product.code})`,
+            oldData,
+            newData,
         });
     }
 
@@ -50,10 +58,16 @@ export class PubSubService {
         orderProduction,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         orderProduction: OrderProduction;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('order_production', {
             order_production: orderProduction,
@@ -64,6 +78,8 @@ export class PubSubService {
             entity_id: orderProduction.id,
             userId,
             description: `Producción: ${orderProduction.start_date}`,
+            oldData,
+            newData,
         });
     }
 
@@ -71,10 +87,16 @@ export class PubSubService {
         machine,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         machine: Machine;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('machine', {
             machine: machine,
@@ -85,6 +107,8 @@ export class PubSubService {
             entity_id: machine.id,
             userId,
             description: `Maquina: ${machine.name}`,
+            oldData,
+            newData,
         });
     }
 
@@ -92,10 +116,16 @@ export class PubSubService {
         orderAdjustment,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         orderAdjustment: OrderAdjustment;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('order_adjustment', {
             order_adjustment: orderAdjustment,
@@ -106,6 +136,8 @@ export class PubSubService {
             entity_id: orderAdjustment.id,
             userId,
             description: `Ajuste: ${orderAdjustment.date}`,
+            oldData,
+            newData,
         });
     }
 
@@ -113,10 +145,16 @@ export class PubSubService {
         employee,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         employee: Employee;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('employee', {
             employee: employee,
@@ -127,6 +165,8 @@ export class PubSubService {
             entity_id: employee.id,
             userId,
             description: `Empleado: ${employee.fullname}`,
+            oldData,
+            newData,
         });
     }
 
@@ -134,10 +174,16 @@ export class PubSubService {
         account,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         account: Account;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('account', {
             account: account,
@@ -148,6 +194,8 @@ export class PubSubService {
             entity_id: account.id,
             userId,
             description: `Cuenta: ${account.abbreviation} (${account.name})`,
+            oldData,
+            newData,
         });
     }
 
@@ -155,10 +203,20 @@ export class PubSubService {
         user,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         user: User;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        //
+        // NOTE: the users table holds `password` and `remember_token`. Callers
+        // MUST pass getUserSnapshot() output, never a raw users row — see
+        // user.service.ts for the explicit safe-column select.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('user', {
             user: user,
@@ -169,6 +227,8 @@ export class PubSubService {
             entity_id: user.id,
             userId,
             description: `Usuario: ${user.fullname} (${user.email})`,
+            oldData,
+            newData,
         });
     }
 
@@ -176,10 +236,16 @@ export class PubSubService {
         orderRequest,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         orderRequest: OrderRequest;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('order_request', {
             order_request: orderRequest,
@@ -190,6 +256,8 @@ export class PubSubService {
             entity_id: orderRequest.id,
             userId,
             description: `Pedido: ${orderRequest.order_code}`,
+            oldData,
+            newData,
         });
     }
 
@@ -226,10 +294,16 @@ export class PubSubService {
         transfer,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         transfer: Transfer;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('transfer', {
             transfer: transfer,
@@ -239,6 +313,8 @@ export class PubSubService {
             type: type,
             entity_id: transfer.id,
             userId,
+            oldData,
+            newData,
             description: `Transferencia: ${transfer.id}`,
         });
     }
@@ -247,10 +323,16 @@ export class PubSubService {
         resource,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         resource: Resource;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('resource', {
             resource: resource,
@@ -261,6 +343,8 @@ export class PubSubService {
             entity_id: resource.id,
             userId,
             description: `Recurso: ${resource.id}`,
+            oldData,
+            newData,
         });
     }
 
@@ -268,10 +352,16 @@ export class PubSubService {
         expense,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         expense: Expense;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('expense', {
             expense: expense,
@@ -281,6 +371,8 @@ export class PubSubService {
             type: type,
             entity_id: expense.id,
             userId,
+            oldData,
+            newData,
             description: `Compra: ${expense.id}`,
         });
     }

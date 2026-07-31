@@ -42,13 +42,26 @@ export class ResourcesResolver {
         @Args('ResourceUpsertInput') input: ResourceUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.service.getResourceSnapshot({
+                  resource_id: input.id,
+              })
+            : null;
         const resource = await this.service.upsertResource(input, {
             current_user_id: currentUser.id,
+        });
+        const newData = await this.service.getResourceSnapshot({
+            resource_id: resource.id,
         });
         await this.pubSubService.resource({
             resource,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
 
         return resource;
@@ -61,6 +74,12 @@ export class ResourcesResolver {
     ): Promise<boolean> {
         const resource = await this.getResource(resourceId);
         if (!resource) throw new NotFoundException();
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the row carries active = -1. newData stays null — "deleted" is what
+        // the dialog should show, not "active went 1 -> -1".
+        const oldData = await this.service.getResourceSnapshot({
+            resource_id: resource.id,
+        });
         await this.service.deleteResource({
             resource_id: resource.id,
             current_user_id: currentUser.id,
@@ -69,6 +88,8 @@ export class ResourcesResolver {
             resource,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }

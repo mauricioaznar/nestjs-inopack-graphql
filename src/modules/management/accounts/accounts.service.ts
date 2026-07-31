@@ -186,6 +186,69 @@ export class AccountsService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getAccount, which is a bare row read with many callers that must not pay
+    // for three child fetches — and which also carries a clientRestricted
+    // filter that has no business narrowing an audit record.
+    //
+    // All THREE owned collections are included, per the 2026-07-31 decision:
+    // the upsert writes contacts, products and resources, so it audits all
+    // three. Price lists (account_products / account_resources) are the whole
+    // reason to audit an account, and a contact change is exactly the kind of
+    // edit people later dispute.
+    //
+    // No `active: 1` on the account itself, so a snapshot still works after the
+    // soft delete. But `active: 1` on the CHILD rows is load-bearing: they are
+    // soft-deleted rather than removed, so an unfiltered snapshot would ship a
+    // removed row with only its `active` flag changed — and the React differ
+    // ignores `active`, which would make the deletion vanish from the audit
+    // entirely. See docs/features/ongoing/feature-activities-audit.md §2c-1.
+    async getAccountSnapshot({
+        account_id,
+    }: {
+        account_id: number;
+    }): Promise<unknown> {
+        return this.prisma.accounts.findUnique({
+            where: {
+                id: account_id,
+            },
+            include: {
+                account_contacts: {
+                    where: {
+                        active: 1,
+                    },
+                },
+                account_products: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
+                account_resources: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        resources: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async getSimilarAccountNames({
         name,
         exclude_account_id,

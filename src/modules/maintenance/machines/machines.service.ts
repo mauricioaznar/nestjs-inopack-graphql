@@ -50,6 +50,28 @@ export class MachinesService {
         });
     }
 
+    // Audit snapshot for the activity trail. Flat: the machines upsert writes
+    // only the machines row. machine_sections and machine_parts are their own
+    // modules with their own resolvers, so they are not this entity's children.
+    //
+    // Known gap: neither sections nor parts appear in ActivityEntityName at
+    // all, so editing them currently records NO activity of any kind. That is a
+    // coverage gap rather than a snapshot gap — see the feature doc §7.
+    //
+    // No `active: 1`, unlike getMachine, so a snapshot still works after the
+    // soft delete.
+    async getMachineSnapshot({
+        machine_id,
+    }: {
+        machine_id: number;
+    }): Promise<unknown> {
+        return this.prisma.machines.findUnique({
+            where: {
+                id: machine_id,
+            },
+        });
+    }
+
     async getMachines({
         getMachineQueryFields,
     }: {

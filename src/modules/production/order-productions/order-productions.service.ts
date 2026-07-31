@@ -54,6 +54,76 @@ export class OrderProductionsService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getOrderProduction, which is a bare row read with many callers that must
+    // not pay for three child fetches.
+    //
+    // All THREE owned collections are included, per the 2026-07-31 decision:
+    // the upsert writes products, employees and resources, so it audits all
+    // three. Omitting any one would make that kind of change silently
+    // invisible, which is the failure mode this feature exists to remove.
+    //
+    // No `active: 1` on the production itself, so a snapshot still works after
+    // the soft delete. But `active: 1` on the CHILD rows is load-bearing: they
+    // are soft-deleted rather than removed, so an unfiltered snapshot would ship
+    // a removed row with only its `active` flag changed — and the React differ
+    // ignores `active`, which would make the deletion vanish from the audit
+    // entirely. See docs/features/ongoing/feature-activities-audit.md §2c-1.
+    async getOrderProductionSnapshot({
+        order_production_id,
+    }: {
+        order_production_id: number;
+    }): Promise<unknown> {
+        return this.prisma.order_productions.findUnique({
+            where: {
+                id: order_production_id,
+            },
+            include: {
+                order_production_products: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
+                order_production_employees: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        employees: {
+                            select: {
+                                id: true,
+                                fullname: true,
+                            },
+                        },
+                    },
+                },
+                order_production_resources: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async getOrderProductionProducts({
         order_production_id,
     }: {

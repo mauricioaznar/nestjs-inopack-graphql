@@ -79,13 +79,26 @@ export class ProductsResolver {
         @Args('ProductUpsertInput') input: ProductUpsertInput,
         @CurrentUser() currentUser: User,
     ): Promise<Product> {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.productsService.getProductSnapshot({
+                  product_id: input.id,
+              })
+            : null;
         const product = await this.productsService.upsertInput(input, {
             current_user_id: currentUser.id,
+        });
+        const newData = await this.productsService.getProductSnapshot({
+            product_id: product.id,
         });
         await this.pubSubService.product({
             product,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return product;
     }
@@ -100,6 +113,12 @@ export class ProductsResolver {
         if (!product) {
             throw new NotFoundException();
         }
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the row carries active = -1. newData stays null — "deleted" is what
+        // the dialog should show, not "active went 1 -> -1".
+        const oldData = await this.productsService.getProductSnapshot({
+            product_id: productId,
+        });
         await this.productsService.deleteProduct({
             product_id: productId,
             current_user_id: currentUser.id,
@@ -108,6 +127,8 @@ export class ProductsResolver {
             product,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }

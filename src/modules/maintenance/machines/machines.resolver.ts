@@ -48,13 +48,26 @@ export class MachinesResolver {
         @Args('MachineUpsertInput') input: MachineUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.service.getMachineSnapshot({
+                  machine_id: input.id,
+              })
+            : null;
         const machine = await this.service.upsertMachine(input, {
             current_user_id: currentUser.id,
+        });
+        const newData = await this.service.getMachineSnapshot({
+            machine_id: machine.id,
         });
         await this.pubSubService.machine({
             machine,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return machine;
     }
@@ -154,6 +167,12 @@ export class MachinesResolver {
             machine_id: machineId,
         });
         if (!machine) throw new NotFoundException();
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the row carries active = -1. newData stays null — "deleted" is what
+        // the dialog should show, not "active went 1 -> -1".
+        const oldData = await this.service.getMachineSnapshot({
+            machine_id: machineId,
+        });
         await this.service.deleteMachine({
             machine_id: machineId,
             current_user_id: currentUser.id,
@@ -162,6 +181,8 @@ export class MachinesResolver {
             machine,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }

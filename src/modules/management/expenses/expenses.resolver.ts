@@ -58,13 +58,26 @@ export class ExpensesResolver {
         @Args('ExpenseUpsertInput') input: ExpenseUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.service.getExpenseSnapshot({
+                  expense_id: input.id,
+              })
+            : null;
         const expense = await this.service.upsertExpense(input, {
             current_user_id: currentUser.id,
+        });
+        const newData = await this.service.getExpenseSnapshot({
+            expense_id: expense.id,
         });
         await this.pubSubService.expense({
             expense,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
 
         return expense;
@@ -79,6 +92,13 @@ export class ExpensesResolver {
     ): Promise<boolean> {
         const expense = await this.getExpense(expenseId);
         if (!expense) throw new NotFoundException();
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the expense and its resource lines all carry active = -1 and the
+        // snapshot would come back with no children. newData stays null —
+        // "deleted" is what the dialog should show, not "active went 1 -> -1".
+        const oldData = await this.service.getExpenseSnapshot({
+            expense_id: expense.id,
+        });
         await this.service.deleteExpense({
             expense_id: expense.id,
             current_user_id: currentUser.id,
@@ -87,6 +107,8 @@ export class ExpensesResolver {
             expense,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }
@@ -266,10 +288,17 @@ export class ExpensesResolver {
                 expense_id: expenseId,
             });
             if (expense) {
+                // Always a create, so there is no prior state: oldData is null
+                // and the whole snapshot renders as added.
+                const newData = await this.service.getExpenseSnapshot({
+                    expense_id: expense.id,
+                });
                 await this.pubSubService.expense({
                     expense,
                     type: ActivityTypeName.CREATE,
                     userId: currentUser.id,
+                    oldData: null,
+                    newData,
                 });
             }
         }

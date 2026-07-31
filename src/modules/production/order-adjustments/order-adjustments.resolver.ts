@@ -78,14 +78,27 @@ export class OrderAdjustmentsResolver {
         @Args('OrderAdjustmentInput') input: OrderAdjustmentInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderAdjustment> {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.service.getOrderAdjustmentSnapshot({
+                  order_adjustment_id: input.id,
+              })
+            : null;
         const orderAdjustment = await this.service.upsertOrderAdjustment(
             input,
             { current_user_id: currentUser.id },
         );
+        const newData = await this.service.getOrderAdjustmentSnapshot({
+            order_adjustment_id: orderAdjustment.id,
+        });
         await this.pubSubService.orderAdjustment({
             orderAdjustment,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return orderAdjustment;
     }
@@ -102,6 +115,13 @@ export class OrderAdjustmentsResolver {
         if (!orderAdjustment) {
             throw new NotFoundException();
         }
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the adjustment and its lines all carry active = -1 and the snapshot
+        // would come back with no children. newData stays null — "deleted" is
+        // what the dialog should show, not "active went 1 -> -1".
+        const oldData = await this.service.getOrderAdjustmentSnapshot({
+            order_adjustment_id: orderAdjustment.id,
+        });
         await this.service.deleteOrderAdjustment({
             order_adjustment_id: orderAdjustment.id,
             current_user_id: currentUser.id,
@@ -110,6 +130,8 @@ export class OrderAdjustmentsResolver {
             orderAdjustment,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }
