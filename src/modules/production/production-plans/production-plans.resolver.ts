@@ -16,7 +16,6 @@ import {
     GetProductionPlanArgs,
     GetProductionPlansArgs,
     Machine,
-    OrderRequest,
     Product,
     ProductionPlan,
     ProductionPlanRow,
@@ -169,15 +168,6 @@ export class ProductionPlanRowProductsResolver {
     ): Promise<Product | null> {
         return this.service.getRowProduct({
             product_id: rowProduct.product_id,
-        });
-    }
-
-    @ResolveField(() => OrderRequest, { nullable: true })
-    async order_request(
-        @Parent() rowProduct: ProductionPlanRowProduct,
-    ): Promise<OrderRequest | null> {
-        return this.service.getRowProductOrderRequest({
-            order_request_id: rowProduct.order_request_id,
         });
     }
 }

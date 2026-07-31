@@ -13,7 +13,6 @@ import {
 import {
     Branch,
     Machine,
-    OrderRequest,
     Product,
     ProductionPlan,
     ProductionPlanRow,
@@ -47,7 +46,6 @@ interface RowProductVennItem {
     id?: number | null;
     product_id: number | null;
     hours: number;
-    order_request_id: number | null;
     position: number;
 }
 
@@ -338,7 +336,6 @@ export class ProductionPlansService {
                     production_plan_row_id: production_plan_row_id,
                     product_id: createItem.product_id,
                     hours: createItem.hours,
-                    order_request_id: createItem.order_request_id,
                     position: createItem.position,
                     active: 1,
                 },
@@ -352,7 +349,6 @@ export class ProductionPlansService {
                         ...getUpdatedAtProperty(),
                         product_id: updateItem.product_id,
                         hours: updateItem.hours,
-                        order_request_id: updateItem.order_request_id,
                         position: updateItem.position,
                         active: 1,
                     },
@@ -524,23 +520,6 @@ export class ProductionPlansService {
                     );
                 }
 
-                // The pedido link must point at a real request, but deliberately
-                // NOT at one still in status 1/2 — a request moving on must never
-                // make an already saved plan unsaveable.
-                if (rowProduct.order_request_id) {
-                    const orderRequest =
-                        await this.prisma.order_requests.findFirst({
-                            where: {
-                                id: rowProduct.order_request_id,
-                                active: 1,
-                            },
-                        });
-                    if (!orderRequest) {
-                        errors.push(
-                            `order request ${rowProduct.order_request_id} does not exist or is inactive`,
-                        );
-                    }
-                }
             }
 
             // A product may appear at most once per row (same rule as a sale).
@@ -655,19 +634,6 @@ export class ProductionPlansService {
         });
     }
 
-    // Not filtered to active: a plan may legitimately reference a request that
-    // was since soft-deleted, and the panel needs to render it as stale rather
-    // than as a silently missing link.
-    async getRowProductOrderRequest({
-        order_request_id,
-    }: {
-        order_request_id: number | null;
-    }): Promise<OrderRequest | null> {
-        if (!order_request_id) return null;
-        return this.prisma.order_requests.findFirst({
-            where: { id: order_request_id },
-        });
-    }
 
     async getRowEmployees({
         production_plan_row_id,

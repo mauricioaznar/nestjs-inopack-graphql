@@ -8,8 +8,13 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 //      validated server-side unless the server knows the shift length, so it
 //      becomes plan data.
 //   2. `production_plan_row_products` — replaces the single
-//      `production_plan_rows.product_id`, adding `hours` and an optional link to
-//      the order request the planned product is meant to serve.
+//      `production_plan_rows.product_id`, adding `hours`.
+//
+// There is deliberately NO link to an order request. Measured against live
+// pending pedidos: 79% of products are wanted by 2+ pedidos at once (one by 14),
+// so a planned product's output serves the priority queue, not a single pedido —
+// an `order_request_id` column would misrepresent four cases out of five.
+// Coverage is derived by product against that queue instead.
 //
 // The old column is backfilled and dropped rather than kept as a "primary
 // product": two sources of truth for the same fact is exactly how the
@@ -36,15 +41,12 @@ export class AddProductionPlanRowProducts1785600000000
               \`production_plan_row_id\` int unsigned          DEFAULT NULL,
               \`product_id\`             int unsigned          DEFAULT NULL,
               \`hours\`                  double       NOT NULL DEFAULT 0,
-              \`order_request_id\`       int unsigned          DEFAULT NULL,
               \`position\`               int          NOT NULL DEFAULT '0',
               PRIMARY KEY (\`id\`),
               KEY \`ppr_products_row_id_foreign\` (\`production_plan_row_id\`),
               KEY \`ppr_products_product_id_foreign\` (\`product_id\`),
-              KEY \`ppr_products_order_request_id_fk\` (\`order_request_id\`),
               CONSTRAINT \`ppr_products_row_id_foreign\` FOREIGN KEY (\`production_plan_row_id\`) REFERENCES \`production_plan_rows\` (\`id\`),
-              CONSTRAINT \`ppr_products_product_id_foreign\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`),
-              CONSTRAINT \`ppr_products_order_request_id_fk\` FOREIGN KEY (\`order_request_id\`) REFERENCES \`order_requests\` (\`id\`)
+              CONSTRAINT \`ppr_products_product_id_foreign\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`)
           ) ENGINE = InnoDB
             AUTO_INCREMENT = 1
             DEFAULT CHARSET = utf8
@@ -102,7 +104,7 @@ export class AddProductionPlanRowProducts1785600000000
 
         // Lossy by nature: a row that gained several products can only give one
         // back. Restore the lowest-position product so the column is at least
-        // coherent; the hours and the order-request links are gone.
+        // coherent; the per-product hours are gone.
         await queryRunner.query(
             `
           UPDATE \`production_plan_rows\` r

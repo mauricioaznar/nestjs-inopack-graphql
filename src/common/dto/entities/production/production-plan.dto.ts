@@ -53,6 +53,11 @@ export class ProductionPlanRowBase {
 
 // A single product planned on a row's machine, consuming `hours` of the turno.
 // A row may carry several; together they must sum to the plan's shift_hours.
+//
+// There is deliberately no order-request link. Across live pending pedidos, 79%
+// of products are wanted by 2+ pedidos at once (one by 14), so a planned
+// product's output serves the priority queue rather than a single pedido.
+// Coverage is derived by product against that queue.
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
 export class ProductionPlanRowProductBase {
@@ -61,16 +66,6 @@ export class ProductionPlanRowProductBase {
 
     @Field(() => Float, { nullable: false })
     hours: number;
-
-    // The pedido this planned product is meant to serve, when it was picked from
-    // the coverage panel. Deliberately the REQUEST id and not the request-product
-    // id: order-request lines are venn-synced by id and the update branch rewrites
-    // product_id in place, so a line id is stable while the product on it is not.
-    // (order_request_id, product_id) is the same key the demand SQL already joins
-    // on, so a repointed or removed line goes stale visibly instead of crediting
-    // production to the wrong product.
-    @Field(() => Int, { nullable: true })
-    order_request_id: number | null;
 
     @Field(() => Int, { nullable: false })
     position: number;

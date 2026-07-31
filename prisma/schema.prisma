@@ -319,15 +319,12 @@ model production_plan_row_products {
   production_plan_row_id Int?                  @db.UnsignedInt
   product_id             Int?                  @db.UnsignedInt
   hours                  Float                 @default(0)
-  order_request_id       Int?                  @db.UnsignedInt
   position               Int                   @default(0)
   production_plan_rows   production_plan_rows? @relation(fields: [production_plan_row_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ppr_products_row_id_foreign")
   products               products?             @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ppr_products_product_id_foreign")
-  order_requests         order_requests?       @relation(fields: [order_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ppr_products_order_request_id_fk")
 
   @@index([production_plan_row_id], map: "ppr_products_row_id_foreign")
   @@index([product_id], map: "ppr_products_product_id_foreign")
-  @@index([order_request_id], map: "ppr_products_order_request_id_fk")
 }
 
 model production_plan_row_employees {
@@ -425,7 +422,6 @@ model order_requests {
   accounts                     accounts?                      @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_account_id_foreign")
   order_request_statuses       order_request_statuses?        @relation(fields: [order_request_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_order_request_status_id_foreign")
   order_sales                  order_sales[]
-  production_plan_row_products production_plan_row_products[]
 
   @@index([account_id], map: "order_requests_company_id_foreign")
   @@index([order_request_status_id], map: "order_requests_order_request_status_id_foreign")
