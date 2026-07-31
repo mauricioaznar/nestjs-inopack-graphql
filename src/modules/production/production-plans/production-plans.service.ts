@@ -15,6 +15,7 @@ import {
     Machine,
     Product,
     ProductionPlan,
+    ProductionPlanActual,
     ProductionPlanRow,
     ProductionPlanRowEmployee,
     ProductionPlanRowProduct,
@@ -164,6 +165,90 @@ export class ProductionPlansService {
                 active: 1,
             },
         });
+    }
+
+    // Real production captured for a plan's slot, aggregated per machine and
+    // product. Done as two indexed reads plus a JS fold rather than raw SQL: the
+    // row count for one date/turno/sucursal is small, and it keeps the date and
+    // branch handling in TypeScript instead of interpolated SQL.
+    async getProductionPlanActuals({
+        date,
+        shift,
+        branch_id,
+    }: {
+        date: Date;
+        shift: number;
+        branch_id: number | null;
+    }): Promise<ProductionPlanActual[]> {
+        const startDate = dayjs(date).utc().startOf('day').toDate();
+        const endDate = dayjs(date).utc().endOf('day').toDate();
+
+        const productions = await this.prisma.order_productions.findMany({
+            where: {
+                active: 1,
+                shift: shift,
+                start_date: { gte: startDate, lte: endDate },
+                // A null branch on the plan means "todas", so it must NOT become
+                // `branch_id: null` here — that would match only productions with
+                // no branch at all.
+                ...(branch_id ? { branch_id: branch_id } : {}),
+            },
+            select: { id: true },
+        });
+
+        if (productions.length === 0) return [];
+
+        const lines = await this.prisma.order_production_products.findMany({
+            where: {
+                active: 1,
+                order_production_id: {
+                    in: productions.map((production) => production.id),
+                },
+            },
+            select: {
+                product_id: true,
+                machine_id: true,
+                kilos: true,
+                groups: true,
+            },
+        });
+
+        const totals = new Map<string, ProductionPlanActual>();
+        lines.forEach((line) => {
+            const key = `${line.machine_id ?? ''}:${line.product_id ?? ''}`;
+            const current = totals.get(key) || {
+                product_id: line.product_id,
+                machine_id: line.machine_id,
+                kilos: 0,
+                groups: 0,
+            };
+            current.kilos += line.kilos || 0;
+            current.groups += line.groups || 0;
+            totals.set(key, current);
+        });
+
+        return Array.from(totals.values());
+    }
+
+    // Products this machine has actually run, most-produced first. Used to put
+    // the realistic choices at the top of a row's product picker without
+    // removing the rest — a product a machine has never run is exactly what a
+    // NEW product is, so hiding it outright would make it unselectable.
+    async getMachineProducedProductIds({
+        machine_id,
+    }: {
+        machine_id: number;
+    }): Promise<number[]> {
+        const grouped = await this.prisma.order_production_products.groupBy({
+            by: ['product_id'],
+            where: { active: 1, machine_id: machine_id },
+            _sum: { kilos: true },
+        });
+
+        return grouped
+            .filter((group) => !!group.product_id)
+            .sort((a, b) => (b._sum.kilos || 0) - (a._sum.kilos || 0))
+            .map((group) => group.product_id as number);
     }
 
     async upsertProductionPlan(

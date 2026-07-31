@@ -13,11 +13,13 @@ import {
     ActivityEntityName,
     ActivityTypeName,
     Branch,
+    GetProductionPlanActualsArgs,
     GetProductionPlanArgs,
     GetProductionPlansArgs,
     Machine,
     Product,
     ProductionPlan,
+    ProductionPlanActual,
     ProductionPlanRow,
     ProductionPlanRowProduct,
     ProductionPlanUpsertInput,
@@ -48,6 +50,28 @@ export class ProductionPlansResolver {
             date: getProductionPlanArgs.date,
             shift: getProductionPlanArgs.shift,
             branch_id: getProductionPlanArgs.branch_id,
+        });
+    }
+
+    @Query(() => [ProductionPlanActual])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getProductionPlanActuals(
+        @Args() args: GetProductionPlanActualsArgs,
+    ): Promise<ProductionPlanActual[]> {
+        return this.service.getProductionPlanActuals({
+            date: args.date,
+            shift: args.shift,
+            branch_id: args.branch_id,
+        });
+    }
+
+    @Query(() => [Int])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getMachineProducedProductIds(
+        @Args('machineId', { type: () => Int }) machineId: number,
+    ): Promise<number[]> {
+        return this.service.getMachineProducedProductIds({
+            machine_id: machineId,
         });
     }
 

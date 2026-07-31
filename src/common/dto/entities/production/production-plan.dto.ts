@@ -137,6 +137,45 @@ export class ProductionPlanRowEmployee {
     employee_id: number | null;
 }
 
+// What was ACTUALLY produced for a plan's exact slot (date + turno + sucursal),
+// per machine and product. Two jobs:
+//
+//   1. Stop the coverage projection double-counting. Inventory already contains
+//      recorded production; a plan's forecast must contribute only the part not
+//      yet realised, or reopening yesterday's plan adds a shift of output that
+//      already happened.
+//   2. Make planned-vs-real comparable per row, which the plan never had before —
+//      `order_production_products.hours` records the real side and the planned
+//      side only started existing with this feature.
+@ObjectType('ProductionPlanActual')
+export class ProductionPlanActual {
+    @Field(() => Int, { nullable: true })
+    product_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    machine_id: number | null;
+
+    @Field(() => Float, { nullable: false })
+    kilos: number;
+
+    @Field(() => Float, { nullable: false })
+    groups: number;
+}
+
+@ArgsType()
+export class GetProductionPlanActualsArgs {
+    @Field({ nullable: false })
+    date: Date;
+
+    @Field(() => Int, { nullable: false })
+    shift: number;
+
+    // Null means the plan covers every sucursal, so no branch filter applies —
+    // the same convention production_plans.branch_id uses.
+    @Field(() => Int, { nullable: true })
+    branch_id: number | null;
+}
+
 @ArgsType()
 export class GetProductionPlanArgs {
     @Field({ nullable: false })
