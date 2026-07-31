@@ -16,9 +16,11 @@ import {
     GetProductionPlanArgs,
     GetProductionPlansArgs,
     Machine,
+    OrderRequest,
     Product,
     ProductionPlan,
     ProductionPlanRow,
+    ProductionPlanRowProduct,
     ProductionPlanUpsertInput,
     User,
 } from '../../../common/dto/entities';
@@ -136,11 +138,13 @@ export class ProductionPlanRowsResolver {
         return this.service.getRowMachine({ machine_id: row.machine_id });
     }
 
-    @ResolveField(() => Product, { nullable: true })
-    async product(
+    @ResolveField(() => [ProductionPlanRowProduct])
+    async products(
         @Parent() row: ProductionPlanRow,
-    ): Promise<Product | null> {
-        return this.service.getRowProduct({ product_id: row.product_id });
+    ): Promise<ProductionPlanRowProduct[]> {
+        return this.service.getProductionPlanRowProducts({
+            production_plan_row_id: row.id,
+        });
     }
 
     @ResolveField(() => [Employee])
@@ -149,6 +153,31 @@ export class ProductionPlanRowsResolver {
     ): Promise<Employee[]> {
         return this.service.getRowEmployees({
             production_plan_row_id: row.id,
+        });
+    }
+}
+
+@Resolver(() => ProductionPlanRowProduct)
+@UseGuards(GqlAuthGuard)
+@Injectable()
+export class ProductionPlanRowProductsResolver {
+    constructor(private service: ProductionPlansService) {}
+
+    @ResolveField(() => Product, { nullable: true })
+    async product(
+        @Parent() rowProduct: ProductionPlanRowProduct,
+    ): Promise<Product | null> {
+        return this.service.getRowProduct({
+            product_id: rowProduct.product_id,
+        });
+    }
+
+    @ResolveField(() => OrderRequest, { nullable: true })
+    async order_request(
+        @Parent() rowProduct: ProductionPlanRowProduct,
+    ): Promise<OrderRequest | null> {
+        return this.service.getRowProductOrderRequest({
+            order_request_id: rowProduct.order_request_id,
         });
     }
 }
