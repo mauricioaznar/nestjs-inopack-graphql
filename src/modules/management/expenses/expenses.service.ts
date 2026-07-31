@@ -135,10 +135,7 @@ export class ExpensesService {
 
         const { sort_order, sort_field } = expensesSortArgs;
 
-        const filter =
-            expensesQueryArgs.filter !== '' && !!expensesQueryArgs.filter
-                ? expensesQueryArgs.filter
-                : undefined;
+        const filter = expensesQueryArgs.filter?.trim() || undefined;
 
         const noReceipt = expensesQueryArgs.no_receipt;
 

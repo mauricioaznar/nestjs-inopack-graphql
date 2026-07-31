@@ -51,7 +51,6 @@ export class AddAccountTaxRequirements1785348109789
                 341, -- Diego Partida
                 133, -- DESCONOCIDO
                 296, -- Caja Chica
-                142, -- Angel Zamudio
                 340, -- Alfonso Allud
                 329, -- Alberto Aznar
                 338  -- Alan May
@@ -59,7 +58,7 @@ export class AddAccountTaxRequirements1785348109789
         `);
         this.assertAffectedAccounts(
             noExternalCodeResult,
-            27,
+            26,
             'no-folio, no-tax, and no-supplement exceptions',
         );
 
@@ -81,6 +80,21 @@ export class AddAccountTaxRequirements1785348109789
             'Cheques folio-and-tax exceptions',
         );
 
+        // Angel Zamudio requires an external folio and IVA, but does not
+        // require a complemento.
+        const angelFolioAndTaxResult = await queryRunner.query(`
+            UPDATE accounts
+            SET supplier_require_supplement = 0,
+                supplier_requires_external_code = 1,
+                supplier_requires_tax = 1
+            WHERE id = 142;
+        `);
+        this.assertAffectedAccounts(
+            angelFolioAndTaxResult,
+            1,
+            'Angel Zamudio folio-and-tax exception',
+        );
+
         // These supplier accounts require an external folio but do not require
         // tax by default.
         const noTaxResult = await queryRunner.query(`
@@ -89,7 +103,7 @@ export class AddAccountTaxRequirements1785348109789
                 supplier_requires_tax = 0
             WHERE id IN (
                 58,  -- IMSS
-                70,  -- Canacintra; historical nonzero tax rows were capture errors
+                70,  -- Canacintra; current default is no tax, with approved historical exceptions below
                 54,  -- Secretaria de administracion y finanzas (SAT)
                 122, -- Gobierno del estado de Yucatan; historical exceptions were capture errors
                 92,  -- Ruian Bonada Machinery
@@ -116,6 +130,21 @@ export class AddAccountTaxRequirements1785348109789
             );
         `);
         this.assertAffectedAccounts(noTaxResult, 25, 'tax exceptions');
+
+        // This supplier requires an external folio but neither IVA nor a
+        // complemento by default.
+        const noTaxAndNoSupplementResult = await queryRunner.query(`
+            UPDATE accounts
+            SET supplier_require_supplement = 0,
+                supplier_requires_external_code = 1,
+                supplier_requires_tax = 0
+            WHERE id = 394;
+        `);
+        this.assertAffectedAccounts(
+            noTaxAndNoSupplementResult,
+            1,
+            'folio-required, no-tax, and no-supplement exception',
+        );
 
         // Most clients require a complemento but not a credit note. Normalize
         // those defaults before applying the two hardcoded exception groups.
@@ -208,6 +237,123 @@ export class AddAccountTaxRequirements1785348109789
             WHERE a.is_supplier = 1;
         `);
 
+        // These historical expenses have legitimate IVA even though Erasmo
+        // Sotelo, Canacintra, and Fidecomiso de energia remain no-tax suppliers
+        // by default. Preserve the account defaults and enable tax only on the
+        // approved documents.
+        const legitimateHistoricalExpenseTaxResult = await queryRunner.query(`
+            UPDATE expenses
+            SET require_tax = 1
+            WHERE (
+                    id = 4942
+                AND account_id = 362
+                AND receipt_type_id = 2
+                AND tax = 23484.32
+                AND tax_retained = 23484.32
+                AND non_tax_retained = 1834.71
+            ) OR (
+                    id = 4664
+                AND account_id = 70
+                AND receipt_type_id = 2
+                AND tax = 48.28
+                AND tax_retained = 0
+                AND non_tax_retained = 0
+            ) OR (
+                    id = 4059
+                AND account_id = 70
+                AND receipt_type_id = 2
+                AND tax = 358.62
+                AND tax_retained = 0
+                AND non_tax_retained = 0
+            ) OR (
+                    id = 737
+                AND account_id = 53
+                AND receipt_type_id = 2
+                AND tax = 2975.41
+                AND tax_retained = 0
+                AND non_tax_retained = 0
+            ) OR (
+                    id = 413
+                AND account_id = 53
+                AND receipt_type_id = 2
+                AND tax = 3933.20
+                AND tax_retained = 0
+                AND non_tax_retained = 0
+            ) OR (
+                    id = 209
+                AND account_id = 53
+                AND receipt_type_id = 2
+                AND tax = 4819.53
+                AND tax_retained = 0
+                AND non_tax_retained = 0
+            );
+        `);
+        this.assertAffectedRows(
+            legitimateHistoricalExpenseTaxResult,
+            6,
+            'historical expense tax requirements',
+        );
+
+        // These active historical expenses incorrectly treated part of their
+        // cost as IVA. Each has exactly one one-unit resource row. Move the IVA
+        // into that resource price, resources total, and subtotal without
+        // changing the expense total or its registered transfers. Inactive
+        // AB&C expense 941 is deliberately ignored.
+        const expenseReclassificationCandidates = await queryRunner.query(`
+            SELECT e.id
+            FROM expenses e
+            INNER JOIN expense_resources er
+                ON er.expense_id = e.id
+               AND er.active = 1
+            WHERE e.id IN (1101, 923, 3722)
+              AND e.active = 1
+              AND e.receipt_type_id = 2
+              AND e.require_tax = 0
+              AND e.tax <> 0
+              AND e.tax_retained = 0
+              AND e.non_tax_retained = 0
+            GROUP BY e.id, e.subtotal, e.resources_total, e.tax, e.total_with_tax
+            HAVING COUNT(er.id) = 1
+               AND ROUND(e.subtotal + e.tax, 2) = e.total_with_tax
+               AND ROUND(SUM(er.units * er.unit_price), 2) = e.subtotal
+               AND e.resources_total = e.subtotal
+               AND SUM(CASE WHEN er.units = 1 THEN 1 ELSE 0 END) = 1;
+        `);
+        this.assertSelectedRows(
+            expenseReclassificationCandidates,
+            3,
+            'historical expense reclassification candidates',
+        );
+
+        const reclassifiedExpenseResourceResult = await queryRunner.query(`
+            UPDATE expense_resources er
+            INNER JOIN expenses e ON e.id = er.expense_id
+            SET er.unit_price = e.total_with_tax
+            WHERE e.id IN (1101, 923, 3722)
+              AND e.active = 1
+              AND er.active = 1;
+        `);
+        this.assertAffectedRows(
+            reclassifiedExpenseResourceResult,
+            3,
+            'historical expense resource prices',
+        );
+
+        const reclassifiedExpenseResult = await queryRunner.query(`
+            UPDATE expenses
+            SET subtotal = total_with_tax,
+                resources_total = total_with_tax,
+                tax = 0,
+                require_tax = 0
+            WHERE id IN (1101, 923, 3722)
+              AND active = 1;
+        `);
+        this.assertAffectedRows(
+            reclassifiedExpenseResult,
+            3,
+            'historical expense headers',
+        );
+
         // Keep historical taxable sales aligned with the approved clients that
         // require neither an invoice folio nor IVA.
         await queryRunner.query(`
@@ -220,6 +366,99 @@ export class AddAccountTaxRequirements1785348109789
                   280, 133, 181, 208, 150
               );
         `);
+
+        // Fifteen historical Terceros sales incorrectly treated part of their
+        // price as IVA. Each has exactly one unit of the placeholder product
+        // Prestamo or Comisiones, so move the stored IVA into that product's
+        // price and the sale subtotal without changing the document total.
+        // Order 3360 intentionally keeps its linked request price unchanged.
+        const reclassificationCandidates = await queryRunner.query(`
+            SELECT os.id
+            FROM order_sales os
+            INNER JOIN order_sale_products osp
+                ON osp.order_sale_id = os.id
+               AND osp.active = 1
+            WHERE os.id IN (
+                4320, 4272, 4255, 4235, 4126,
+                3893, 3896, 3794, 3667, 3597,
+                3596, 3595, 3587, 3586, 3393
+            )
+              AND os.receipt_type_id = 2
+              AND os.require_tax = 0
+              AND os.tax <> 0
+              AND os.automatic_tax_calculation = 1
+              AND osp.product_id IN (195, 196)
+              AND (osp.product_id <> 196 OR os.reconciliation_only = 1)
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM order_adjustments oa
+                  WHERE oa.order_sale_id = os.id
+                    AND oa.active = 1
+              )
+            GROUP BY os.id, os.subtotal, os.tax, os.total_with_tax
+            HAVING COUNT(osp.id) = 1
+               AND ROUND(os.subtotal + os.tax, 2) = os.total_with_tax
+               AND ROUND(SUM(
+                   (osp.kilos * osp.kilo_price) +
+                   (osp.groups * osp.group_price)
+               ), 2) = os.subtotal
+               AND SUM(CASE
+                   WHEN osp.kilos = 1
+                    AND osp.groups = 0
+                    AND osp.group_price = 0 THEN 1
+                   WHEN osp.groups = 1
+                    AND osp.kilos = 0
+                    AND osp.kilo_price = 0 THEN 1
+                   ELSE 0
+               END) = 1;
+        `);
+        this.assertSelectedRows(
+            reclassificationCandidates,
+            15,
+            'historical sale reclassification candidates',
+        );
+
+        const reclassifiedProductResult = await queryRunner.query(`
+            UPDATE order_sale_products osp
+            INNER JOIN order_sales os ON os.id = osp.order_sale_id
+            SET osp.kilo_price = CASE
+                    WHEN osp.kilos = 1 THEN os.total_with_tax
+                    ELSE osp.kilo_price
+                END,
+                osp.group_price = CASE
+                    WHEN osp.groups = 1 THEN os.total_with_tax
+                    ELSE osp.group_price
+                END
+            WHERE os.id IN (
+                4320, 4272, 4255, 4235, 4126,
+                3893, 3896, 3794, 3667, 3597,
+                3596, 3595, 3587, 3586, 3393
+            )
+              AND osp.active = 1;
+        `);
+        this.assertAffectedRows(
+            reclassifiedProductResult,
+            15,
+            'historical sale product prices',
+        );
+
+        const reclassifiedSaleResult = await queryRunner.query(`
+            UPDATE order_sales
+            SET subtotal = total_with_tax,
+                tax = 0,
+                require_tax = 0,
+                automatic_tax_calculation = 0
+            WHERE id IN (
+                4320, 4272, 4255, 4235, 4126,
+                3893, 3896, 3794, 3667, 3597,
+                3596, 3595, 3587, 3586, 3393
+            );
+        `);
+        this.assertAffectedRows(
+            reclassifiedSaleResult,
+            15,
+            'historical sale headers',
+        );
 
         // Apply each client account's complemento and credit-note defaults
         // independently to recent historical sales. Non-taxable receipts cannot
@@ -275,6 +514,47 @@ export class AddAccountTaxRequirements1785348109789
             throw new Error(
                 `Expected to update ${expected} account ${label}, but ${affected} rows were affected. ` +
                     'Verify the hardcoded account IDs before proceeding.',
+            );
+        }
+    }
+
+    private assertSelectedRows(
+        result: unknown,
+        expected: number,
+        label: string,
+    ): void {
+        // mysql2 returns SELECT results as [rows, fields] through this migration
+        // runner, while other drivers may return the rows array directly.
+        const rows =
+            Array.isArray(result) && Array.isArray(result[0])
+                ? result[0]
+                : result;
+        const selected = Array.isArray(rows) ? rows.length : 0;
+
+        if (selected !== expected) {
+            throw new Error(
+                `Expected ${expected} ${label}, but found ${selected}. ` +
+                    'Verify the historical sale IDs and financial values before proceeding.',
+            );
+        }
+    }
+
+    private assertAffectedRows(
+        result: unknown,
+        expected: number,
+        label: string,
+    ): void {
+        const updatePacket = Array.isArray(result) ? result[0] : result;
+        const affected =
+            (updatePacket as { affectedRows?: number; changedRows?: number })
+                ?.affectedRows ??
+            (updatePacket as { changedRows?: number })?.changedRows ??
+            0;
+
+        if (affected !== expected) {
+            throw new Error(
+                `Expected to update ${expected} ${label}, but ${affected} rows were affected. ` +
+                    'Verify the historical sale IDs before proceeding.',
             );
         }
     }

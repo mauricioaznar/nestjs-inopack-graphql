@@ -68,86 +68,88 @@ export class OrderSaleService {
 
         const { sort_order, sort_field } = orderSalesSortArgs;
 
-        const filter =
-            orderSalesQueryArgs.filter !== '' && !!orderSalesQueryArgs.filter
-                ? orderSalesQueryArgs.filter
-                : undefined;
-
-        const isFilterANumber = !Number.isNaN(Number(filter));
+        const filter = orderSalesQueryArgs.filter?.trim() || undefined;
+        const numericFilter =
+            filter && /^\d+$/.test(filter) ? Number(filter) : undefined;
 
         const orderSalesOrWhere: Prisma.Enumerable<Prisma.order_salesWhereInput> =
             [];
 
         if (filter) {
-            if (isFilterANumber) {
+            // A numeric search represents a business folio. Restrict it to the
+            // three exact numeric identifiers; treating it as product-code text
+            // made a search such as 3360 return every sale containing popular
+            // product code 3360 (452 unrelated rows in the historical data).
+            if (numericFilter !== undefined) {
                 orderSalesOrWhere.push({
                     order_requests: {
                         order_code: {
-                            in: [Number(filter)],
+                            in: [numericFilter],
                         },
                     },
                 });
                 orderSalesOrWhere.push({
                     order_code: {
-                        in: [Number(filter)],
+                        in: [numericFilter],
                     },
                 });
                 orderSalesOrWhere.push({
                     invoice_code: {
-                        in: [Number(filter)],
+                        in: [numericFilter],
+                    },
+                });
+            } else {
+                orderSalesOrWhere.push({
+                    notes: {
+                        contains: filter,
+                    },
+                });
+                orderSalesOrWhere.push({
+                    accounts: {
+                        name: {
+                            contains: filter,
+                        },
+                    },
+                });
+                orderSalesOrWhere.push({
+                    receipt_types: {
+                        name: {
+                            contains: filter,
+                        },
+                    },
+                });
+                orderSalesOrWhere.push({
+                    order_sale_statuses: {
+                        name: {
+                            contains: filter,
+                        },
+                    },
+                });
+                orderSalesOrWhere.push({
+                    order_sale_products: {
+                        some: {
+                            products: {
+                                description: {
+                                    contains: filter,
+                                },
+                            },
+                            active: 1,
+                        },
+                    },
+                });
+                orderSalesOrWhere.push({
+                    order_sale_products: {
+                        some: {
+                            products: {
+                                code: {
+                                    contains: filter,
+                                },
+                            },
+                            active: 1,
+                        },
                     },
                 });
             }
-            orderSalesOrWhere.push({
-                notes: {
-                    contains: filter,
-                },
-            });
-            orderSalesOrWhere.push({
-                accounts: {
-                    name: {
-                        contains: filter,
-                    },
-                },
-            });
-            orderSalesOrWhere.push({
-                receipt_types: {
-                    name: {
-                        contains: filter,
-                    },
-                },
-            });
-            orderSalesOrWhere.push({
-                order_sale_statuses: {
-                    name: {
-                        contains: filter,
-                    },
-                },
-            });
-            orderSalesOrWhere.push({
-                order_sale_products: {
-                    some: {
-                        products: {
-                            description: {
-                                contains: filter,
-                            },
-                        },
-                        active: 1,
-                    },
-                },
-            });
-            orderSalesOrWhere.push({
-                order_sale_products: {
-                    some: {
-                        products: {
-                            code: {
-                                contains: filter,
-                            },
-                        },
-                        active: 1,
-                    },
-                },
-            });
         }
 
         const orderSalesAndWhere: Prisma.Enumerable<Prisma.order_salesWhereInput> =
