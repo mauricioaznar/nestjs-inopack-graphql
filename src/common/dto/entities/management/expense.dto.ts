@@ -23,6 +23,9 @@ export class ExpenseBase {
     @Field(() => Boolean, { nullable: false })
     require_external_code: boolean;
 
+    @Field(() => Boolean, { nullable: false })
+    require_tax: boolean;
+
     @Field(() => String, { nullable: false })
     supplement_code: string;
 

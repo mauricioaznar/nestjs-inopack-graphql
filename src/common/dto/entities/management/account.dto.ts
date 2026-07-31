@@ -52,7 +52,19 @@ export class AccountBase {
     client_require_supplement: boolean;
 
     @Field(() => Boolean, { nullable: false })
+    client_requires_invoice_code: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    client_requires_tax: boolean;
+
+    @Field(() => Boolean, { nullable: false })
     supplier_require_supplement: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    supplier_requires_external_code: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    supplier_requires_tax: boolean;
 
     @Field(() => Boolean, { nullable: false })
     supplier_recurring_expenses: boolean;

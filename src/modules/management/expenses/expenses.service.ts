@@ -135,10 +135,7 @@ export class ExpensesService {
 
         const { sort_order, sort_field } = expensesSortArgs;
 
-        const filter =
-            expensesQueryArgs.filter !== '' && !!expensesQueryArgs.filter
-                ? expensesQueryArgs.filter
-                : undefined;
+        const filter = expensesQueryArgs.filter?.trim() || undefined;
 
         const noReceipt = expensesQueryArgs.no_receipt;
 
@@ -462,6 +459,7 @@ export class ExpensesService {
                     ? input.expected_payment_date
                     : null,
                 require_external_code: input.require_external_code,
+                require_tax: input.require_tax,
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
@@ -488,6 +486,7 @@ export class ExpensesService {
                     ? input.expected_payment_date
                     : null,
                 require_external_code: input.require_external_code,
+                require_tax: input.require_tax,
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
