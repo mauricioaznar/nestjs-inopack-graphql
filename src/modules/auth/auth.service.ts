@@ -16,6 +16,8 @@ import { createHash, randomBytes, randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { jwtConstants } from '../../common/constants/jwt';
+import { AppLoggerService } from '../../common/modules/logging/app-logger.service';
+import { TraceBuffer } from '../../common/modules/logging/trace-buffer';
 
 /*
  * LEARNING MAP — backend session lifecycle
@@ -64,11 +66,30 @@ interface LockedFamilyRow {
     expires_at: Date;
 }
 
+// What one pass through the rotation transaction decided.
+//
+// The callback used to return `TokenPair | null`, which is enough to pick an
+// HTTP status but not enough to say *which* of six things happened — and saying
+// which is the whole job of the log line. It cannot say so by logging in place:
+// an exception thrown inside a Prisma interactive transaction rolls it back, so
+// a `TypeError` in a log call would undo the revocation it was describing, and
+// log I/O under `SELECT … FOR UPDATE` lengthens the critical section every
+// concurrent rotation queues behind. So the callback *reports* and
+// `rotateRefreshToken` logs after the commit.
+type RotationOutcome =
+    | { kind: 'rotated'; pair: TokenPair; tokenId: number }
+    | { kind: 'race'; pair: TokenPair }
+    | { kind: 'theft'; tokenId: number }
+    | { kind: 'expired' }
+    | { kind: 'inactive' }
+    | { kind: 'row_missing' };
+
 @Injectable()
 export class AuthService {
     constructor(
         private jwtService: JwtService,
         private prisma: PrismaService,
+        private logger: AppLoggerService,
     ) {}
 
     async validateUser({
@@ -117,8 +138,39 @@ export class AuthService {
         userInput: LoginInput,
         meta: SessionMeta = {},
     ): Promise<TokenPair> {
+        this.logger.trace('auth.trace.login.begin', {
+            email: userInput.email,
+            ip: meta.ip ?? undefined,
+            requestId: meta.requestId,
+        });
+
         const user = await this.validateUser(userInput);
+
+        this.logger.trace('auth.trace.login.validated', {
+            email: userInput.email,
+            // `validateUser` collapses "no such user", "deactivated user" and
+            // "wrong password" into one `null`. The trace cannot pull them
+            // apart either — see the warning on the failure branch below.
+            detail: user ? 'found' : 'rejected',
+            requestId: meta.requestId,
+        });
+
         if (!user) {
+            // ⚠️ Cannot say *why*. `validateUser` returns `null` for both an
+            // unknown user and a wrong password, and separating them means
+            // changing its return type — that is auth logic, not logging.
+            // Phase 2 needs the distinction for the lockout counter and adds it
+            // there.
+            //
+            // The attempted email is logged on purpose, and the asymmetry with
+            // Phase 2 is deliberate: the *response* must not distinguish
+            // unknown user from wrong password, but a log is not
+            // attacker-visible. Different surfaces.
+            this.logger.warn('auth.login.failed', {
+                email: userInput.email,
+                ip: meta.ip ?? undefined,
+                requestId: meta.requestId,
+            });
             throw new BadRequestException(
                 'Could not log-in with the provided credentials',
             );
@@ -128,18 +180,44 @@ export class AuthService {
         // otherwise accumulate one dead row per rotation forever. Cheap, indexed
         // by user_id, and only touches rows that can no longer authenticate
         // anything.
-        await this.prisma.refresh_tokens.deleteMany({
+        const swept = await this.prisma.refresh_tokens.deleteMany({
             where: { user_id: user.id, expires_at: { lt: new Date() } },
+        });
+
+        this.logger.trace('auth.trace.login.swept', {
+            userId: user.id,
+            count: swept.count,
+            requestId: meta.requestId,
         });
 
         // A new login starts a new family: signing in on a phone must not be
         // collateral damage when the laptop's session is revoked for theft.
         // No lock needed — a brand-new `family_id` has no other writer.
-        return this.issueTokenPair(this.prisma, {
+        const familyId = randomUUID();
+
+        this.logger.trace('auth.trace.login.family_created', {
+            userId: user.id,
+            familyId,
+            requestId: meta.requestId,
+        });
+
+        const pair = await this.issueTokenPair(this.prisma, {
             user,
-            familyId: randomUUID(),
+            familyId,
             meta,
         });
+
+        // `email` alongside `userId` because `userId=47` names nobody to the
+        // human reading `docker logs` during an incident.
+        this.logger.log('auth.login.success', {
+            userId: user.id,
+            email: user.email,
+            familyId,
+            ip: meta.ip ?? undefined,
+            requestId: meta.requestId,
+        });
+
+        return pair;
     }
 
     // Exchange a refresh token for a fresh pair. Every successful rotation
@@ -149,7 +227,20 @@ export class AuthService {
         rawToken: string | null,
         meta: SessionMeta = {},
     ): Promise<TokenPair> {
+        this.logger.trace('auth.trace.rotate.begin', {
+            ip: meta.ip ?? undefined,
+            requestId: meta.requestId,
+        });
+
         if (!rawToken) {
+            // `verbose`, never `warn`. The frontend posts to `/auth/refresh` on
+            // **every** page load, including for a logged-out visitor, and the
+            // 401 there is the designed "not logged in" answer. At `warn` every
+            // anonymous page view writes a warning and the level stops meaning
+            // anything.
+            this.logger.verbose('auth.refresh.no_token', {
+                requestId: meta.requestId,
+            });
             throw new UnauthorizedException();
         }
 
@@ -161,8 +252,21 @@ export class AuthService {
             where: { token_hash: this.hashRefreshToken(rawToken) },
         });
         if (!presented) {
+            // No user id to give: the hash matched nothing, so there is no row
+            // and no owner. `ip` is all this line can offer.
+            this.logger.warn('auth.refresh.unknown_token', {
+                ip: meta.ip ?? undefined,
+                requestId: meta.requestId,
+            });
             throw new UnauthorizedException();
         }
+
+        this.logger.trace('auth.trace.rotate.presented_found', {
+            userId: presented.user_id,
+            familyId: presented.family_id,
+            tokenId: presented.id,
+            requestId: meta.requestId,
+        });
 
         // Deliberately outside the transaction. It reads `users`, not this
         // family, so it is not part of the invariant the lock protects, and
@@ -170,75 +274,245 @@ export class AuthService {
         // critical section every concurrent rotation has to wait behind.
         const user = await this.readActiveUser(presented.user_id);
 
-        // `null` means "something was revoked and the caller gets a 401". The
-        // failure paths cannot simply throw from inside the callback: an
-        // exception rolls the transaction back, which would undo the very
-        // revocation being performed — theft detection would then revoke the
-        // family and immediately give it back.
-        const pair = await this.prisma.$transaction(async (tx) => {
-            const family = await this.lockFamily(tx, presented.family_id);
-            const stored = family.find(
-                (row) => Number(row.id) === presented.id,
-            );
-            if (!stored) {
-                return null;
-            }
-
-            const now = new Date();
-
-            if (stored.revoked_at) {
-                if (!this.isBenignRotationRace(stored.revoked_at, family, now)) {
-                    // Either the reuse is too old to be a race, or the session
-                    // is already over. We cannot tell a replayed copy from the
-                    // honest client holding the same value, so the whole family
-                    // goes.
-                    await this.revokeFamilyLocked(tx, presented.family_id);
-                    return null;
-                }
-                // Benign race — fall through and issue a new pair in this
-                // family. Reaching here under the lock means the winner has
-                // already committed its successor, so the liveness test above
-                // saw it. That is what stops an honest second tab being told
-                // its session is dead.
-            }
-
-            if (stored.expires_at.getTime() <= now.getTime()) {
-                // Just expired, not stolen — kill this row, leave the family
-                // alone.
-                await this.revokeToken(tx, presented.id);
-                return null;
-            }
-
-            if (!user) {
-                await this.revokeFamilyLocked(tx, presented.family_id);
-                return null;
-            }
-
-            if (!stored.revoked_at) {
-                // Unconditional on purpose. `stored` came from the locking read
-                // above and no other writer can revoke it while this
-                // transaction holds the family lock, so the conditional
-                // `updateMany` Phase 1.5.4 used has nothing left to guard
-                // against — the lock, not the WHERE clause, is what makes this
-                // safe now.
-                await this.revokeToken(tx, presented.id);
-            }
-
-            // Inside the transaction, so the revoke above and this insert commit
-            // together. That is the whole point of 1.6.1: a logout can no longer
-            // land between them, see an empty family, report success, and then
-            // be undone by the successor appearing a moment later.
-            return this.issueTokenPair(tx, {
-                user,
-                familyId: presented.family_id,
-                meta,
-            });
+        this.logger.trace('auth.trace.rotate.user_read', {
+            userId: presented.user_id,
+            // This is the point where deactivating a user takes effect: the
+            // refresh row is still perfectly valid, the *user* is not.
+            detail: user ? 'active' : 'inactive',
+            requestId: meta.requestId,
         });
 
-        if (!pair) {
-            throw new UnauthorizedException();
+        // ⚠️ Everything the callback narrates goes in here, not through
+        // `this.logger`. See `TraceBuffer`: a throw inside a Prisma interactive
+        // transaction rolls it back, and I/O under `FOR UPDATE` lengthens the
+        // critical section every concurrent rotation queues behind. Captured by
+        // the closure rather than passed as an argument because Prisma fixes the
+        // callback's signature at `(tx) => …`.
+        const trace = new TraceBuffer();
+
+        // Every non-pair outcome means "something was revoked and the caller
+        // gets a 401". The failure paths cannot simply throw from inside the
+        // callback: an exception rolls the transaction back, which would undo
+        // the very revocation being performed — theft detection would then
+        // revoke the family and immediately give it back.
+        //
+        // ⚠️ **Nothing in here logs**, for the same reason and one more: see
+        // `RotationOutcome`. The callback names what happened; the switch below
+        // the commit says it out loud.
+        // Started here but awaited below, so the flush can sit in a `finally`
+        // without re-indenting this whole callback. A promise is eager, so
+        // splitting the call from the `await` changes nothing about when the
+        // transaction runs, and the `try` attaches in the same tick — there is
+        // no window for an unhandled rejection.
+        const rotation: Promise<RotationOutcome> = this.prisma.$transaction(
+            async (tx): Promise<RotationOutcome> => {
+                const family = await this.lockFamily(tx, presented.family_id);
+
+                trace.add('auth.trace.rotate.family_locked', {
+                    familyId: presented.family_id,
+                    count: family.length,
+                    detail: `${
+                        family.filter((row) => !row.revoked_at).length
+                    } live`,
+                });
+
+                const stored = family.find(
+                    (row) => Number(row.id) === presented.id,
+                );
+                if (!stored) {
+                    trace.add('auth.trace.rotate.row_missing', {
+                        tokenId: presented.id,
+                    });
+                    return { kind: 'row_missing' };
+                }
+
+                trace.add('auth.trace.rotate.row_found', {
+                    tokenId: presented.id,
+                });
+
+                const now = new Date();
+
+                if (stored.revoked_at) {
+                    trace.add('auth.trace.rotate.revoked_row_seen', {
+                        tokenId: presented.id,
+                        detail: 'presented token has already been spent',
+                    });
+
+                    const benign = this.isBenignRotationRace(
+                        stored.revoked_at,
+                        family,
+                        now,
+                    );
+
+                    trace.add('auth.trace.rotate.race_verdict', {
+                        familyId: presented.family_id,
+                        detail: benign ? 'benign' : 'theft',
+                        // Recomputed rather than returned by
+                        // `isBenignRotationRace`, whose signature stays as the
+                        // Phase 1.6 tests expect. Pure arithmetic — no query,
+                        // no I/O, nothing that can fail under the lock.
+                        count: now.getTime() - stored.revoked_at.getTime(),
+                    });
+
+                    if (!benign) {
+                        // Either the reuse is too old to be a race, or the
+                        // session is already over. We cannot tell a replayed
+                        // copy from the honest client holding the same value, so
+                        // the whole family goes.
+                        await this.revokeFamilyLocked(tx, presented.family_id);
+                        return { kind: 'theft', tokenId: presented.id };
+                    }
+                    // Benign race — fall through and issue a new pair in this
+                    // family. Reaching here under the lock means the winner has
+                    // already committed its successor, so the liveness test
+                    // above saw it. That is what stops an honest second tab
+                    // being told its session is dead.
+                }
+
+                const expired = stored.expires_at.getTime() <= now.getTime();
+
+                trace.add('auth.trace.rotate.expiry_checked', {
+                    tokenId: presented.id,
+                    detail: expired ? 'expired' : 'live',
+                });
+
+                if (expired) {
+                    // Just expired, not stolen — kill this row, leave the family
+                    // alone.
+                    await this.revokeToken(tx, presented.id);
+                    return { kind: 'expired' };
+                }
+
+                if (!user) {
+                    await this.revokeFamilyLocked(tx, presented.family_id);
+                    return { kind: 'inactive' };
+                }
+
+                // Read before the revoke below overwrites the distinction: a row
+                // that was already revoked and survived the liveness test got
+                // here through the benign-race branch, and the two deserve
+                // different lines.
+                // Truthiness, matching every other `revoked_at` test in this
+                // method: the value comes from a raw query, and the branches
+                // above already treat it that way.
+                const wasBenignRace = Boolean(stored.revoked_at);
+
+                if (!stored.revoked_at) {
+                    // Unconditional on purpose. `stored` came from the locking
+                    // read above and no other writer can revoke it while this
+                    // transaction holds the family lock, so the conditional
+                    // `updateMany` Phase 1.5.4 used has nothing left to guard
+                    // against — the lock, not the WHERE clause, is what makes
+                    // this safe now.
+                    await this.revokeToken(tx, presented.id);
+
+                    trace.add('auth.trace.rotate.row_revoked', {
+                        tokenId: presented.id,
+                    });
+                }
+
+                // Inside the transaction, so the revoke above and this insert
+                // commit together. That is the whole point of 1.6.1: a logout
+                // can no longer land between them, see an empty family, report
+                // success, and then be undone by the successor appearing a
+                // moment later.
+                const pair = await this.issueTokenPair(tx, {
+                    user,
+                    familyId: presented.family_id,
+                    meta,
+                });
+
+                trace.add('auth.trace.rotate.successor_created', {
+                    familyId: presented.family_id,
+                    detail: wasBenignRace
+                        ? 'second live token in this family'
+                        : 'replaces the spent token',
+                });
+
+                return wasBenignRace
+                    ? { kind: 'race', pair }
+                    : { kind: 'rotated', pair, tokenId: presented.id };
+            },
+        );
+
+        // The flush happens outside the transaction either way, so a throw here
+        // can no longer roll anything back — which is what makes this the only
+        // safe place to emit what the callback wanted to say. Before the switch,
+        // so the narration is complete for *every* outcome, including the four
+        // that end in a 401.
+        //
+        // `finally` rather than a plain statement after the `await`: a rotation
+        // that throws — a lock-wait timeout, a dropped connection, a deadlock —
+        // is precisely the case whose narration is worth having, and a flush
+        // placed after the `await` is the one case that never runs. It cannot
+        // mask the original exception: every `AppLoggerService` method swallows
+        // its own errors (§1.7.6 Rule 1) and `flushTo` is `try/finally`.
+        let outcome: RotationOutcome;
+        try {
+            outcome = await rotation;
+        } finally {
+            const buffered = trace.size;
+            trace.flushTo(this.logger);
+            this.logger.trace('auth.trace.rotate.flushed', {
+                count: buffered,
+                requestId: meta.requestId,
+            });
         }
-        return pair;
+
+        switch (outcome.kind) {
+            case 'rotated':
+                // `tokenId` is the row that was *spent*, not the successor: it
+                // is the one a reader has from the previous line, and the
+                // successor's id is not known outside `issueTokenPair`.
+                this.logger.verbose('auth.refresh.rotated', {
+                    userId: presented.user_id,
+                    familyId: presented.family_id,
+                    tokenId: outcome.tokenId,
+                    requestId: meta.requestId,
+                });
+                return outcome.pair;
+            case 'race':
+                this.logger.verbose('auth.refresh.race', {
+                    userId: presented.user_id,
+                    familyId: presented.family_id,
+                    requestId: meta.requestId,
+                });
+                return outcome.pair;
+            case 'theft':
+                // The highest-value line in the system, and the only `error` on
+                // a non-exceptional path — it is what someone greps for first.
+                this.logger.error('auth.refresh.theft', {
+                    userId: presented.user_id,
+                    familyId: presented.family_id,
+                    tokenId: outcome.tokenId,
+                    ip: meta.ip ?? undefined,
+                    requestId: meta.requestId,
+                });
+                break;
+            case 'expired':
+                this.logger.verbose('auth.refresh.expired', {
+                    userId: presented.user_id,
+                    familyId: presented.family_id,
+                    requestId: meta.requestId,
+                });
+                break;
+            case 'inactive':
+                this.logger.warn('auth.refresh.user_inactive', {
+                    userId: presented.user_id,
+                    familyId: presented.family_id,
+                    requestId: meta.requestId,
+                });
+                break;
+            case 'row_missing':
+                this.logger.warn('auth.refresh.row_missing', {
+                    userId: presented.user_id,
+                    familyId: presented.family_id,
+                    requestId: meta.requestId,
+                });
+                break;
+        }
+
+        throw new UnauthorizedException();
     }
 
     // Logout is authenticated by the cookie itself, so an expired access token
@@ -248,17 +522,55 @@ export class AuthService {
     // The revocation goes through `revokeFamily`, which takes the family lock —
     // so a logout racing a rotation now waits for that rotation to commit and
     // then revokes its successor too, instead of revoking an empty family.
-    async logout(rawToken: string | null): Promise<void> {
+    async logout(
+        rawToken: string | null,
+        meta: SessionMeta = {},
+    ): Promise<void> {
+        this.logger.trace('auth.trace.logout.begin', {
+            requestId: meta.requestId,
+        });
+
         if (!rawToken) {
+            // Neither this nor `unknown_token` below is a failure — the desired
+            // end state (this browser holds no live session) already holds,
+            // which is why both return silently. Hence `verbose`.
+            this.logger.verbose('auth.logout.no_token', {
+                requestId: meta.requestId,
+            });
             return;
         }
         const stored = await this.prisma.refresh_tokens.findUnique({
             where: { token_hash: this.hashRefreshToken(rawToken) },
         });
         if (!stored) {
+            this.logger.verbose('auth.logout.unknown_token', {
+                requestId: meta.requestId,
+            });
             return;
         }
+
+        this.logger.trace('auth.trace.logout.row_found', {
+            userId: stored.user_id,
+            familyId: stored.family_id,
+            requestId: meta.requestId,
+        });
+
+        // No buffer needed here: `revokeFamily` opens and closes its own
+        // transaction internally, so this call site is never inside one.
         await this.revokeFamily(stored.family_id);
+
+        this.logger.trace('auth.trace.logout.family_revoked', {
+            familyId: stored.family_id,
+            requestId: meta.requestId,
+        });
+
+        // After the revocation, not before: this line means the session is
+        // actually over.
+        this.logger.log('auth.logout.success', {
+            userId: stored.user_id,
+            familyId: stored.family_id,
+            requestId: meta.requestId,
+        });
     }
 
     // Ends one session (one device / one rotation chain).

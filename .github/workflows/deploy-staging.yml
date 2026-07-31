@@ -83,10 +83,18 @@ jobs:
 
             # Migration OK — swap to the new image.
             docker rm inopack-graphql 2>/dev/null || true
+            # `docker logs` is the only reader of this container's output, and
+            # the default json-file driver has no size limit and no rotation —
+            # the log grows until it fills the droplet. 5 x 50 MB caps it at
+            # 250 MB, which is nothing next to the ten SQL dumps /root/backups
+            # is already allowed to hold. It matters most with LOG_LEVEL=debug
+            # during an incident, i.e. exactly when nobody is watching disk.
             docker run -d \
               --name inopack-graphql \
               --restart unless-stopped \
               --network host \
+              --log-opt max-size=50m \
+              --log-opt max-file=5 \
               --env-file /root/inopack/.env \
               $IMAGE:$SHA
 

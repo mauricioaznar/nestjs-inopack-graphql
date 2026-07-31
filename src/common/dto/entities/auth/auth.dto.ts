@@ -121,6 +121,13 @@ export interface TokenPair {
 export interface SessionMeta {
     userAgent?: string | null;
     ip?: string | null;
+
+    // Log-only, and the one field here that is never persisted. Mixing it in
+    // beats a second parallel parameter on three service methods, and it cannot
+    // leak into `refresh_tokens` by accident: `issueTokenPair` writes an
+    // explicit allowlist (`meta.userAgent`, `meta.ip`) field by field rather
+    // than spreading `meta`.
+    requestId?: string;
 }
 
 // What `req.user` is after `JwtStrategy#validate` — i.e. what `@CurrentUser()`

@@ -15,6 +15,7 @@ import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { AllowedOriginGuard } from './guards/allowed-origin.guard';
 import { SessionMeta, TokenPair } from '../../common/dto/entities';
+import { AppLoggerService } from '../../common/modules/logging/app-logger.service';
 import {
     clearRefreshCookie,
     readRefreshCookie,
@@ -55,7 +56,10 @@ import {
 @Controller('auth')
 @UseGuards(AllowedOriginGuard)
 export class AuthController {
-    constructor(private authService: AuthService) {}
+    constructor(
+        private authService: AuthService,
+        private logger: AppLoggerService,
+    ) {}
 
     @Public()
     @Post('login')
@@ -68,7 +72,7 @@ export class AuthController {
         // Hand-validated rather than via a global ValidationPipe: this app has
         // never registered one, and adding it globally would start validating
         // every GraphQL input in the repo at the same time.
-        const credentials = readCredentials(body);
+        const credentials = this.readCredentials(body, req);
 
         const pair = await this.authService.loginWithCredentials(
             credentials,
@@ -112,7 +116,7 @@ export class AuthController {
         @Req() req: Request,
         @Res({ passthrough: true }) res: Response,
     ): Promise<{ success: true }> {
-        await this.authService.logout(readRefreshCookie(req));
+        await this.authService.logout(readRefreshCookie(req), sessionMeta(req));
         clearRefreshCookie(res);
         return { success: true };
     }
@@ -127,6 +131,35 @@ export class AuthController {
         setRefreshCookie(res, pair.refreshToken, pair.refreshExpiresAt);
         return { accessToken: pair.accessToken };
     }
+
+    // A method rather than the module-level function it used to be, purely so it
+    // can reach the injected logger. This is one of the two events the *service*
+    // can never report: a body this malformed never becomes a service call at
+    // all, so the transport is the only layer that sees it.
+    private readCredentials(
+        body: unknown,
+        req: Request,
+    ): { email: string; password: string } {
+        const candidate = body as {
+            email?: unknown;
+            password?: unknown;
+        } | null;
+        const email = candidate?.email;
+        const password = candidate?.password;
+        if (typeof email !== 'string' || typeof password !== 'string') {
+            // No `email` in the context on purpose: whatever is in that field is
+            // not a string, so it is not an attempted address — it is arbitrary
+            // input, and `LogContext` types `email` as a string.
+            this.logger.warn('auth.login.malformed', {
+                ip: req.ip ?? undefined,
+                requestId: req.requestId,
+            });
+            throw new BadRequestException(
+                'Could not log-in with the provided credentials',
+            );
+        }
+        return { email, password };
+    }
 }
 
 // `UnauthorizedException` is an `HttpException` with status 401, and so is
@@ -139,18 +172,6 @@ function isUnauthorized(error: unknown): boolean {
     );
 }
 
-function readCredentials(body: unknown): { email: string; password: string } {
-    const candidate = body as { email?: unknown; password?: unknown } | null;
-    const email = candidate?.email;
-    const password = candidate?.password;
-    if (typeof email !== 'string' || typeof password !== 'string') {
-        throw new BadRequestException(
-            'Could not log-in with the provided credentials',
-        );
-    }
-    return { email, password };
-}
-
 function sessionMeta(req: Request): SessionMeta {
     return {
         userAgent: req.headers['user-agent'] ?? null,
@@ -159,5 +180,8 @@ function sessionMeta(req: Request): SessionMeta {
         // throttling and will set that up. Stored as informational metadata
         // only; nothing authenticates on it.
         ip: req.ip ?? null,
+        // Put there by `RequestIdMiddleware`, which `AuthModule` applies to
+        // `auth/*`. Log-only; `issueTokenPair` never writes it to a row.
+        requestId: req.requestId,
     };
 }

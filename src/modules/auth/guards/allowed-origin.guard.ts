@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { isAllowedOrigin } from '../../../common/constants/cors';
+import { AppLoggerService } from '../../../common/modules/logging/app-logger.service';
 
 // CSRF protection for the cookie endpoints.
 //
@@ -28,6 +29,13 @@ import { isAllowedOrigin } from '../../../common/constants/cors';
 // anything.
 @Injectable()
 export class AllowedOriginGuard implements CanActivate {
+    // Nest instantiates guards through the DI container of the module that
+    // applies them, so this resolves because `AuthModule` imports
+    // `LoggingModule`. It is also why `RequestIdMiddleware` had to be
+    // middleware: guards run after middleware, so `request.requestId` is already
+    // set by the time this reads it.
+    constructor(private logger: AppLoggerService) {}
+
     canActivate(context: ExecutionContext): boolean {
         const request = context.switchToHttp().getRequest<Request>();
         const origin = request?.headers?.origin;
@@ -37,6 +45,14 @@ export class AllowedOriginGuard implements CanActivate {
         }
 
         if (!isAllowedOrigin(origin)) {
+            // The rejected origin goes in `reason`: it is the single fact that
+            // tells a misconfigured `CORS_ORIGINS` apart from an actual
+            // cross-site attempt, and it is attacker-supplied, so the logger's
+            // truncation applies to it.
+            this.logger.warn('auth.origin.rejected', {
+                reason: origin,
+                requestId: request.requestId,
+            });
             throw new ForbiddenException();
         }
 

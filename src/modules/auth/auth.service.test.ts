@@ -8,6 +8,10 @@ import { PrismaClient } from '@prisma/client';
 import { createHash } from 'crypto';
 import { jwtConstants } from '../../common/constants/jwt';
 import { TokenPair } from '../../common/dto/entities';
+import {
+    AppLoggerService,
+    LogContext,
+} from '../../common/modules/logging/app-logger.service';
 
 // The service stores a digest, never the raw token, so the tests have to hash
 // the same way to look a row up.
@@ -107,11 +111,47 @@ let userService: UserService;
 let authService: AuthService;
 let prisma: PrismaService;
 
+// Every context this file logs, in order, for the whole run. Recorded from
+// `beforeAll` rather than per test on purpose: the redaction assertion at the
+// bottom claims that **no** line anywhere carries a credential, and that claim
+// is only worth making over the complete run.
+//
+// The spy replaces the resolved singleton's methods rather than overriding the
+// provider in a testing module, because `setupApp()` builds the whole
+// `AppModule` and has no override seam. Same observation surface, no change to
+// a helper every other suite shares — and mocking the implementation away also
+// keeps the suite's own login noise off the console.
+// `trace` is in the list on purpose, not just for tidiness: the 1.7.10 trace
+// points are ~20 new places a credential could leak, and the redaction
+// assertion below is only worth anything if it scans them too.
+const loggedCalls: {
+    level: 'log' | 'warn' | 'error' | 'debug' | 'verbose' | 'trace';
+    event: string;
+    context: LogContext;
+}[] = [];
+
 beforeAll(async () => {
     app = await setupApp();
     userService = app.get(UserService);
     authService = app.get(AuthService);
     prisma = app.get(PrismaService);
+
+    const logger = app.get(AppLoggerService);
+    for (const level of [
+        'log',
+        'warn',
+        'error',
+        'debug',
+        'verbose',
+        'trace',
+    ] as const) {
+        jest.spyOn(logger, level).mockImplementation(((
+            event: string,
+            context: LogContext,
+        ) => {
+            loggedCalls.push({ level, event, context });
+        }) as any);
+    }
 });
 
 afterAll(async () => {
@@ -630,5 +670,159 @@ describe('refresh tokens', () => {
         await expect(
             authService.rotateRefreshToken(phone.refreshToken),
         ).resolves.toBeTruthy();
+    });
+});
+
+// ⚠️ Last in the file deliberately. The final test asserts over `loggedCalls` as
+// a whole, so it has to run after everything else has had its chance to log.
+describe('auth logging', () => {
+    async function createUserAndLogin(email: string) {
+        await userService.create({
+            email,
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'password123',
+            roles: roles,
+        });
+        return authService.loginWithCredentials({
+            email,
+            password: 'password123',
+        });
+    }
+
+    // Earlier tests in this file already trip several of these events, so each
+    // case reads only the slice it produced itself.
+    function since(mark: number, event: string) {
+        return loggedCalls.slice(mark).find((call) => call.event === event);
+    }
+
+    it('emits auth.refresh.theft at error when a spent token is replayed', async () => {
+        // Relies on REFRESH_REUSE_GRACE_SECONDS=0 in `.env.test`, exactly as the
+        // theft test above does.
+        const first = await createUserAndLogin('logtheft@email.com');
+        await authService.rotateRefreshToken(first.refreshToken);
+
+        const mark = loggedCalls.length;
+        await expect(
+            authService.rotateRefreshToken(first.refreshToken),
+        ).rejects.toThrow();
+
+        const theft = since(mark, 'auth.refresh.theft');
+        expect(theft).toBeDefined();
+        // The one `error` on a non-exceptional path. If this ever drops to
+        // `warn` it stops being the line someone greps for first.
+        expect(theft?.level).toEqual('error');
+        expect(theft?.context.familyId).toBeTruthy();
+        expect(theft?.context.tokenId).toEqual(expect.any(Number));
+    });
+
+    // 1.7.10. `auth.refresh.rotated` used to sit at `debug`, which in Nest is
+    // the *most* inclusive level — so a step trace placed at `verbose` would
+    // have been hidden by `LOG_LEVEL=verbose` while the coarser line showed.
+    it('emits the routine rotation events at verbose, not debug', async () => {
+        const pair = await createUserAndLogin('logtier@email.com');
+
+        const mark = loggedCalls.length;
+        await authService.rotateRefreshToken(pair.refreshToken);
+
+        expect(since(mark, 'auth.refresh.rotated')?.level).toEqual('verbose');
+    });
+
+    // The observable half of §1.7.6 / 1.7.10: everything the `$transaction`
+    // callback narrates is collected in memory and emitted afterwards. From
+    // outside, that looks like the buffered span arriving as one contiguous
+    // block ending at `flushed` — an inline `logger` call inside the callback
+    // could not produce that ordering relative to the outcome line.
+    it('emits the in-transaction trace only after the transaction returns', async () => {
+        const pair = await createUserAndLogin('logtrace@email.com');
+
+        const mark = loggedCalls.length;
+        await authService.rotateRefreshToken(pair.refreshToken);
+
+        const events = loggedCalls.slice(mark).map((call) => call.event);
+        const userRead = events.indexOf('auth.trace.rotate.user_read');
+        const locked = events.indexOf('auth.trace.rotate.family_locked');
+        const flushed = events.indexOf('auth.trace.rotate.flushed');
+        const rotated = events.indexOf('auth.refresh.rotated');
+
+        expect(userRead).toBeGreaterThan(-1);
+        expect(locked).toBeGreaterThan(userRead);
+        expect(events.indexOf('auth.trace.rotate.successor_created')).toEqual(
+            flushed - 1,
+        );
+        // The outcome line comes after the whole narration.
+        expect(rotated).toEqual(flushed + 1);
+        // `count` on `flushed` is how many buffered lines were emitted.
+        expect(
+            since(mark, 'auth.trace.rotate.flushed')?.context.count,
+        ).toBeGreaterThan(0);
+    });
+
+    it('emits auth.login.failed at warn carrying the attempted email', async () => {
+        const mark = loggedCalls.length;
+
+        await expect(
+            authService.loginWithCredentials({
+                email: 'logloginfailed@email.com',
+                password: 'not-the-password',
+            }),
+        ).rejects.toThrow();
+
+        const failed = since(mark, 'auth.login.failed');
+        expect(failed?.level).toEqual('warn');
+        // Deliberate asymmetry with the HTTP response, which must not
+        // distinguish an unknown user from a wrong password. A log is not
+        // attacker-visible.
+        expect(failed?.context.email).toEqual('logloginfailed@email.com');
+        expect(failed?.context).not.toHaveProperty('password');
+    });
+
+    it('emits auth.logout.success once the family is revoked', async () => {
+        const pair = await createUserAndLogin('loglogout@email.com');
+
+        const mark = loggedCalls.length;
+        await authService.logout(pair.refreshToken);
+
+        const success = since(mark, 'auth.logout.success');
+        expect(success?.level).toEqual('log');
+        expect(success?.context.userId).toEqual(expect.any(Number));
+    });
+
+    // The automated half of the redaction criterion. `token_hash` is on the
+    // forbidden list next to the raw token because it is the unique lookup key
+    // for a session row — logging it is logging a credential-equivalent.
+    it('never logs a raw refresh token or its hash, anywhere in the run', async () => {
+        const login = await createUserAndLogin('logredaction@email.com');
+        const rotated = await authService.rotateRefreshToken(
+            login.refreshToken,
+        );
+        await authService.logout(rotated.refreshToken);
+
+        const serialized = JSON.stringify(loggedCalls);
+        for (const raw of [login.refreshToken, rotated.refreshToken]) {
+            expect(serialized).not.toContain(raw);
+            expect(serialized).not.toContain(sha256(raw));
+        }
+        // Access tokens are JWTs and equally must not appear.
+        expect(serialized).not.toContain(login.accessToken);
+        expect(serialized).not.toContain('password123');
+
+        // And nothing named its way in either: `LogContext` is a closed
+        // interface, but TypeScript's excess-property check only fires on object
+        // literals, so this is the runtime half of that guarantee.
+        const forbiddenKeys = [
+            'token',
+            'tokenHash',
+            'token_hash',
+            'rawToken',
+            'refreshToken',
+            'accessToken',
+            'password',
+        ];
+        for (const call of loggedCalls) {
+            for (const key of Object.keys(call.context)) {
+                expect(forbiddenKeys).not.toContain(key);
+            }
+        }
     });
 });
