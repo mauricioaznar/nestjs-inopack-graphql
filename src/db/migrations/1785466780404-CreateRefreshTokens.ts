@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateRefreshTokens1785024000000 implements MigrationInterface {
+export class CreateRefreshTokens1785466780404 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         // One row per issued refresh token. Rotation writes a new row and
         // revokes the old one, so a session is a *chain* of rows sharing a
