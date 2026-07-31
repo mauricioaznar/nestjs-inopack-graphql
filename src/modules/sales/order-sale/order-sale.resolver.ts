@@ -101,14 +101,27 @@ export class OrderSaleResolver {
         @Args('OrderSaleInput') input: OrderSaleInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderSale> {
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so oldData stays null and the pair reads as
+        // "nothing -> something".
+        const oldData = input.id
+            ? await this.service.getOrderSaleSnapshot({
+                  order_sale_id: input.id,
+              })
+            : null;
         const orderSale = await this.service.upsertOrderSale({
             input,
             current_user_id: currentUser.id,
+        });
+        const newData = await this.service.getOrderSaleSnapshot({
+            order_sale_id: orderSale.id,
         });
         await this.pubSubService.orderSale({
             orderSale,
             type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return orderSale;
     }
@@ -123,14 +136,22 @@ export class OrderSaleResolver {
         orderSaleStatusId: number,
         @CurrentUser() currentUser: User,
     ): Promise<OrderSale> {
+        const oldData = await this.service.getOrderSaleSnapshot({
+            order_sale_id: orderSaleId,
+        });
         const orderSale = await this.service.updateOrderSaleStatus({
             order_sale_id: orderSaleId,
             order_sale_status_id: orderSaleStatusId,
+        });
+        const newData = await this.service.getOrderSaleSnapshot({
+            order_sale_id: orderSale.id,
         });
         await this.pubSubService.orderSale({
             orderSale,
             type: ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return orderSale;
     }
@@ -141,11 +162,19 @@ export class OrderSaleResolver {
         @Args('OrderSaleDetailsInput') input: OrderSaleDetailsInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderSale> {
+        const oldData = await this.service.getOrderSaleSnapshot({
+            order_sale_id: input.order_sale_id,
+        });
         const orderSale = await this.service.updateOrderSaleDetails({ input });
+        const newData = await this.service.getOrderSaleSnapshot({
+            order_sale_id: orderSale.id,
+        });
         await this.pubSubService.orderSale({
             orderSale,
             type: ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldData,
+            newData,
         });
         return orderSale;
     }
@@ -158,6 +187,13 @@ export class OrderSaleResolver {
     ): Promise<boolean> {
         const orderSale = await this.getOrderSale(orderSaleId);
         if (!orderSale) throw new NotFoundException();
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the sale and its lines all carry active = -1 and the snapshot would
+        // come back empty. newData stays null — "deleted" is what the dialog
+        // should show, not "active went 1 -> -1".
+        const oldData = await this.service.getOrderSaleSnapshot({
+            order_sale_id: orderSale.id,
+        });
         await this.service.deleteOrderSale({
             order_sale_id: orderSale.id,
             current_user_id: currentUser.id,
@@ -166,6 +202,8 @@ export class OrderSaleResolver {
             orderSale,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldData,
+            newData: null,
         });
         return true;
     }

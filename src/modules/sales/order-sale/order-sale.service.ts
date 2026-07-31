@@ -277,6 +277,48 @@ export class OrderSaleService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getOrderSale, which is a bare row read with ~12 callers (one inside a
+    // loop) that must not pay for a child fetch.
+    //
+    // No `active: 1` on the sale itself, so a snapshot still works after the
+    // soft delete. But `active: 1` on the CHILD lines is load-bearing: lines are
+    // soft-deleted rather than removed, so an unfiltered snapshot would ship a
+    // removed line with only its `active` flag changed — and the React differ
+    // ignores `active`, which would make the deletion vanish from the audit
+    // entirely. See docs/features/ongoing/feature-activities-audit.md §2c-1.
+    //
+    // `products` is trimmed to three columns: the snapshot stores the product
+    // description as it was AT THE TIME, so an old audit entry never displays a
+    // name the product only acquired later.
+    async getOrderSaleSnapshot({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<unknown> {
+        return this.prisma.order_sales.findUnique({
+            where: {
+                id: order_sale_id,
+            },
+            include: {
+                order_sale_products: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async getOrderSales({
         getOrderSalesQueryArgs,
         datePaginator,

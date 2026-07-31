@@ -197,10 +197,16 @@ export class PubSubService {
         orderSale,
         type,
         userId,
+        oldData,
+        newData,
     }: {
         orderSale: OrderSale;
         type: ActivityTypeName;
         userId: number;
+        // Audit snapshots. Optional so that any caller not yet wired keeps
+        // compiling and simply records no snapshot.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         await this.pubSub.publish('order_sale', {
             order_sale: orderSale,
@@ -211,6 +217,8 @@ export class PubSubService {
             entity_id: orderSale.id,
             userId,
             description: `Venta: ${orderSale.order_code}`,
+            oldData,
+            newData,
         });
     }
 
@@ -304,12 +312,19 @@ export class PubSubService {
         type,
         userId,
         description,
+        oldData,
+        newData,
     }: {
         entity_id: number;
         entity_name: ActivityEntityName;
         type: ActivityTypeName;
         userId: number;
         description: string;
+        // Every entity funnels through here, so all activities CAN carry
+        // snapshots; only the wired entities actually pass them. Undefined
+        // leaves the column NULL rather than writing JSON null.
+        oldData?: unknown;
+        newData?: unknown;
     }) {
         const activity = await this.prisma.activities.create({
             data: {
@@ -320,6 +335,19 @@ export class PubSubService {
                 entity_id: entity_id,
                 type: type,
                 user_id: userId,
+                // Omitted rather than set to null: this is a create, so an
+                // absent field leaves the column at its NULL default. Passing a
+                // literal null to a Prisma `Json?` field is rejected — Prisma
+                // wants Prisma.DbNull / Prisma.JsonNull to disambiguate SQL NULL
+                // from JSON null — and omitting sidesteps that entirely.
+                old_data:
+                    oldData === undefined || oldData === null
+                        ? undefined
+                        : (oldData as any),
+                new_data:
+                    newData === undefined || newData === null
+                        ? undefined
+                        : (newData as any),
             },
         });
 
