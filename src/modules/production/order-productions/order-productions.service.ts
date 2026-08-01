@@ -384,18 +384,21 @@ export class OrderProductionsService {
             indexProperties: ['id'],
         });
 
+        // Keyed on `id`, the same property vennDiagram matched on. Keying the
+        // write on product+machine while matching on `id` soft-deleted every
+        // row sharing that pair, not the one the user removed.
         for await (const delItem of deleteProductItems) {
-            await this.prisma.order_production_products.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    active: -1,
-                },
-                where: {
-                    product_id: delItem.product_id,
-                    machine_id: delItem.machine_id,
-                    order_production_id: orderProduction.id,
-                },
-            });
+            if (delItem && delItem.id) {
+                await this.prisma.order_production_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
@@ -420,27 +423,30 @@ export class OrderProductionsService {
             // await this.cacheManager.del(`product_inventory`);
         }
 
+        // Also keyed on `id`. The old `where` looked for the row by its *new*
+        // product+machine, which no stored row carries yet — so changing either
+        // of them updated nothing and the edit was silently lost.
         for await (const updateItem of updateProductItems) {
-            await this.prisma.order_production_products.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    product_id: updateItem.product_id,
-                    machine_id: updateItem.machine_id,
-                    kilos: updateItem.kilos,
-                    active: 1,
-                    group_weight: updateItem.group_weight,
-                    groups: updateItem.groups,
-                    hours:
-                        updateItem.hours !== null && updateItem.hours !== 0
-                            ? updateItem.hours
-                            : null,
-                },
-                where: {
-                    product_id: updateItem.product_id,
-                    machine_id: updateItem.machine_id,
-                    order_production_id: orderProduction.id,
-                },
-            });
+            if (updateItem && updateItem.id) {
+                await this.prisma.order_production_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        product_id: updateItem.product_id,
+                        machine_id: updateItem.machine_id,
+                        kilos: updateItem.kilos,
+                        active: 1,
+                        group_weight: updateItem.group_weight,
+                        groups: updateItem.groups,
+                        hours:
+                            updateItem.hours !== null && updateItem.hours !== 0
+                                ? updateItem.hours
+                                : null,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
@@ -521,17 +527,21 @@ export class OrderProductionsService {
             indexProperties: ['id'],
         });
 
+        // Was the widest of the three: `product_id` alone, so removing one
+        // resource row soft-deleted every row for that product regardless of
+        // machine.
         for await (const delItem of deleteResourceItems) {
-            await this.prisma.order_production_resources.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    active: -1,
-                },
-                where: {
-                    product_id: delItem.product_id,
-                    order_production_id: orderProduction.id,
-                },
-            });
+            if (delItem && delItem.id) {
+                await this.prisma.order_production_resources.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
@@ -557,26 +567,26 @@ export class OrderProductionsService {
         }
 
         for await (const updateItem of updateResourceItems) {
-            await this.prisma.order_production_resources.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    product_id: updateItem.product_id,
-                    machine_id: updateItem.machine_id,
-                    kilos: updateItem.kilos,
-                    active: 1,
-                    group_weight: updateItem.group_weight,
-                    groups: updateItem.groups,
-                    hours:
-                        updateItem.hours !== null && updateItem.hours !== 0
-                            ? updateItem.hours
-                            : null,
-                },
-                where: {
-                    product_id: updateItem.product_id,
-                    machine_id: updateItem.machine_id,
-                    order_production_id: orderProduction.id,
-                },
-            });
+            if (updateItem && updateItem.id) {
+                await this.prisma.order_production_resources.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        product_id: updateItem.product_id,
+                        machine_id: updateItem.machine_id,
+                        kilos: updateItem.kilos,
+                        active: 1,
+                        group_weight: updateItem.group_weight,
+                        groups: updateItem.groups,
+                        hours:
+                            updateItem.hours !== null && updateItem.hours !== 0
+                                ? updateItem.hours
+                                : null,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 

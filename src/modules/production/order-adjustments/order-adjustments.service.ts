@@ -357,17 +357,20 @@ export class OrderAdjustmentsService {
             indexProperties: ['id'],
         });
 
+        // Keyed on `id`, the same property vennDiagram matched on — see the
+        // equivalent branches in order-productions.service.ts.
         for await (const delItem of deleteProductItems) {
-            await this.prisma.order_adjustment_products.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    active: -1,
-                },
-                where: {
-                    product_id: delItem.product_id,
-                    order_adjustment_id: orderAdjustment.id,
-                },
-            });
+            if (delItem && delItem.id) {
+                await this.prisma.order_adjustment_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
@@ -388,20 +391,21 @@ export class OrderAdjustmentsService {
         }
 
         for await (const updateItem of updateProductItems) {
-            await this.prisma.order_adjustment_products.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    product_id: updateItem.product_id,
-                    kilos: updateItem.kilos,
-                    active: 1,
-                    group_weight: updateItem.group_weight,
-                    groups: updateItem.groups,
-                },
-                where: {
-                    product_id: updateItem.product_id,
-                    order_adjustment_id: orderAdjustment.id,
-                },
-            });
+            if (updateItem && updateItem.id) {
+                await this.prisma.order_adjustment_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        product_id: updateItem.product_id,
+                        kilos: updateItem.kilos,
+                        active: 1,
+                        group_weight: updateItem.group_weight,
+                        groups: updateItem.groups,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
