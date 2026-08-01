@@ -300,6 +300,7 @@ model production_plan_rows {
   updated_at                    DateTime?                       @db.DateTime(0)
   production_plan_id            Int?                            @db.UnsignedInt
   machine_id                    Int?                            @db.UnsignedInt
+  shift_hours                   Float?
   notes                         String                          @default("") @db.Text
   position                      Int                             @default(0)
   production_plans              production_plans?               @relation(fields: [production_plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "production_plan_rows_production_plan_id_foreign")

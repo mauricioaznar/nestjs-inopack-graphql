@@ -24,10 +24,26 @@ import {
 } from '../../../common/dto/entities';
 import { Employee } from '../../../common/dto/entities/production/employee.dto';
 
-// A row's products must sum to the plan's shift_hours. Hours are doubles and the
-// UI produces values like 2.5 / 5.5, so compare with a tolerance rather than
-// exact equality.
+// A row's products must sum to the row's effective shift hours. Hours are doubles
+// and the UI produces values like 2.5 / 5.5, so compare with a tolerance rather
+// than exact equality.
 const HOURS_SUM_EPSILON = 0.01;
+
+// How far back "products this machine runs" looks. Matches the window the kg/hr
+// prediction uses on the client, so the picker's ordering and the rates the
+// planner reads next to it describe the same period.
+const MACHINE_HISTORY_MONTHS = 12;
+
+// How long a given row's turno actually is: its own override when set, otherwise
+// the plan's. Null is the normal case — only a machine that does not run the
+// whole turno (maintenance, a late start) carries its own number.
+const effectiveShiftHours = (
+    rowShiftHours: number | null | undefined,
+    planShiftHours: number,
+): number =>
+    rowShiftHours !== null && rowShiftHours !== undefined
+        ? rowShiftHours
+        : planShiftHours;
 
 // Shared shape for the row venn-diagram so the intersecting/created items keep
 // their employee_ids and products (the DB rows and the input DTOs are otherwise
@@ -35,6 +51,7 @@ const HOURS_SUM_EPSILON = 0.01;
 interface RowVennItem {
     id?: number | null;
     machine_id: number | null;
+    shift_hours: number | null;
     notes: string;
     position: number;
     employee_ids?: number[];
@@ -234,14 +251,32 @@ export class ProductionPlansService {
     // the realistic choices at the top of a row's product picker without
     // removing the rest — a product a machine has never run is exactly what a
     // NEW product is, so hiding it outright would make it unselectable.
+    //
+    // Bounded to the last 12 months, and to production that is still active: the
+    // picker should reflect what this machine runs NOW. Unbounded, a product the
+    // machine made in volume years ago and has not touched since would outrank
+    // everything it currently runs. Same window the kg/hr prediction uses.
     async getMachineProducedProductIds({
         machine_id,
     }: {
         machine_id: number;
     }): Promise<number[]> {
+        const fromDate = dayjs()
+            .utc()
+            .subtract(MACHINE_HISTORY_MONTHS, 'month')
+            .startOf('day')
+            .toDate();
+
         const grouped = await this.prisma.order_production_products.groupBy({
             by: ['product_id'],
-            where: { active: 1, machine_id: machine_id },
+            where: {
+                active: 1,
+                machine_id: machine_id,
+                order_productions: {
+                    active: 1,
+                    start_date: { gte: fromDate },
+                },
+            },
             _sum: { kilos: true },
         });
 
@@ -330,6 +365,7 @@ export class ProductionPlansService {
                     ...getUpdatedAtProperty(),
                     production_plan_id: productionPlan.id,
                     machine_id: createItem.machine_id,
+                    shift_hours: createItem.shift_hours,
                     notes: createItem.notes,
                     position: createItem.position,
                     active: 1,
@@ -351,6 +387,7 @@ export class ProductionPlansService {
                     data: {
                         ...getUpdatedAtProperty(),
                         machine_id: updateItem.machine_id,
+                        shift_hours: updateItem.shift_hours,
                         notes: updateItem.notes,
                         position: updateItem.position,
                         active: 1,
@@ -580,6 +617,22 @@ export class ProductionPlansService {
                 }
             }
 
+            // A row that does not run the whole turno carries its own length.
+            // Null inherits the plan's; a set value must still be a real turno.
+            if (
+                row.shift_hours !== null &&
+                row.shift_hours !== undefined &&
+                row.shift_hours <= 0
+            ) {
+                errors.push(
+                    `row ${row.position + 1}: shift_hours must be greater than 0`,
+                );
+            }
+            const rowShiftHours = effectiveShiftHours(
+                row.shift_hours,
+                input.shift_hours,
+            );
+
             const rowProducts = row.products ?? [];
 
             // products are optional; each given one must exist and be active.
@@ -619,7 +672,9 @@ export class ProductionPlansService {
                 seenProductIds.add(rowProduct.product_id);
             }
 
-            // The sum rule. Rows with NO products are exempt — the fresh-plan
+            // The sum rule, measured against the ROW's turno length rather than
+            // the plan's, so a machine that runs a shorter shift is not forced to
+            // fabricate hours. Rows with NO products are exempt — the fresh-plan
             // seed creates exactly those (one empty row per filtered machine),
             // and a plan of not-yet-assigned machines must stay saveable.
             if (rowProducts.length > 0) {
@@ -627,11 +682,9 @@ export class ProductionPlansService {
                     (sum, rowProduct) => sum + (rowProduct.hours || 0),
                     0,
                 );
-                if (
-                    Math.abs(totalHours - input.shift_hours) > HOURS_SUM_EPSILON
-                ) {
+                if (Math.abs(totalHours - rowShiftHours) > HOURS_SUM_EPSILON) {
                     errors.push(
-                        `row ${row.position + 1}: planned hours (${totalHours}) must add up to the shift hours (${input.shift_hours})`,
+                        `row ${row.position + 1}: planned hours (${totalHours}) must add up to the shift hours (${rowShiftHours})`,
                     );
                 }
             }

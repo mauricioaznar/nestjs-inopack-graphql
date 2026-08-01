@@ -44,6 +44,13 @@ export class ProductionPlanRowBase {
     @Field(() => Int, { nullable: true })
     machine_id: number | null;
 
+    // Per-row override of the plan's shift length. Null — the normal case — means
+    // this machine runs the plan's Horas. It exists because the sum rule is a hard
+    // save-blocker: a machine down two hours for maintenance would otherwise force
+    // the planner to fabricate hours or leave the whole plan unsaveable.
+    @Field(() => Float, { nullable: true })
+    shift_hours: number | null;
+
     @Field({ nullable: false })
     notes: string;
 

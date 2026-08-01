@@ -1,13 +1,18 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 // Planeación: a row (one machine) may now carry SEVERAL products, each consuming
-// an explicit number of hours out of the plan's shift. Two schema moves:
+// an explicit number of hours out of the plan's shift. Three schema moves:
 //
 //   1. `production_plans.shift_hours` — "Horas" used to be a display-only knob in
 //      the React page. The rule "a row's products must sum to the shift" cannot be
 //      validated server-side unless the server knows the shift length, so it
 //      becomes plan data.
-//   2. `production_plan_row_products` — replaces the single
+//   2. `production_plan_rows.shift_hours` — a NULLABLE per-row override. Not every
+//      machine runs the whole turno: one down two hours for maintenance would
+//      otherwise force the planner to fabricate hours or leave the plan
+//      unsaveable, because the sum rule is a hard save-blocker. Null means "use
+//      the plan's Horas", so nothing changes for the normal row.
+//   3. `production_plan_row_products` — replaces the single
 //      `production_plan_rows.product_id`, adding `hours`.
 //
 // There is deliberately NO link to an order request. Measured against live
@@ -27,6 +32,17 @@ export class AddProductionPlanRowProducts1785600000000
             `
           ALTER TABLE \`production_plans\`
             ADD COLUMN \`shift_hours\` double NOT NULL DEFAULT 8 AFTER \`shift\`;
+      `,
+        );
+
+        // Nullable on purpose: NULL is "this row runs the plan's Horas", which is
+        // every existing row and the overwhelming majority of new ones. A default
+        // would have forced a value onto rows that do not need one and made
+        // "overridden" indistinguishable from "inherited".
+        await queryRunner.query(
+            `
+          ALTER TABLE \`production_plan_rows\`
+            ADD COLUMN \`shift_hours\` double NULL DEFAULT NULL AFTER \`machine_id\`;
       `,
         );
 
@@ -121,6 +137,10 @@ export class AddProductionPlanRowProducts1785600000000
 
         await queryRunner.query(
             `DROP TABLE IF EXISTS \`production_plan_row_products\`;`,
+        );
+
+        await queryRunner.query(
+            `ALTER TABLE \`production_plan_rows\` DROP COLUMN \`shift_hours\`;`,
         );
 
         await queryRunner.query(
