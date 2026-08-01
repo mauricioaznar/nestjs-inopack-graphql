@@ -8,6 +8,7 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
     getCreatedAtProperty,
     getUpdatedAtProperty,
+    groupByKey,
     vennDiagram,
 } from '../../../common/helpers';
 import {
@@ -155,20 +156,53 @@ export class ProductionPlansService {
         });
     }
 
-    async getProductionPlanRowProducts({
-        production_plan_row_id,
+    // Planned products for many rows at once, for the row resolver's loader.
+    // Batched rather than one call per row because loading a plan asks for every
+    // row's products in the same tick, so one `IN` read replaces twenty. Each
+    // row's list keeps `position asc`, because the grouping preserves the
+    // query's own order.
+    async getProductionPlanRowProductsByRowIds({
+        production_plan_row_ids,
     }: {
-        production_plan_row_id: number;
-    }): Promise<ProductionPlanRowProduct[]> {
-        return this.prisma.production_plan_row_products.findMany({
+        production_plan_row_ids: number[];
+    }): Promise<Map<number, ProductionPlanRowProduct[]>> {
+        const rowProducts =
+            await this.prisma.production_plan_row_products.findMany({
+                where: {
+                    production_plan_row_id: { in: production_plan_row_ids },
+                    active: 1,
+                },
+                orderBy: {
+                    position: 'asc',
+                },
+            });
+
+        return groupByKey(
+            production_plan_row_ids,
+            rowProducts,
+            (rowProduct) => rowProduct.production_plan_row_id,
+        );
+    }
+
+    // The products a plan's planned lines point at, in one read. A plan's rows
+    // repeat products constantly (two machines running the same bolsa is the
+    // normal case), and the loader caches per request, so the repeats collapse
+    // into a single id before this runs.
+    async getRowProductsByIds({
+        product_ids,
+    }: {
+        product_ids: number[];
+    }): Promise<Map<number, Product>> {
+        const products = await this.prisma.products.findMany({
             where: {
-                production_plan_row_id: production_plan_row_id,
+                id: { in: product_ids },
                 active: 1,
             },
-            orderBy: {
-                position: 'asc',
-            },
         });
+
+        const byId = new Map<number, Product>();
+        products.forEach((product) => byId.set(product.id, product));
+        return byId;
     }
 
     async getProductionPlanRowEmployees({
@@ -188,6 +222,20 @@ export class ProductionPlansService {
     // product. Done as two indexed reads plus a JS fold rather than raw SQL: the
     // row count for one date/turno/sucursal is small, and it keeps the date and
     // branch handling in TypeScript instead of interpolated SQL.
+    //
+    // SCOPE, stated because it used to be assumed: this returns EVERYTHING
+    // captured in the slot — every machine and every production type for that
+    // date, turno and sucursal — not only what some plan happens to cover. The
+    // query has no plan and no machine set to filter by, and a caller that wants
+    // to compare against one plan can, since every row carries its machine_id.
+    //
+    // That matters for the one caller that nets a forecast by it (the planning
+    // page): netting by production from a machine the plan does not include
+    // would subtract twice, because such production is already inside the
+    // inventory figure the forecast is added to and was never part of the
+    // forecast. So the page keys this by machine and nets only by its own rows;
+    // the decision lives there because the plan's machines are live, unsaved
+    // state, and sending them here would re-fetch on every machine change.
     async getProductionPlanActuals({
         date,
         shift,
@@ -760,18 +808,6 @@ export class ProductionPlansService {
             where: { id: machine_id, active: 1 },
         });
     }
-
-    async getRowProduct({
-        product_id,
-    }: {
-        product_id: number | null;
-    }): Promise<Product | null> {
-        if (!product_id) return null;
-        return this.prisma.products.findFirst({
-            where: { id: product_id, active: 1 },
-        });
-    }
-
 
     async getRowEmployees({
         production_plan_row_id,
