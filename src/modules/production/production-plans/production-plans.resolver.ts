@@ -10,7 +10,6 @@ import {
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { ProductionPlansService } from './production-plans.service';
 import {
-    ActivityEntityName,
     ActivityTypeName,
     Branch,
     GetProductionPlanArgs,
@@ -68,14 +67,12 @@ export class ProductionPlansResolver {
         @CurrentUser() currentUser: User,
     ): Promise<ProductionPlan> {
         const productionPlan = await this.service.upsertProductionPlan(input);
-        await this.pubSubService.publishActivity({
-            entity_name: ActivityEntityName.PRODUCTION_PLAN,
+        await this.pubSubService.productionPlan({
+            productionPlan,
             type: !input.id
                 ? ActivityTypeName.CREATE
                 : ActivityTypeName.UPDATE,
-            entity_id: productionPlan.id,
             userId: currentUser.id,
-            description: `Planeación: ${productionPlan.date}`,
         });
         return productionPlan;
     }
@@ -94,12 +91,10 @@ export class ProductionPlansResolver {
         await this.service.deleteProductionPlan({
             production_plan_id: productionPlanId,
         });
-        await this.pubSubService.publishActivity({
-            entity_name: ActivityEntityName.PRODUCTION_PLAN,
+        await this.pubSubService.productionPlan({
+            productionPlan,
             type: ActivityTypeName.DELETE,
-            entity_id: productionPlan.id,
             userId: currentUser.id,
-            description: `Planeación: ${productionPlan.date}`,
         });
         return true;
     }

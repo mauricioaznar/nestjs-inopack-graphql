@@ -18,12 +18,16 @@ import {
 import { OrderProduction } from '../../dto/entities/production/order-production.dto';
 import { OrderAdjustment } from '../../dto/entities/production/order-adjustment.dto';
 import { Employee } from '../../dto/entities/production/employee.dto';
+import { ActivityTitleService } from './activity-title.service';
 
 @Injectable()
 export class PubSubService {
     private pubSub: PubSub;
 
-    constructor(private prisma: PrismaService) {
+    constructor(
+        private prisma: PrismaService,
+        private activityTitle: ActivityTitleService,
+    ) {
         this.pubSub = new PubSub();
     }
 
@@ -48,7 +52,7 @@ export class PubSubService {
             type: type,
             entity_id: product.id,
             userId,
-            description: `Producto: ${product.external_description} (${product.code})`,
+            title: this.activityTitle.product(product),
             oldData,
             newData,
         });
@@ -77,7 +81,7 @@ export class PubSubService {
             type: type,
             entity_id: orderProduction.id,
             userId,
-            description: `Producción: ${orderProduction.start_date}`,
+            title: this.activityTitle.orderProduction(orderProduction),
             oldData,
             newData,
         });
@@ -106,7 +110,7 @@ export class PubSubService {
             type: type,
             entity_id: machine.id,
             userId,
-            description: `Maquina: ${machine.name}`,
+            title: this.activityTitle.machine(machine),
             oldData,
             newData,
         });
@@ -135,7 +139,7 @@ export class PubSubService {
             type: type,
             entity_id: orderAdjustment.id,
             userId,
-            description: `Ajuste: ${orderAdjustment.date}`,
+            title: await this.activityTitle.orderAdjustment(orderAdjustment),
             oldData,
             newData,
         });
@@ -164,7 +168,7 @@ export class PubSubService {
             type: type,
             entity_id: employee.id,
             userId,
-            description: `Empleado: ${employee.fullname}`,
+            title: this.activityTitle.employee(employee),
             oldData,
             newData,
         });
@@ -193,7 +197,7 @@ export class PubSubService {
             type: type,
             entity_id: account.id,
             userId,
-            description: `Cuenta: ${account.abbreviation} (${account.name})`,
+            title: this.activityTitle.account(account),
             oldData,
             newData,
         });
@@ -226,7 +230,7 @@ export class PubSubService {
             type: type,
             entity_id: user.id,
             userId,
-            description: `Usuario: ${user.fullname} (${user.email})`,
+            title: this.activityTitle.user(user),
             oldData,
             newData,
         });
@@ -255,7 +259,7 @@ export class PubSubService {
             type: type,
             entity_id: orderRequest.id,
             userId,
-            description: `Pedido: ${orderRequest.order_code}`,
+            title: await this.activityTitle.orderRequest(orderRequest),
             oldData,
             newData,
         });
@@ -284,7 +288,7 @@ export class PubSubService {
             type: type,
             entity_id: orderSale.id,
             userId,
-            description: `Venta: ${orderSale.order_code}`,
+            title: await this.activityTitle.orderSale(orderSale),
             oldData,
             newData,
         });
@@ -315,7 +319,7 @@ export class PubSubService {
             userId,
             oldData,
             newData,
-            description: `Transferencia: ${transfer.id}`,
+            title: await this.activityTitle.transfer(transfer),
         });
     }
 
@@ -342,7 +346,7 @@ export class PubSubService {
             type: type,
             entity_id: resource.id,
             userId,
-            description: `Recurso: ${resource.id}`,
+            title: this.activityTitle.resource(resource),
             oldData,
             newData,
         });
@@ -373,7 +377,7 @@ export class PubSubService {
             userId,
             oldData,
             newData,
-            description: `Compra: ${expense.id}`,
+            title: await this.activityTitle.expense(expense),
         });
     }
 
@@ -394,7 +398,33 @@ export class PubSubService {
             type: type,
             entity_id: expenseResource.id,
             userId,
-            description: `Compra: ${expenseResource.id}`,
+            title: await this.activityTitle.expenseResource(expenseResource),
+        });
+    }
+
+    // Production plans have no subscription topic (nothing listens for one), so
+    // unlike its siblings this wrapper only writes the activity. It exists so
+    // that every entity's title is built in one place — the resolver used to
+    // call publishActivity directly and interpolate a raw Date.
+    //
+    // No snapshots yet: the diff path walker only reads two path segments and
+    // production plans are the only entity with two-level nesting, so wiring
+    // them would ship a quietly wrong audit view (§6.6, "Deferred").
+    async productionPlan({
+        productionPlan,
+        type,
+        userId,
+    }: {
+        productionPlan: { id: number; date: Date; shift?: number | null };
+        type: ActivityTypeName;
+        userId: number;
+    }) {
+        await this.publishActivity({
+            entity_name: ActivityEntityName.PRODUCTION_PLAN,
+            type: type,
+            entity_id: productionPlan.id,
+            userId,
+            title: this.activityTitle.productionPlan(productionPlan),
         });
     }
 
@@ -403,7 +433,7 @@ export class PubSubService {
         entity_name,
         type,
         userId,
-        description,
+        title,
         oldData,
         newData,
     }: {
@@ -411,7 +441,10 @@ export class PubSubService {
         entity_name: ActivityEntityName;
         type: ActivityTypeName;
         userId: number;
-        description: string;
+        // A record IDENTIFIER, not a sentence — always built by
+        // ActivityTitleService so the entities cannot drift apart again.
+        // See activity-title.service.ts.
+        title: string;
         // Every entity funnels through here, so all activities CAN carry
         // snapshots; only the wired entities actually pass them. Undefined
         // leaves the column NULL rather than writing JSON null.
@@ -421,7 +454,7 @@ export class PubSubService {
         const activity = await this.prisma.activities.create({
             data: {
                 entity_name: entity_name,
-                description: description,
+                title: title,
                 created_at: new Date(),
                 updated_at: new Date(),
                 entity_id: entity_id,

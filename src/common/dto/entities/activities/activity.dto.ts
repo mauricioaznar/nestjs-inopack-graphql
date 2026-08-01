@@ -1,10 +1,12 @@
 import {
+    ArgsType,
     Field,
     InputType,
     Int,
     ObjectType,
     registerEnumType,
 } from '@nestjs/graphql';
+import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
 
 export enum ActivityEntityName {
     ORDER_PRODUCTION = 'orderProductions',
@@ -50,8 +52,12 @@ export class ActivityBase {
     @Field(() => Int, { nullable: false })
     entity_id: number;
 
+    // A record IDENTIFIER frozen at write time — "1042 (F103) · ACME" — not a
+    // sentence and not a change summary. The snapshots answer what changed;
+    // this answers which record, in the one column the feed can afford. It is
+    // also all that survives a hard delete. Built by ActivityTitleService.
     @Field({ nullable: false })
-    description: string;
+    title: string;
 }
 
 @ObjectType('ActivityInput')
@@ -86,4 +92,19 @@ export class Activity extends ActivityBase {
     // ActivitiesResolver rather than declared here, matching how OrderSale
     // handles created_by / updated_by. Keeps DTO-to-DTO imports out of the
     // entities barrel.
+}
+
+@ObjectType()
+export class PaginatedActivities extends OffsetPaginatorResult(Activity) {}
+
+@ArgsType()
+export class ActivitiesQueryArgs {
+    @Field(() => ActivityEntityName, { nullable: true })
+    entity_name: ActivityEntityName | null;
+
+    @Field(() => ActivityTypeName, { nullable: true })
+    type: ActivityTypeName | null;
+
+    @Field(() => Int, { nullable: true })
+    user_id: number | null;
 }

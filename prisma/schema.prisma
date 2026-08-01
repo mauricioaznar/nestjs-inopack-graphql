@@ -14,7 +14,7 @@ model activities {
   created_at  DateTime? @db.DateTime(0)
   updated_at  DateTime? @db.DateTime(0)
   user_id     Int       @db.UnsignedInt
-  description String    @db.VarChar(255)
+  title       String    @db.VarChar(255)
   type        String    @db.VarChar(255)
   entity_name String    @db.VarChar(255)
   entity_id   Int       @db.UnsignedInt
@@ -27,6 +27,7 @@ model activities {
   users       users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activities_user_id_foreign")
 
   @@index([branch_id], map: "activities_branch_id_foreign")
+  @@index([created_at], map: "activities_created_at_index")
   @@index([entity_name, entity_id], map: "activities_entity_index")
   @@index([role_id], map: "activities_role_id_foreign")
   @@index([user_id], map: "activities_user_id_foreign")

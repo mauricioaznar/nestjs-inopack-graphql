@@ -37,9 +37,40 @@ export class AddDataSnapshotsToActivities1785517054000
             ALTER TABLE activities
             ADD INDEX activities_entity_index (entity_name, entity_id);
         `);
+
+        // `description` held a hand-written sentence per call site, and they had
+        // drifted into two different kinds of thing: `Venta: 1042` identifies a
+        // record, while `Transferencia: 12` only restated the primary key that
+        // `entity_id` already holds. The column now carries a record IDENTIFIER
+        // built by activity-title.ts, so the name changes with the meaning —
+        // "description" is what invited prose in the first place.
+        //
+        // Existing rows keep their old values under the new name. No backfill:
+        // half the entities they point at are gone, and the old strings are
+        // still readable. The feed self-heals as new activities land.
+        await queryRunner.query(`
+            ALTER TABLE activities
+            RENAME COLUMN description TO title;
+        `);
+
+        // Serves the date-range filter on the activities page. The list itself
+        // still orders by \`id DESC\` — the PK is already ordered and is stable
+        // under the constant inserts this table sees.
+        await queryRunner.query(`
+            ALTER TABLE activities
+            ADD INDEX activities_created_at_index (created_at);
+        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`
+            ALTER TABLE activities
+            DROP INDEX activities_created_at_index;
+        `);
+        await queryRunner.query(`
+            ALTER TABLE activities
+            RENAME COLUMN title TO description;
+        `);
         await queryRunner.query(`
             ALTER TABLE activities
             DROP INDEX activities_entity_index;

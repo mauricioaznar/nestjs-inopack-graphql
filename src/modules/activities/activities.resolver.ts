@@ -8,7 +8,17 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
-import { Activity, ActivityEntityName, User } from '../../common/dto/entities';
+import {
+    ActivitiesQueryArgs,
+    Activity,
+    ActivityEntityName,
+    PaginatedActivities,
+    User,
+} from '../../common/dto/entities';
+import {
+    DatePaginator,
+    OffsetPaginatorArgs,
+} from '../../common/dto/pagination';
 import { ActivitiesService } from './activities.service';
 import { PubSubService } from '../../common/modules/pub-sub/pub-sub.service';
 import { RolesDecorator } from '../auth/decorators/role.decorator';
@@ -37,9 +47,25 @@ export class ActivitiesResolver {
         private activitiesPubSubService: PubSubService,
     ) {}
 
-    @Query(() => [Activity])
-    async getActivities() {
-        return this.activitiesService.getActivities();
+    // No @RolesDecorator: the activities page is GENERAL_VIEW and this feed
+    // carries no snapshots. getActivity / getEntityActivities below stay
+    // admin-only — those are the ones that return whole rows.
+    //
+    // Deliberately NOT annotated `Promise<PaginatedActivities>`: the rows carry
+    // old_data/new_data as parsed JSON while the DTO types them as strings, and
+    // the field resolvers below do the conversion. Annotating would be a type
+    // conflict — the same reason the service infers its return type.
+    @Query(() => PaginatedActivities)
+    async paginatedActivities(
+        @Args({ nullable: false }) offsetPaginatorArgs: OffsetPaginatorArgs,
+        @Args({ nullable: false }) datePaginator: DatePaginator,
+        @Args({ nullable: false }) activitiesQueryArgs: ActivitiesQueryArgs,
+    ) {
+        return this.activitiesService.paginatedActivities({
+            offsetPaginatorArgs,
+            datePaginator,
+            activitiesQueryArgs,
+        });
     }
 
     // Audit detail is admin-only: the snapshots carry whole rows, including
