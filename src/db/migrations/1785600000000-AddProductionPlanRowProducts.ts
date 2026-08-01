@@ -13,7 +13,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 //      unsaveable, because the sum rule is a hard save-blocker. Null means "use
 //      the plan's Horas", so nothing changes for the normal row.
 //   3. `production_plan_row_products` — replaces the single
-//      `production_plan_rows.product_id`, adding `hours`.
+//      `production_plan_rows.product_id`, adding `hours` and `efficiency`.
 //
 // There is deliberately NO link to an order request. Measured against live
 // pending pedidos: 79% of products are wanted by 2+ pedidos at once (one by 14),
@@ -24,6 +24,12 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 // The old column is backfilled and dropped rather than kept as a "primary
 // product": two sources of truth for the same fact is exactly how the
 // products-to-produce `groups_*` accumulation bug happened.
+//
+// `efficiency` is a PERCENTAGE (80 = 80%), not a fraction, because that is what
+// the planner types. It scales the predicted output of one planned product:
+// kg = kg/hr x hours x efficiency/100. It is per planned product rather than per
+// row because two products on the same machine do not run equally well, and a
+// per-row value is still expressible by giving every line the same number.
 export class AddProductionPlanRowProducts1785600000000
     implements MigrationInterface
 {
@@ -57,6 +63,7 @@ export class AddProductionPlanRowProducts1785600000000
               \`production_plan_row_id\` int unsigned          DEFAULT NULL,
               \`product_id\`             int unsigned          DEFAULT NULL,
               \`hours\`                  double       NOT NULL DEFAULT 0,
+              \`efficiency\`             double       NOT NULL DEFAULT 80,
               \`position\`               int          NOT NULL DEFAULT '0',
               PRIMARY KEY (\`id\`),
               KEY \`ppr_products_row_id_foreign\` (\`production_plan_row_id\`),
@@ -75,6 +82,9 @@ export class AddProductionPlanRowProducts1785600000000
         // migrated row already satisfies the "products sum to the shift" rule and
         // no historical plan becomes unsaveable. Rows with no product produce
         // nothing and are deliberately skipped — they stay exempt from the rule.
+        // `efficiency` is left to the column default (80): a migrated row never
+        // had one, and a plan reopened from before this feature should read the
+        // same 80% a new one does rather than a special-case 100%.
         await queryRunner.query(
             `
           INSERT INTO \`production_plan_row_products\`

@@ -74,6 +74,15 @@ export class ProductionPlanRowProductBase {
     @Field(() => Float, { nullable: false })
     hours: number;
 
+    // What share of the machine's historical kg/hr this product is expected to
+    // actually hit this turno, as a PERCENTAGE (80 = 80%). The prediction is
+    // kg/hr x hours x efficiency/100, so 40 expected bultos at 80% read as 32.
+    // Per planned product, not per row: two products on one machine do not run
+    // equally well, and a single per-row figure is still expressible by giving
+    // every line the same number.
+    @Field(() => Float, { nullable: false })
+    efficiency: number;
+
     @Field(() => Int, { nullable: false })
     position: number;
 }

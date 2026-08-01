@@ -65,8 +65,16 @@ interface RowProductVennItem {
     id?: number | null;
     product_id: number | null;
     hours: number;
+    efficiency: number;
     position: number;
 }
+
+// A planned product's expected output is scaled by an efficiency PERCENTAGE
+// (80 = 80%). Bounded rather than free: a percentage is what the field means, so
+// 800 is a typo that would silently inflate every coverage figure derived from
+// it, and 0 makes the line produce nothing while still consuming the turno.
+const MIN_EFFICIENCY = 0;
+const MAX_EFFICIENCY = 100;
 
 @Injectable()
 export class ProductionPlansService {
@@ -506,6 +514,7 @@ export class ProductionPlansService {
                     production_plan_row_id: production_plan_row_id,
                     product_id: createItem.product_id,
                     hours: createItem.hours,
+                    efficiency: createItem.efficiency,
                     position: createItem.position,
                     active: 1,
                 },
@@ -519,6 +528,7 @@ export class ProductionPlansService {
                         ...getUpdatedAtProperty(),
                         product_id: updateItem.product_id,
                         hours: updateItem.hours,
+                        efficiency: updateItem.efficiency,
                         position: updateItem.position,
                         active: 1,
                     },
@@ -706,6 +716,20 @@ export class ProductionPlansService {
                     );
                 }
 
+                // The efficiency is a percentage of the machine's historical
+                // kg/hr, so it can only live in (0, 100]. Rejected server-side
+                // and not merely bounded in the input, because every coverage
+                // figure the drawer shows is derived from it.
+                if (
+                    rowProduct.efficiency === null ||
+                    rowProduct.efficiency === undefined ||
+                    rowProduct.efficiency <= MIN_EFFICIENCY ||
+                    rowProduct.efficiency > MAX_EFFICIENCY
+                ) {
+                    errors.push(
+                        `product ${rowProduct.product_id}: efficiency must be greater than ${MIN_EFFICIENCY} and at most ${MAX_EFFICIENCY}`,
+                    );
+                }
             }
 
             // A product may appear at most once per row (same rule as a sale).

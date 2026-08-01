@@ -320,6 +320,7 @@ model production_plan_row_products {
   production_plan_row_id Int?                  @db.UnsignedInt
   product_id             Int?                  @db.UnsignedInt
   hours                  Float                 @default(0)
+  efficiency             Float                 @default(80)
   position               Int                   @default(0)
   production_plan_rows   production_plan_rows? @relation(fields: [production_plan_row_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ppr_products_row_id_foreign")
   products               products?             @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ppr_products_product_id_foreign")
