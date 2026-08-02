@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Int,
     Mutation,
     Parent,
@@ -13,16 +14,24 @@ import {
     ActivityEntityName,
     ActivityTypeName,
     Branch,
+    GetProductionPlanActualsArgs,
     GetProductionPlanArgs,
     GetProductionPlansArgs,
     Machine,
     Product,
     ProductionPlan,
+    ProductionPlanActual,
     ProductionPlanRow,
+    ProductionPlanRowProduct,
     ProductionPlanUpsertInput,
     User,
 } from '../../../common/dto/entities';
 import { Employee } from '../../../common/dto/entities/production/employee.dto';
+import {
+    createBatchLoader,
+    getRequestLoader,
+    LoaderContext,
+} from '../../../common/helpers';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -47,6 +56,28 @@ export class ProductionPlansResolver {
             date: getProductionPlanArgs.date,
             shift: getProductionPlanArgs.shift,
             branch_id: getProductionPlanArgs.branch_id,
+        });
+    }
+
+    @Query(() => [ProductionPlanActual])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getProductionPlanActuals(
+        @Args() args: GetProductionPlanActualsArgs,
+    ): Promise<ProductionPlanActual[]> {
+        return this.service.getProductionPlanActuals({
+            date: args.date,
+            shift: args.shift,
+            branch_id: args.branch_id,
+        });
+    }
+
+    @Query(() => [Int])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getMachineProducedProductIds(
+        @Args('machineId', { type: () => Int }) machineId: number,
+    ): Promise<number[]> {
+        return this.service.getMachineProducedProductIds({
+            machine_id: machineId,
         });
     }
 
@@ -136,11 +167,30 @@ export class ProductionPlanRowsResolver {
         return this.service.getRowMachine({ machine_id: row.machine_id });
     }
 
-    @ResolveField(() => Product, { nullable: true })
-    async product(
+    // Batched: a 20-row plan asks for this 20 times, and one `IN` read answers
+    // all of them. The loader is created once per request on the GraphQL
+    // context — never on this resolver, which Nest instantiates once for the
+    // life of the process and would therefore cache across requests.
+    //
+    // `employees` below is the same shape and the same N+1; it is deliberately
+    // left alone for now so this change is one behaviour, and it is the next
+    // thing this pattern applies to.
+    @ResolveField(() => [ProductionPlanRowProduct])
+    async products(
         @Parent() row: ProductionPlanRow,
-    ): Promise<Product | null> {
-        return this.service.getRowProduct({ product_id: row.product_id });
+        @Context() context: LoaderContext,
+    ): Promise<ProductionPlanRowProduct[]> {
+        const loader = getRequestLoader<number, ProductionPlanRowProduct[]>(
+            context,
+            'productionPlanRowProducts',
+            () =>
+                createBatchLoader((rowIds) =>
+                    this.service.getProductionPlanRowProductsByRowIds({
+                        production_plan_row_ids: rowIds,
+                    }),
+                ),
+        );
+        return (await loader.load(row.id)) ?? [];
     }
 
     @ResolveField(() => [Employee])
@@ -150,5 +200,35 @@ export class ProductionPlanRowsResolver {
         return this.service.getRowEmployees({
             production_plan_row_id: row.id,
         });
+    }
+}
+
+@Resolver(() => ProductionPlanRowProduct)
+@UseGuards(GqlAuthGuard)
+@Injectable()
+export class ProductionPlanRowProductsResolver {
+    constructor(private service: ProductionPlansService) {}
+
+    // Batched, and the bigger of the two wins: this field runs once per planned
+    // product across the whole plan (40 on a 20-row plan with two products
+    // each). The loader also dedupes by id within the request, so the same bolsa
+    // planned on three machines is read once.
+    @ResolveField(() => Product, { nullable: true })
+    async product(
+        @Parent() rowProduct: ProductionPlanRowProduct,
+        @Context() context: LoaderContext,
+    ): Promise<Product | null> {
+        if (!rowProduct.product_id) return null;
+        const loader = getRequestLoader<number, Product>(
+            context,
+            'productionPlanRowProduct.product',
+            () =>
+                createBatchLoader((productIds) =>
+                    this.service.getRowProductsByIds({
+                        product_ids: productIds,
+                    }),
+                ),
+        );
+        return (await loader.load(rowProduct.product_id)) ?? null;
     }
 }

@@ -5,6 +5,8 @@ import {
     MachineHourlyRun,
     MachineProduct,
     MachineProductEmployeeRun,
+    MachineProductRate,
+    MachineProductRatePairInput,
     MachineProductPerformanceSummary,
     ProductMachinePerformanceSummary,
     ProductWithRuns,
@@ -112,6 +114,26 @@ export class ProductionPerformanceResolver {
             product_id: productId,
             from_date: fromDate,
             to_date: toDate,
+        });
+    }
+
+    // Batch rates for production planning. A pair with a null product id asks
+    // for the machine-level fallback; non-null pairs ask for machine x product
+    // rates. The service returns recent and all-history aggregates together.
+    @Query(() => [MachineProductRate])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getMachineProductRates(
+        @Args('pairs', { type: () => [MachineProductRatePairInput] })
+        pairs: MachineProductRatePairInput[],
+        @Args('fromDate', { type: () => String, nullable: true })
+        fromDate: string | null,
+        @Args('recentFromDate', { type: () => String, nullable: true })
+        recentFromDate: string | null,
+    ): Promise<MachineProductRate[]> {
+        return this.service.getMachineProductRates({
+            pairs,
+            from_date: fromDate,
+            recent_from_date: recentFromDate,
         });
     }
 }

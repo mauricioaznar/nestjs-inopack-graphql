@@ -29,6 +29,8 @@ export class ProductInventoryService {
                                 + COALESCE(production_products.kilos, 0)
                                 - COALESCE(sale_products.kilos, 0)
                             )                           as \`kilos\`,
+                        committed_products.kilos        as kilos_committed,
+                        committed_products.\`groups\`   as groups_committed,
                         sale_products.\`groups\`        as groups_sold_given,
                         adjustment_products.\`groups\`  as groups_adjusted,
                         production_products.\`groups\`  as groups_produced,
@@ -61,7 +63,27 @@ export class ProductInventoryService {
                                      GROUP BY product_id
                     ) as sale_products
                 ON sale_products.product_id = products.id
-                LEFT JOIN (         
+                -- Sold but NOT yet Entregado. Deliberately NOT subtracted from
+                -- kilos/groups above: the goods are still in the warehouse
+                -- (they leave at Entregado), and getOptimizedRequestProducts
+                -- likewise measures a pedido's remaining against delivered
+                -- sales only — so subtracting here would strip the very stock
+                -- that covers those pedidos and report them as uncovered.
+                -- Reported separately so a planner can see what is still free.
+                LEFT JOIN (
+                                     SELECT SUM(order_sale_products.kilos)      as kilos,
+                                     SUM(order_sale_products.\`groups\`) as \`groups\`,
+                                     order_sale_products.product_id      as product_id
+                                     FROM order_sale_products
+                                     JOIN order_sales
+                                     ON order_sales.id = order_sale_products.order_sale_id
+                                     WHERE order_sales.active = 1
+                                        AND order_sales.order_sale_status_id <> 2
+                                        AND order_sale_products.active = 1
+                                     GROUP BY product_id
+                    ) as committed_products
+                ON committed_products.product_id = products.id
+                LEFT JOIN (
                                      SELECT SUM(order_adjustment_products.kilos)      as kilos,
                                      SUM(order_adjustment_products.\`groups\`) as \`groups\`,
                                      order_adjustment_products.product_id      as product_id,
