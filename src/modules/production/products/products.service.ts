@@ -63,6 +63,28 @@ export class ProductsService {
             where: {
                 id: product_id,
             },
+            include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                product_categories: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                product_materials: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_production_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
         });
     }
 

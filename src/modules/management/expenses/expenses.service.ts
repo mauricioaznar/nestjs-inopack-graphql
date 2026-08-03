@@ -80,6 +80,26 @@ export class ExpensesService {
                 id: expense_id,
             },
             include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                accounts: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                receipt_types: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                expense_statuses: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 expense_resources: {
                     where: {
                         active: 1,

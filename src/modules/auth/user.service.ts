@@ -165,6 +165,22 @@ export class UserService {
                 active: true,
                 role_id: true,
                 branch_id: true,
+                // The two foreign keys, denormalised to id + name so the diff
+                // reads the name rather than the number (§12). Both are nested
+                // `select`s, so this snapshot keeps the explicit-columns-only
+                // property that keeps `password` out of the audit (§6.6).
+                roles: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                branches: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 user_roles: {
                     select: {
                         id: true,

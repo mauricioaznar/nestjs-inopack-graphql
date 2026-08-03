@@ -79,6 +79,28 @@ export class OrderProductionsService {
                 id: order_production_id,
             },
             include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12. The
+                // child rows need `machines` for the same reason — a line's
+                // machine is a foreign key too, not just its product.
+                branches: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                employees: {
+                    select: {
+                        id: true,
+                        fullname: true,
+                    },
+                },
+                order_production_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 order_production_products: {
                     where: {
                         active: 1,
@@ -89,6 +111,12 @@ export class OrderProductionsService {
                                 id: true,
                                 code: true,
                                 description: true,
+                            },
+                        },
+                        machines: {
+                            select: {
+                                id: true,
+                                name: true,
                             },
                         },
                     },
@@ -116,6 +144,12 @@ export class OrderProductionsService {
                                 id: true,
                                 code: true,
                                 description: true,
+                            },
+                        },
+                        machines: {
+                            select: {
+                                id: true,
+                                name: true,
                             },
                         },
                     },

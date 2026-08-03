@@ -213,6 +213,16 @@ export class AccountsService {
                 id: account_id,
             },
             include: {
+                // The account's own foreign key, denormalised to id + name so
+                // the diff reads the name rather than the number (§12).
+                // `merged_into_account_id` has no Prisma relation to include,
+                // so it still renders as an id — a known gap, not an omission.
+                resources: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 account_contacts: {
                     where: {
                         active: 1,

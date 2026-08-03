@@ -70,16 +70,46 @@ export class TransfersService {
     // The related rows are trimmed to their identifying codes: the snapshot
     // stores them as they were AT THE TIME, so an old audit entry never displays
     // a code the record only acquired later.
+    // The two account relations are the one place a snapshot is RESHAPED after
+    // the query. Prisma disambiguates two relations to the same table by
+    // generating `accounts_accountsTotransfers_from_account_id`, and an include
+    // key cannot be aliased — but the React differ pairs a foreign key with its
+    // related row by deriving the key from the column name (`from_account_id`
+    // -> `from_account`), so the generated names would never be found and both
+    // accounts would render as bare ids.
+    //
+    // Renaming the keys here is safe: the flattener skips nested single objects
+    // entirely, so these exist only to be read as labels and cannot affect the
+    // diff. Reshaping in the service also keeps the convention intact on the
+    // React side, rather than teaching it about one table's generated names.
     async getTransferSnapshot({
         transfer_id,
     }: {
         transfer_id: number;
     }): Promise<unknown> {
-        return this.prisma.transfers.findUnique({
+        const transfer = await this.prisma.transfers.findUnique({
             where: {
                 id: transfer_id,
             },
             include: {
+                transfer_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                accounts_accountsTotransfers_from_account_id: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                accounts_accountsTotransfers_to_account_id: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 transfer_receipts: {
                     where: {
                         active: 1,
@@ -102,6 +132,20 @@ export class TransfersService {
                 },
             },
         });
+
+        if (!transfer) return null;
+
+        const {
+            accounts_accountsTotransfers_from_account_id: fromAccount,
+            accounts_accountsTotransfers_to_account_id: toAccount,
+            ...rest
+        } = transfer;
+
+        return {
+            ...rest,
+            from_account: fromAccount,
+            to_account: toAccount,
+        };
     }
 
     async getTransfers({

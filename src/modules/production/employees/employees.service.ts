@@ -160,6 +160,34 @@ export class EmployeesService {
             where: {
                 id: employee_id,
             },
+            include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                branches: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                employee_categories: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                employee_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_production_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
         });
     }
 

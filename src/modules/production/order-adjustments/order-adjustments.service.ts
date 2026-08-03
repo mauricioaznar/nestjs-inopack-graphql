@@ -69,6 +69,20 @@ export class OrderAdjustmentsService {
                 id: order_adjustment_id,
             },
             include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                order_adjustment_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_sales: {
+                    select: {
+                        id: true,
+                        order_code: true,
+                    },
+                },
                 order_adjustment_products: {
                     where: {
                         active: 1,

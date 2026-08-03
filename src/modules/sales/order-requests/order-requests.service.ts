@@ -87,6 +87,20 @@ export class OrderRequestsService {
                 id: order_request_id,
             },
             include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                accounts: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_request_statuses: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 order_request_products: {
                     where: {
                         active: 1,

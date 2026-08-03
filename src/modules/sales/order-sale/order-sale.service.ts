@@ -301,6 +301,35 @@ export class OrderSaleService {
                 id: order_sale_id,
             },
             include: {
+                // Foreign keys would otherwise diff as bare numbers
+                // ("Status | 2 | 1"). Each relation is selected down to its id
+                // and its name, so the audit reads the name AS IT WAS — and so
+                // the React side has only one column it could mistake for the
+                // label. See the feature doc §12.
+                accounts: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_sale_statuses: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                receipt_types: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_requests: {
+                    select: {
+                        id: true,
+                        order_code: true,
+                    },
+                },
                 order_sale_products: {
                     where: {
                         active: 1,

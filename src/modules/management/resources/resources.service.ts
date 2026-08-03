@@ -57,6 +57,16 @@ export class ResourcesService {
             where: {
                 id: resource_id,
             },
+            include: {
+                // Foreign key, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                resource_categories: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
         });
     }
 
