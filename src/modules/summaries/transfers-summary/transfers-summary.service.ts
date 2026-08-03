@@ -1,7 +1,11 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
-import { getDateRangeSql, getDatesInjectionsV2 } from '../../../common/helpers';
+import { getDatesInjectionsV2 } from '../../../common/helpers';
+import {
+    businessTimeSql,
+    getBusinessDateRangeSql,
+} from '../../../common/helpers/dates/business-day';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 import {
     TransfersSummary,
@@ -27,7 +31,7 @@ export class TransfersSummaryService {
             };
         }
 
-        const { startDate, endDate } = getDateRangeSql({
+        const { startDate, endDate } = getBusinessDateRangeSql({
             year: year,
             month: month,
         });
@@ -65,9 +69,7 @@ export class TransfersSummaryService {
                 ${selectDateGroup}
             from (
              select
-                 date (date_add(transfers.transferred_date, interval -WEEKDAY(transfers.transferred_date) - 1 day)) first_day_of_the_week,
-                 date(date_add(date_add(transfers.transferred_date, interval -WEEKDAY(transfers.transferred_date) - 1 day), interval 6 day)) last_day_of_the_week,
-                 transfers.transferred_date start_date,
+                 ${businessTimeSql('transfers.transferred_date')} as start_date,
                  a1.id account_id,
                  a1.name account_name,
                  a1.abbreviation account_abbreviation,

@@ -19,6 +19,8 @@ import {
 } from '../../../common/dto/pagination';
 import {
     formatFloat,
+    getBusinessDayStart,
+    getBusinessDayEndExclusive,
     getCreatedAtProperty,
     getCreatedByProperty,
     getUpdatedAtProperty,
@@ -51,11 +53,13 @@ export class TransfersService {
     }: {
         datePaginator: DatePaginator;
     }): Promise<Transfer[]> {
+        // INSTANT field: Contabilidad sends an exclusive end (first day of
+        // next month), so both bounds use getBusinessDayStart.
         const startDate = datePaginator.start_date
-            ? new Date(datePaginator.start_date)
+            ? getBusinessDayStart(datePaginator.start_date)
             : undefined;
         const endDate = datePaginator.end_date
-            ? new Date(datePaginator.end_date)
+            ? getBusinessDayStart(datePaginator.end_date)
             : undefined;
 
         const transfersWhere: Prisma.transfersWhereInput[] = [
@@ -106,11 +110,13 @@ export class TransfersService {
         transfersQueryArgs: TransfersQueryArgs;
         transfersSortArgs: TransfersSortArgs;
     }): Promise<PaginatedTransfers> {
+        // INSTANT field: Transferencias range picker treats the end date as
+        // inclusive, so use getBusinessDayEndExclusive for the upper bound.
         const filterStartDate = datePaginator.start_date
-            ? new Date(datePaginator.start_date)
+            ? getBusinessDayStart(datePaginator.start_date)
             : undefined;
         const filterEndDate = datePaginator.end_date
-            ? new Date(datePaginator.end_date)
+            ? getBusinessDayEndExclusive(datePaginator.end_date)
             : undefined;
 
         const { sort_order, sort_field } = transfersSortArgs;
