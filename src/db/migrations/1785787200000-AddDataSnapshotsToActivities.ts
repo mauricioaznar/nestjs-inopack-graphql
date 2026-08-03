@@ -1,6 +1,25 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddDataSnapshotsToActivities1785517054000
+// Re-timestamped 2026-08-03 from 1785517054000 (2026-07-31) so this branch's
+// migration lands LAST. While it sat unshipped, feature/planning-multiproduct-rows
+// was integrated into dev carrying 1785600000000-AddProductionPlanRowProducts —
+// a LATER timestamp that is already applied everywhere. The runner sorts by
+// filename, so the old number made this file claim a slot in the middle of a
+// history that had already moved past it.
+//
+// The runner identifies a migration by its CLASS NAME, which embeds the
+// timestamp, so the class was renamed with the file. On a database where the
+// old name already ran, the schema is correct and only the record is stale —
+// re-point it rather than reverting anything:
+//
+//   UPDATE `migrations`
+//      SET `name` = 'AddDataSnapshotsToActivities1785787200000',
+//          `timestamp` = 1785787200000
+//    WHERE `name` = 'AddDataSnapshotsToActivities1785517054000';
+//
+// A database restored from the dump has never seen either name and simply runs
+// this one in its new, correct position.
+export class AddDataSnapshotsToActivities1785787200000
     implements MigrationInterface
 {
     public async up(queryRunner: QueryRunner): Promise<void> {
