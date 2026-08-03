@@ -1,4 +1,4 @@
-import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
+import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 // A product that has at least one active production run line on the selected
 // machine — used to populate the product selector after a machine is chosen.
@@ -163,4 +163,46 @@ export class MachineHourlyRun {
     // them all, so the UI surfaces how many were mixed together.
     @Field(() => Int, { nullable: false })
     product_count: number;
+}
+
+// The planning page asks for many machine/product rates at once. A nullable
+// product means the machine-level fallback rate for that machine.
+@InputType('MachineProductRatePairInput')
+export class MachineProductRatePairInput {
+    @Field(() => Int, { nullable: false })
+    machineId: number;
+
+    @Field(() => Int, { nullable: true })
+    productId?: number | null;
+}
+
+// Aggregated throughput for one requested machine or machine/product pair.
+// Both windows are returned so the client can preserve the existing rule:
+// prefer the last 12 months, but fall back to all hourly history when that
+// window has no runs.
+@ObjectType('MachineProductRate')
+export class MachineProductRate {
+    @Field(() => Int, { nullable: false })
+    machine_id: number;
+
+    @Field(() => Int, { nullable: true })
+    product_id: number | null;
+
+    @Field(() => Float, { nullable: false })
+    recent_kilos: number;
+
+    @Field(() => Float, { nullable: false })
+    recent_hours: number;
+
+    @Field(() => Int, { nullable: false })
+    recent_runs: number;
+
+    @Field(() => Float, { nullable: false })
+    all_kilos: number;
+
+    @Field(() => Float, { nullable: false })
+    all_hours: number;
+
+    @Field(() => Int, { nullable: false })
+    all_runs: number;
 }

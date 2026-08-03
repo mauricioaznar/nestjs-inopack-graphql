@@ -9,3 +9,4 @@ export * from './audit/get-created-by-property';
 export * from './audit/get-updated-by-property';
 export * from './number/format-number';
 export * from './sql/get-dates-injections';
+export * from './graphql/batch-loader';
