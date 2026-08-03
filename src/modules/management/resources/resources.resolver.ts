@@ -10,6 +10,7 @@ import {
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ResourcesService } from './resources.service';
 import {
+    ActivityEntityName,
     ActivityTypeName,
     PaginatedResources,
     Resource,
@@ -26,6 +27,10 @@ import {
 } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
 
 @Resolver(() => Resource)
@@ -42,26 +47,39 @@ export class ResourcesResolver {
         @Args('ResourceUpsertInput') input: ResourceUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
+        const type = !input.id
+            ? ActivityTypeName.CREATE
+            : ActivityTypeName.UPDATE;
+        const auditContext = {
+            entityName: ActivityEntityName.RESOURCE,
+            entityId: input.id ?? null,
+            activityType: type,
+            userId: currentUser.id,
+        };
         // Audit: capture the row BEFORE the write. On a create there is nothing
-        // to capture, so oldData stays null and the pair reads as
-        // "nothing -> something".
-        const oldData = input.id
-            ? await this.service.getResourceSnapshot({
-                  resource_id: input.id,
-              })
-            : null;
+        // to capture, so the old side is intentionally absent and the pair reads
+        // as "nothing -> something". Guarded: a snapshot read that throws must
+        // not stop the save from happening.
+        const oldCapture = input.id
+            ? await captureSnapshotSafely(auditContext, 'old_snapshot', () =>
+                  this.service.getResourceSnapshot({ resource_id: input.id! }),
+              )
+            : INTENTIONALLY_ABSENT;
+        // OUTSIDE every audit guard — a real save failure still fails.
         const resource = await this.service.upsertResource(input, {
             current_user_id: currentUser.id,
         });
-        const newData = await this.service.getResourceSnapshot({
-            resource_id: resource.id,
-        });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: resource.id },
+            'new_snapshot',
+            () => this.service.getResourceSnapshot({ resource_id: resource.id }),
+        );
         await this.pubSubService.resource({
             resource,
-            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type,
             userId: currentUser.id,
-            oldData,
-            newData,
+            oldCapture,
+            newCapture,
         });
 
         return resource;
@@ -75,11 +93,18 @@ export class ResourcesResolver {
         const resource = await this.getResource(resourceId);
         if (!resource) throw new NotFoundException();
         // Must be captured before the write: the delete is soft, so afterwards
-        // the row carries active = -1. newData stays null — "deleted" is what
-        // the dialog should show, not "active went 1 -> -1".
-        const oldData = await this.service.getResourceSnapshot({
-            resource_id: resource.id,
-        });
+        // the row carries active = -1. The new side is intentionally absent —
+        // "deleted" is what the dialog should show, not "active went 1 -> -1".
+        const oldCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.RESOURCE,
+                entityId: resource.id,
+                activityType: ActivityTypeName.DELETE,
+                userId: currentUser.id,
+            },
+            'old_snapshot',
+            () => this.service.getResourceSnapshot({ resource_id: resource.id }),
+        );
         await this.service.deleteResource({
             resource_id: resource.id,
             current_user_id: currentUser.id,
@@ -88,8 +113,8 @@ export class ResourcesResolver {
             resource,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
-            oldData,
-            newData: null,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
         });
         return true;
     }

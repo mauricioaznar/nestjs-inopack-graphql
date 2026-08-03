@@ -12,6 +12,7 @@ import {
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { OrderRequestsService } from './order-requests.service';
 import {
+    ActivityEntityName,
     ActivityTypeName,
     Account,
     GetOrderRequestsArgs,
@@ -33,6 +34,10 @@ import {
     DatePaginator,
 } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
@@ -94,27 +99,45 @@ export class OrderRequestsResolver {
         @Args('OrderRequestInput') input: OrderRequestInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderRequest> {
+        const type = !input.id
+            ? ActivityTypeName.CREATE
+            : ActivityTypeName.UPDATE;
+        const auditContext = {
+            entityName: ActivityEntityName.ORDER_REQUEST,
+            entityId: input.id ?? null,
+            activityType: type,
+            userId: currentUser.id,
+        };
         // Audit: capture the row BEFORE the write. On a create there is nothing
-        // to capture, so oldData stays null and the pair reads as
-        // "nothing -> something".
-        const oldData = input.id
-            ? await this.service.getOrderRequestSnapshot({
-                  order_request_id: input.id,
-              })
-            : null;
+        // to capture, so the old side is intentionally absent and the pair reads
+        // as "nothing -> something". Guarded: a snapshot read that throws must
+        // not stop the save from happening.
+        const oldCapture = input.id
+            ? await captureSnapshotSafely(auditContext, 'old_snapshot', () =>
+                  this.service.getOrderRequestSnapshot({
+                      order_request_id: input.id!,
+                  }),
+              )
+            : INTENTIONALLY_ABSENT;
+        // OUTSIDE every audit guard — a real save failure still fails.
         const orderRequest = await this.service.upsertOrderRequest({
             input,
             current_user_id: currentUser.id,
         });
-        const newData = await this.service.getOrderRequestSnapshot({
-            order_request_id: orderRequest.id,
-        });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: orderRequest.id },
+            'new_snapshot',
+            () =>
+                this.service.getOrderRequestSnapshot({
+                    order_request_id: orderRequest.id,
+                }),
+        );
         await this.pubSubService.orderRequest({
             orderRequest,
-            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type,
             userId: currentUser.id,
-            oldData,
-            newData,
+            oldCapture,
+            newCapture,
         });
         return orderRequest;
     }
@@ -129,22 +152,38 @@ export class OrderRequestsResolver {
         orderRequestStatusId: number,
         @CurrentUser() currentUser: User,
     ): Promise<OrderRequest> {
-        const oldData = await this.service.getOrderRequestSnapshot({
-            order_request_id: orderRequestId,
-        });
+        const auditContext = {
+            entityName: ActivityEntityName.ORDER_REQUEST,
+            entityId: orderRequestId,
+            activityType: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        };
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () =>
+                this.service.getOrderRequestSnapshot({
+                    order_request_id: orderRequestId,
+                }),
+        );
         const orderRequest = await this.service.updateOrderRequestStatus({
             order_request_id: orderRequestId,
             order_request_status_id: orderRequestStatusId,
         });
-        const newData = await this.service.getOrderRequestSnapshot({
-            order_request_id: orderRequest.id,
-        });
+        const newCapture = await captureSnapshotSafely(
+            auditContext,
+            'new_snapshot',
+            () =>
+                this.service.getOrderRequestSnapshot({
+                    order_request_id: orderRequest.id,
+                }),
+        );
         await this.pubSubService.orderRequest({
             orderRequest,
             type: ActivityTypeName.UPDATE,
             userId: currentUser.id,
-            oldData,
-            newData,
+            oldCapture,
+            newCapture,
         });
         return orderRequest;
     }
@@ -159,21 +198,37 @@ export class OrderRequestsResolver {
         @Args('OrderRequestDetailsInput') input: OrderRequestDetailsInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderRequest> {
-        const oldData = await this.service.getOrderRequestSnapshot({
-            order_request_id: input.order_request_id,
-        });
+        const auditContext = {
+            entityName: ActivityEntityName.ORDER_REQUEST,
+            entityId: input.order_request_id,
+            activityType: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        };
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () =>
+                this.service.getOrderRequestSnapshot({
+                    order_request_id: input.order_request_id,
+                }),
+        );
         const orderRequest = await this.service.updateOrderRequestDetails({
             input,
         });
-        const newData = await this.service.getOrderRequestSnapshot({
-            order_request_id: orderRequest.id,
-        });
+        const newCapture = await captureSnapshotSafely(
+            auditContext,
+            'new_snapshot',
+            () =>
+                this.service.getOrderRequestSnapshot({
+                    order_request_id: orderRequest.id,
+                }),
+        );
         await this.pubSubService.orderRequest({
             orderRequest,
             type: ActivityTypeName.UPDATE,
             userId: currentUser.id,
-            oldData,
-            newData,
+            oldCapture,
+            newCapture,
         });
         return orderRequest;
     }
@@ -217,11 +272,21 @@ export class OrderRequestsResolver {
         }
         // Must be captured before the write: the delete is soft, so afterwards
         // the request and its lines all carry active = -1 and the snapshot would
-        // come back with no children. newData stays null — "deleted" is what the
-        // dialog should show, not "active went 1 -> -1".
-        const oldData = await this.service.getOrderRequestSnapshot({
-            order_request_id: orderRequestId,
-        });
+        // come back with no children. The new side is intentionally absent —
+        // "deleted" is what the dialog should show, not "active went 1 -> -1".
+        const oldCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.ORDER_REQUEST,
+                entityId: orderRequestId,
+                activityType: ActivityTypeName.DELETE,
+                userId: currentUser.id,
+            },
+            'old_snapshot',
+            () =>
+                this.service.getOrderRequestSnapshot({
+                    order_request_id: orderRequestId,
+                }),
+        );
         await this.service.deleteOrderRequest({
             order_request_id: orderRequestId,
             current_user_id: currentUser.id,
@@ -230,8 +295,8 @@ export class OrderRequestsResolver {
             orderRequest,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
-            oldData,
-            newData: null,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
         });
         return true;
     }

@@ -22,9 +22,14 @@ import {
     DatePaginator,
 } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import {
+    ActivityEntityName,
     ActivityTypeName,
     OrderSale,
     OrderSaleProduct,
@@ -78,27 +83,45 @@ export class OrderAdjustmentsResolver {
         @Args('OrderAdjustmentInput') input: OrderAdjustmentInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderAdjustment> {
+        const type = !input.id
+            ? ActivityTypeName.CREATE
+            : ActivityTypeName.UPDATE;
+        const auditContext = {
+            entityName: ActivityEntityName.ORDER_ADJUSTMENT,
+            entityId: input.id ?? null,
+            activityType: type,
+            userId: currentUser.id,
+        };
         // Audit: capture the row BEFORE the write. On a create there is nothing
-        // to capture, so oldData stays null and the pair reads as
-        // "nothing -> something".
-        const oldData = input.id
-            ? await this.service.getOrderAdjustmentSnapshot({
-                  order_adjustment_id: input.id,
-              })
-            : null;
+        // to capture, so the old side is intentionally absent and the pair reads
+        // as "nothing -> something". Guarded: a snapshot read that throws must
+        // not stop the save from happening.
+        const oldCapture = input.id
+            ? await captureSnapshotSafely(auditContext, 'old_snapshot', () =>
+                  this.service.getOrderAdjustmentSnapshot({
+                      order_adjustment_id: input.id!,
+                  }),
+              )
+            : INTENTIONALLY_ABSENT;
+        // OUTSIDE every audit guard — a real save failure still fails.
         const orderAdjustment = await this.service.upsertOrderAdjustment(
             input,
             { current_user_id: currentUser.id },
         );
-        const newData = await this.service.getOrderAdjustmentSnapshot({
-            order_adjustment_id: orderAdjustment.id,
-        });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: orderAdjustment.id },
+            'new_snapshot',
+            () =>
+                this.service.getOrderAdjustmentSnapshot({
+                    order_adjustment_id: orderAdjustment.id,
+                }),
+        );
         await this.pubSubService.orderAdjustment({
             orderAdjustment,
-            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type,
             userId: currentUser.id,
-            oldData,
-            newData,
+            oldCapture,
+            newCapture,
         });
         return orderAdjustment;
     }
@@ -117,11 +140,22 @@ export class OrderAdjustmentsResolver {
         }
         // Must be captured before the write: the delete is soft, so afterwards
         // the adjustment and its lines all carry active = -1 and the snapshot
-        // would come back with no children. newData stays null — "deleted" is
-        // what the dialog should show, not "active went 1 -> -1".
-        const oldData = await this.service.getOrderAdjustmentSnapshot({
-            order_adjustment_id: orderAdjustment.id,
-        });
+        // would come back with no children. The new side is intentionally
+        // absent — "deleted" is what the dialog should show, not "active went
+        // 1 -> -1".
+        const oldCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.ORDER_ADJUSTMENT,
+                entityId: orderAdjustment.id,
+                activityType: ActivityTypeName.DELETE,
+                userId: currentUser.id,
+            },
+            'old_snapshot',
+            () =>
+                this.service.getOrderAdjustmentSnapshot({
+                    order_adjustment_id: orderAdjustment.id,
+                }),
+        );
         await this.service.deleteOrderAdjustment({
             order_adjustment_id: orderAdjustment.id,
             current_user_id: currentUser.id,
@@ -130,8 +164,8 @@ export class OrderAdjustmentsResolver {
             orderAdjustment,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
-            oldData,
-            newData: null,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
         });
         return true;
     }

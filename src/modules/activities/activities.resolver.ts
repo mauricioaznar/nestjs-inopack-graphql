@@ -12,6 +12,7 @@ import {
     ActivitiesQueryArgs,
     Activity,
     ActivityEntityName,
+    ActivitySnapshotStatus,
     PaginatedActivities,
     User,
 } from '../../common/dto/entities';
@@ -124,6 +125,26 @@ export class ActivitiesResolver {
         return serializeSnapshot(
             (activity as unknown as { new_data?: unknown }).new_data,
         );
+    }
+
+    // The column is VARCHAR, not a MySQL ENUM (adding a value to an ENUM is a
+    // table rebuild), so the database cannot enforce the four values — this
+    // resolver does. An unrecognised string reads as `legacy`, the neutral
+    // reading: GraphQL would otherwise throw at serialization and take the
+    // whole activity down over a field nobody can act on.
+    @ResolveField(() => ActivitySnapshotStatus)
+    async snapshot_status(
+        @Parent() activity: Activity,
+    ): Promise<ActivitySnapshotStatus> {
+        const raw = (
+            activity as unknown as { snapshot_status?: string | null }
+        ).snapshot_status;
+        const isKnown = (Object.values(ActivitySnapshotStatus) as string[]).includes(
+            raw ?? '',
+        );
+        return isKnown
+            ? (raw as ActivitySnapshotStatus)
+            : ActivitySnapshotStatus.LEGACY;
     }
 
     @Subscription(() => Activity)

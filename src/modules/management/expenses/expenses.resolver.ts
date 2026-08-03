@@ -13,6 +13,7 @@ import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { ExpensesService } from './expenses.service';
 import {
     Account,
+    ActivityEntityName,
     ActivityTypeName,
     Expense,
     ExpenseResource,
@@ -37,6 +38,10 @@ import {
 } from '../../../common/dto/pagination';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
@@ -58,26 +63,41 @@ export class ExpensesResolver {
         @Args('ExpenseUpsertInput') input: ExpenseUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
+        const type = !input.id
+            ? ActivityTypeName.CREATE
+            : ActivityTypeName.UPDATE;
+        const auditContext = {
+            entityName: ActivityEntityName.EXPENSE,
+            entityId: input.id ?? null,
+            activityType: type,
+            userId: currentUser.id,
+        };
         // Audit: capture the row BEFORE the write. On a create there is nothing
-        // to capture, so oldData stays null and the pair reads as
-        // "nothing -> something".
-        const oldData = input.id
-            ? await this.service.getExpenseSnapshot({
-                  expense_id: input.id,
-              })
-            : null;
+        // to capture, so the old side is intentionally absent and the pair reads
+        // as "nothing -> something". Guarded: a snapshot read that throws must
+        // not stop the save from happening.
+        const oldCapture = input.id
+            ? await captureSnapshotSafely(auditContext, 'old_snapshot', () =>
+                  this.service.getExpenseSnapshot({
+                      expense_id: input.id!,
+                  }),
+              )
+            : INTENTIONALLY_ABSENT;
+        // OUTSIDE every audit guard — a real save failure still fails.
         const expense = await this.service.upsertExpense(input, {
             current_user_id: currentUser.id,
         });
-        const newData = await this.service.getExpenseSnapshot({
-            expense_id: expense.id,
-        });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: expense.id },
+            'new_snapshot',
+            () => this.service.getExpenseSnapshot({ expense_id: expense.id }),
+        );
         await this.pubSubService.expense({
             expense,
-            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type,
             userId: currentUser.id,
-            oldData,
-            newData,
+            oldCapture,
+            newCapture,
         });
 
         return expense;
@@ -94,11 +114,19 @@ export class ExpensesResolver {
         if (!expense) throw new NotFoundException();
         // Must be captured before the write: the delete is soft, so afterwards
         // the expense and its resource lines all carry active = -1 and the
-        // snapshot would come back with no children. newData stays null —
-        // "deleted" is what the dialog should show, not "active went 1 -> -1".
-        const oldData = await this.service.getExpenseSnapshot({
-            expense_id: expense.id,
-        });
+        // snapshot would come back with no children. The new side is
+        // intentionally absent — "deleted" is what the dialog should show, not
+        // "active went 1 -> -1".
+        const oldCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.EXPENSE,
+                entityId: expense.id,
+                activityType: ActivityTypeName.DELETE,
+                userId: currentUser.id,
+            },
+            'old_snapshot',
+            () => this.service.getExpenseSnapshot({ expense_id: expense.id }),
+        );
         await this.service.deleteExpense({
             expense_id: expense.id,
             current_user_id: currentUser.id,
@@ -107,8 +135,8 @@ export class ExpensesResolver {
             expense,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
-            oldData,
-            newData: null,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
         });
         return true;
     }
@@ -283,22 +311,58 @@ export class ExpensesResolver {
             current_user_id: currentUser.id,
         });
 
+        // Every expense above is already committed, so BOTH reads in this loop
+        // are audit-only and both are guarded. Unguarded they were the worst
+        // case on the branch: a read that threw on the third of ten generated
+        // expenses failed the whole mutation, and the caller had no way to know
+        // that ten rows had nevertheless been created.
         for (const expenseId of result.created_ids) {
-            const expense = await this.service.getExpense({
-                expense_id: expenseId,
-            });
+            const auditContext = {
+                entityName: ActivityEntityName.EXPENSE,
+                entityId: expenseId,
+                activityType: ActivityTypeName.CREATE,
+                userId: currentUser.id,
+            };
+            const newCapture = await captureSnapshotSafely(
+                auditContext,
+                'new_snapshot',
+                () => this.service.getExpenseSnapshot({ expense_id: expenseId }),
+            );
+            const entityCapture = await captureSnapshotSafely(
+                auditContext,
+                'new_snapshot',
+                () => this.service.getExpense({ expense_id: expenseId }),
+            );
+            const expense = entityCapture.ok
+                ? (entityCapture.data as Expense | null)
+                : null;
+
             if (expense) {
-                // Always a create, so there is no prior state: oldData is null
-                // and the whole snapshot renders as added.
-                const newData = await this.service.getExpenseSnapshot({
-                    expense_id: expense.id,
-                });
                 await this.pubSubService.expense({
                     expense,
                     type: ActivityTypeName.CREATE,
                     userId: currentUser.id,
-                    oldData: null,
-                    newData,
+                    // Always a create, so there is no prior state: the old side
+                    // is intentionally absent and the snapshot renders as added.
+                    oldCapture: INTENTIONALLY_ABSENT,
+                    newCapture,
+                });
+            } else {
+                // No entity row to title or notify with, but the expense WAS
+                // created — record the metadata rather than leaving the feed
+                // silently one activity short. `newCapture` carries the failure
+                // (or a null snapshot), so this lands as `capture_failed`.
+                await this.pubSubService.publishActivity({
+                    entity_name: ActivityEntityName.EXPENSE,
+                    entity_id: expenseId,
+                    type: ActivityTypeName.CREATE,
+                    userId: currentUser.id,
+                    title: () => `#${expenseId}`,
+                    snapshots: {
+                        supported: true,
+                        old: INTENTIONALLY_ABSENT,
+                        new: newCapture,
+                    },
                 });
             }
         }

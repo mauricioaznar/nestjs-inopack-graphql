@@ -20,6 +20,7 @@ model activities {
   entity_id   Int       @db.UnsignedInt
   old_data    Json?
   new_data    Json?
+  snapshot_status String @default("legacy") @db.VarChar(32)
   role_id     Int?      @db.UnsignedInt
   branch_id   Int?      @db.UnsignedInt
   branches    branches? @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activities_branch_id_foreign")

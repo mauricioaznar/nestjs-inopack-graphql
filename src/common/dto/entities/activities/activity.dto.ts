@@ -40,6 +40,37 @@ registerEnumType(ActivityTypeName, {
     name: 'ActivityTypeName',
 });
 
+/**
+ * Why a NULL snapshot happened — the one audit signal that leaves the server.
+ *
+ * Recording an activity is best effort: the entity write is authoritative and
+ * nothing here may fail it. So when capture does fail, the only honest thing
+ * left is to say so, and this is the vocabulary for that. Two NULL JSON columns
+ * on their own are ambiguous between three unrelated situations, and only one
+ * of them is a problem.
+ *
+ * `complete` is operation-aware: a create legitimately has no `old_data` and a
+ * delete legitimately has no `new_data`. Absence by design is still complete.
+ *
+ * Deliberately carries NO exception text. Raw errors go to the structured
+ * server log only — they can name tables, columns and connection strings, and
+ * an audit reader has no action to take on them.
+ */
+export enum ActivitySnapshotStatus {
+    /** Every required side was captured. Render the diff. */
+    COMPLETE = 'complete',
+    /** The entity saved; capturing its snapshots did not. Both columns NULL. */
+    CAPTURE_FAILED = 'capture_failed',
+    /** This entity has no detailed snapshots yet, by decision. Both NULL. */
+    NOT_SUPPORTED = 'not_supported',
+    /** Written before detailed history existed. Whatever the row already has. */
+    LEGACY = 'legacy',
+}
+
+registerEnumType(ActivitySnapshotStatus, {
+    name: 'ActivitySnapshotStatus',
+});
+
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
 export class ActivityBase {
@@ -87,6 +118,14 @@ export class Activity extends ActivityBase {
 
     @Field(() => String, { nullable: true })
     new_data: string | null;
+
+    // Why the two fields above are null when they are. The UI renders BY THIS
+    // VALUE rather than inferring intent from nullable JSON: "no snapshots"
+    // used to mean "legacy row", and once capture became best-effort it could
+    // also mean "the save worked but the history did not" — a warning, not a
+    // shrug. Never null: the column is NOT NULL DEFAULT 'legacy'.
+    @Field(() => ActivitySnapshotStatus, { nullable: false })
+    snapshot_status: ActivitySnapshotStatus;
 
     // NOTE: `user` (who performed the change) is exposed as a @ResolveField on
     // ActivitiesResolver rather than declared here, matching how OrderSale

@@ -10,6 +10,7 @@ import {
 import { AuthService } from './auth.service';
 import {
     AccessToken,
+    ActivityEntityName,
     ActivityTypeName,
     CreateUserInput,
     LoginInput,
@@ -23,6 +24,10 @@ import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { Public } from './decorators/public.decorator';
 import { Role, RoleId } from '../../common/dto/entities/auth/role.dto';
 import { PubSubService } from '../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../common/modules/pub-sub/activity-audit';
 import { RolesDecorator } from './decorators/role.decorator';
 
 @Resolver(() => User)
@@ -84,20 +89,28 @@ export class AuthResolver {
         @Args('CreateUserInput') input: CreateUserInput,
         @CurrentUser() currentUser: User,
     ) {
+        // OUTSIDE every audit guard — a real create failure still fails.
         const user = await this.userService.create(input);
 
-        // Always a create, so there is no prior state: oldData is null and the
-        // whole snapshot renders as added. getUserSnapshot — never the raw row —
+        // Always a create, so the old side is intentionally absent and the whole
+        // snapshot renders as added. getUserSnapshot — never the raw row —
         // because `users` holds password and remember_token.
-        const newData = await this.userService.getUserSnapshot({
-            user_id: user.id,
-        });
+        const newCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.USER,
+                entityId: user.id,
+                activityType: ActivityTypeName.CREATE,
+                userId: currentUser.id,
+            },
+            'new_snapshot',
+            () => this.userService.getUserSnapshot({ user_id: user.id }),
+        );
         await this.pubSubService.user({
             user,
             userId: currentUser.id,
             type: ActivityTypeName.CREATE,
-            oldData: null,
-            newData,
+            oldCapture: INTENTIONALLY_ABSENT,
+            newCapture,
         });
 
         return user;
@@ -110,22 +123,34 @@ export class AuthResolver {
         @Args('UpdateUserInput') input: UpdateUserInput,
         @CurrentUser() currentUser: User,
     ) {
+        const auditContext = {
+            entityName: ActivityEntityName.USER,
+            entityId: input.id,
+            activityType: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        };
         // Audit: capture the row BEFORE the write. getUserSnapshot — never the
-        // raw row — because `users` holds password and remember_token.
-        const oldData = await this.userService.getUserSnapshot({
-            user_id: input.id,
-        });
+        // raw row — because `users` holds password and remember_token. Guarded:
+        // a snapshot read that throws must not stop the save from happening.
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () => this.userService.getUserSnapshot({ user_id: input.id }),
+        );
+        // OUTSIDE every audit guard — a real save failure still fails.
         const user = await this.userService.update(input);
-        const newData = await this.userService.getUserSnapshot({
-            user_id: user.id,
-        });
+        const newCapture = await captureSnapshotSafely(
+            auditContext,
+            'new_snapshot',
+            () => this.userService.getUserSnapshot({ user_id: user.id }),
+        );
 
         await this.pubSubService.user({
             user,
             userId: currentUser.id,
             type: ActivityTypeName.UPDATE,
-            oldData,
-            newData,
+            oldCapture,
+            newCapture,
         });
 
         return user;

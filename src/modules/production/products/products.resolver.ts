@@ -10,6 +10,7 @@ import {
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import {
+    ActivityEntityName,
     ActivityTypeName,
     GetProductsQueryFields,
     OrderProductionType,
@@ -21,6 +22,10 @@ import {
     User,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { ProductCategory } from '../../../common/dto/entities/production/product-category.dto';
@@ -79,26 +84,44 @@ export class ProductsResolver {
         @Args('ProductUpsertInput') input: ProductUpsertInput,
         @CurrentUser() currentUser: User,
     ): Promise<Product> {
+        const type = !input.id
+            ? ActivityTypeName.CREATE
+            : ActivityTypeName.UPDATE;
+        const auditContext = {
+            entityName: ActivityEntityName.PRODUCT,
+            entityId: input.id ?? null,
+            activityType: type,
+            userId: currentUser.id,
+        };
         // Audit: capture the row BEFORE the write. On a create there is nothing
-        // to capture, so oldData stays null and the pair reads as
-        // "nothing -> something".
-        const oldData = input.id
-            ? await this.productsService.getProductSnapshot({
-                  product_id: input.id,
-              })
-            : null;
+        // to capture, so the old side is intentionally absent and the pair reads
+        // as "nothing -> something". Guarded: a snapshot read that throws must
+        // not stop the save from happening.
+        const oldCapture = input.id
+            ? await captureSnapshotSafely(auditContext, 'old_snapshot', () =>
+                  this.productsService.getProductSnapshot({
+                      product_id: input.id!,
+                  }),
+              )
+            : INTENTIONALLY_ABSENT;
+        // OUTSIDE every audit guard — a real save failure still fails.
         const product = await this.productsService.upsertInput(input, {
             current_user_id: currentUser.id,
         });
-        const newData = await this.productsService.getProductSnapshot({
-            product_id: product.id,
-        });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: product.id },
+            'new_snapshot',
+            () =>
+                this.productsService.getProductSnapshot({
+                    product_id: product.id,
+                }),
+        );
         await this.pubSubService.product({
             product,
-            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type,
             userId: currentUser.id,
-            oldData,
-            newData,
+            oldCapture,
+            newCapture,
         });
         return product;
     }
@@ -114,11 +137,21 @@ export class ProductsResolver {
             throw new NotFoundException();
         }
         // Must be captured before the write: the delete is soft, so afterwards
-        // the row carries active = -1. newData stays null — "deleted" is what
-        // the dialog should show, not "active went 1 -> -1".
-        const oldData = await this.productsService.getProductSnapshot({
-            product_id: productId,
-        });
+        // the row carries active = -1. The new side is intentionally absent —
+        // "deleted" is what the dialog should show, not "active went 1 -> -1".
+        const oldCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.PRODUCT,
+                entityId: productId,
+                activityType: ActivityTypeName.DELETE,
+                userId: currentUser.id,
+            },
+            'old_snapshot',
+            () =>
+                this.productsService.getProductSnapshot({
+                    product_id: productId,
+                }),
+        );
         await this.productsService.deleteProduct({
             product_id: productId,
             current_user_id: currentUser.id,
@@ -127,8 +160,8 @@ export class ProductsResolver {
             product,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
-            oldData,
-            newData: null,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
         });
         return true;
     }

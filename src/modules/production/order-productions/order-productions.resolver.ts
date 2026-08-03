@@ -18,6 +18,7 @@ import {
 import { OrderProductionProduct } from '../../../common/dto/entities/production/order-production-product.dto';
 import { OrderProductionEmployee } from '../../../common/dto/entities/production/order-production-employee.dto';
 import {
+    ActivityEntityName,
     ActivityTypeName,
     Branch,
     OrderProductionResource,
@@ -29,6 +30,10 @@ import {
     DatePaginator,
 } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
@@ -74,27 +79,45 @@ export class OrderProductionsResolver {
         @Args('OrderProductionInput') input: OrderProductionInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderProduction> {
+        const type = !input.id
+            ? ActivityTypeName.CREATE
+            : ActivityTypeName.UPDATE;
+        const auditContext = {
+            entityName: ActivityEntityName.ORDER_PRODUCTION,
+            entityId: input.id ?? null,
+            activityType: type,
+            userId: currentUser.id,
+        };
         // Audit: capture the row BEFORE the write. On a create there is nothing
-        // to capture, so oldData stays null and the pair reads as
-        // "nothing -> something".
-        const oldData = input.id
-            ? await this.service.getOrderProductionSnapshot({
-                  order_production_id: input.id,
-              })
-            : null;
+        // to capture, so the old side is intentionally absent and the pair reads
+        // as "nothing -> something". Guarded: a snapshot read that throws must
+        // not stop the save from happening.
+        const oldCapture = input.id
+            ? await captureSnapshotSafely(auditContext, 'old_snapshot', () =>
+                  this.service.getOrderProductionSnapshot({
+                      order_production_id: input.id!,
+                  }),
+              )
+            : INTENTIONALLY_ABSENT;
+        // OUTSIDE every audit guard — a real save failure still fails.
         const orderProduction = await this.service.upsertOrderProduction(
             input,
             { current_user_id: currentUser.id },
         );
-        const newData = await this.service.getOrderProductionSnapshot({
-            order_production_id: orderProduction.id,
-        });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: orderProduction.id },
+            'new_snapshot',
+            () =>
+                this.service.getOrderProductionSnapshot({
+                    order_production_id: orderProduction.id,
+                }),
+        );
         await this.pubSubService.orderProduction({
             orderProduction: orderProduction,
-            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type,
             userId: currentUser.id,
-            oldData,
-            newData,
+            oldCapture,
+            newCapture,
         });
         return orderProduction;
     }
@@ -111,11 +134,22 @@ export class OrderProductionsResolver {
         if (!orderProduction) throw new NotFoundException();
         // Must be captured before the write: the delete is soft, so afterwards
         // the production and all three child collections carry active = -1 and
-        // the snapshot would come back with no children. newData stays null —
-        // "deleted" is what the dialog should show, not "active went 1 -> -1".
-        const oldData = await this.service.getOrderProductionSnapshot({
-            order_production_id: orderProductionId,
-        });
+        // the snapshot would come back with no children. The new side is
+        // intentionally absent — "deleted" is what the dialog should show, not
+        // "active went 1 -> -1".
+        const oldCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.ORDER_PRODUCTION,
+                entityId: orderProductionId,
+                activityType: ActivityTypeName.DELETE,
+                userId: currentUser.id,
+            },
+            'old_snapshot',
+            () =>
+                this.service.getOrderProductionSnapshot({
+                    order_production_id: orderProductionId,
+                }),
+        );
         await this.service.deleteOrderProduction({
             order_production_id: orderProductionId,
             current_user_id: currentUser.id,
@@ -124,8 +158,8 @@ export class OrderProductionsResolver {
             orderProduction,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
-            oldData,
-            newData: null,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
         });
         return true;
     }

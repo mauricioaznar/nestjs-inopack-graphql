@@ -19,6 +19,24 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 //
 // A database restored from the dump has never seen either name and simply runs
 // this one in its new, correct position.
+//
+// ⚠️ Edited again 2026-08-03 to add `snapshot_status` (project rule: update the
+// feature's own migration in place, never add a mid-feature file). A database
+// that ALREADY ran this migration under either name will not replay it, so add
+// the column and classify the branch-only rows by hand there:
+//
+//   ALTER TABLE activities
+//     ADD COLUMN snapshot_status VARCHAR(32) NOT NULL DEFAULT 'legacy'
+//     AFTER new_data;
+//   UPDATE activities
+//      SET snapshot_status = 'complete'
+//    WHERE old_data IS NOT NULL OR new_data IS NOT NULL;
+//   UPDATE activities
+//      SET snapshot_status = 'not_supported'
+//    WHERE entity_name = 'productionPlans';
+//
+// A clean database restored from the dump receives the final migration once and
+// needs none of the above.
 export class AddDataSnapshotsToActivities1785787200000
     implements MigrationInterface
 {
@@ -34,6 +52,29 @@ export class AddDataSnapshotsToActivities1785787200000
             ALTER TABLE activities
             ADD COLUMN old_data JSON DEFAULT NULL AFTER entity_id,
             ADD COLUMN new_data JSON DEFAULT NULL AFTER old_data;
+        `);
+
+        // Why the pair above is not enough on its own: two NULL snapshot columns
+        // are ambiguous. They mean "this row predates the feature", "this entity
+        // has no detailed history yet", or "the entity saved but capturing its
+        // snapshots failed" — three different things the UI must say differently,
+        // and only one of them is a problem. This column names which.
+        //
+        // Recording an activity is BEST EFFORT (see the feature doc §12.8): the
+        // entity write is authoritative and a snapshot failure may never fail it.
+        // What it may do is leave a truthful marker, which is this.
+        //
+        // VARCHAR rather than ENUM: adding a value to a MySQL ENUM is a table
+        // rebuild, and the four values here are already expected to grow when
+        // productionPlan stops being `not_supported`.
+        //
+        // NOT NULL DEFAULT 'legacy' backfills every pre-existing row in one
+        // statement, which is exactly right — those rows predate detailed
+        // history by definition.
+        await queryRunner.query(`
+            ALTER TABLE activities
+            ADD COLUMN snapshot_status VARCHAR(32) NOT NULL DEFAULT 'legacy'
+            AFTER new_data;
         `);
 
         // The activities table is queried polymorphically (entity_name +
@@ -96,6 +137,7 @@ export class AddDataSnapshotsToActivities1785787200000
         `);
         await queryRunner.query(`
             ALTER TABLE activities
+            DROP COLUMN snapshot_status,
             DROP COLUMN new_data,
             DROP COLUMN old_data;
         `);
