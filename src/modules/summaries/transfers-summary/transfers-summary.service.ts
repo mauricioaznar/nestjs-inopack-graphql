@@ -4,7 +4,7 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { getDatesInjectionsV2 } from '../../../common/helpers';
 import {
     businessTimeSql,
-    getBusinessDateRangeSql,
+    getBusinessCalendarRangeSql,
 } from '../../../common/helpers/dates/business-day';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 import {
@@ -31,7 +31,11 @@ export class TransfersSummaryService {
             };
         }
 
-        const { startDate, endDate } = getBusinessDateRangeSql({
+        // start_date below is already converted to Mexico wall time in SQL, so
+        // these comparisons must use Mexico calendar midnights too. Comparing
+        // that expression to UTC 06:00 boundaries would include six hours of
+        // the following business day.
+        const { startDate, endDate } = getBusinessCalendarRangeSql({
             year: year,
             month: month,
         });

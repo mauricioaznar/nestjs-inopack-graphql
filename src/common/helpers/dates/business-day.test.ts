@@ -5,6 +5,8 @@ import {
     getBusinessDayStart,
     getBusinessDayEndExclusive,
     getBusinessDateRangeSql,
+    getBusinessCalendarRangeSql,
+    formatUtcDateForMysql,
 } from './business-day';
 
 dayjs.extend(utcPlugin);
@@ -82,5 +84,24 @@ describe('getBusinessDateRangeSql', () => {
         });
         expect(startDate).toBe('2026-01-01 06:00:00');
         expect(endDate).toBe('2027-01-01 06:00:00');
+    });
+});
+
+describe('getBusinessCalendarRangeSql', () => {
+    it('returns local calendar midnights for a Mexico-converted SQL expression', () => {
+        const { startDate, endDate } = getBusinessCalendarRangeSql({
+            year: 2026,
+            month: 6,
+        });
+        expect(startDate).toBe('2026-07-01 00:00:00');
+        expect(endDate).toBe('2026-08-01 00:00:00');
+    });
+});
+
+describe('formatUtcDateForMysql', () => {
+    it('formats a UTC instant without the browser or server timezone', () => {
+        expect(
+            formatUtcDateForMysql(new Date('2026-08-01T06:00:00.000Z')),
+        ).toBe('2026-08-01 06:00:00');
     });
 });
