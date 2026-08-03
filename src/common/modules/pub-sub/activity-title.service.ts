@@ -8,9 +8,9 @@ import { formatFloat } from '../../helpers';
 //
 // Why this file exists at all, given the snapshots: `old_data`/`new_data` answer
 // WHAT changed, but the feed never loads them (they are whole rows with
-// children, and `getActivity` is admin-only). The title answers WHICH RECORD in
-// one column, for every role, for one varchar. It is also the only thing that
-// still identifies a record once that record has been hard-deleted.
+// children, and `getActivity` is gated to the global roles). The title answers
+// WHICH RECORD in one column, for every role, for one varchar. It is also the
+// only thing that still identifies a record once it has been hard-deleted.
 //
 // Every title in the system is written here, on purpose. The previous
 // per-call-site strings drifted into two different kinds of thing — some

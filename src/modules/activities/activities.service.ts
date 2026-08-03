@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import dayjs from 'dayjs';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { ActivitiesQueryArgs } from '../../common/dto/entities';
 import { DatePaginator, OffsetPaginatorArgs } from '../../common/dto/pagination';
+import {
+    getBusinessDayEndExclusive,
+    getBusinessDayStart,
+} from '../../common/helpers';
 
 @Injectable()
 export class ActivitiesService {
@@ -28,17 +31,21 @@ export class ActivitiesService {
         datePaginator: DatePaginator;
         activitiesQueryArgs: ActivitiesQueryArgs;
     }) {
-        const startDate = datePaginator.start_date
-            ? new Date(datePaginator.start_date)
-            : undefined;
-
-        // `created_at` is a TIMESTAMP, not a date-only column: `lt` against the
-        // raw end date would cut at midnight and drop the whole final day — a
-        // range of today→today would return nothing. So the bound is pushed to
-        // the start of the next day, making the picked end date inclusive.
-        const endDate = datePaginator.end_date
-            ? dayjs(datePaginator.end_date).add(1, 'day').toDate()
-            : undefined;
+        // The picked dates are CALENDAR DAYS in America/Mexico_City, while
+        // `created_at` is a true UTC timestamp — so both bounds are the selected
+        // Mexico City day converted to the UTC instant it begins at:
+        //
+        //   start: beginning of the selected day        (gte, inclusive)
+        //   end:   beginning of the day AFTER the end   (lt,  exclusive)
+        //
+        // The exclusive end is what makes the picked end date inclusive: a bound
+        // at its own midnight would drop the whole final day, so today→today
+        // would return nothing. Both bounds go through the same helper, because
+        // the previous mix — `new Date('YYYY-MM-DD')` (midnight UTC) on one side
+        // and `dayjs('YYYY-MM-DD')` (midnight in the server's zone) on the other
+        // — made the two ends of one range disagree by the UTC offset.
+        const startDate = getBusinessDayStart(datePaginator.start_date);
+        const endDate = getBusinessDayEndExclusive(datePaginator.end_date);
 
         const activitiesWhere: Prisma.activitiesWhereInput = {
             AND: [

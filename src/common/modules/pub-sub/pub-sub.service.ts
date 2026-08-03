@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PubSub } from 'graphql-subscriptions';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -20,9 +20,20 @@ import { OrderAdjustment } from '../../dto/entities/production/order-adjustment.
 import { Employee } from '../../dto/entities/production/employee.dto';
 import { ActivityTitleService } from './activity-title.service';
 
+// The title is passed as a BUILDER, not as a finished string, so that building
+// it happens inside publishActivity's guard. Six of the fourteen titles hit the
+// database to resolve a counterpart name (see activity-title.service.ts), and a
+// failed lookup must not turn a saved entity into a GraphQL error.
+type ActivityTitleBuilder = () => string | Promise<string>;
+
+// Which part of the best-effort audit path failed, for the log line.
+type ActivityStage = 'title' | 'insert' | 'notification';
+
 @Injectable()
 export class PubSubService {
     private pubSub: PubSub;
+
+    private readonly logger = new Logger(PubSubService.name);
 
     constructor(
         private prisma: PrismaService,
@@ -52,7 +63,7 @@ export class PubSubService {
             type: type,
             entity_id: product.id,
             userId,
-            title: this.activityTitle.product(product),
+            title: () => this.activityTitle.product(product),
             oldData,
             newData,
         });
@@ -81,7 +92,7 @@ export class PubSubService {
             type: type,
             entity_id: orderProduction.id,
             userId,
-            title: this.activityTitle.orderProduction(orderProduction),
+            title: () => this.activityTitle.orderProduction(orderProduction),
             oldData,
             newData,
         });
@@ -110,7 +121,7 @@ export class PubSubService {
             type: type,
             entity_id: machine.id,
             userId,
-            title: this.activityTitle.machine(machine),
+            title: () => this.activityTitle.machine(machine),
             oldData,
             newData,
         });
@@ -139,7 +150,7 @@ export class PubSubService {
             type: type,
             entity_id: orderAdjustment.id,
             userId,
-            title: await this.activityTitle.orderAdjustment(orderAdjustment),
+            title: () => this.activityTitle.orderAdjustment(orderAdjustment),
             oldData,
             newData,
         });
@@ -168,7 +179,7 @@ export class PubSubService {
             type: type,
             entity_id: employee.id,
             userId,
-            title: this.activityTitle.employee(employee),
+            title: () => this.activityTitle.employee(employee),
             oldData,
             newData,
         });
@@ -197,7 +208,7 @@ export class PubSubService {
             type: type,
             entity_id: account.id,
             userId,
-            title: this.activityTitle.account(account),
+            title: () => this.activityTitle.account(account),
             oldData,
             newData,
         });
@@ -230,7 +241,7 @@ export class PubSubService {
             type: type,
             entity_id: user.id,
             userId,
-            title: this.activityTitle.user(user),
+            title: () => this.activityTitle.user(user),
             oldData,
             newData,
         });
@@ -259,7 +270,7 @@ export class PubSubService {
             type: type,
             entity_id: orderRequest.id,
             userId,
-            title: await this.activityTitle.orderRequest(orderRequest),
+            title: () => this.activityTitle.orderRequest(orderRequest),
             oldData,
             newData,
         });
@@ -288,7 +299,7 @@ export class PubSubService {
             type: type,
             entity_id: orderSale.id,
             userId,
-            title: await this.activityTitle.orderSale(orderSale),
+            title: () => this.activityTitle.orderSale(orderSale),
             oldData,
             newData,
         });
@@ -319,7 +330,7 @@ export class PubSubService {
             userId,
             oldData,
             newData,
-            title: await this.activityTitle.transfer(transfer),
+            title: () => this.activityTitle.transfer(transfer),
         });
     }
 
@@ -346,7 +357,7 @@ export class PubSubService {
             type: type,
             entity_id: resource.id,
             userId,
-            title: this.activityTitle.resource(resource),
+            title: () => this.activityTitle.resource(resource),
             oldData,
             newData,
         });
@@ -377,7 +388,7 @@ export class PubSubService {
             userId,
             oldData,
             newData,
-            title: await this.activityTitle.expense(expense),
+            title: () => this.activityTitle.expense(expense),
         });
     }
 
@@ -398,7 +409,7 @@ export class PubSubService {
             type: type,
             entity_id: expenseResource.id,
             userId,
-            title: await this.activityTitle.expenseResource(expenseResource),
+            title: () => this.activityTitle.expenseResource(expenseResource),
         });
     }
 
@@ -424,10 +435,34 @@ export class PubSubService {
             type: type,
             entity_id: productionPlan.id,
             userId,
-            title: this.activityTitle.productionPlan(productionPlan),
+            title: () => this.activityTitle.productionPlan(productionPlan),
         });
     }
 
+    /**
+     * Records one activity. **Audit recording is best effort.**
+     *
+     * The entity save is authoritative: by the time any wrapper reaches here the
+     * mutation has already committed its own write, so a failure to build the
+     * title, insert the activity row or publish the notification must NOT turn a
+     * successful mutation into a GraphQL error. All three are therefore caught
+     * here — the one place every entity funnels through — and logged with enough
+     * context to find the record afterwards.
+     *
+     * What this deliberately does NOT do:
+     *
+     * - It does not swallow entity-save failures. Those happen in the calling
+     *   service, outside this method, and still propagate.
+     * - It does not roll back a saved entity when the audit write fails. An audit
+     *   log that can veto the operation it audits is worse than a gap in the log.
+     * - It does not serialize concurrent audit capture. Two mutations racing on
+     *   the same record can still interleave their snapshots; that is a known,
+     *   deferred limitation (see the feature doc).
+     *
+     * The notification is published only after a successful insert — it sits
+     * after the `create` in the same try, so a failed insert throws before it and
+     * clients never see an activity that was not written.
+     */
     async publishActivity({
         entity_id,
         entity_name,
@@ -443,40 +478,95 @@ export class PubSubService {
         userId: number;
         // A record IDENTIFIER, not a sentence — always built by
         // ActivityTitleService so the entities cannot drift apart again.
-        // See activity-title.service.ts.
-        title: string;
+        // See activity-title.service.ts. Passed as a builder so that building it
+        // (six titles query the database) is covered by the guard below.
+        title: ActivityTitleBuilder;
         // Every entity funnels through here, so all activities CAN carry
         // snapshots; only the wired entities actually pass them. Undefined
         // leaves the column NULL rather than writing JSON null.
         oldData?: unknown;
         newData?: unknown;
     }) {
-        const activity = await this.prisma.activities.create({
-            data: {
-                entity_name: entity_name,
-                title: title,
-                created_at: new Date(),
-                updated_at: new Date(),
-                entity_id: entity_id,
-                type: type,
-                user_id: userId,
-                // Omitted rather than set to null: this is a create, so an
-                // absent field leaves the column at its NULL default. Passing a
-                // literal null to a Prisma `Json?` field is rejected — Prisma
-                // wants Prisma.DbNull / Prisma.JsonNull to disambiguate SQL NULL
-                // from JSON null — and omitting sidesteps that entirely.
-                old_data:
-                    oldData === undefined || oldData === null
-                        ? undefined
-                        : (oldData as any),
-                new_data:
-                    newData === undefined || newData === null
-                        ? undefined
-                        : (newData as any),
-            },
-        });
+        let stage: ActivityStage = 'title';
 
-        await this.pubSub.publish('activity', { activity: activity });
+        try {
+            const activityTitle = await title();
+
+            stage = 'insert';
+            const activity = await this.prisma.activities.create({
+                data: {
+                    entity_name: entity_name,
+                    title: activityTitle,
+                    created_at: new Date(),
+                    updated_at: new Date(),
+                    entity_id: entity_id,
+                    type: type,
+                    user_id: userId,
+                    // Omitted rather than set to null: this is a create, so an
+                    // absent field leaves the column at its NULL default. Passing a
+                    // literal null to a Prisma `Json?` field is rejected — Prisma
+                    // wants Prisma.DbNull / Prisma.JsonNull to disambiguate SQL NULL
+                    // from JSON null — and omitting sidesteps that entirely.
+                    old_data:
+                        oldData === undefined || oldData === null
+                            ? undefined
+                            : (oldData as any),
+                    new_data:
+                        newData === undefined || newData === null
+                            ? undefined
+                            : (newData as any),
+                },
+            });
+
+            stage = 'notification';
+            await this.pubSub.publish('activity', { activity: activity });
+        } catch (error) {
+            this.logActivityFailure({
+                stage,
+                entity_name,
+                entity_id,
+                type,
+                userId,
+                error,
+            });
+        }
+    }
+
+    /**
+     * The single log line for a best-effort audit failure. It carries what is
+     * needed to reconstruct the missing entry by hand: which entity, which row,
+     * what kind of change, who made it — plus the original error.
+     */
+    private logActivityFailure({
+        stage,
+        entity_name,
+        entity_id,
+        type,
+        userId,
+        error,
+    }: {
+        stage: ActivityStage;
+        entity_name: ActivityEntityName;
+        entity_id: number;
+        type: ActivityTypeName;
+        userId: number;
+        error: unknown;
+    }) {
+        // The entity change is already saved in every case; what is lost differs
+        // by stage, and saying which keeps the log from over- or under-stating it.
+        const consequence =
+            stage === 'notification'
+                ? 'the activity row WAS written; only the live notification is missing'
+                : 'no activity row was written';
+
+        this.logger.error(
+            `Activity ${stage} failed for entity ${entity_name} id ${entity_id} ` +
+                `(type ${type}, user ${userId}). The entity change itself was saved; ` +
+                `${consequence}. Original error: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            error instanceof Error ? error.stack : undefined,
+        );
     }
 
     async listenForActivity() {

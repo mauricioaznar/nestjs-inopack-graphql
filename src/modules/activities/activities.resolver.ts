@@ -48,8 +48,8 @@ export class ActivitiesResolver {
     ) {}
 
     // No @RolesDecorator: the activities page is GENERAL_VIEW and this feed
-    // carries no snapshots. getActivity / getEntityActivities below stay
-    // admin-only — those are the ones that return whole rows.
+    // carries no snapshots. getActivity / getEntityActivities below keep the
+    // audit-read gate — those are the ones that return whole rows.
     //
     // Deliberately NOT annotated `Promise<PaginatedActivities>`: the rows carry
     // old_data/new_data as parsed JSON while the DTO types them as strings, and
@@ -68,8 +68,17 @@ export class ActivitiesResolver {
         });
     }
 
-    // Audit detail is admin-only: the snapshots carry whole rows, including
-    // prices and client data as they stood at the time.
+    // Audit detail is read by the three global roles: Super, General and
+    // Asistente General. The snapshots carry whole rows, including prices and
+    // client data as they stood at the time, so nothing below the global roles
+    // reaches them.
+    //
+    // RoleId.ADMIN is the correct decorator for that, not an approximation of
+    // it: GqlRolesGuard admits Asistente General (RoleId.GUEST) to any
+    // non-mutation, non-super gate by design, and this is a query. Asistente
+    // General is globally read-only and already reads the live records through
+    // the ordinary queries; the audit adds their historical values, which was
+    // reviewed and approved. It gains no mutation capability from this gate.
     @Query(() => Activity, { nullable: true })
     @RolesDecorator(RoleId.ADMIN)
     async getActivity(
@@ -79,8 +88,9 @@ export class ActivitiesResolver {
     }
 
     // Audit history for one record, e.g. every activity on order sale 1042.
-    // Same admin gate as getActivity: the history itself is only useful next to
-    // the snapshots, and both expose who touched what.
+    // Same gate as getActivity — Super, General and Asistente General — since
+    // the history is only useful next to the snapshots and both expose who
+    // touched what.
     @Query(() => [Activity])
     @RolesDecorator(RoleId.ADMIN)
     async getEntityActivities(
