@@ -44,8 +44,12 @@ export class ActivitiesService {
         // the previous mix — `new Date('YYYY-MM-DD')` (midnight UTC) on one side
         // and `dayjs('YYYY-MM-DD')` (midnight in the server's zone) on the other
         // — made the two ends of one range disagree by the UTC offset.
-        const startDate = getBusinessDayStart(datePaginator.start_date);
-        const endDate = getBusinessDayEndExclusive(datePaginator.end_date);
+        const startDate = datePaginator.start_date
+            ? getBusinessDayStart(datePaginator.start_date)
+            : undefined;
+        const endDate = datePaginator.end_date
+            ? getBusinessDayEndExclusive(datePaginator.end_date)
+            : undefined;
 
         const activitiesWhere: Prisma.activitiesWhereInput = {
             AND: [
