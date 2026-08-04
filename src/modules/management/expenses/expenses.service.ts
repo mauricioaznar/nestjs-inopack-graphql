@@ -52,6 +52,71 @@ export class ExpensesService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getExpense, which is a bare row read used all over this service and must
+    // not pay for a child fetch.
+    //
+    // No `active: 1` on the expense itself, so a snapshot still works after the
+    // soft delete. But `active: 1` on the CHILD rows is load-bearing: expense
+    // resources are soft-deleted rather than removed, so an unfiltered snapshot
+    // would ship a removed line with only its `active` flag changed — and the
+    // React differ ignores `active`, which would make the deletion vanish from
+    // the audit entirely. See
+    // docs/features/ongoing/feature-activities-audit.md §2c-1.
+    //
+    // `resources` is trimmed to two columns: the snapshot stores the resource
+    // name as it was AT THE TIME, so an old audit entry never displays a name
+    // the resource only acquired later.
+    //
+    // `transfer_receipts` is deliberately excluded — payments applied to an
+    // expense are a separate entity with their own activities.
+    async getExpenseSnapshot({
+        expense_id,
+    }: {
+        expense_id: number;
+    }): Promise<unknown> {
+        return this.prisma.expenses.findUnique({
+            where: {
+                id: expense_id,
+            },
+            include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                accounts: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                receipt_types: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                expense_statuses: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                expense_resources: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        resources: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async getExpenses({
         getExpensesQueryArgs,
         datePaginator,
@@ -135,10 +200,7 @@ export class ExpensesService {
 
         const { sort_order, sort_field } = expensesSortArgs;
 
-        const filter =
-            expensesQueryArgs.filter !== '' && !!expensesQueryArgs.filter
-                ? expensesQueryArgs.filter
-                : undefined;
+        const filter = expensesQueryArgs.filter?.trim() || undefined;
 
         const noReceipt = expensesQueryArgs.no_receipt;
 
@@ -402,11 +464,15 @@ export class ExpensesService {
             return null;
         }
 
-        return this.prisma.receipt_types.findFirst({
+        const receiptType = await this.prisma.receipt_types.findFirst({
             where: {
                 id: receipt_type_id,
             },
         });
+
+        return receiptType
+            ? { ...receiptType, tax_rate: Number(receiptType.tax_rate) }
+            : null;
     }
 
     async getExpenseResources({
@@ -458,6 +524,7 @@ export class ExpensesService {
                     ? input.expected_payment_date
                     : null,
                 require_external_code: input.require_external_code,
+                require_tax: input.require_tax,
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
@@ -471,6 +538,7 @@ export class ExpensesService {
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
+                reconciliation_only: input.reconciliation_only,
                 resources_total: input.resources_total,
             },
             update: {
@@ -483,6 +551,7 @@ export class ExpensesService {
                     ? input.expected_payment_date
                     : null,
                 require_external_code: input.require_external_code,
+                require_tax: input.require_tax,
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
@@ -496,6 +565,7 @@ export class ExpensesService {
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
+                reconciliation_only: input.reconciliation_only,
                 resources_total: input.resources_total,
             },
             where: {
@@ -624,14 +694,22 @@ export class ExpensesService {
             }
         }
 
-        // tax can only be set when order receipt type id = 2
+        // tax can only be set when the receipt type applies tax
         {
-            if (input.receipt_type_id !== 2) {
-                if (input.tax > 0) {
-                    errors.push(
-                        'Tax can only be set when expense has order receipt type id = 2',
-                    );
-                }
+            let appliesTax = false;
+            if (input.receipt_type_id) {
+                const expenseReceiptType =
+                    await this.prisma.receipt_types.findFirst({
+                        where: { id: input.receipt_type_id },
+                    });
+                appliesTax =
+                    !!expenseReceiptType &&
+                    Number(expenseReceiptType.tax_rate) > 0;
+            }
+            if (!appliesTax && input.tax > 0) {
+                errors.push(
+                    'Tax can only be set when receipt type applies tax',
+                );
             }
         }
 
@@ -1036,6 +1114,7 @@ export class ExpensesService {
                 const source = await tx.expenses.findFirst({
                     where: { id: item.source_expense_id, active: 1 },
                     include: {
+                        receipt_types: true,
                         transfer_receipts: {
                             where: { active: 1 },
                             include: { transfers: true },
@@ -1049,12 +1128,12 @@ export class ExpensesService {
                     );
                 }
 
-                // Same rule as validateUpsertExpense: tax is only allowed on
-                // receipt type 2. The clone keeps the source's receipt type,
-                // so the edited tax must obey it too.
-                if (source.receipt_type_id !== 2 && item.tax > 0) {
+                const sourceAppliesTax =
+                    !!source.receipt_types &&
+                    Number(source.receipt_types.tax_rate) > 0;
+                if (!sourceAppliesTax && item.tax > 0) {
                     throw new BadRequestException(
-                        'Tax can only be set when expense has order receipt type id = 2',
+                        'Tax can only be set when receipt type applies tax',
                     );
                 }
 
@@ -1135,6 +1214,7 @@ export class ExpensesService {
                         external_code: '',
                         internal_code: 0,
                         canceled: false,
+                        reconciliation_only: source.reconciliation_only,
                         resources_total: subtotal,
                         expense_status_id: null,
                         transfer_receipts_total: 0,

@@ -4,6 +4,8 @@ import {
     MachineHourlyRun,
     MachineProduct,
     MachineProductEmployeeRun,
+    MachineProductRate,
+    MachineProductRatePairInput,
     MachineProductPerformanceSummary,
     ProductMachinePerformanceSummary,
     ProductWithRuns,
@@ -214,6 +216,109 @@ export class ProductionPerformanceService {
             ) rr on rr.order_production_id = op.id
             order by op.start_date
         `);
+    }
+
+    // Batch aggregate used by production planning. A null product in the
+    // request means the machine-level fallback rate; a product id means the
+    // machine x product rate. The query returns both the recent window and all
+    // available hourly history so the client can keep the existing
+    // "recent-first, all-history fallback" rule without downloading raw runs.
+    async getMachineProductRates({
+        pairs,
+        from_date,
+        recent_from_date,
+    }: {
+        pairs: MachineProductRatePairInput[];
+        from_date?: string | null;
+        recent_from_date?: string | null;
+    }): Promise<MachineProductRate[]> {
+        const normalizedPairs = pairs
+            .map((pair) => ({
+                machine_id: Number(pair.machineId),
+                product_id:
+                    pair.productId === null || pair.productId === undefined
+                        ? null
+                        : Number(pair.productId),
+            }))
+            .filter(
+                (pair) =>
+                    Number.isInteger(pair.machine_id) &&
+                    pair.machine_id > 0 &&
+                    (pair.product_id === null ||
+                        (Number.isInteger(pair.product_id) &&
+                            pair.product_id > 0)),
+            );
+
+        const uniquePairs = Array.from(
+            new Map(
+                normalizedPairs.map((pair) => [
+                    `${pair.machine_id}:${pair.product_id ?? ''}`,
+                    pair,
+                ] as const),
+            ).values(),
+        );
+        if (uniquePairs.length === 0) return [];
+
+        const machineIds = Array.from(
+            new Set(uniquePairs.map((pair) => pair.machine_id)),
+        );
+        const pairConditions = uniquePairs
+            .filter((pair) => pair.product_id !== null)
+            .map(
+                (pair) =>
+                    `(opp.machine_id = ${pair.machine_id} and opp.product_id = ${pair.product_id})`,
+            );
+
+        const validRecentDate =
+            recent_from_date && /^\d{4}-\d{2}-\d{2}$/.test(recent_from_date)
+                ? recent_from_date
+                : null;
+        const recentCondition = validRecentDate
+            ? `op.start_date >= '${validRecentDate}'`
+            : '0 = 1';
+        const sharedFilters = this.buildSharedFilters({ from_date });
+
+        const aggregateSelect = `
+                ${convertToInt('opp.machine_id', 'machine_id')},
+                %PRODUCT_ID%,
+                SUM(CASE WHEN ${recentCondition} THEN COALESCE(opp.kilos, 0) ELSE 0 END) as recent_kilos,
+                SUM(CASE WHEN ${recentCondition} THEN COALESCE(opp.hours, 0) ELSE 0 END) as recent_hours,
+                ${convertToInt(
+                    `COUNT(DISTINCT CASE WHEN ${recentCondition} THEN op.id END)`,
+                    'recent_runs',
+                )},
+                SUM(COALESCE(opp.kilos, 0)) as all_kilos,
+                SUM(COALESCE(opp.hours, 0)) as all_hours,
+                ${convertToInt('COUNT(DISTINCT op.id)', 'all_runs')}
+            FROM order_production_products opp
+            JOIN order_productions op
+                ON op.id = opp.order_production_id
+                AND op.active = 1
+            WHERE opp.active = 1
+                AND opp.machine_id IN (${machineIds.join(', ')})
+                ${sharedFilters}
+        `;
+
+        const machineRates = `
+            SELECT
+                ${aggregateSelect.replace('%PRODUCT_ID%', 'NULL as product_id')}
+            GROUP BY opp.machine_id
+        `;
+        const pairRates = pairConditions.length
+            ? `
+            SELECT
+                ${aggregateSelect.replace(
+                    '%PRODUCT_ID%',
+                    `${convertToInt('opp.product_id', 'product_id')}`,
+                )}
+                AND (${pairConditions.join(' OR ')})
+            GROUP BY opp.machine_id, opp.product_id
+        `
+            : '';
+
+        return this.prisma.$queryRawUnsafe<MachineProductRate[]>(
+            [machineRates, pairRates].filter(Boolean).join('\nUNION ALL\n'),
+        );
     }
 
     // Shared filter fragment builder — applied to order_productions (aliased `op`).

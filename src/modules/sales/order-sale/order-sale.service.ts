@@ -68,86 +68,88 @@ export class OrderSaleService {
 
         const { sort_order, sort_field } = orderSalesSortArgs;
 
-        const filter =
-            orderSalesQueryArgs.filter !== '' && !!orderSalesQueryArgs.filter
-                ? orderSalesQueryArgs.filter
-                : undefined;
-
-        const isFilterANumber = !Number.isNaN(Number(filter));
+        const filter = orderSalesQueryArgs.filter?.trim() || undefined;
+        const numericFilter =
+            filter && /^\d+$/.test(filter) ? Number(filter) : undefined;
 
         const orderSalesOrWhere: Prisma.Enumerable<Prisma.order_salesWhereInput> =
             [];
 
         if (filter) {
-            if (isFilterANumber) {
+            // A numeric search represents a business folio. Restrict it to the
+            // three exact numeric identifiers; treating it as product-code text
+            // made a search such as 3360 return every sale containing popular
+            // product code 3360 (452 unrelated rows in the historical data).
+            if (numericFilter !== undefined) {
                 orderSalesOrWhere.push({
                     order_requests: {
                         order_code: {
-                            in: [Number(filter)],
+                            in: [numericFilter],
                         },
                     },
                 });
                 orderSalesOrWhere.push({
                     order_code: {
-                        in: [Number(filter)],
+                        in: [numericFilter],
                     },
                 });
                 orderSalesOrWhere.push({
                     invoice_code: {
-                        in: [Number(filter)],
+                        in: [numericFilter],
+                    },
+                });
+            } else {
+                orderSalesOrWhere.push({
+                    notes: {
+                        contains: filter,
+                    },
+                });
+                orderSalesOrWhere.push({
+                    accounts: {
+                        name: {
+                            contains: filter,
+                        },
+                    },
+                });
+                orderSalesOrWhere.push({
+                    receipt_types: {
+                        name: {
+                            contains: filter,
+                        },
+                    },
+                });
+                orderSalesOrWhere.push({
+                    order_sale_statuses: {
+                        name: {
+                            contains: filter,
+                        },
+                    },
+                });
+                orderSalesOrWhere.push({
+                    order_sale_products: {
+                        some: {
+                            products: {
+                                description: {
+                                    contains: filter,
+                                },
+                            },
+                            active: 1,
+                        },
+                    },
+                });
+                orderSalesOrWhere.push({
+                    order_sale_products: {
+                        some: {
+                            products: {
+                                code: {
+                                    contains: filter,
+                                },
+                            },
+                            active: 1,
+                        },
                     },
                 });
             }
-            orderSalesOrWhere.push({
-                notes: {
-                    contains: filter,
-                },
-            });
-            orderSalesOrWhere.push({
-                accounts: {
-                    name: {
-                        contains: filter,
-                    },
-                },
-            });
-            orderSalesOrWhere.push({
-                receipt_types: {
-                    name: {
-                        contains: filter,
-                    },
-                },
-            });
-            orderSalesOrWhere.push({
-                order_sale_statuses: {
-                    name: {
-                        contains: filter,
-                    },
-                },
-            });
-            orderSalesOrWhere.push({
-                order_sale_products: {
-                    some: {
-                        products: {
-                            description: {
-                                contains: filter,
-                            },
-                        },
-                        active: 1,
-                    },
-                },
-            });
-            orderSalesOrWhere.push({
-                order_sale_products: {
-                    some: {
-                        products: {
-                            code: {
-                                contains: filter,
-                            },
-                        },
-                        active: 1,
-                    },
-                },
-            });
         }
 
         const orderSalesAndWhere: Prisma.Enumerable<Prisma.order_salesWhereInput> =
@@ -271,6 +273,77 @@ export class OrderSaleService {
             where: {
                 id: orderSaleId,
                 active: 1,
+            },
+        });
+    }
+
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getOrderSale, which is a bare row read with ~12 callers (one inside a
+    // loop) that must not pay for a child fetch.
+    //
+    // No `active: 1` on the sale itself, so a snapshot still works after the
+    // soft delete. But `active: 1` on the CHILD lines is load-bearing: lines are
+    // soft-deleted rather than removed, so an unfiltered snapshot would ship a
+    // removed line with only its `active` flag changed — and the React differ
+    // ignores `active`, which would make the deletion vanish from the audit
+    // entirely. See docs/features/ongoing/feature-activities-audit.md §2c-1.
+    //
+    // `products` is trimmed to three columns: the snapshot stores the product
+    // description as it was AT THE TIME, so an old audit entry never displays a
+    // name the product only acquired later.
+    async getOrderSaleSnapshot({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<unknown> {
+        return this.prisma.order_sales.findUnique({
+            where: {
+                id: order_sale_id,
+            },
+            include: {
+                // Foreign keys would otherwise diff as bare numbers
+                // ("Status | 2 | 1"). Each relation is selected down to its id
+                // and its name, so the audit reads the name AS IT WAS — and so
+                // the React side has only one column it could mistake for the
+                // label. See the feature doc §12.
+                accounts: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_sale_statuses: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                receipt_types: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_requests: {
+                    select: {
+                        id: true,
+                        order_code: true,
+                    },
+                },
+                order_sale_products: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
             },
         });
     }
@@ -518,11 +591,15 @@ export class OrderSaleService {
     }: {
         receipt_type_id?: number | null;
     }): Promise<ReceiptType | null> {
-        return this.prisma.receipt_types.findFirst({
+        const receiptType = await this.prisma.receipt_types.findFirst({
             where: {
                 id: receipt_type_id || 0,
             },
         });
+
+        return receiptType
+            ? { ...receiptType, tax_rate: Number(receiptType.tax_rate) }
+            : null;
     }
 
     async getOrderRequest({
@@ -596,6 +673,19 @@ export class OrderSaleService {
     }): Promise<OrderSale> {
         await this.validateOrderSale(input, current_user_id);
 
+        const receiptType = await this.prisma.receipt_types.findFirst({
+            where: { id: input.receipt_type_id, active: 1 },
+        });
+
+        if (input.automatic_tax_calculation && !receiptType) {
+            throw new BadRequestException(
+                `Receipt type ${input.receipt_type_id} not found or inactive`,
+            );
+        }
+
+        const taxRate = receiptType ? Number(receiptType.tax_rate) : 0;
+        const taxMultiplier = 1 + taxRate;
+
         const { subtotal, tax, total_with_tax } =
             !input.automatic_tax_calculation
                 ? {
@@ -606,24 +696,14 @@ export class OrderSaleService {
                 : input.order_sale_products.reduce(
                       (acc, osp) => {
                           const kiloSubtotal = osp.kilo_price * osp.kilos;
-
-                          const kiloTax =
-                              kiloSubtotal *
-                              (input.receipt_type_id === 2 ? 0.16 : 0);
-
+                          const kiloTax = kiloSubtotal * taxRate;
                           const kiloProductTotal =
-                              kiloSubtotal *
-                              (input.receipt_type_id === 2 ? 1.16 : 1);
+                              kiloSubtotal * taxMultiplier;
 
                           const groupSubtotal = osp.group_price * osp.groups;
-
-                          const groupTax =
-                              groupSubtotal *
-                              (input.receipt_type_id === 2 ? 0.16 : 0);
-
+                          const groupTax = groupSubtotal * taxRate;
                           const groupProductTotal =
-                              groupSubtotal *
-                              (input.receipt_type_id === 2 ? 1.16 : 1);
+                              groupSubtotal * taxMultiplier;
 
                           const subtotal = kiloSubtotal + groupSubtotal;
                           const tax = kiloTax + groupTax;
@@ -653,6 +733,8 @@ export class OrderSaleService {
                 order_code: input.order_code,
                 expected_payment_date: input.expected_payment_date,
                 invoice_code: input.invoice_code,
+                require_invoice_code: input.require_invoice_code,
+                require_tax: input.require_tax,
                 // Status is no longer part of the input: new sales always start at
                 // the first status (id = 1). Only updateOrderSaleStatus (admin-only)
                 // can change it afterwards.
@@ -667,6 +749,7 @@ export class OrderSaleService {
                 credit_note_amount: input.credit_note_amount,
                 notes: input.notes,
                 canceled: input.canceled,
+                reconciliation_only: input.reconciliation_only,
                 automatic_tax_calculation: input.automatic_tax_calculation,
                 subtotal: round(subtotal),
                 tax: round(tax),
@@ -680,6 +763,8 @@ export class OrderSaleService {
                 expected_payment_date: input.expected_payment_date,
                 order_request_id: input.order_request_id || null,
                 invoice_code: input.invoice_code,
+                require_invoice_code: input.require_invoice_code,
+                require_tax: input.require_tax,
                 account_id: input.account_id,
                 // Intentionally omit order_sale_status_id so an upsert never
                 // overwrites a status an admin may have set.
@@ -692,6 +777,7 @@ export class OrderSaleService {
                 automatic_tax_calculation: input.automatic_tax_calculation,
                 notes: input.notes,
                 canceled: input.canceled,
+                reconciliation_only: input.reconciliation_only,
                 subtotal: round(subtotal),
                 tax: round(tax),
                 total_with_tax: round(total_with_tax),

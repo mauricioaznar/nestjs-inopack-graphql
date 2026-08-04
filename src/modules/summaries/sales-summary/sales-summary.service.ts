@@ -20,7 +20,7 @@ export class SalesSummaryService {
         month,
         entity_groups,
         date_group_by,
-        exclude_flagged,
+        include_reconciliation_only,
     }: SalesSummaryArgs): Promise<SalesSummary> {
         if (year === null || year === undefined) {
             return {
@@ -92,7 +92,8 @@ export class SalesSummaryService {
                 case 'orderSale':
                     selectEntityGroup += `${convertToInt(
                         'order_sales_id',
-                    )} as order_sale_id, ${convertToInt('order_code')}`;
+                        'order_sale_id',
+                    )}, ${convertToInt('order_code')}`;
                     groupByEntityGroup += 'order_sales_id, order_code';
                     break;
 
@@ -106,15 +107,12 @@ export class SalesSummaryService {
             }
         }
 
-        // Flagged items (products.exclude_from_financial_summaries, e.g. the
-        // loan product) are excluded entirely: units, principal AND tax all
-        // contribute 0. Callers that need the tax of flagged items (the
-        // balances page tax comparison) pass exclude_flagged: false and read
-        // only the tax column.
-        const zeroIfFlagged = (expr: string) =>
-            exclude_flagged
-                ? `if(products.exclude_from_financial_summaries = 1, 0, ${expr})`
-                : expr;
+        // A reconciliation-only sale is documentary evidence, not additional
+        // revenue. Exclude the whole document unless the caller deliberately
+        // asks to inspect these records.
+        const reconciliationOnlyCondition = include_reconciliation_only
+            ? ''
+            : 'and order_sales.reconciliation_only = 0';
 
         const sales = await this.prisma.$queryRawUnsafe<SalesSummary['sales']>(`
             select sum(ctc.kilos_sold)                  as               kilos_sold,
@@ -133,17 +131,11 @@ export class SalesSummaryService {
                         osp.order_code,
                         osp.order_sales_id,
                         osp.start_date,
-                        ${zeroIfFlagged(
-                            'if (products.include_units_in_summary = 1,osp.kilos, 0)',
-                        )} kilos_sold,
-                        ${zeroIfFlagged(
-                            'if (products.include_units_in_summary = 1,osp.groups, 0)',
-                        )} groups_sold,
-                        ${zeroIfFlagged('osp.subtotal')} total,
-                        ${zeroIfFlagged('osp.fraction * osp.tax')} tax,
-                        ${zeroIfFlagged(
-                            'osp.subtotal + (osp.fraction * osp.tax)',
-                        )}  total_with_tax,
+                        if (products.include_units_in_summary = 1,osp.kilos, 0) kilos_sold,
+                        if (products.include_units_in_summary = 1,osp.groups, 0) groups_sold,
+                        osp.subtotal total,
+                        osp.fraction * osp.tax tax,
+                        osp.subtotal + (osp.fraction * osp.tax) total_with_tax,
                          products.id product_id,
                          products.description product_name,
                          products.width width,
@@ -207,6 +199,7 @@ export class SalesSummaryService {
                                 on osp_adj.order_sale_id = order_sales.id
                                 where order_sales.canceled = 0
                                 and order_sales.active = 1
+                                ${reconciliationOnlyCondition}
                         ) as osp
                         left join products
                         on osp.product_id = products.id

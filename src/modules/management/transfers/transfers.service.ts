@@ -19,6 +19,8 @@ import {
 } from '../../../common/dto/pagination';
 import {
     formatFloat,
+    getBusinessDayStart,
+    getBusinessDayEndExclusive,
     getCreatedAtProperty,
     getCreatedByProperty,
     getUpdatedAtProperty,
@@ -46,16 +48,120 @@ export class TransfersService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getTransfer, which is a bare row read used all over this service and must
+    // not pay for a child fetch.
+    //
+    // No `active: 1` on the transfer itself, so a snapshot still works after the
+    // soft delete. But `active: 1` on the CHILD rows is load-bearing: receipts
+    // are soft-deleted rather than removed, so an unfiltered snapshot would ship
+    // a removed receipt with only its `active` flag changed — and the React
+    // differ ignores `active`, which would make the deletion vanish from the
+    // audit entirely. See
+    // docs/features/ongoing/feature-activities-audit.md §2c-1.
+    //
+    // transfer_receipts ARE included here, which is the opposite of the call
+    // made for sales and expenses — and deliberately so. On a sale a receipt is
+    // an incoming payment owned by some other transfer, so it belongs to that
+    // entity's audit. On a transfer the receipts are the transfer's OWN
+    // allocation lines: upsertTransfer creates and updates them and
+    // deleteTransfer soft-deletes them, exactly as order_sale_products behave on
+    // a sale. Which sale or expense the money was applied to is the single most
+    // audit-relevant thing a transfer records, and it lives only on these rows.
+    //
+    // The related rows are trimmed to their identifying codes: the snapshot
+    // stores them as they were AT THE TIME, so an old audit entry never displays
+    // a code the record only acquired later.
+    // The two account relations are the one place a snapshot is RESHAPED after
+    // the query. Prisma disambiguates two relations to the same table by
+    // generating `accounts_accountsTotransfers_from_account_id`, and an include
+    // key cannot be aliased — but the React differ pairs a foreign key with its
+    // related row by deriving the key from the column name (`from_account_id`
+    // -> `from_account`), so the generated names would never be found and both
+    // accounts would render as bare ids.
+    //
+    // Renaming the keys here is safe: the flattener skips nested single objects
+    // entirely, so these exist only to be read as labels and cannot affect the
+    // diff. Reshaping in the service also keeps the convention intact on the
+    // React side, rather than teaching it about one table's generated names.
+    async getTransferSnapshot({
+        transfer_id,
+    }: {
+        transfer_id: number;
+    }): Promise<unknown> {
+        const transfer = await this.prisma.transfers.findUnique({
+            where: {
+                id: transfer_id,
+            },
+            include: {
+                transfer_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                accounts_accountsTotransfers_from_account_id: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                accounts_accountsTotransfers_to_account_id: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                transfer_receipts: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        order_sales: {
+                            select: {
+                                id: true,
+                                order_code: true,
+                            },
+                        },
+                        expenses: {
+                            select: {
+                                id: true,
+                                external_code: true,
+                                internal_code: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!transfer) return null;
+
+        const {
+            accounts_accountsTotransfers_from_account_id: fromAccount,
+            accounts_accountsTotransfers_to_account_id: toAccount,
+            ...rest
+        } = transfer;
+
+        return {
+            ...rest,
+            from_account: fromAccount,
+            to_account: toAccount,
+        };
+    }
+
     async getTransfers({
         datePaginator,
     }: {
         datePaginator: DatePaginator;
     }): Promise<Transfer[]> {
+        // INSTANT field: Contabilidad sends an exclusive end (first day of
+        // next month), so both bounds use getBusinessDayStart.
         const startDate = datePaginator.start_date
-            ? new Date(datePaginator.start_date)
+            ? getBusinessDayStart(datePaginator.start_date)
             : undefined;
         const endDate = datePaginator.end_date
-            ? new Date(datePaginator.end_date)
+            ? getBusinessDayStart(datePaginator.end_date)
             : undefined;
 
         const transfersWhere: Prisma.transfersWhereInput[] = [
@@ -106,11 +212,13 @@ export class TransfersService {
         transfersQueryArgs: TransfersQueryArgs;
         transfersSortArgs: TransfersSortArgs;
     }): Promise<PaginatedTransfers> {
+        // INSTANT field: Transferencias range picker treats the end date as
+        // inclusive, so use getBusinessDayEndExclusive for the upper bound.
         const filterStartDate = datePaginator.start_date
-            ? new Date(datePaginator.start_date)
+            ? getBusinessDayStart(datePaginator.start_date)
             : undefined;
         const filterEndDate = datePaginator.end_date
-            ? new Date(datePaginator.end_date)
+            ? getBusinessDayEndExclusive(datePaginator.end_date)
             : undefined;
 
         const { sort_order, sort_field } = transfersSortArgs;

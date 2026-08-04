@@ -21,6 +21,9 @@ import {
 } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 import {
+    formatUtcDateForMysql,
+    getBusinessDayEndExclusive,
+    getBusinessDayStart,
     getCreatedAtProperty,
     getCreatedByProperty,
     getUpdatedAtProperty,
@@ -30,6 +33,12 @@ import {
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
 import { Prisma } from '@prisma/client';
+import {
+    ACCOUNT_NAME_FUZZY_MIN_LENGTH,
+    ACCOUNT_NAME_FUZZY_THRESHOLD,
+    accountNameSimilarity,
+    normalizeAccountName,
+} from '../../../common/helpers/accounts/account-name-similarity';
 
 @Injectable()
 export class AccountsService {
@@ -180,6 +189,161 @@ export class AccountsService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getAccount, which is a bare row read with many callers that must not pay
+    // for three child fetches — and which also carries a clientRestricted
+    // filter that has no business narrowing an audit record.
+    //
+    // All THREE owned collections are included, per the 2026-07-31 decision:
+    // the upsert writes contacts, products and resources, so it audits all
+    // three. Price lists (account_products / account_resources) are the whole
+    // reason to audit an account, and a contact change is exactly the kind of
+    // edit people later dispute.
+    //
+    // No `active: 1` on the account itself, so a snapshot still works after the
+    // soft delete. But `active: 1` on the CHILD rows is load-bearing: they are
+    // soft-deleted rather than removed, so an unfiltered snapshot would ship a
+    // removed row with only its `active` flag changed — and the React differ
+    // ignores `active`, which would make the deletion vanish from the audit
+    // entirely. See docs/features/ongoing/feature-activities-audit.md §2c-1.
+    async getAccountSnapshot({
+        account_id,
+    }: {
+        account_id: number;
+    }): Promise<unknown> {
+        return this.prisma.accounts.findUnique({
+            where: {
+                id: account_id,
+            },
+            include: {
+                // The account's own foreign key, denormalised to id + name so
+                // the diff reads the name rather than the number (§12).
+                // `merged_into_account_id` has no Prisma relation to include,
+                // so it still renders as an id — a known gap, not an omission.
+                resources: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                account_contacts: {
+                    where: {
+                        active: 1,
+                    },
+                },
+                account_products: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
+                account_resources: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        resources: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
+    async getSimilarAccountNames({
+        name,
+        exclude_account_id,
+    }: {
+        name: string;
+        exclude_account_id?: number | null;
+    }): Promise<
+        {
+            id: number;
+            name: string;
+            abbreviation: string;
+            reason: string;
+            similarity: number;
+        }[]
+    > {
+        const normalizedName = normalizeAccountName(name);
+        if (!normalizedName) return [];
+
+        const accounts = await this.prisma.accounts.findMany({
+            where: {
+                active: 1,
+                id: exclude_account_id ? { not: exclude_account_id } : undefined,
+            },
+            select: {
+                id: true,
+                name: true,
+                abbreviation: true,
+            },
+            orderBy: { id: 'asc' },
+        });
+
+        return accounts
+            .map((account) => {
+                const candidateName = normalizeAccountName(account.name);
+                const similarity = accountNameSimilarity(
+                    normalizedName,
+                    candidateName,
+                );
+                const exact = normalizedName === candidateName;
+                const partial =
+                    !exact &&
+                    normalizedName.length >= ACCOUNT_NAME_FUZZY_MIN_LENGTH &&
+                    (candidateName.includes(normalizedName) ||
+                        normalizedName.includes(candidateName));
+                const fuzzy =
+                    !exact &&
+                    !partial &&
+                    normalizedName.length >= ACCOUNT_NAME_FUZZY_MIN_LENGTH &&
+                    candidateName.length >= ACCOUNT_NAME_FUZZY_MIN_LENGTH &&
+                    similarity >= ACCOUNT_NAME_FUZZY_THRESHOLD;
+
+                if (!exact && !partial && !fuzzy) return null;
+
+                return {
+                    ...account,
+                    reason: exact
+                        ? 'normalized_exact'
+                        : partial
+                        ? 'partial'
+                        : 'fuzzy',
+                    similarity: Number(similarity.toFixed(4)),
+                };
+            })
+            .filter(
+                (
+                    account,
+                ): account is {
+                    id: number;
+                    name: string;
+                    abbreviation: string;
+                    reason: string;
+                    similarity: number;
+                } => account !== null,
+            )
+            .sort(
+                (left, right) =>
+                    left.reason.localeCompare(right.reason) ||
+                    left.name.localeCompare(right.name) ||
+                    left.id - right.id,
+            );
+    }
+
     async upsertAccount(
         input: AccountUpsertInput,
         { current_user_id }: { current_user_id?: number | null } = {},
@@ -187,6 +351,13 @@ export class AccountsService {
         // Validate everything before any writes so invalid input never leaves
         // the account/contacts/catalog partially saved.
         await this.validateAccount(input);
+
+        const previousAccount = input.id
+            ? await this.prisma.accounts.findUnique({
+                  where: { id: input.id },
+                  select: { name: true },
+              })
+            : null;
 
         const account = await this.prisma.accounts.upsert({
             create: {
@@ -205,9 +376,13 @@ export class AccountsService {
                 supplier_credit_days: input.supplier_credit_days,
                 client_require_credit_note: input.client_require_credit_note,
                 client_require_supplement: input.client_require_supplement,
-                supplier_require_external_code:
-                    input.supplier_require_external_code,
+                client_requires_invoice_code:
+                    input.client_requires_invoice_code,
+                client_requires_tax: input.client_requires_tax,
                 supplier_require_supplement: input.supplier_require_supplement,
+                supplier_requires_external_code:
+                    input.supplier_requires_external_code,
+                supplier_requires_tax: input.supplier_requires_tax,
                 supplier_recurring_expenses:
                     input.supplier_recurring_expenses,
                 client_automatic_tax_calculation:
@@ -227,9 +402,13 @@ export class AccountsService {
                 supplier_credit_days: input.supplier_credit_days,
                 client_require_credit_note: input.client_require_credit_note,
                 client_require_supplement: input.client_require_supplement,
-                supplier_require_external_code:
-                    input.supplier_require_external_code,
+                client_requires_invoice_code:
+                    input.client_requires_invoice_code,
+                client_requires_tax: input.client_requires_tax,
                 supplier_require_supplement: input.supplier_require_supplement,
+                supplier_requires_external_code:
+                    input.supplier_requires_external_code,
+                supplier_requires_tax: input.supplier_requires_tax,
                 supplier_recurring_expenses:
                     input.supplier_recurring_expenses,
                 client_automatic_tax_calculation:
@@ -316,7 +495,18 @@ export class AccountsService {
             items: input.account_resources,
         });
 
-        return account;
+        const normalizedNameChanged =
+            !previousAccount ||
+            normalizeAccountName(previousAccount.name) !==
+                normalizeAccountName(input.name);
+        const similar_name_matches = normalizedNameChanged
+            ? await this.getSimilarAccountNames({
+                  name: account.name,
+                  exclude_account_id: account.id,
+              })
+            : [];
+
+        return { ...account, similar_name_matches };
     }
 
     // The product catalog is synced the same way as contacts: rows present in
@@ -690,6 +880,12 @@ export class AccountsService {
             throw new NotFoundException();
         }
 
+        if (account.is_own) {
+            throw new BadRequestException(
+                'Cannot delete an INOPACK-owned account',
+            );
+        }
+
         const isDeletable = await this.isDeletable({ account_id });
 
         if (!isDeletable) {
@@ -802,6 +998,15 @@ export class AccountsService {
     }: {
         account_id: number;
     }): Promise<boolean> {
+        const account = await this.prisma.accounts.findUnique({
+            where: { id: account_id },
+            select: { is_own: true },
+        });
+
+        if (account?.is_own) {
+            return false;
+        }
+
         const {
             order_requests_count,
             order_sales_count,
@@ -951,10 +1156,10 @@ export class AccountsService {
     }
 
     // The account's net balance from all activity *before* `from` — i.e. the
-    // carried-forward opening balance for a date-range view. A transaction and
-    // all its transfers belong to the transaction's date bucket (mirroring how
-    // the ledger groups them), so transfers are attributed by their parent's
-    // date, never their own. Net delta = transaction total − its transfers.
+    // carried-forward opening balance for a date-range view. Sales and
+    // expenses use their calendar date; a transfer uses its own instant when
+    // present and falls back to the parent date only for legacy null values.
+    // Net delta = transaction total minus transfers that occurred before `from`.
     async getAccountOpeningBalance({
         account_id,
         from,
@@ -974,6 +1179,17 @@ export class AccountsService {
         const fromIso = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : null;
         // No lower bound → nothing precedes the range → opening balance is 0.
         if (!fromIso) return 0;
+        const fromUtc = formatUtcDateForMysql(getBusinessDayStart(fromIso));
+
+        // A transfer timestamp is a true instant; the parent sale/expense
+        // date is a floating calendar date. Keep those contracts separate
+        // instead of comparing a COALESCE expression to one UTC boundary.
+        const saleTransferBeforeFrom = `
+            (t.transferred_date IS NOT NULL AND t.transferred_date < '${fromUtc}')
+            OR (t.transferred_date IS NULL AND s.date < '${fromIso}')`;
+        const expenseTransferBeforeFrom = `
+            (t.transferred_date IS NOT NULL AND t.transferred_date < '${fromUtc}')
+            OR (t.transferred_date IS NULL AND e.date < '${fromIso}')`;
 
         const rows = await this.prisma.$queryRawUnsafe<
             { opening_balance: number | null }[]
@@ -984,13 +1200,13 @@ export class AccountsService {
                 - IFNULL((SELECT round(sum(tr.amount), 2) FROM transfer_receipts tr
                           JOIN transfers t ON t.id = tr.transfer_id
                           JOIN order_sales s ON s.id = tr.order_sale_id
-                          WHERE tr.active = 1 AND t.active = 1 AND s.active = 1 AND s.canceled = 0 AND s.account_id = ${account_id} AND COALESCE(t.transferred_date, s.date) < '${fromIso}'), 0)
+                          WHERE tr.active = 1 AND t.active = 1 AND s.active = 1 AND s.canceled = 0 AND s.account_id = ${account_id} AND (${saleTransferBeforeFrom})), 0)
                 + IFNULL((SELECT round(sum(e.subtotal + e.tax - e.tax_retained - e.non_tax_retained), 2) FROM expenses e
                           WHERE e.active = 1 AND e.canceled = 0 AND e.account_id = ${account_id} AND e.date < '${fromIso}'), 0)
                 - IFNULL((SELECT round(sum(tr.amount), 2) FROM transfer_receipts tr
                           JOIN transfers t ON t.id = tr.transfer_id
                           JOIN expenses e ON e.id = tr.expense_id
-                          WHERE tr.active = 1 AND t.active = 1 AND e.active = 1 AND e.canceled = 0 AND e.account_id = ${account_id} AND COALESCE(t.transferred_date, e.date) < '${fromIso}'), 0)
+                          WHERE tr.active = 1 AND t.active = 1 AND e.active = 1 AND e.canceled = 0 AND e.account_id = ${account_id} AND (${expenseTransferBeforeFrom})), 0)
             ) AS opening_balance
         `);
 
@@ -999,9 +1215,10 @@ export class AccountsService {
     }
 
     // Each transfer (payment) for the account as its own row, filtered by its
-    // OWN effective date — transferred_date, falling back to the parent
-    // sale/expense date when it has none. Carries parent folio fields so the
-    // date-ordered statement can render and classify (Anticipo) each row.
+    // own effective date — transferred_date, falling back to the parent
+    // sale/expense calendar date only when it has none. Carries parent folio
+    // fields so the date-ordered statement can render and classify (Anticipo)
+    // each row.
     async getAccountTransfers({
         account_id,
         from,
@@ -1023,22 +1240,32 @@ export class AccountsService {
         const fromIso = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : null;
         const untilIso =
             until && /^\d{4}-\d{2}-\d{2}$/.test(until) ? until : null;
-        const saleDate = `COALESCE(transfers.transferred_date, order_sales.date)`;
-        const expenseDate = `COALESCE(transfers.transferred_date, expenses.date)`;
-        const saleDateClause = `${
-            fromIso ? `AND ${saleDate} >= '${fromIso}'` : ''
-        } ${
-            untilIso
-                ? `AND ${saleDate} < DATE_ADD('${untilIso}', INTERVAL 1 DAY)`
-                : ''
-        }`;
-        const expenseDateClause = `${
-            fromIso ? `AND ${expenseDate} >= '${fromIso}'` : ''
-        } ${
-            untilIso
-                ? `AND ${expenseDate} < DATE_ADD('${untilIso}', INTERVAL 1 DAY)`
-                : ''
-        }`;
+        const fromUtc = fromIso
+            ? formatUtcDateForMysql(getBusinessDayStart(fromIso))
+            : null;
+        const untilUtc = untilIso
+            ? formatUtcDateForMysql(getBusinessDayEndExclusive(untilIso))
+            : null;
+
+        const effectiveDateClause = (
+            transferAlias: string,
+            parentAlias: string,
+        ) => {
+            const lowerBound =
+                fromIso && fromUtc
+                    ? `AND ((${transferAlias}.transferred_date IS NOT NULL AND ${transferAlias}.transferred_date >= '${fromUtc}') OR (${transferAlias}.transferred_date IS NULL AND ${parentAlias}.date >= '${fromIso}'))`
+                    : '';
+            const upperBound =
+                untilIso && untilUtc
+                    ? `AND ((${transferAlias}.transferred_date IS NOT NULL AND ${transferAlias}.transferred_date < '${untilUtc}') OR (${transferAlias}.transferred_date IS NULL AND ${parentAlias}.date < DATE_ADD('${untilIso}', INTERVAL 1 DAY)))`
+                    : '';
+            return `
+                ${lowerBound}
+                ${upperBound}
+            `;
+        };
+        const saleDateClause = effectiveDateClause('transfers', 'order_sales');
+        const expenseDateClause = effectiveDateClause('transfers', 'expenses');
 
         const rows = await this.prisma.$queryRawUnsafe<
             {

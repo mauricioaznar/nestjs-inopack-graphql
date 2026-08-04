@@ -11,6 +11,7 @@ import {
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { MachinesService } from './machines.service';
 import {
+    ActivityEntityName,
     ActivityTypeName,
     Branch,
     GetMachineQueryFields,
@@ -29,6 +30,10 @@ import {
     YearMonthArgs,
 } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
@@ -48,13 +53,39 @@ export class MachinesResolver {
         @Args('MachineUpsertInput') input: MachineUpsertInput,
         @CurrentUser() currentUser: User,
     ) {
+        const type = !input.id
+            ? ActivityTypeName.CREATE
+            : ActivityTypeName.UPDATE;
+        const auditContext = {
+            entityName: ActivityEntityName.MACHINE,
+            entityId: input.id ?? null,
+            activityType: type,
+            userId: currentUser.id,
+        };
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so the old side is intentionally absent and the pair reads
+        // as "nothing -> something". Guarded: a snapshot read that throws must
+        // not stop the save from happening.
+        const oldCapture = input.id
+            ? await captureSnapshotSafely(auditContext, 'old_snapshot', () =>
+                  this.service.getMachineSnapshot({ machine_id: input.id! }),
+              )
+            : INTENTIONALLY_ABSENT;
+        // OUTSIDE every audit guard — a real save failure still fails.
         const machine = await this.service.upsertMachine(input, {
             current_user_id: currentUser.id,
         });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: machine.id },
+            'new_snapshot',
+            () => this.service.getMachineSnapshot({ machine_id: machine.id }),
+        );
         await this.pubSubService.machine({
             machine,
-            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type,
             userId: currentUser.id,
+            oldCapture,
+            newCapture,
         });
         return machine;
     }
@@ -154,6 +185,19 @@ export class MachinesResolver {
             machine_id: machineId,
         });
         if (!machine) throw new NotFoundException();
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the row carries active = -1. The new side is intentionally absent —
+        // "deleted" is what the dialog should show, not "active went 1 -> -1".
+        const oldCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.MACHINE,
+                entityId: machineId,
+                activityType: ActivityTypeName.DELETE,
+                userId: currentUser.id,
+            },
+            'old_snapshot',
+            () => this.service.getMachineSnapshot({ machine_id: machineId }),
+        );
         await this.service.deleteMachine({
             machine_id: machineId,
             current_user_id: currentUser.id,
@@ -162,6 +206,8 @@ export class MachinesResolver {
             machine,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
         });
         return true;
     }

@@ -19,6 +19,8 @@ import {
     AccountTransactionItem,
     AccountTransferItem,
     AccountUpsertInput,
+    SimilarAccountName,
+    ActivityEntityName,
     ActivityTypeName,
     PaginatedAccounts,
     PaginatedAccountsQueryArgs,
@@ -28,6 +30,10 @@ import {
     UserWithRoles,
 } from '../../../common/dto/entities';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { isAccountClientRestricted } from '../../../common/helpers';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
@@ -65,6 +71,20 @@ export class AccountsResolver {
         return this.service.getAccount({
             account_id: accountId,
             clientRestricted: isAccountClientRestricted(currentUser),
+        });
+    }
+
+    @Query(() => [SimilarAccountName])
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.ADMIN)
+    async getSimilarAccountNames(
+        @Args('Name') name: string,
+        @Args('ExcludeAccountId', { nullable: true })
+        excludeAccountId?: number,
+    ): Promise<SimilarAccountName[]> {
+        return this.service.getSimilarAccountNames({
+            name,
+            exclude_account_id: excludeAccountId,
         });
     }
 
@@ -135,13 +155,39 @@ export class AccountsResolver {
         @Args('AccountUpsertInput') input: AccountUpsertInput,
         @CurrentUser() currentUser: User,
     ): Promise<Account> {
+        const type = !input.id
+            ? ActivityTypeName.CREATE
+            : ActivityTypeName.UPDATE;
+        const auditContext = {
+            entityName: ActivityEntityName.ACCOUNT,
+            entityId: input.id ?? null,
+            activityType: type,
+            userId: currentUser.id,
+        };
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so the old side is intentionally absent and the pair reads
+        // as "nothing -> something". Guarded: a snapshot read that throws must
+        // not stop the save from happening.
+        const oldCapture = input.id
+            ? await captureSnapshotSafely(auditContext, 'old_snapshot', () =>
+                  this.service.getAccountSnapshot({ account_id: input.id! }),
+              )
+            : INTENTIONALLY_ABSENT;
+        // OUTSIDE every audit guard — a real save failure still fails.
         const account = await this.service.upsertAccount(input, {
             current_user_id: currentUser.id,
         });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: account.id },
+            'new_snapshot',
+            () => this.service.getAccountSnapshot({ account_id: account.id }),
+        );
         await this.pubSubService.account({
             account,
-            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type,
             userId: currentUser.id,
+            oldCapture,
+            newCapture,
         });
         return account;
     }
@@ -161,6 +207,21 @@ export class AccountsResolver {
         if (!account) {
             throw new NotFoundException();
         }
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the account and all three child collections carry active = -1 and the
+        // snapshot would come back with no children. The new side is
+        // intentionally absent — "deleted" is what the dialog should show, not
+        // "active went 1 -> -1".
+        const oldCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.ACCOUNT,
+                entityId: accountId,
+                activityType: ActivityTypeName.DELETE,
+                userId: currentUser.id,
+            },
+            'old_snapshot',
+            () => this.service.getAccountSnapshot({ account_id: accountId }),
+        );
         await this.service.deletesAccount({
             account_id: accountId,
             current_user_id: currentUser.id,
@@ -169,6 +230,8 @@ export class AccountsResolver {
             account,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
         });
         return true;
     }
@@ -204,6 +267,11 @@ export class AccountsResolver {
     @ResolveField(() => Boolean, { nullable: false })
     async is_deletable(@Parent() account: Account) {
         return this.service.isDeletable({ account_id: account.id });
+    }
+
+    @ResolveField(() => [SimilarAccountName])
+    async similar_name_matches(@Parent() account: Account) {
+        return account.similar_name_matches || [];
     }
 
     @ResolveField(() => String, { nullable: false })

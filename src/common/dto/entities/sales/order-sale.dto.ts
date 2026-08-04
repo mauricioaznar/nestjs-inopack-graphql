@@ -26,6 +26,12 @@ export class OrderSaleBase {
     @Field()
     invoice_code: number;
 
+    @Field(() => Boolean, { nullable: false })
+    require_invoice_code: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    require_tax: boolean;
+
     @Field(() => Int, { nullable: true })
     receipt_type_id?: number | null;
 
@@ -55,6 +61,9 @@ export class OrderSaleBase {
 
     @Field(() => Boolean, { nullable: false })
     canceled: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    reconciliation_only: boolean;
 
     @Field(() => Boolean, { nullable: false })
     automatic_tax_calculation: boolean;

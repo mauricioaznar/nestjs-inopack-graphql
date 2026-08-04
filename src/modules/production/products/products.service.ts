@@ -47,6 +47,47 @@ export class ProductsService {
         });
     }
 
+    // Audit snapshot for the activity trail. Flat: nothing in the products
+    // upsert writes child rows — account_products, order_sale_products and the
+    // rest merely point back at a product and are audited by the entity that
+    // owns them.
+    //
+    // No `active: 1`, unlike getProduct, so a snapshot still works after the
+    // soft delete.
+    async getProductSnapshot({
+        product_id,
+    }: {
+        product_id: number;
+    }): Promise<unknown> {
+        return this.prisma.products.findUnique({
+            where: {
+                id: product_id,
+            },
+            include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                product_categories: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                product_materials: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_production_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+        });
+    }
+
     async getOrderProductionProducts({
         product_id,
     }: {
@@ -269,8 +310,6 @@ export class ProductsService {
                 current_group_price: input.current_group_price,
                 pleat: input.pleat,
                 include_units_in_summary: input.include_units_in_summary,
-                exclude_from_financial_summaries:
-                    input.exclude_from_financial_summaries,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -291,8 +330,6 @@ export class ProductsService {
                 current_group_price: input.current_group_price,
                 pleat: input.pleat,
                 include_units_in_summary: input.include_units_in_summary,
-                exclude_from_financial_summaries:
-                    input.exclude_from_financial_summaries,
             },
             where: {
                 id: input.id || 0,

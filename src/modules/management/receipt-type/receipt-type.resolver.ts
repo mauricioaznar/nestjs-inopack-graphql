@@ -1,4 +1,4 @@
-import { Query, Resolver } from '@nestjs/graphql';
+import { Float, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { ReceiptTypeService } from './receipt-type.service';
 import { ReceiptType } from '../../../common/dto/entities';
@@ -14,5 +14,20 @@ export class ReceiptTypeResolver {
     @Query(() => [ReceiptType])
     async getReceiptTypes(): Promise<ReceiptType[]> {
         return this.service.getReceiptTypes();
+    }
+
+    @ResolveField(() => Float)
+    tax_rate(@Parent() rt: { tax_rate: unknown }): number {
+        return Number(rt.tax_rate);
+    }
+
+    @ResolveField(() => Boolean)
+    applies_tax(@Parent() rt: { tax_rate: unknown }): boolean {
+        return Number(rt.tax_rate) > 0;
+    }
+
+    @ResolveField(() => Float)
+    tax_multiplier(@Parent() rt: { tax_rate: unknown }): number {
+        return 1 + Number(rt.tax_rate);
     }
 }

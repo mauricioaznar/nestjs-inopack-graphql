@@ -24,7 +24,7 @@ export class ExpensesSummaryService {
         month,
         entity_groups,
         date_group_by,
-        exclude_flagged,
+        include_reconciliation_only,
         include_canceled,
     }: ExpensesSummaryArgs): Promise<ExpensesSummary> {
         if (year === null || month === undefined) {
@@ -95,15 +95,12 @@ export class ExpensesSummaryService {
             }
         }
 
-        // Flagged resources (resources.exclude_from_financial_summaries, e.g.
-        // the loans resource) are excluded entirely: units, principal AND the
-        // prorated tax/retention columns all contribute 0. Callers that need
-        // the tax of flagged items (the balances page tax comparison) pass
-        // exclude_flagged: false and read only the tax columns.
-        const zeroIfFlagged = (expr: string) =>
-            exclude_flagged
-                ? `if(resources.exclude_from_financial_summaries = 1, 0, ${expr})`
-                : expr;
+        // A reconciliation-only expense is retained as documentary evidence but
+        // is not additional spending. The whole document is included only when
+        // the caller explicitly opts in.
+        const reconciliationOnlyCondition = include_reconciliation_only
+            ? ''
+            : 'and expenses.reconciliation_only = 0';
 
         // Canceled expenses are filtered out unless the caller opts in. Default
         // (false/undefined) reproduces the previous hardcoded `canceled = 0`,
@@ -125,24 +122,12 @@ export class ExpensesSummaryService {
                 select
                      date (date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day)) first_day_of_the_week,
                      date(date_add(date_add(expenses.date, interval -WEEKDAY(expenses.date) - 1 day), interval 6 day)) last_day_of_the_week,
-                     ${zeroIfFlagged(
-                         'expenses_calc.expense_resource_subtotal',
-                     )} total,
-                     ${zeroIfFlagged(
-                         'if(resources.include_units_in_summary = 1, expenses_calc.units, 0)',
-                     )} units_sold,
-                     ${zeroIfFlagged(
-                         '(expenses_calc.fraction * expenses_calc.expense_tax)',
-                     )} tax,
-                     ${zeroIfFlagged(
-                         '(expenses_calc.fraction * expenses_calc.expense_tax_retained)',
-                     )} tax_retained,
-                     ${zeroIfFlagged(
-                         '(expenses_calc.fraction * expenses_calc.expense_non_tax_retained)',
-                     )} non_tax_retained,
-                     ${zeroIfFlagged(
-                         'expenses_calc.expense_resource_subtotal + (expenses_calc.fraction * expenses_calc.expense_tax_calc)',
-                     )}  total_with_tax,
+                     expenses_calc.expense_resource_subtotal total,
+                     if(resources.include_units_in_summary = 1, expenses_calc.units, 0) units_sold,
+                     expenses_calc.fraction * expenses_calc.expense_tax tax,
+                     expenses_calc.fraction * expenses_calc.expense_tax_retained tax_retained,
+                     expenses_calc.fraction * expenses_calc.expense_non_tax_retained non_tax_retained,
+                     expenses_calc.expense_resource_subtotal + (expenses_calc.fraction * expenses_calc.expense_tax_calc) total_with_tax,
                      expenses_calc.expense_id,
                      expenses.external_code expense_external_code,
                      expenses.date start_date,
@@ -176,6 +161,7 @@ export class ExpensesSummaryService {
                         on expense_resources.expense_id = expenses.id
                         where expenses.active = 1
                         and expense_resources.active = 1
+                        ${reconciliationOnlyCondition}
                     ) expenses_calc
                     left join expenses
                     on expenses_calc.expense_id = expenses.id
