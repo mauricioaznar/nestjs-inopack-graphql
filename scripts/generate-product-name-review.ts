@@ -92,6 +92,17 @@ async function main() {
         '> here as the permanent record — the migration discards the old free-form alias lists and substitutes the old display name.',
     );
     out.push('');
+    // Plain prose, deliberately the first non-heading/blockquote/table line in the file:
+    // `inopack summary` derives each plan's one-line description from exactly that line.
+    // Without it the summary fell through to the first duplicate-codes table row and
+    // described this document as "| code | product ids |".
+    out.push(
+        "Human-review surface for the product-name homogenization: every active product's proposed canonical",
+    );
+    out.push(
+        'name, slot by slot, with conflicts flagged for a decision before Phase 3 backfills the approved slots.',
+    );
+    out.push('');
     out.push('## Summary');
     out.push('');
     out.push(`- Active products: **${products.length}**`);
