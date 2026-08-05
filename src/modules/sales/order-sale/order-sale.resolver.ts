@@ -13,6 +13,7 @@ import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { OrderSaleService } from './order-sale.service';
 import {
     Account,
+    ActivityEntityName,
     ActivityTypeName,
     GetOrderSalesQueryArgs,
     OrderRequest,
@@ -33,6 +34,10 @@ import {
     DatePaginator,
 } from '../../../common/dto/pagination';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { OrderAdjustmentProduct } from '../../../common/dto/entities/production/order-adjustment-product.dto';
@@ -101,14 +106,45 @@ export class OrderSaleResolver {
         @Args('OrderSaleInput') input: OrderSaleInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderSale> {
+        const type = !input.id
+            ? ActivityTypeName.CREATE
+            : ActivityTypeName.UPDATE;
+        const auditContext = {
+            entityName: ActivityEntityName.ORDER_SALE,
+            entityId: input.id ?? null,
+            activityType: type,
+            userId: currentUser.id,
+        };
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so the old side is intentionally absent and the pair reads
+        // as "nothing -> something". Guarded: a snapshot read that throws must
+        // not stop the save from happening.
+        const oldCapture = input.id
+            ? await captureSnapshotSafely(auditContext, 'old_snapshot', () =>
+                  this.service.getOrderSaleSnapshot({
+                      order_sale_id: input.id!,
+                  }),
+              )
+            : INTENTIONALLY_ABSENT;
+        // OUTSIDE every audit guard — a real save failure still fails.
         const orderSale = await this.service.upsertOrderSale({
             input,
             current_user_id: currentUser.id,
         });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: orderSale.id },
+            'new_snapshot',
+            () =>
+                this.service.getOrderSaleSnapshot({
+                    order_sale_id: orderSale.id,
+                }),
+        );
         await this.pubSubService.orderSale({
             orderSale,
-            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type,
             userId: currentUser.id,
+            oldCapture,
+            newCapture,
         });
         return orderSale;
     }
@@ -123,14 +159,38 @@ export class OrderSaleResolver {
         orderSaleStatusId: number,
         @CurrentUser() currentUser: User,
     ): Promise<OrderSale> {
+        const auditContext = {
+            entityName: ActivityEntityName.ORDER_SALE,
+            entityId: orderSaleId,
+            activityType: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        };
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () =>
+                this.service.getOrderSaleSnapshot({
+                    order_sale_id: orderSaleId,
+                }),
+        );
         const orderSale = await this.service.updateOrderSaleStatus({
             order_sale_id: orderSaleId,
             order_sale_status_id: orderSaleStatusId,
         });
+        const newCapture = await captureSnapshotSafely(
+            auditContext,
+            'new_snapshot',
+            () =>
+                this.service.getOrderSaleSnapshot({
+                    order_sale_id: orderSale.id,
+                }),
+        );
         await this.pubSubService.orderSale({
             orderSale,
             type: ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldCapture,
+            newCapture,
         });
         return orderSale;
     }
@@ -141,11 +201,35 @@ export class OrderSaleResolver {
         @Args('OrderSaleDetailsInput') input: OrderSaleDetailsInput,
         @CurrentUser() currentUser: User,
     ): Promise<OrderSale> {
+        const auditContext = {
+            entityName: ActivityEntityName.ORDER_SALE,
+            entityId: input.order_sale_id,
+            activityType: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        };
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () =>
+                this.service.getOrderSaleSnapshot({
+                    order_sale_id: input.order_sale_id,
+                }),
+        );
         const orderSale = await this.service.updateOrderSaleDetails({ input });
+        const newCapture = await captureSnapshotSafely(
+            auditContext,
+            'new_snapshot',
+            () =>
+                this.service.getOrderSaleSnapshot({
+                    order_sale_id: orderSale.id,
+                }),
+        );
         await this.pubSubService.orderSale({
             orderSale,
             type: ActivityTypeName.UPDATE,
             userId: currentUser.id,
+            oldCapture,
+            newCapture,
         });
         return orderSale;
     }
@@ -158,6 +242,23 @@ export class OrderSaleResolver {
     ): Promise<boolean> {
         const orderSale = await this.getOrderSale(orderSaleId);
         if (!orderSale) throw new NotFoundException();
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the sale and its lines all carry active = -1 and the snapshot would
+        // come back empty. The new side is intentionally absent — "deleted" is
+        // what the dialog should show, not "active went 1 -> -1".
+        const oldCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.ORDER_SALE,
+                entityId: orderSale.id,
+                activityType: ActivityTypeName.DELETE,
+                userId: currentUser.id,
+            },
+            'old_snapshot',
+            () =>
+                this.service.getOrderSaleSnapshot({
+                    order_sale_id: orderSale.id,
+                }),
+        );
         await this.service.deleteOrderSale({
             order_sale_id: orderSale.id,
             current_user_id: currentUser.id,
@@ -166,6 +267,8 @@ export class OrderSaleResolver {
             orderSale,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
         });
         return true;
     }

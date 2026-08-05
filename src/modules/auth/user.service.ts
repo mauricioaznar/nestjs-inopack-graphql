@@ -127,6 +127,76 @@ export class UserService {
         return user;
     }
 
+    // Audit snapshot for the activity trail.
+    //
+    // ⚠️ This is the ONE snapshot in the feature that uses an explicit `select`
+    // rather than the whole row, and it must stay that way: `users` holds
+    // `password` (bcrypt hash) and `remember_token`. A `findUnique` with no
+    // select would write both into activities.old_data/new_data as plain JSON,
+    // readable by every admin who opens the diff dialog, permanently. Listing
+    // the safe columns explicitly means a column added to `users` later is
+    // absent from the audit until someone deliberately adds it — the correct
+    // failure direction for a table holding credentials.
+    //
+    // user_roles ARE included: they are the security-relevant part of a user,
+    // and update() diffs them with vennDiagram, so an unchanged role keeps its
+    // row id and only genuinely changed roles appear in the diff. `roles` is
+    // denormalised to its name so an old entry does not show a role's current
+    // name.
+    //
+    // No `active: 1` on the user, so a snapshot still works after a soft
+    // delete; user_roles rows are hard-deleted rather than flagged, so no child
+    // filter applies here.
+    async getUserSnapshot({
+        user_id,
+    }: {
+        user_id: number;
+    }): Promise<unknown> {
+        return this.prisma.users.findUnique({
+            where: {
+                id: user_id,
+            },
+            select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                fullname: true,
+                email: true,
+                active: true,
+                role_id: true,
+                branch_id: true,
+                // The two foreign keys, denormalised to id + name so the diff
+                // reads the name rather than the number (§12). Both are nested
+                // `select`s, so this snapshot keeps the explicit-columns-only
+                // property that keeps `password` out of the audit (§6.6).
+                roles: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                branches: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                user_roles: {
+                    select: {
+                        id: true,
+                        role_id: true,
+                        roles: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async validateUpdateUser(userInput: UpdateUserInput): Promise<void> {
         const errors: string[] = [];
 

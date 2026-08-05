@@ -54,6 +54,110 @@ export class OrderProductionsService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getOrderProduction, which is a bare row read with many callers that must
+    // not pay for three child fetches.
+    //
+    // All THREE owned collections are included, per the 2026-07-31 decision:
+    // the upsert writes products, employees and resources, so it audits all
+    // three. Omitting any one would make that kind of change silently
+    // invisible, which is the failure mode this feature exists to remove.
+    //
+    // No `active: 1` on the production itself, so a snapshot still works after
+    // the soft delete. But `active: 1` on the CHILD rows is load-bearing: they
+    // are soft-deleted rather than removed, so an unfiltered snapshot would ship
+    // a removed row with only its `active` flag changed — and the React differ
+    // ignores `active`, which would make the deletion vanish from the audit
+    // entirely. See docs/features/ongoing/feature-activities-audit.md §2c-1.
+    async getOrderProductionSnapshot({
+        order_production_id,
+    }: {
+        order_production_id: number;
+    }): Promise<unknown> {
+        return this.prisma.order_productions.findUnique({
+            where: {
+                id: order_production_id,
+            },
+            include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12. The
+                // child rows need `machines` for the same reason — a line's
+                // machine is a foreign key too, not just its product.
+                branches: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                employees: {
+                    select: {
+                        id: true,
+                        fullname: true,
+                    },
+                },
+                order_production_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_production_products: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                        machines: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+                order_production_employees: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        employees: {
+                            select: {
+                                id: true,
+                                fullname: true,
+                            },
+                        },
+                    },
+                },
+                order_production_resources: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                        machines: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async getOrderProductionProducts({
         order_production_id,
     }: {
@@ -314,18 +418,21 @@ export class OrderProductionsService {
             indexProperties: ['id'],
         });
 
+        // Keyed on `id`, the same property vennDiagram matched on. Keying the
+        // write on product+machine while matching on `id` soft-deleted every
+        // row sharing that pair, not the one the user removed.
         for await (const delItem of deleteProductItems) {
-            await this.prisma.order_production_products.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    active: -1,
-                },
-                where: {
-                    product_id: delItem.product_id,
-                    machine_id: delItem.machine_id,
-                    order_production_id: orderProduction.id,
-                },
-            });
+            if (delItem && delItem.id) {
+                await this.prisma.order_production_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
@@ -350,27 +457,30 @@ export class OrderProductionsService {
             // await this.cacheManager.del(`product_inventory`);
         }
 
+        // Also keyed on `id`. The old `where` looked for the row by its *new*
+        // product+machine, which no stored row carries yet — so changing either
+        // of them updated nothing and the edit was silently lost.
         for await (const updateItem of updateProductItems) {
-            await this.prisma.order_production_products.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    product_id: updateItem.product_id,
-                    machine_id: updateItem.machine_id,
-                    kilos: updateItem.kilos,
-                    active: 1,
-                    group_weight: updateItem.group_weight,
-                    groups: updateItem.groups,
-                    hours:
-                        updateItem.hours !== null && updateItem.hours !== 0
-                            ? updateItem.hours
-                            : null,
-                },
-                where: {
-                    product_id: updateItem.product_id,
-                    machine_id: updateItem.machine_id,
-                    order_production_id: orderProduction.id,
-                },
-            });
+            if (updateItem && updateItem.id) {
+                await this.prisma.order_production_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        product_id: updateItem.product_id,
+                        machine_id: updateItem.machine_id,
+                        kilos: updateItem.kilos,
+                        active: 1,
+                        group_weight: updateItem.group_weight,
+                        groups: updateItem.groups,
+                        hours:
+                            updateItem.hours !== null && updateItem.hours !== 0
+                                ? updateItem.hours
+                                : null,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
@@ -451,17 +561,21 @@ export class OrderProductionsService {
             indexProperties: ['id'],
         });
 
+        // Was the widest of the three: `product_id` alone, so removing one
+        // resource row soft-deleted every row for that product regardless of
+        // machine.
         for await (const delItem of deleteResourceItems) {
-            await this.prisma.order_production_resources.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    active: -1,
-                },
-                where: {
-                    product_id: delItem.product_id,
-                    order_production_id: orderProduction.id,
-                },
-            });
+            if (delItem && delItem.id) {
+                await this.prisma.order_production_resources.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
@@ -487,26 +601,26 @@ export class OrderProductionsService {
         }
 
         for await (const updateItem of updateResourceItems) {
-            await this.prisma.order_production_resources.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    product_id: updateItem.product_id,
-                    machine_id: updateItem.machine_id,
-                    kilos: updateItem.kilos,
-                    active: 1,
-                    group_weight: updateItem.group_weight,
-                    groups: updateItem.groups,
-                    hours:
-                        updateItem.hours !== null && updateItem.hours !== 0
-                            ? updateItem.hours
-                            : null,
-                },
-                where: {
-                    product_id: updateItem.product_id,
-                    machine_id: updateItem.machine_id,
-                    order_production_id: orderProduction.id,
-                },
-            });
+            if (updateItem && updateItem.id) {
+                await this.prisma.order_production_resources.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        product_id: updateItem.product_id,
+                        machine_id: updateItem.machine_id,
+                        kilos: updateItem.kilos,
+                        active: 1,
+                        group_weight: updateItem.group_weight,
+                        groups: updateItem.groups,
+                        hours:
+                            updateItem.hours !== null && updateItem.hours !== 0
+                                ? updateItem.hours
+                                : null,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 

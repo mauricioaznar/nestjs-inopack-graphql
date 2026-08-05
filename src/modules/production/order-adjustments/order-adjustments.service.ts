@@ -49,6 +49,58 @@ export class OrderAdjustmentsService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getOrderAdjustment, which is a bare row read with many callers that must
+    // not pay for a child fetch.
+    //
+    // No `active: 1` on the adjustment itself, so a snapshot still works after
+    // the soft delete. But `active: 1` on the CHILD lines is load-bearing: lines
+    // are soft-deleted rather than removed, so an unfiltered snapshot would ship
+    // a removed line with only its `active` flag changed — and the React differ
+    // ignores `active`, which would make the deletion vanish from the audit
+    // entirely. See docs/features/ongoing/feature-activities-audit.md §2c-1.
+    async getOrderAdjustmentSnapshot({
+        order_adjustment_id,
+    }: {
+        order_adjustment_id: number;
+    }): Promise<unknown> {
+        return this.prisma.order_adjustments.findUnique({
+            where: {
+                id: order_adjustment_id,
+            },
+            include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                order_adjustment_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_sales: {
+                    select: {
+                        id: true,
+                        order_code: true,
+                    },
+                },
+                order_adjustment_products: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async paginatedOrderAdjustments({
         offsetPaginatorArgs,
         datePaginator,
@@ -319,17 +371,20 @@ export class OrderAdjustmentsService {
             indexProperties: ['id'],
         });
 
+        // Keyed on `id`, the same property vennDiagram matched on — see the
+        // equivalent branches in order-productions.service.ts.
         for await (const delItem of deleteProductItems) {
-            await this.prisma.order_adjustment_products.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    active: -1,
-                },
-                where: {
-                    product_id: delItem.product_id,
-                    order_adjustment_id: orderAdjustment.id,
-                },
-            });
+            if (delItem && delItem.id) {
+                await this.prisma.order_adjustment_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        active: -1,
+                    },
+                    where: {
+                        id: delItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
@@ -350,20 +405,21 @@ export class OrderAdjustmentsService {
         }
 
         for await (const updateItem of updateProductItems) {
-            await this.prisma.order_adjustment_products.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    product_id: updateItem.product_id,
-                    kilos: updateItem.kilos,
-                    active: 1,
-                    group_weight: updateItem.group_weight,
-                    groups: updateItem.groups,
-                },
-                where: {
-                    product_id: updateItem.product_id,
-                    order_adjustment_id: orderAdjustment.id,
-                },
-            });
+            if (updateItem && updateItem.id) {
+                await this.prisma.order_adjustment_products.updateMany({
+                    data: {
+                        ...getUpdatedAtProperty(),
+                        product_id: updateItem.product_id,
+                        kilos: updateItem.kilos,
+                        active: 1,
+                        group_weight: updateItem.group_weight,
+                        groups: updateItem.groups,
+                    },
+                    where: {
+                        id: updateItem.id,
+                    },
+                });
+            }
             // await this.cacheManager.del(`product_inventory`);
         }
 
