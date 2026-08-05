@@ -145,6 +145,52 @@ export class EmployeesService {
         });
     }
 
+    // Audit snapshot for the activity trail. Flat: the employees upsert writes
+    // no child rows — order_production_employees, payroll_entries and the rest
+    // point back at an employee and are audited by the entity that owns them.
+    //
+    // No `active: 1`, unlike getEmployee, so a snapshot still works after the
+    // soft delete.
+    async getEmployeeSnapshot({
+        employee_id,
+    }: {
+        employee_id: number;
+    }): Promise<unknown> {
+        return this.prisma.employees.findUnique({
+            where: {
+                id: employee_id,
+            },
+            include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                branches: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                employee_categories: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                employee_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                order_production_type: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+        });
+    }
+
     async upsertEmployee(
         input: EmployeeUpsertInput,
         { current_user_id }: { current_user_id?: number | null } = {},

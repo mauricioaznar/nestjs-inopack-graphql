@@ -52,6 +52,71 @@ export class ExpensesService {
         });
     }
 
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getExpense, which is a bare row read used all over this service and must
+    // not pay for a child fetch.
+    //
+    // No `active: 1` on the expense itself, so a snapshot still works after the
+    // soft delete. But `active: 1` on the CHILD rows is load-bearing: expense
+    // resources are soft-deleted rather than removed, so an unfiltered snapshot
+    // would ship a removed line with only its `active` flag changed — and the
+    // React differ ignores `active`, which would make the deletion vanish from
+    // the audit entirely. See
+    // docs/features/ongoing/feature-activities-audit.md §2c-1.
+    //
+    // `resources` is trimmed to two columns: the snapshot stores the resource
+    // name as it was AT THE TIME, so an old audit entry never displays a name
+    // the resource only acquired later.
+    //
+    // `transfer_receipts` is deliberately excluded — payments applied to an
+    // expense are a separate entity with their own activities.
+    async getExpenseSnapshot({
+        expense_id,
+    }: {
+        expense_id: number;
+    }): Promise<unknown> {
+        return this.prisma.expenses.findUnique({
+            where: {
+                id: expense_id,
+            },
+            include: {
+                // Foreign keys, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                accounts: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                receipt_types: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                expense_statuses: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                expense_resources: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        resources: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async getExpenses({
         getExpensesQueryArgs,
         datePaginator,

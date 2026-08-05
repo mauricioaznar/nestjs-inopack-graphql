@@ -42,6 +42,34 @@ export class ResourcesService {
         });
     }
 
+    // Audit snapshot for the activity trail. Flat: the resources upsert writes
+    // no child rows — expense_resources and account_resources point back at a
+    // resource and are audited by the entity that owns them.
+    //
+    // No `active: 1`, unlike getResource, so a snapshot still works after the
+    // soft delete.
+    async getResourceSnapshot({
+        resource_id,
+    }: {
+        resource_id: number;
+    }): Promise<unknown> {
+        return this.prisma.resources.findUnique({
+            where: {
+                id: resource_id,
+            },
+            include: {
+                // Foreign key, denormalised to id + name so the diff reads the
+                // name rather than the number. See the feature doc §12.
+                resource_categories: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+        });
+    }
+
     async getResources({
         resourcesGetQueryArgs,
     }: {

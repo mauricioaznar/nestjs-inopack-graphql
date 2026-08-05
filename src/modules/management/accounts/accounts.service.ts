@@ -21,6 +21,9 @@ import {
 } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 import {
+    formatUtcDateForMysql,
+    getBusinessDayEndExclusive,
+    getBusinessDayStart,
     getCreatedAtProperty,
     getCreatedByProperty,
     getUpdatedAtProperty,
@@ -182,6 +185,79 @@ export class AccountsService {
                 // A restricted caller can only resolve client accounts; any
                 // other id comes back null (guards the /clients/:id route).
                 ...(clientRestricted ? { is_client: true } : {}),
+            },
+        });
+    }
+
+    // Audit snapshot for the activity trail. Deliberately separate from
+    // getAccount, which is a bare row read with many callers that must not pay
+    // for three child fetches — and which also carries a clientRestricted
+    // filter that has no business narrowing an audit record.
+    //
+    // All THREE owned collections are included, per the 2026-07-31 decision:
+    // the upsert writes contacts, products and resources, so it audits all
+    // three. Price lists (account_products / account_resources) are the whole
+    // reason to audit an account, and a contact change is exactly the kind of
+    // edit people later dispute.
+    //
+    // No `active: 1` on the account itself, so a snapshot still works after the
+    // soft delete. But `active: 1` on the CHILD rows is load-bearing: they are
+    // soft-deleted rather than removed, so an unfiltered snapshot would ship a
+    // removed row with only its `active` flag changed — and the React differ
+    // ignores `active`, which would make the deletion vanish from the audit
+    // entirely. See docs/features/ongoing/feature-activities-audit.md §2c-1.
+    async getAccountSnapshot({
+        account_id,
+    }: {
+        account_id: number;
+    }): Promise<unknown> {
+        return this.prisma.accounts.findUnique({
+            where: {
+                id: account_id,
+            },
+            include: {
+                // The account's own foreign key, denormalised to id + name so
+                // the diff reads the name rather than the number (§12).
+                // `merged_into_account_id` has no Prisma relation to include,
+                // so it still renders as an id — a known gap, not an omission.
+                resources: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                account_contacts: {
+                    where: {
+                        active: 1,
+                    },
+                },
+                account_products: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        products: {
+                            select: {
+                                id: true,
+                                code: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
+                account_resources: {
+                    where: {
+                        active: 1,
+                    },
+                    include: {
+                        resources: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
             },
         });
     }
@@ -1080,10 +1156,10 @@ export class AccountsService {
     }
 
     // The account's net balance from all activity *before* `from` — i.e. the
-    // carried-forward opening balance for a date-range view. A transaction and
-    // all its transfers belong to the transaction's date bucket (mirroring how
-    // the ledger groups them), so transfers are attributed by their parent's
-    // date, never their own. Net delta = transaction total − its transfers.
+    // carried-forward opening balance for a date-range view. Sales and
+    // expenses use their calendar date; a transfer uses its own instant when
+    // present and falls back to the parent date only for legacy null values.
+    // Net delta = transaction total minus transfers that occurred before `from`.
     async getAccountOpeningBalance({
         account_id,
         from,
@@ -1103,6 +1179,17 @@ export class AccountsService {
         const fromIso = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : null;
         // No lower bound → nothing precedes the range → opening balance is 0.
         if (!fromIso) return 0;
+        const fromUtc = formatUtcDateForMysql(getBusinessDayStart(fromIso));
+
+        // A transfer timestamp is a true instant; the parent sale/expense
+        // date is a floating calendar date. Keep those contracts separate
+        // instead of comparing a COALESCE expression to one UTC boundary.
+        const saleTransferBeforeFrom = `
+            (t.transferred_date IS NOT NULL AND t.transferred_date < '${fromUtc}')
+            OR (t.transferred_date IS NULL AND s.date < '${fromIso}')`;
+        const expenseTransferBeforeFrom = `
+            (t.transferred_date IS NOT NULL AND t.transferred_date < '${fromUtc}')
+            OR (t.transferred_date IS NULL AND e.date < '${fromIso}')`;
 
         const rows = await this.prisma.$queryRawUnsafe<
             { opening_balance: number | null }[]
@@ -1113,13 +1200,13 @@ export class AccountsService {
                 - IFNULL((SELECT round(sum(tr.amount), 2) FROM transfer_receipts tr
                           JOIN transfers t ON t.id = tr.transfer_id
                           JOIN order_sales s ON s.id = tr.order_sale_id
-                          WHERE tr.active = 1 AND t.active = 1 AND s.active = 1 AND s.canceled = 0 AND s.account_id = ${account_id} AND COALESCE(t.transferred_date, s.date) < '${fromIso}'), 0)
+                          WHERE tr.active = 1 AND t.active = 1 AND s.active = 1 AND s.canceled = 0 AND s.account_id = ${account_id} AND (${saleTransferBeforeFrom})), 0)
                 + IFNULL((SELECT round(sum(e.subtotal + e.tax - e.tax_retained - e.non_tax_retained), 2) FROM expenses e
                           WHERE e.active = 1 AND e.canceled = 0 AND e.account_id = ${account_id} AND e.date < '${fromIso}'), 0)
                 - IFNULL((SELECT round(sum(tr.amount), 2) FROM transfer_receipts tr
                           JOIN transfers t ON t.id = tr.transfer_id
                           JOIN expenses e ON e.id = tr.expense_id
-                          WHERE tr.active = 1 AND t.active = 1 AND e.active = 1 AND e.canceled = 0 AND e.account_id = ${account_id} AND COALESCE(t.transferred_date, e.date) < '${fromIso}'), 0)
+                          WHERE tr.active = 1 AND t.active = 1 AND e.active = 1 AND e.canceled = 0 AND e.account_id = ${account_id} AND (${expenseTransferBeforeFrom})), 0)
             ) AS opening_balance
         `);
 
@@ -1128,9 +1215,10 @@ export class AccountsService {
     }
 
     // Each transfer (payment) for the account as its own row, filtered by its
-    // OWN effective date — transferred_date, falling back to the parent
-    // sale/expense date when it has none. Carries parent folio fields so the
-    // date-ordered statement can render and classify (Anticipo) each row.
+    // own effective date — transferred_date, falling back to the parent
+    // sale/expense calendar date only when it has none. Carries parent folio
+    // fields so the date-ordered statement can render and classify (Anticipo)
+    // each row.
     async getAccountTransfers({
         account_id,
         from,
@@ -1152,22 +1240,32 @@ export class AccountsService {
         const fromIso = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : null;
         const untilIso =
             until && /^\d{4}-\d{2}-\d{2}$/.test(until) ? until : null;
-        const saleDate = `COALESCE(transfers.transferred_date, order_sales.date)`;
-        const expenseDate = `COALESCE(transfers.transferred_date, expenses.date)`;
-        const saleDateClause = `${
-            fromIso ? `AND ${saleDate} >= '${fromIso}'` : ''
-        } ${
-            untilIso
-                ? `AND ${saleDate} < DATE_ADD('${untilIso}', INTERVAL 1 DAY)`
-                : ''
-        }`;
-        const expenseDateClause = `${
-            fromIso ? `AND ${expenseDate} >= '${fromIso}'` : ''
-        } ${
-            untilIso
-                ? `AND ${expenseDate} < DATE_ADD('${untilIso}', INTERVAL 1 DAY)`
-                : ''
-        }`;
+        const fromUtc = fromIso
+            ? formatUtcDateForMysql(getBusinessDayStart(fromIso))
+            : null;
+        const untilUtc = untilIso
+            ? formatUtcDateForMysql(getBusinessDayEndExclusive(untilIso))
+            : null;
+
+        const effectiveDateClause = (
+            transferAlias: string,
+            parentAlias: string,
+        ) => {
+            const lowerBound =
+                fromIso && fromUtc
+                    ? `AND ((${transferAlias}.transferred_date IS NOT NULL AND ${transferAlias}.transferred_date >= '${fromUtc}') OR (${transferAlias}.transferred_date IS NULL AND ${parentAlias}.date >= '${fromIso}'))`
+                    : '';
+            const upperBound =
+                untilIso && untilUtc
+                    ? `AND ((${transferAlias}.transferred_date IS NOT NULL AND ${transferAlias}.transferred_date < '${untilUtc}') OR (${transferAlias}.transferred_date IS NULL AND ${parentAlias}.date < DATE_ADD('${untilIso}', INTERVAL 1 DAY)))`
+                    : '';
+            return `
+                ${lowerBound}
+                ${upperBound}
+            `;
+        };
+        const saleDateClause = effectiveDateClause('transfers', 'order_sales');
+        const expenseDateClause = effectiveDateClause('transfers', 'expenses');
 
         const rows = await this.prisma.$queryRawUnsafe<
             {

@@ -18,9 +18,14 @@ import {
     PaginatedEmployeesSortArgs,
 } from '../../../common/dto/entities/production/employee.dto';
 import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import {
+    ActivityEntityName,
     ActivityTypeName,
     Branch,
     OrderProductionType,
@@ -82,13 +87,39 @@ export class EmployeesResolver {
         @Args('EmployeeUpsertInput') input: EmployeeUpsertInput,
         @CurrentUser() currentUser: User,
     ): Promise<Employee> {
+        const type = !input.id
+            ? ActivityTypeName.CREATE
+            : ActivityTypeName.UPDATE;
+        const auditContext = {
+            entityName: ActivityEntityName.EMPLOYEE,
+            entityId: input.id ?? null,
+            activityType: type,
+            userId: currentUser.id,
+        };
+        // Audit: capture the row BEFORE the write. On a create there is nothing
+        // to capture, so the old side is intentionally absent and the pair reads
+        // as "nothing -> something". Guarded: a snapshot read that throws must
+        // not stop the save from happening.
+        const oldCapture = input.id
+            ? await captureSnapshotSafely(auditContext, 'old_snapshot', () =>
+                  this.service.getEmployeeSnapshot({ employee_id: input.id! }),
+              )
+            : INTENTIONALLY_ABSENT;
+        // OUTSIDE every audit guard — a real save failure still fails.
         const employee = await this.service.upsertEmployee(input, {
             current_user_id: currentUser.id,
         });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: employee.id },
+            'new_snapshot',
+            () => this.service.getEmployeeSnapshot({ employee_id: employee.id }),
+        );
         await this.pubSubService.employee({
             employee,
-            type: !input.id ? ActivityTypeName.CREATE : ActivityTypeName.UPDATE,
+            type,
             userId: currentUser.id,
+            oldCapture,
+            newCapture,
         });
         return employee;
     }
@@ -102,6 +133,19 @@ export class EmployeesResolver {
         const employee = await this.service.getEmployee({ employeeId });
         if (!employee) throw new NotFoundException();
 
+        // Must be captured before the write: the delete is soft, so afterwards
+        // the row carries active = -1. The new side is intentionally absent —
+        // "deleted" is what the dialog should show, not "active went 1 -> -1".
+        const oldCapture = await captureSnapshotSafely(
+            {
+                entityName: ActivityEntityName.EMPLOYEE,
+                entityId: employeeId,
+                activityType: ActivityTypeName.DELETE,
+                userId: currentUser.id,
+            },
+            'old_snapshot',
+            () => this.service.getEmployeeSnapshot({ employee_id: employeeId }),
+        );
         await this.service.deletesEmployee({
             employee_id: employeeId,
             current_user_id: currentUser.id,
@@ -110,6 +154,8 @@ export class EmployeesResolver {
             employee,
             type: ActivityTypeName.DELETE,
             userId: currentUser.id,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
         });
         return true;
     }

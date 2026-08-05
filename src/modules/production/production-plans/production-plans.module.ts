@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import {
+    ProductionPlanRowProductsResolver,
     ProductionPlanRowsResolver,
     ProductionPlansResolver,
 } from './production-plans.resolver';
@@ -9,6 +10,7 @@ import { ProductionPlansService } from './production-plans.service';
     providers: [
         ProductionPlansResolver,
         ProductionPlanRowsResolver,
+        ProductionPlanRowProductsResolver,
         ProductionPlansService,
     ],
     exports: [ProductionPlansResolver],
