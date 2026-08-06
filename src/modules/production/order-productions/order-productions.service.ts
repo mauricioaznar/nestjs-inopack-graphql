@@ -29,7 +29,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
     Branch,
-    OrderProductionResource,
+    OrderProductionProductConsumed,
     OrderProductionType,
 } from '../../../common/dto/entities';
 import dayjs from 'dayjs';
@@ -134,7 +134,7 @@ export class OrderProductionsService {
                         },
                     },
                 },
-                order_production_resources: {
+                order_production_products_consumed: {
                     where: {
                         active: 1,
                     },
@@ -177,12 +177,12 @@ export class OrderProductionsService {
         });
     }
 
-    async getOrderProductionResources({
+    async getOrderProductionProductsConsumed({
         order_production_id,
     }: {
         order_production_id: number;
-    }): Promise<OrderProductionResource[]> {
-        return this.prisma.order_production_resources.findMany({
+    }): Promise<OrderProductionProductConsumed[]> {
+        return this.prisma.order_production_products_consumed.findMany({
             where: {
                 AND: [
                     {
@@ -542,9 +542,9 @@ export class OrderProductionsService {
             });
         }
 
-        const newResourceItems = input.order_production_resources;
+        const newResourceItems = input.order_production_products_consumed;
         const oldResourceItems = input.id
-            ? await this.prisma.order_production_resources.findMany({
+            ? await this.prisma.order_production_products_consumed.findMany({
                   where: {
                       order_production_id: input.id,
                   },
@@ -566,7 +566,7 @@ export class OrderProductionsService {
         // machine.
         for await (const delItem of deleteResourceItems) {
             if (delItem && delItem.id) {
-                await this.prisma.order_production_resources.updateMany({
+                await this.prisma.order_production_products_consumed.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         active: -1,
@@ -580,7 +580,7 @@ export class OrderProductionsService {
         }
 
         for await (const createItem of createResourceItems) {
-            await this.prisma.order_production_resources.create({
+            await this.prisma.order_production_products_consumed.create({
                 data: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
@@ -602,7 +602,7 @@ export class OrderProductionsService {
 
         for await (const updateItem of updateResourceItems) {
             if (updateItem && updateItem.id) {
-                await this.prisma.order_production_resources.updateMany({
+                await this.prisma.order_production_products_consumed.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         product_id: updateItem.product_id,

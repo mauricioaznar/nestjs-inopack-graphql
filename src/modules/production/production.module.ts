@@ -11,7 +11,7 @@ import { OrderAdjustmentProductsModule } from './order-adjustment-products/order
 import { EmployeeTypesModule } from './employee-types/employee-types.module';
 import { ProductMaterialsModule } from './product-materials/product-materials.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
-import { OrderProductionResourcesModule } from './order-production-resources/order-production-resources.module';
+import { OrderProductionProductsConsumedModule } from './order-production-products-consumed/order-production-products-consumed.module';
 import { ProductionPlansModule } from './production-plans/production-plans.module';
 
 @Module({
@@ -19,7 +19,7 @@ import { ProductionPlansModule } from './production-plans/production-plans.modul
         ProductsModule,
         OrderProductionsModule,
         OrderProductionProductsModule,
-        OrderProductionResourcesModule,
+        OrderProductionProductsConsumedModule,
         OrderProductionEmployeesModule,
         ProductionPlansModule,
         OrderProductionTypesModule,

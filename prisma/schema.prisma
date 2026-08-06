@@ -139,8 +139,8 @@ model machines {
   branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_branch_id_foreign")
   machine_type               machine_type?                @relation(fields: [machine_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_machine_type_id_foreign")
   order_production_products  order_production_products[]
-  order_production_resources order_production_resources[]
-  production_plan_rows       production_plan_rows[]
+  order_production_products_consumed order_production_products_consumed[]
+  production_plan_rows               production_plan_rows[]
 
   @@index([order_production_type_id], map: "machine_order_production_type_id_foreign")
   @@index([branch_id], map: "machines_branch_id_foreign")
@@ -269,8 +269,8 @@ model order_productions {
   updated_by_user            users?                       @relation("order_productions_updated_by", fields: [updated_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_updated_by_id_foreign")
   order_production_employees order_production_employees[]
   order_production_products  order_production_products[]
-  order_production_resources order_production_resources[]
-  branches                   branches?                    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_branch_id_foreign")
+  order_production_products_consumed order_production_products_consumed[]
+  branches                           branches?                            @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_branch_id_foreign")
   employees                  employees?                   @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_employee_id_foreign")
   order_production_type      order_production_type?       @relation(fields: [order_production_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_productions_order_production_type_id_foreign")
 
@@ -543,8 +543,8 @@ model products {
   account_products             account_products[]
   order_adjustment_products    order_adjustment_products[]
   order_production_products    order_production_products[]
-  order_production_resources   order_production_resources[]
-  order_request_products       order_request_products[]
+  order_production_products_consumed order_production_products_consumed[]
+  order_request_products             order_request_products[]
   order_sale_products          order_sale_products[]
   production_plan_row_products production_plan_row_products[]
   product_categories           product_categories?            @relation(fields: [product_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_category_id")
@@ -999,7 +999,7 @@ model transfer_type {
   transfers   transfers[]
 }
 
-model order_production_resources {
+model order_production_products_consumed {
   id                  Int                @id @default(autoincrement()) @db.UnsignedInt
   active              Int                @default(1)
   created_at          DateTime?          @db.DateTime(0)
@@ -1011,13 +1011,13 @@ model order_production_resources {
   order_production_id Int?               @db.UnsignedInt
   machine_id          Int?               @db.UnsignedInt
   hours               Float?
-  machines            machines?          @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_resources_machine_id_foreign")
-  order_productions   order_productions? @relation(fields: [order_production_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_resources_order_production_id_foreign")
-  products            products?          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_resources_product_id_foreign")
+  machines            machines?          @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_products_consumed_machine_id_foreign")
+  order_productions   order_productions? @relation(fields: [order_production_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_products_consumed_order_production_id_foreign")
+  products            products?          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_production_products_consumed_product_id_foreign")
 
-  @@index([machine_id], map: "order_production_resources_machine_id_foreign")
-  @@index([order_production_id], map: "order_production_resources_order_production_id_foreign")
-  @@index([product_id], map: "order_production_resources_product_id_foreign")
+  @@index([machine_id], map: "order_production_products_consumed_machine_id_foreign")
+  @@index([order_production_id], map: "order_production_products_consumed_order_production_id_foreign")
+  @@index([product_id], map: "order_production_products_consumed_product_id_foreign")
 }
 
 model expense_resources {

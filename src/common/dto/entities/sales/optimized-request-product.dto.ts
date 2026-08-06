@@ -26,6 +26,13 @@ export class OptimizedRequestProduct {
     @Field(() => Int, { nullable: true })
     product_id?: number | null;
 
+    // The product's production type, so the board can tell a genuine "no stock"
+    // (types 1/2, which getProductsInventory tracks) from an untracked product
+    // (pellet/lavado) that has no inventory row at all and must read "sin dato"
+    // rather than as zero. Already selected by the query; see isInventoryTracked.
+    @Field(() => Int, { nullable: true })
+    order_production_type_id?: number | null;
+
     @Field(() => Float, { nullable: true })
     product_width?: number | null;
 

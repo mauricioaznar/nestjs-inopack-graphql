@@ -209,7 +209,7 @@ export class ProductionPerformanceService {
                     order_production_id,
                     sum(kilos) as kilos_resource,
                     sum(coalesce(hours, 0)) as hours_resource
-                from order_production_resources
+                from order_production_products_consumed
                 where active = 1
                     ${rrMachineFilter}
                 group by order_production_id

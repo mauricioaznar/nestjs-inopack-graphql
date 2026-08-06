@@ -3,22 +3,22 @@ import { getRangesFromDatePaginator } from '../../../common/helpers';
 import { OrderProduction } from '../../../common/dto/entities/production/order-production.dto';
 import {
     Machine,
-    OrderProductionResource,
+    OrderProductionProductConsumed,
     Product,
 } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
 @Injectable()
-export class OrderProductionResourcesService {
+export class OrderProductionProductsConsumedService {
     constructor(private prisma: PrismaService) {}
 
-    async getOrderProductionResources(): Promise<OrderProductionResource[]> {
+    async getOrderProductionProductsConsumed(): Promise<OrderProductionProductConsumed[]> {
         const { startDate, endDate } = getRangesFromDatePaginator({
             year: 2022,
             month: 4,
         });
 
-        return this.prisma.order_production_products.findMany({
+        return this.prisma.order_production_products_consumed.findMany({
             where: {
                 AND: [
                     {
