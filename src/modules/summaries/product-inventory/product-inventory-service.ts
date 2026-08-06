@@ -24,9 +24,11 @@ export class ProductInventoryService {
                         sale_products.kilos             as kilos_sold_given,
                         adjustment_products.kilos       as kilos_adjusted,
                         production_products.kilos       as kilos_produced,
+                        consumed_products.kilos         as kilos_consumed,
                             (
                                 COALESCE(adjustment_products.kilos, 0)
                                 + COALESCE(production_products.kilos, 0)
+                                - COALESCE(consumed_products.kilos, 0)
                                 - COALESCE(sale_products.kilos, 0)
                             )                           as \`kilos\`,
                         committed_products.kilos        as kilos_committed,
@@ -34,22 +36,26 @@ export class ProductInventoryService {
                         sale_products.\`groups\`        as groups_sold_given,
                         adjustment_products.\`groups\`  as groups_adjusted,
                         production_products.\`groups\`  as groups_produced,
+                        consumed_products.\`groups\`    as groups_consumed,
                             (
                                 COALESCE(adjustment_products.\`groups\`, 0)
                                 + COALESCE(production_products.\`groups\`, 0)
+                                - COALESCE(consumed_products.\`groups\`, 0)
                                 - COALESCE(sale_products.\`groups\`, 0)
                             )                           as \`groups\`,
                          GREATEST
                             (
                                 COALESCE(sale_products.last_update, '0001-01-01 00:00:00'),
                                 COALESCE(adjustment_products.last_update, '0001-01-01 00:00:00'),
-                                COALESCE(production_products.last_update, '0001-01-01 00:00:00')
+                                COALESCE(production_products.last_update, '0001-01-01 00:00:00'),
+                                COALESCE(consumed_products.last_update, '0001-01-01 00:00:00')
                             )                            as last_update,
                         sale_products.last_update       as sales_last_update,
                         adjustment_products.last_update as adjustments_last_update,
-                        production_products.last_update as production_last_update
+                        production_products.last_update as production_last_update,
+                        consumed_products.last_update   as consumption_last_update
                 FROM products
-                LEFT JOIN ( 
+                LEFT JOIN (
                                      SELECT SUM(order_sale_products.kilos)      as kilos,
                                      SUM(order_sale_products.\`groups\`) as \`groups\`,
                                      order_sale_products.product_id      as product_id,
@@ -109,8 +115,45 @@ export class ProductInventoryService {
                                      GROUP BY product_id
                     ) as production_products
                 ON production_products.product_id = products.id
+                -- Consumption leg (extrusión). Bobinas leave inventory not as a
+                -- sale but by being fed into a corte machine to make bags; each
+                -- consumed row lives in order_production_products_consumed. Type 1
+                -- has no rows here (it leaves via delivered sales), so this join
+                -- is a no-op for type 1 and only bites for type 2. Mirrors the
+                -- production_products join exactly: SUM per product, header +
+                -- line both active. See docs/plans/ongoing/inventory-untracked-production-types.md.
+                LEFT JOIN (
+                                     SELECT SUM(order_production_products_consumed.kilos)      as kilos,
+                                     SUM(order_production_products_consumed.\`groups\`) as \`groups\`,
+                                     order_production_products_consumed.product_id      as product_id,
+                                     MAX(order_production_products_consumed.updated_at) as last_update
+                                     FROM order_production_products_consumed
+                                     JOIN order_productions
+                                     ON order_productions.id = order_production_products_consumed.order_production_id
+                                     WHERE order_productions.active = 1
+                                        AND order_production_products_consumed.active = 1
+                                     GROUP BY product_id
+                    ) as consumed_products
+                ON consumed_products.product_id = products.id
                 WHERE products.active = 1
-                AND (products.order_production_type_id = 1 OR products.order_production_type_id is null)
+                -- discontinued (tinyint) is the retirement flag; active = -1 is
+                -- soft delete and must never be used for this. Excluding
+                -- discontinued products removes 42 dead type-2 rows (whose
+                -- pre-capture production would otherwise report as a phantom
+                -- balance) and 87 stale type-1 rows.
+                AND products.discontinued = 0
+                -- Type 1 (corte y bolseo) and type 2 (extrusión) both have a
+                -- derivable balance now that the consumption leg exists. NULL
+                -- type is legacy uncategorised stock. Types 3 (pellet) and 4
+                -- (lavado) are deliberately excluded: they capture zero
+                -- consumption, so admitting them would report produced-as-balance
+                -- (12.7M kg pellet, 6.5M kg compactado). They read as "sin dato"
+                -- in the UI instead.
+                AND (
+                    products.order_production_type_id = 1
+                    OR products.order_production_type_id = 2
+                    OR products.order_production_type_id is null
+                )
                 ORDER BY last_update DESC
         `;
 

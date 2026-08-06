@@ -150,7 +150,7 @@ export class MachineHourlyRun {
     @Field(() => Float, { nullable: false })
     hours_produced: number;
 
-    // Resource side: SUM over order_production_resources for the same production
+    // Resource side: SUM over order_production_products_consumed for the same production
     // + machine (active = 1, coalesce(hours, 0)); 0/0 when the production has no
     // resource lines.
     @Field(() => Float, { nullable: false })

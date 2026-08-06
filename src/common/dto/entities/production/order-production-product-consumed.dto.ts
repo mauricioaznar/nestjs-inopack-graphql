@@ -2,7 +2,7 @@ import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
-export class OrderProductionResourceBase {
+export class OrderProductionProductConsumedBase {
     @Field(() => Float, { nullable: false })
     groups: number | null;
 
@@ -22,14 +22,14 @@ export class OrderProductionResourceBase {
     hours: number | null;
 }
 
-@InputType('OrderProductionResourceInput')
-export class OrderProductionResourceInput extends OrderProductionResourceBase {
+@InputType('OrderProductionProductConsumedInput')
+export class OrderProductionProductConsumedInput extends OrderProductionProductConsumedBase {
     @Field(() => Int, { nullable: true })
     id?: number | null;
 }
 
-@ObjectType('OrderProductionResource')
-export class OrderProductionResource extends OrderProductionResourceBase {
+@ObjectType('OrderProductionProductConsumed')
+export class OrderProductionProductConsumed extends OrderProductionProductConsumedBase {
     @Field({ nullable: false })
     id: number;
 
