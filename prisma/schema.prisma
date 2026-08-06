@@ -129,6 +129,7 @@ model machines {
   branch_id                  Int?                         @db.UnsignedInt
   order_production_type_id   Int?                         @db.UnsignedInt
   discontinued               Boolean                      @default(false)
+  consumes_input             Boolean                      @default(true)
   created_by_id              Int?                         @db.UnsignedInt
   updated_by_id              Int?                         @db.UnsignedInt
   created_by_user            users?                       @relation("machines_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "machines_created_by_id_foreign")

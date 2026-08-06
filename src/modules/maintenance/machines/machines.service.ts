@@ -131,6 +131,7 @@ export class MachinesService {
                 branch_id: machineInput.branch_id,
                 order_production_type_id: machineInput.order_production_type_id,
                 discontinued: machineInput.discontinued,
+                consumes_input: machineInput.consumes_input,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -139,6 +140,7 @@ export class MachinesService {
                 branch_id: machineInput.branch_id,
                 order_production_type_id: machineInput.order_production_type_id,
                 discontinued: machineInput.discontinued,
+                consumes_input: machineInput.consumes_input,
             },
             where: {
                 id: machineInput.id || 0,
