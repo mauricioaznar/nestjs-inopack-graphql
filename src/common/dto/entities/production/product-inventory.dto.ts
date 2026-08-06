@@ -8,22 +8,11 @@ export class ProductInventory {
     @Field(() => Float, { nullable: true })
     groups: number | null;
 
-    // Components of the balance, exposed so a page can show the breakdown
-    // (produced entered inventory, consumed left it internally). `kilos`/
-    // `groups` above are `adjusted + produced - consumed - delivered sales`.
-    // consumed is non-zero only for extrusión (type 2), whose stock leaves by
-    // being fed into a corte machine rather than sold.
-    @Field(() => Float, { nullable: true })
-    kilos_produced: number | null;
-
-    @Field(() => Float, { nullable: true })
-    groups_produced: number | null;
-
-    @Field(() => Float, { nullable: true })
-    kilos_consumed: number | null;
-
-    @Field(() => Float, { nullable: true })
-    groups_consumed: number | null;
+    // Only the net balance is exposed. The breakdown components (produced,
+    // consumed, adjusted, sold) live in the query's SELECT for readability but
+    // are deliberately NOT on the DTO — nothing renders them, and the consumption
+    // leg already reaches the client through its effect on `kilos`/`groups`. Add
+    // them back here if a breakdown UI is ever built.
 
     // Stock physically on hand but already sold on a sale that is not yet
     // Entregado. `kilos`/`groups` deliberately still INCLUDE these: goods leave
