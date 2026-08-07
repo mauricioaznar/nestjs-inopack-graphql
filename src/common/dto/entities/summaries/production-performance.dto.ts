@@ -205,4 +205,14 @@ export class MachineProductRate {
 
     @Field(() => Int, { nullable: false })
     all_runs: number;
+
+    // Waste attributed to this machine (or machine/product) by the line's kilo
+    // share of its production total — the same proration as
+    // getMachineProductPerformanceSummary, without the employee-count divisor.
+    // Paired with recent_kilos/all_kilos it yields a baseline merma ratio.
+    @Field(() => Float, { nullable: false })
+    recent_waste: number;
+
+    @Field(() => Float, { nullable: false })
+    all_waste: number;
 }

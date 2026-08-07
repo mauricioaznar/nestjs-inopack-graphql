@@ -218,11 +218,15 @@ export class ProductionPerformanceService {
         `);
     }
 
-    // Batch aggregate used by production planning. A null product in the
-    // request means the machine-level fallback rate; a product id means the
-    // machine x product rate. The query returns both the recent window and all
-    // available hourly history so the client can keep the existing
-    // "recent-first, all-history fallback" rule without downloading raw runs.
+    // Batch aggregate used by production planning and by the Producción list's
+    // performance flags. A null product in the request means the machine-level
+    // fallback rate; a product id means the machine x product rate. The query
+    // returns both the recent window and all available hourly history so the
+    // client can keep the existing "recent-first, all-history fallback" rule
+    // without downloading raw runs. Kilos/hours/waste are returned as raw sums
+    // rather than ratios so a caller can subtract a single run's own
+    // contribution before dividing — the flags grade a run against a baseline
+    // that excludes it.
     async getMachineProductRates({
         pairs,
         from_date,
@@ -278,6 +282,11 @@ export class ProductionPerformanceService {
             : '0 = 1';
         const sharedFilters = this.buildSharedFilters({ from_date });
 
+        // The production's waste is a single figure for the whole run, so a
+        // line only ever owns its kilo share of it. Same proration as
+        // getMachineProductPerformanceSummary (no employee-count divisor).
+        const wasteShare = `CASE WHEN pt.total_kilos > 0 THEN op.waste * (opp.kilos / pt.total_kilos) ELSE 0 END`;
+
         const aggregateSelect = `
                 ${convertToInt('opp.machine_id', 'machine_id')},
                 %PRODUCT_ID%,
@@ -287,13 +296,21 @@ export class ProductionPerformanceService {
                     `COUNT(DISTINCT CASE WHEN ${recentCondition} THEN op.id END)`,
                     'recent_runs',
                 )},
+                SUM(CASE WHEN ${recentCondition} THEN ${wasteShare} ELSE 0 END) as recent_waste,
                 SUM(COALESCE(opp.kilos, 0)) as all_kilos,
                 SUM(COALESCE(opp.hours, 0)) as all_hours,
-                ${convertToInt('COUNT(DISTINCT op.id)', 'all_runs')}
+                ${convertToInt('COUNT(DISTINCT op.id)', 'all_runs')},
+                SUM(${wasteShare}) as all_waste
             FROM order_production_products opp
             JOIN order_productions op
                 ON op.id = opp.order_production_id
                 AND op.active = 1
+            JOIN (
+                SELECT order_production_id, SUM(kilos) as total_kilos
+                FROM order_production_products
+                WHERE active = 1
+                GROUP BY order_production_id
+            ) pt ON pt.order_production_id = op.id
             WHERE opp.active = 1
                 AND opp.machine_id IN (${machineIds.join(', ')})
                 ${sharedFilters}
