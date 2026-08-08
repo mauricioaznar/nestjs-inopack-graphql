@@ -223,8 +223,8 @@ export class ProductionPerformanceService {
     // fallback rate; a product id means the machine x product rate. The query
     // returns both the recent window and all available hourly history so the
     // client can keep the existing "recent-first, all-history fallback" rule
-    // without downloading raw runs. Kilos/hours/waste are returned as raw sums
-    // rather than ratios so a caller can subtract a single run's own
+    // without downloading raw runs. Kilos/bultos/hours/waste are returned as raw
+    // sums rather than ratios so a caller can subtract a single run's own
     // contribution before dividing — the flags grade a run against a baseline
     // that excludes it.
     async getMachineProductRates({
@@ -292,6 +292,7 @@ export class ProductionPerformanceService {
                 %PRODUCT_ID%,
                 SUM(CASE WHEN ${recentCondition} THEN COALESCE(opp.kilos, 0) ELSE 0 END) as recent_kilos,
                 SUM(CASE WHEN ${recentCondition} THEN COALESCE(opp.hours, 0) ELSE 0 END) as recent_hours,
+                SUM(CASE WHEN ${recentCondition} THEN COALESCE(opp.groups, 0) ELSE 0 END) as recent_groups,
                 ${convertToInt(
                     `COUNT(DISTINCT CASE WHEN ${recentCondition} THEN op.id END)`,
                     'recent_runs',
@@ -299,6 +300,7 @@ export class ProductionPerformanceService {
                 SUM(CASE WHEN ${recentCondition} THEN ${wasteShare} ELSE 0 END) as recent_waste,
                 SUM(COALESCE(opp.kilos, 0)) as all_kilos,
                 SUM(COALESCE(opp.hours, 0)) as all_hours,
+                SUM(COALESCE(opp.groups, 0)) as all_groups,
                 ${convertToInt('COUNT(DISTINCT op.id)', 'all_runs')},
                 SUM(${wasteShare}) as all_waste
             FROM order_production_products opp
