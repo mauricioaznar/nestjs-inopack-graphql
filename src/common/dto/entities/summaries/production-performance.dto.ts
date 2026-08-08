@@ -205,4 +205,26 @@ export class MachineProductRate {
 
     @Field(() => Int, { nullable: false })
     all_runs: number;
+
+    // Bultos (order_production_products.groups), summed over the same rows as
+    // the kilos. The flags grade throughput in bultos/hr when both the run and
+    // its baseline have them, because that is the unit corte actually counts;
+    // kilos remain the fallback for lines that are only ever weighed. A zero
+    // here is a real "this combo has never recorded bultos", which is what makes
+    // the fallback decidable client-side.
+    @Field(() => Float, { nullable: false })
+    recent_groups: number;
+
+    @Field(() => Float, { nullable: false })
+    all_groups: number;
+
+    // Waste attributed to this machine (or machine/product) by the line's kilo
+    // share of its production total — the same proration as
+    // getMachineProductPerformanceSummary, without the employee-count divisor.
+    // Paired with recent_kilos/all_kilos it yields a baseline merma ratio.
+    @Field(() => Float, { nullable: false })
+    recent_waste: number;
+
+    @Field(() => Float, { nullable: false })
+    all_waste: number;
 }

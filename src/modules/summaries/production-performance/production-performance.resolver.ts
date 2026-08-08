@@ -117,9 +117,10 @@ export class ProductionPerformanceResolver {
         });
     }
 
-    // Batch rates for production planning. A pair with a null product id asks
-    // for the machine-level fallback; non-null pairs ask for machine x product
-    // rates. The service returns recent and all-history aggregates together.
+    // Batch rates for production planning and for the Producción list's
+    // performance flags. A pair with a null product id asks for the
+    // machine-level fallback; non-null pairs ask for machine x product rates.
+    // The service returns recent and all-history aggregates together.
     @Query(() => [MachineProductRate])
     @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
     async getMachineProductRates(
