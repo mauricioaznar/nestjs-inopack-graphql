@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
+    MachineConsumptionRate,
     MachineHourlyRun,
     MachineProduct,
     MachineProductEmployeeRun,
@@ -11,6 +12,17 @@ import {
     ProductWithRuns,
 } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
+
+// Corridas before this date predate reliable hour capture on productions: their
+// kilos count but their hours read as 0, which would inflate any kg/hr ratio
+// (numerator grows, denominator doesn't). It is the ONE window every production-
+// performance surface reads from, and — since 2026-08-11 — the default the
+// shared filter falls back to when a caller omits the date. Omitting the date
+// used to mean "all of history", which is what let the grading dialog span
+// pre-capture runs and read 161 kg/hr where the page read 86. Defaulting to the
+// epoch makes that class of bug impossible rather than merely fixed once. Mirror
+// of the frontend HOURLY_DATA_EPOCH.
+export const HOURLY_DATA_EPOCH = '2026-01-01';
 
 @Injectable()
 export class ProductionPerformanceService {
@@ -220,21 +232,21 @@ export class ProductionPerformanceService {
 
     // Batch aggregate used by production planning and by the Producción list's
     // performance flags. A null product in the request means the machine-level
-    // fallback rate; a product id means the machine x product rate. The query
-    // returns both the recent window and all available hourly history so the
-    // client can keep the existing "recent-first, all-history fallback" rule
-    // without downloading raw runs. Kilos/bultos/hours/waste are returned as raw
-    // sums rather than ratios so a caller can subtract a single run's own
-    // contribution before dividing — the flags grade a run against a baseline
-    // that excludes it.
+    // fallback rate; a product id means the machine x product rate. It returns a
+    // SINGLE window — every hourly run since HOURLY_DATA_EPOCH (the from_date the
+    // callers pass, and the shared filter's default). The rolling 12-month
+    // "recent" window it used to also return was dropped 2026-08-11: both windows
+    // covered identical runs while hourly data starts at the epoch, so carrying
+    // two only invited them to diverge in 2027. Kilos/bultos/hours/waste are
+    // returned as raw sums rather than ratios so a caller can subtract a single
+    // run's own contribution before dividing — the flags grade a run against a
+    // baseline that excludes it.
     async getMachineProductRates({
         pairs,
         from_date,
-        recent_from_date,
     }: {
         pairs: MachineProductRatePairInput[];
         from_date?: string | null;
-        recent_from_date?: string | null;
     }): Promise<MachineProductRate[]> {
         const normalizedPairs = pairs
             .map((pair) => ({
@@ -273,13 +285,6 @@ export class ProductionPerformanceService {
                     `(opp.machine_id = ${pair.machine_id} and opp.product_id = ${pair.product_id})`,
             );
 
-        const validRecentDate =
-            recent_from_date && /^\d{4}-\d{2}-\d{2}$/.test(recent_from_date)
-                ? recent_from_date
-                : null;
-        const recentCondition = validRecentDate
-            ? `op.start_date >= '${validRecentDate}'`
-            : '0 = 1';
         const sharedFilters = this.buildSharedFilters({ from_date });
 
         // The production's waste is a single figure for the whole run, so a
@@ -287,17 +292,12 @@ export class ProductionPerformanceService {
         // getMachineProductPerformanceSummary (no employee-count divisor).
         const wasteShare = `CASE WHEN pt.total_kilos > 0 THEN op.waste * (opp.kilos / pt.total_kilos) ELSE 0 END`;
 
+        // `all_*` is the single window: every run the shared filter admits, i.e.
+        // since HOURLY_DATA_EPOCH. The name is kept from when a `recent_*` window
+        // stood beside it, so no consumer had to rename its columns.
         const aggregateSelect = `
                 ${convertToInt('opp.machine_id', 'machine_id')},
                 %PRODUCT_ID%,
-                SUM(CASE WHEN ${recentCondition} THEN COALESCE(opp.kilos, 0) ELSE 0 END) as recent_kilos,
-                SUM(CASE WHEN ${recentCondition} THEN COALESCE(opp.hours, 0) ELSE 0 END) as recent_hours,
-                SUM(CASE WHEN ${recentCondition} THEN COALESCE(opp.groups, 0) ELSE 0 END) as recent_groups,
-                ${convertToInt(
-                    `COUNT(DISTINCT CASE WHEN ${recentCondition} THEN op.id END)`,
-                    'recent_runs',
-                )},
-                SUM(CASE WHEN ${recentCondition} THEN ${wasteShare} ELSE 0 END) as recent_waste,
                 SUM(COALESCE(opp.kilos, 0)) as all_kilos,
                 SUM(COALESCE(opp.hours, 0)) as all_hours,
                 SUM(COALESCE(opp.groups, 0)) as all_groups,
@@ -340,8 +340,95 @@ export class ProductionPerformanceService {
         );
     }
 
+    // Batch machine-level consumption baseline, feeding the upsert form's
+    // Rendimiento tab: how much material a machine consumes per hour (Rendimiento
+    // = kilos consumidos / horas) and, paired with the packed kilos the rate
+    // query already returns, how much of it survives cutting (Eficiencia de corte
+    // = kilos empacados / kilos consumidos). Machine-level, NOT machine×product:
+    // consumed material is recorded per production keyed by machine and is not
+    // attributable to a single packed product. Raw sums, not ratios, so the
+    // caller can subtract the production being edited before dividing — the same
+    // self-exclusion the packed flags do.
+    //
+    // THE DENOMINATOR IS THE PACKED-SIDE HOURS, not the consumed side's own hours
+    // column. order_production_products_consumed carries an `hours` column that
+    // the user has confirmed is wrongly captured; reading it would make the rate
+    // fiction. The hours are summed from the production's packed lines on the
+    // machine (opp.hours) — capture puts them on the first packed row only today,
+    // so the sum equals the production total, and it keeps working untouched if
+    // capture ever spreads them across rows. This is derived at READ time on
+    // purpose: the consumed hours column is NOT backfilled, because COGS
+    // discovery is still measuring how bad that capture is and overwriting it
+    // would destroy the evidence. Using packed hours in both formulas is also
+    // what makes the arithmetic tie out — Eficiencia × Rendimiento cancels
+    // *consumidos* to leave packed/hours only when the same denominator runs
+    // through both.
+    async getMachineConsumptionRates({
+        machine_ids,
+        from_date,
+    }: {
+        machine_ids: number[];
+        from_date?: string | null;
+    }): Promise<MachineConsumptionRate[]> {
+        const machineIds = Array.from(
+            new Set(
+                (machine_ids ?? [])
+                    .map((id) => Number(id))
+                    .filter((id) => Number.isInteger(id) && id > 0),
+            ),
+        );
+        if (machineIds.length === 0) return [];
+
+        const sharedFilters = this.buildSharedFilters({ from_date });
+
+        // Consumed kilos per production×machine drives the aggregate (it is what
+        // we are measuring); packed hours for the same production×machine are
+        // left-joined in as the denominator. A run is one production that
+        // consumed material on the machine, so `runs` counts the consumed side.
+        return this.prisma.$queryRawUnsafe<MachineConsumptionRate[]>(`
+            select
+                ${convertToInt('c.machine_id', 'machine_id')},
+                sum(c.consumed_kilos) as consumed_kilos,
+                sum(coalesce(ph.packed_hours, 0)) as packed_hours,
+                ${convertToInt('count(distinct c.order_production_id)', 'runs')}
+            from (
+                select
+                    opc.order_production_id,
+                    opc.machine_id,
+                    sum(coalesce(opc.kilos, 0)) as consumed_kilos
+                from order_production_products_consumed opc
+                join order_productions op
+                    on op.id = opc.order_production_id
+                    and op.active = 1
+                    ${sharedFilters}
+                where opc.active = 1
+                    and opc.machine_id in (${machineIds.join(', ')})
+                group by opc.order_production_id, opc.machine_id
+            ) c
+            left join (
+                select
+                    order_production_id,
+                    machine_id,
+                    sum(coalesce(hours, 0)) as packed_hours
+                from order_production_products
+                where active = 1
+                    and machine_id in (${machineIds.join(', ')})
+                group by order_production_id, machine_id
+            ) ph
+                on ph.order_production_id = c.order_production_id
+                and ph.machine_id = c.machine_id
+            group by c.machine_id
+        `);
+    }
+
     // Shared filter fragment builder — applied to order_productions (aliased `op`).
-    // Each arg is independently optional; falsy values are skipped entirely.
+    // `to_date` is independently optional (omitted = up to now). `from_date` is
+    // NOT: an omitted or malformed from_date falls back to HOURLY_DATA_EPOCH
+    // rather than to no clause at all. An unbounded lower bound silently pulls in
+    // pre-capture corridas (kilos, hours = 0) that inflate every kg/hr, and only
+    // one caller ever omitted it — the grading dialog bug this branch fixes. A
+    // from_date the caller DOES pass is honoured verbatim, including a deliberate
+    // pre-epoch date (widen Desde into 2025 to reproduce the old inflated number).
     private buildSharedFilters({
         from_date,
         to_date,
@@ -349,9 +436,11 @@ export class ProductionPerformanceService {
         from_date?: string | null;
         to_date?: string | null;
     }): string {
-        const parts: string[] = [];
-        if (from_date && /^\d{4}-\d{2}-\d{2}$/.test(from_date))
-            parts.push(`and op.start_date >= '${from_date}'`);
+        const effectiveFrom =
+            from_date && /^\d{4}-\d{2}-\d{2}$/.test(from_date)
+                ? from_date
+                : HOURLY_DATA_EPOCH;
+        const parts: string[] = [`and op.start_date >= '${effectiveFrom}'`];
         if (to_date && /^\d{4}-\d{2}-\d{2}$/.test(to_date))
             parts.push(`and op.start_date <= '${to_date}'`);
         return parts.join('\n                ');
