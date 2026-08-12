@@ -387,6 +387,10 @@ export class AccountsService {
                     input.supplier_recurring_expenses,
                 client_automatic_tax_calculation:
                     input.client_automatic_tax_calculation,
+                client_reconciliation_only:
+                    input.client_reconciliation_only,
+                supplier_reconciliation_only:
+                    input.supplier_reconciliation_only,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -413,6 +417,10 @@ export class AccountsService {
                     input.supplier_recurring_expenses,
                 client_automatic_tax_calculation:
                     input.client_automatic_tax_calculation,
+                client_reconciliation_only:
+                    input.client_reconciliation_only,
+                supplier_reconciliation_only:
+                    input.supplier_reconciliation_only,
             },
             where: {
                 id: input.id || 0,
