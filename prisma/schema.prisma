@@ -424,17 +424,94 @@ model order_requests {
   notes                        String                         @db.VarChar(255)
   created_by_id                Int?                           @db.UnsignedInt
   updated_by_id                Int?                           @db.UnsignedInt
+  // Conversion link to the cotización that produced this pedido. UNIQUE: a
+  // cotización makes at most one pedido, so the @unique makes it a database
+  // invariant (and models the quotation side as a SINGULAR optional, not an
+  // array). Deliberately diverges from order_sales.order_request_id, which is
+  // not unique because one pedido makes many ventas.
+  order_quotation_id           Int?                           @unique(map: "order_requests_order_quotation_id_unique") @db.UnsignedInt
   created_by_user              users?                         @relation("order_requests_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_created_by_id_foreign")
   updated_by_user              users?                         @relation("order_requests_updated_by", fields: [updated_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_updated_by_id_foreign")
   order_request_products       order_request_products[]
   accounts                     accounts?                      @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_account_id_foreign")
   order_request_statuses       order_request_statuses?        @relation(fields: [order_request_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_order_request_status_id_foreign")
+  order_quotation              order_quotations?              @relation(fields: [order_quotation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_requests_order_quotation_id_foreign")
   order_sales                  order_sales[]
 
   @@index([account_id], map: "order_requests_company_id_foreign")
   @@index([order_request_status_id], map: "order_requests_order_request_status_id_foreign")
   @@index([created_by_id], map: "order_requests_created_by_id_foreign")
   @@index([updated_by_id], map: "order_requests_updated_by_id_foreign")
+}
+
+// Cotizaciones — see docs/plans/ongoing/feature-order-quotations.md. Mirrors the
+// order_request shape, deliberately in its OWN tables so a cotización never
+// touches production planning. See the migration 1786060000000-AddOrderQuotations.
+model order_quotation_statuses {
+  id               Int                @id @default(autoincrement()) @db.UnsignedInt
+  active           Int                @default(1)
+  name             String             @db.VarChar(255)
+  created_at       DateTime?          @db.DateTime(0)
+  updated_at       DateTime?          @db.DateTime(0)
+  order_quotations order_quotations[]
+}
+
+model order_quotations {
+  id                          Int                        @id @default(autoincrement()) @db.UnsignedInt
+  order_code                  Int
+  active                      Int                        @default(1)
+  date                        DateTime                   @db.DateTime(0)
+  created_at                  DateTime?                  @db.DateTime(0)
+  updated_at                  DateTime?                  @db.DateTime(0)
+  account_id                  Int?                       @db.UnsignedInt
+  order_quotation_status_id   Int?                       @db.UnsignedInt
+  estimated_delivery_date     DateTime?                  @db.DateTime(0)
+  notes                       String                     @db.VarChar(255)
+  // vigencia; NULL = sin vencimiento
+  expiration_date             DateTime?                  @db.DateTime(0)
+  // condiciones de pago, texto libre
+  payment_terms               String                     @default("") @db.VarChar(255)
+  // IVA visible en el documento (16% cuando true, 0% cuando false)
+  require_tax                 Boolean                    @default(false)
+  // cuándo esta cotización escribió el catálogo; NULL = todavía no. STORED, not
+  // derived — see the plan, "One stored column, two derived".
+  account_products_updated_at DateTime?                  @db.DateTime(0)
+  created_by_id               Int?                       @db.UnsignedInt
+  updated_by_id               Int?                       @db.UnsignedInt
+  created_by_user             users?                     @relation("order_quotations_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_quotations_created_by_id_foreign")
+  updated_by_user             users?                     @relation("order_quotations_updated_by", fields: [updated_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_quotations_updated_by_id_foreign")
+  order_quotation_products    order_quotation_products[]
+  accounts                    accounts?                  @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_quotations_account_id_foreign")
+  order_quotation_statuses    order_quotation_statuses?  @relation(fields: [order_quotation_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_quotations_order_quotation_status_id_foreign")
+  // SINGULAR optional, not an array: the @unique on order_requests.order_quotation_id
+  // makes this one-to-one. Copying the `order_sales order_sales[]` shape would not compile.
+  order_request               order_requests?
+
+  @@index([account_id], map: "order_quotations_account_id_foreign")
+  @@index([order_quotation_status_id], map: "order_quotations_order_quotation_status_id_foreign")
+  @@index([created_by_id], map: "order_quotations_created_by_id_foreign")
+  @@index([updated_by_id], map: "order_quotations_updated_by_id_foreign")
+}
+
+model order_quotation_products {
+  id                   Int               @id @default(autoincrement()) @db.UnsignedInt
+  active               Int               @default(1)
+  created_at           DateTime?         @db.DateTime(0)
+  updated_at           DateTime?         @db.DateTime(0)
+  kilos                Float
+  groups               Float             @default(0.00)
+  kilo_price           Float
+  group_price          Float             @default(0.00)
+  group_weight         Float             @default(0.00)
+  // '' por defecto; se usa cuando product_id es NULL (línea libre)
+  proposed_description String            @default("") @db.VarChar(255)
+  product_id           Int?              @db.UnsignedInt
+  order_quotation_id   Int?              @db.UnsignedInt
+  order_quotations     order_quotations? @relation(fields: [order_quotation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_quotation_products_order_quotation_id_foreign")
+  products             products?         @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_quotation_products_product_id_foreign")
+
+  @@index([order_quotation_id], map: "order_quotation_products_order_quotation_id_foreign")
+  @@index([product_id], map: "order_quotation_products_product_id_foreign")
 }
 
 model order_sale_products {
@@ -546,6 +623,7 @@ model products {
   order_production_products    order_production_products[]
   order_production_products_consumed order_production_products_consumed[]
   order_request_products             order_request_products[]
+  order_quotation_products     order_quotation_products[]
   order_sale_products          order_sale_products[]
   production_plan_row_products production_plan_row_products[]
   product_categories           product_categories?            @relation(fields: [product_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_category_id")
@@ -630,6 +708,8 @@ model users {
   order_productions_updated_by order_productions[] @relation("order_productions_updated_by")
   order_requests_created_by    order_requests[]    @relation("order_requests_created_by")
   order_requests_updated_by    order_requests[]    @relation("order_requests_updated_by")
+  order_quotations_created_by  order_quotations[]  @relation("order_quotations_created_by")
+  order_quotations_updated_by  order_quotations[]  @relation("order_quotations_updated_by")
   order_sales_created_by       order_sales[]       @relation("order_sales_created_by")
   order_sales_updated_by       order_sales[]       @relation("order_sales_updated_by")
   products_created_by          products[]          @relation("products_created_by")
@@ -826,6 +906,7 @@ model accounts {
   resources                                     resources?          @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "accounts_resource_id_foreign")
   expenses                                      expenses[]
   order_requests                                order_requests[]
+  order_quotations                              order_quotations[]
   order_sales                                   order_sales[]
   transfers_accountsTotransfers_from_account_id transfers[]         @relation("accountsTotransfers_from_account_id")
   transfers_accountsTotransfers_to_account_id   transfers[]         @relation("accountsTotransfers_to_account_id")

@@ -372,13 +372,22 @@ export class OrderRequestsService {
         return Math.round(total * 100) / 100;
     }
 
-    async upsertOrderRequest({
-        input,
-        current_user_id,
-    }: {
-        input: OrderRequestInput;
-        current_user_id: number;
-    }): Promise<OrderRequest> {
+    async upsertOrderRequest(
+        {
+            input,
+            current_user_id,
+        }: {
+            input: OrderRequestInput;
+            current_user_id: number;
+        },
+        // Optional link to the cotización this pedido converts from, set ONLY on
+        // create so a pedido never exists unlinked and the link is immutable by
+        // construction (order_quotation_id is deliberately kept off
+        // OrderRequestInput). Passed only by the acceptance path
+        // (acceptOrderQuotation); every normal pedido save omits it. See the
+        // plan, "Services yes, resolvers no" consequence 2, option (a).
+        options?: { order_quotation_id?: number | null },
+    ): Promise<OrderRequest> {
         await this.validateOrderRequest(input, current_user_id);
 
         const orderRequest = await this.prisma.order_requests.upsert({
@@ -392,6 +401,7 @@ export class OrderRequestsService {
                 order_code: input.order_code,
                 estimated_delivery_date: input.estimated_delivery_date,
                 account_id: input.account_id,
+                order_quotation_id: options?.order_quotation_id ?? undefined,
                 // Status is no longer part of the input: new requests always start
                 // at the first status (id = 1). Only updateOrderRequestStatus
                 // (admin-only) can change it afterwards.
