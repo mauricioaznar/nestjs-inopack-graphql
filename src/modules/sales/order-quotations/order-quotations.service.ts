@@ -27,6 +27,7 @@ import {
     OrderRequestInput,
     PaginatedOrderQuotations,
     PaginatedOrderQuotationsQueryArgs,
+    Product,
 } from '../../../common/dto/entities';
 import {
     getCreatedAtProperty,
@@ -1018,6 +1019,24 @@ export class OrderQuotationsService {
         return this.prisma.order_quotation_statuses.findFirst({
             where: {
                 id: order_quotation_status_id,
+            },
+        });
+    }
+
+    // The linked product of a quotation line. NULL on a free line (product_id
+    // NULL) — that is the one place a line has no product. Backs the
+    // OrderQuotationProduct.product ResolveField, mirroring the pedido side.
+    async getProduct({
+        product_id,
+    }: {
+        product_id?: number | null;
+    }): Promise<Product | null> {
+        if (!product_id) {
+            return null;
+        }
+        return this.prisma.products.findFirst({
+            where: {
+                id: product_id,
             },
         });
     }
