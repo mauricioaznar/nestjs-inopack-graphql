@@ -892,6 +892,8 @@ model accounts {
   supplier_requires_tax                         Boolean             @default(true)
   supplier_recurring_expenses                   Boolean             @default(false)
   client_automatic_tax_calculation              Boolean             @default(true)
+  client_reconciliation_only                    Boolean             @default(false)
+  supplier_reconciliation_only                  Boolean             @default(false)
   exclude_from_accountability_export            Boolean             @default(false)
   merged_into_account_id                        Int?                @db.UnsignedInt
   created_by_id                                 Int?                @db.UnsignedInt

@@ -71,6 +71,15 @@ export class AccountBase {
 
     @Field(() => Boolean, { nullable: false })
     client_automatic_tax_calculation: boolean;
+
+    // Account-level default for a document's `reconciliation_only`: the CLIENT
+    // flag seeds new sales, the SUPPLIER flag seeds new expenses. Independent
+    // because an account is often both.
+    @Field(() => Boolean, { nullable: false })
+    client_reconciliation_only: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    supplier_reconciliation_only: boolean;
 }
 
 @InputType('AccountUpsertInput')
