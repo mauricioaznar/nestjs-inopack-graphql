@@ -130,10 +130,13 @@ export class ProductionPerformanceResolver {
         pairs: MachineProductRatePairInput[],
         @Args('fromDate', { type: () => String, nullable: true })
         fromDate: string | null,
+        @Args('singleProductOnly', { type: () => Boolean, nullable: true })
+        singleProductOnly: boolean | null,
     ): Promise<MachineProductRate[]> {
         return this.service.getMachineProductRates({
             pairs,
             from_date: fromDate,
+            single_product_only: singleProductOnly,
         });
     }
 

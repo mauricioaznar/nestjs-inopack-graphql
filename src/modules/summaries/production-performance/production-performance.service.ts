@@ -199,13 +199,12 @@ export class ProductionPerformanceService {
                 pp.hours_produced as hours_produced,
                 coalesce(rr.kilos_resource, 0) as kilos_resource,
                 coalesce(rr.hours_resource, 0) as hours_resource,
-                ${convertToInt('pp.product_count', 'product_count')}
+                ${convertToInt('pc.product_count', 'product_count')}
             from (
                 select
                     order_production_id,
                     sum(kilos) as kilos_produced,
-                    sum(coalesce(hours, 0)) as hours_produced,
-                    count(distinct product_id) as product_count
+                    sum(coalesce(hours, 0)) as hours_produced
                 from order_production_products
                 where active = 1
                     ${ppMachineFilter}
@@ -216,6 +215,18 @@ export class ProductionPerformanceService {
                 on op.id = pp.order_production_id
                 and op.active = 1
                 ${sharedFilters}
+            join (
+                -- Distinct products in the WHOLE production (NOT narrowed by the
+                -- product filter, unlike pp), so "single product" means the
+                -- production made one product — the case whose packed hours are
+                -- trustworthy. Matches the pt.product_count of the scatter query.
+                select
+                    order_production_id,
+                    count(distinct product_id) as product_count
+                from order_production_products
+                where active = 1
+                group by order_production_id
+            ) pc on pc.order_production_id = op.id
             left join (
                 select
                     order_production_id,
@@ -244,9 +255,17 @@ export class ProductionPerformanceService {
     async getMachineProductRates({
         pairs,
         from_date,
+        single_product_only,
     }: {
         pairs: MachineProductRatePairInput[];
         from_date?: string | null;
+        // When true, only productions that made EXACTLY ONE product count toward
+        // the packed rates. Multi-product productions capture hours on their
+        // first packed row only, so their per-product kg/hr is unrecoverable;
+        // this restricts the baseline to clean single-product runs. Off by
+        // default, so the planning board and the Producción list flags — which
+        // share this query — are unaffected.
+        single_product_only?: boolean | null;
     }): Promise<MachineProductRate[]> {
         const normalizedPairs = pairs
             .map((pair) => ({
@@ -286,6 +305,11 @@ export class ProductionPerformanceService {
             );
 
         const sharedFilters = this.buildSharedFilters({ from_date });
+        // pt already computes a per-production product count, so restricting to
+        // single-product runs is a WHERE on it — no extra scan.
+        const singleProductFilter = single_product_only
+            ? 'AND pt.product_count = 1'
+            : '';
 
         // The production's waste is a single figure for the whole run, so a
         // line only ever owns its kilo share of it. Same proration as
@@ -308,7 +332,10 @@ export class ProductionPerformanceService {
                 ON op.id = opp.order_production_id
                 AND op.active = 1
             JOIN (
-                SELECT order_production_id, SUM(kilos) as total_kilos
+                SELECT
+                    order_production_id,
+                    SUM(kilos) as total_kilos,
+                    COUNT(DISTINCT product_id) as product_count
                 FROM order_production_products
                 WHERE active = 1
                 GROUP BY order_production_id
@@ -316,6 +343,7 @@ export class ProductionPerformanceService {
             WHERE opp.active = 1
                 AND opp.machine_id IN (${machineIds.join(', ')})
                 ${sharedFilters}
+                ${singleProductFilter}
         `;
 
         const machineRates = `
@@ -397,6 +425,7 @@ export class ProductionPerformanceService {
                 ${convertToInt('pp.product_id', 'product_id')},
                 pp.product_name,
                 pp.consumed_kilos,
+                mm.consumed_hours,
                 mm.packed_hours,
                 ${convertToInt('mm.runs', 'runs')}
             from (
@@ -426,10 +455,17 @@ export class ProductionPerformanceService {
             join (
                 select
                     cm.machine_id,
+                    sum(coalesce(cm.consumed_hours, 0)) as consumed_hours,
                     sum(coalesce(ph.packed_hours, 0)) as packed_hours,
                     count(distinct cm.order_production_id) as runs
                 from (
-                    select distinct opc.order_production_id, opc.machine_id
+                    -- One row per (consuming production, machine), carrying that
+                    -- production's own consumed hours so the machine-level sum
+                    -- below is a genuine per-run total, not fanned out.
+                    select
+                        opc.order_production_id,
+                        opc.machine_id,
+                        sum(coalesce(opc.hours, 0)) as consumed_hours
                     from order_production_products_consumed opc
                     join order_productions op
                         on op.id = opc.order_production_id
@@ -437,6 +473,7 @@ export class ProductionPerformanceService {
                         ${sharedFilters}
                     where opc.active = 1
                         and opc.machine_id in (${machineIds.join(', ')})
+                    group by opc.order_production_id, opc.machine_id
                 ) cm
                 left join (
                     select

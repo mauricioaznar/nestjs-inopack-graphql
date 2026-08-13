@@ -242,11 +242,23 @@ export class MachineConsumptionRate {
     @Field(() => Float, { nullable: false })
     consumed_kilos: number;
 
-    // Denominator of Rendimiento — the PACKED side's hours (order_production_
-    // products.hours), summed across the production's packed lines on the
-    // machine. Deliberately NOT the consumed side's own hours column, which is
-    // wrongly captured; derived at read time and never backfilled so COGS
-    // discovery can still measure that capture gap.
+    // Two candidate denominators for Rendimiento, both MACHINE-level (repeated
+    // across a machine's product rows) and self-excludable via raw sums:
+    //
+    //   consumed_hours — the consumed side's OWN hours
+    //     (order_production_products_consumed.hours). This is the default
+    //     denominator the tab divides by; it agrees with the Rendimiento page's
+    //     `Consumo kg/hr`, which reads the same column. It is known to be
+    //     wrongly captured — surfaced with a warning, never backfilled, so COGS
+    //     discovery can still measure the capture gap.
+    //
+    //   packed_hours — the PACKED side's hours (order_production_products.hours),
+    //     summed across the production's packed lines on the machine. A
+    //     workaround the tab can opt into to sidestep the consumed-hours
+    //     mis-capture.
+    @Field(() => Float, { nullable: false })
+    consumed_hours: number;
+
     @Field(() => Float, { nullable: false })
     packed_hours: number;
 
