@@ -215,18 +215,30 @@ export class MachineProductRate {
     all_waste: number;
 }
 
-// Machine-level consumption baseline for the upsert form's Rendimiento tab. Raw
-// sums, not ratios, so the caller can self-exclude the production being edited
-// before dividing. Machine-level, not machine×product: consumed material is
-// recorded per production keyed by machine, not attributed to a packed product.
+// Consumption baseline for the upsert form's Rendimiento tab. Raw sums, not
+// ratios, so the caller can self-exclude the production being edited before
+// dividing. One row per (machine, consumed PRODUCT): `consumed_kilos` is the
+// real per-material breakdown from the consumed rows, while `packed_hours` and
+// `runs` are MACHINE-level (repeated on every product row of a machine), because
+// the borrowed packed hours can't follow a consumed product and the machine-level
+// Rendimiento is what the tab currently shows. Consumed material is a type-2 roll
+// keyed to the machine and is not attributable to a packed (type-1) product.
 @ObjectType('MachineConsumptionRate')
 export class MachineConsumptionRate {
     @Field(() => Int, { nullable: false })
     machine_id: number;
 
-    // Sum of order_production_products_consumed.kilos on this machine, over the
-    // window. Numerator of Rendimiento (kg consumidos / horas); denominator of
-    // Eficiencia de corte (kg empacados / kg consumidos).
+    // The consumed material (order_production_products_consumed.product_id → a
+    // type-2 roll). Null only if a consumed row somehow has no product.
+    @Field(() => Int, { nullable: true })
+    product_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    product_name: string | null;
+
+    // Sum of order_production_products_consumed.kilos for THIS (machine, product)
+    // over the window — the real per-material consumed quantity. Numerator of
+    // Rendimiento (kg consumidos / horas) once summed to machine level.
     @Field(() => Float, { nullable: false })
     consumed_kilos: number;
 

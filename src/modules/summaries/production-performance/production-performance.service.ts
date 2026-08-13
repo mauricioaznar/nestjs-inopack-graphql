@@ -340,15 +340,17 @@ export class ProductionPerformanceService {
         );
     }
 
-    // Batch machine-level consumption baseline, feeding the upsert form's
-    // Rendimiento tab: how much material a machine consumes per hour (Rendimiento
-    // = kilos consumidos / horas) and, paired with the packed kilos the rate
-    // query already returns, how much of it survives cutting (Eficiencia de corte
-    // = kilos empacados / kilos consumidos). Machine-level, NOT machine×product:
-    // consumed material is recorded per production keyed by machine and is not
-    // attributable to a single packed product. Raw sums, not ratios, so the
-    // caller can subtract the production being edited before dividing — the same
-    // self-exclusion the packed flags do.
+    // Batch consumption baseline feeding the upsert form's Rendimiento tab:
+    // how much material a machine consumes per hour (Rendimiento = kilos
+    // consumidos / horas). Now returns one row per (machine, CONSUMED PRODUCT)
+    // so `consumed_kilos` is a real per-material breakdown (the type-2 roll on
+    // each consumed row), while `packed_hours` and `runs` stay MACHINE-level and
+    // repeat across a machine's product rows — the tab still shows the machine
+    // Rendimiento, and the borrowed packed hours cannot follow a consumed
+    // product. Raw sums, not ratios, so the caller self-excludes the edited
+    // production before dividing — the same self-exclusion the packed flags do.
+    // (Eficiencia de corte / Rendimiento de corte real — which cross type-1 and
+    // type-2 — are deferred to a placeholder in the tab pending capture cleanup.)
     //
     // THE DENOMINATOR IS THE PACKED-SIDE HOURS, not the consumed side's own hours
     // column. order_production_products_consumed carries an `hours` column that
@@ -381,43 +383,75 @@ export class ProductionPerformanceService {
 
         const sharedFilters = this.buildSharedFilters({ from_date });
 
-        // Consumed kilos per production×machine drives the aggregate (it is what
-        // we are measuring); packed hours for the same production×machine are
-        // left-joined in as the denominator. A run is one production that
-        // consumed material on the machine, so `runs` counts the consumed side.
+        // Two grains in one result. `consumed_kilos` is per (machine, PRODUCT) —
+        // the consumed material (a type-2 roll) carried on each consumed row — so
+        // the caller has a real per-material breakdown. `packed_hours` and `runs`
+        // stay MACHINE-level and are repeated on every product row: hours are the
+        // (borrowed, still mis-captured) packed-side denominator that can't follow
+        // a consumed product, and a run is one production that consumed on the
+        // machine. They are computed over the DISTINCT consuming productions so a
+        // multi-product production is not double-counted across its materials.
         return this.prisma.$queryRawUnsafe<MachineConsumptionRate[]>(`
             select
-                ${convertToInt('c.machine_id', 'machine_id')},
-                sum(c.consumed_kilos) as consumed_kilos,
-                sum(coalesce(ph.packed_hours, 0)) as packed_hours,
-                ${convertToInt('count(distinct c.order_production_id)', 'runs')}
+                ${convertToInt('pp.machine_id', 'machine_id')},
+                ${convertToInt('pp.product_id', 'product_id')},
+                pp.product_name,
+                pp.consumed_kilos,
+                mm.packed_hours,
+                ${convertToInt('mm.runs', 'runs')}
             from (
                 select
-                    opc.order_production_id,
-                    opc.machine_id,
-                    sum(coalesce(opc.kilos, 0)) as consumed_kilos
-                from order_production_products_consumed opc
-                join order_productions op
-                    on op.id = opc.order_production_id
-                    and op.active = 1
-                    ${sharedFilters}
-                where opc.active = 1
-                    and opc.machine_id in (${machineIds.join(', ')})
-                group by opc.order_production_id, opc.machine_id
-            ) c
-            left join (
+                    c.machine_id,
+                    c.product_id,
+                    pr.description as product_name,
+                    sum(c.consumed_kilos) as consumed_kilos
+                from (
+                    select
+                        opc.order_production_id,
+                        opc.machine_id,
+                        opc.product_id,
+                        sum(coalesce(opc.kilos, 0)) as consumed_kilos
+                    from order_production_products_consumed opc
+                    join order_productions op
+                        on op.id = opc.order_production_id
+                        and op.active = 1
+                        ${sharedFilters}
+                    where opc.active = 1
+                        and opc.machine_id in (${machineIds.join(', ')})
+                    group by opc.order_production_id, opc.machine_id, opc.product_id
+                ) c
+                left join products pr on pr.id = c.product_id
+                group by c.machine_id, c.product_id, pr.description
+            ) pp
+            join (
                 select
-                    order_production_id,
-                    machine_id,
-                    sum(coalesce(hours, 0)) as packed_hours
-                from order_production_products
-                where active = 1
-                    and machine_id in (${machineIds.join(', ')})
-                group by order_production_id, machine_id
-            ) ph
-                on ph.order_production_id = c.order_production_id
-                and ph.machine_id = c.machine_id
-            group by c.machine_id
+                    cm.machine_id,
+                    sum(coalesce(ph.packed_hours, 0)) as packed_hours,
+                    count(distinct cm.order_production_id) as runs
+                from (
+                    select distinct opc.order_production_id, opc.machine_id
+                    from order_production_products_consumed opc
+                    join order_productions op
+                        on op.id = opc.order_production_id
+                        and op.active = 1
+                        ${sharedFilters}
+                    where opc.active = 1
+                        and opc.machine_id in (${machineIds.join(', ')})
+                ) cm
+                left join (
+                    select
+                        order_production_id,
+                        machine_id,
+                        sum(coalesce(hours, 0)) as packed_hours
+                    from order_production_products
+                    where active = 1
+                        and machine_id in (${machineIds.join(', ')})
+                    group by order_production_id, machine_id
+                ) ph
+                    on ph.order_production_id = cm.order_production_id
+                    and ph.machine_id = cm.machine_id
+                group by cm.machine_id
+            ) mm on mm.machine_id = pp.machine_id
         `);
     }
 
