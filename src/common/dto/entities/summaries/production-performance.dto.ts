@@ -176,10 +176,11 @@ export class MachineProductRatePairInput {
     productId?: number | null;
 }
 
-// Aggregated throughput for one requested machine or machine/product pair.
-// Both windows are returned so the client can preserve the existing rule:
-// prefer the last 12 months, but fall back to all hourly history when that
-// window has no runs.
+// Aggregated throughput for one requested machine or machine/product pair, over
+// the single window every performance surface now reads: all hourly runs since
+// HOURLY_DATA_EPOCH. The `all_` prefix is kept from when a rolling 12-month
+// `recent_` window stood beside it (dropped 2026-08-11); both covered identical
+// runs while hourly data starts at the epoch, so only one is carried.
 @ObjectType('MachineProductRate')
 export class MachineProductRate {
     @Field(() => Int, { nullable: false })
@@ -187,15 +188,6 @@ export class MachineProductRate {
 
     @Field(() => Int, { nullable: true })
     product_id: number | null;
-
-    @Field(() => Float, { nullable: false })
-    recent_kilos: number;
-
-    @Field(() => Float, { nullable: false })
-    recent_hours: number;
-
-    @Field(() => Int, { nullable: false })
-    recent_runs: number;
 
     @Field(() => Float, { nullable: false })
     all_kilos: number;
@@ -213,18 +205,65 @@ export class MachineProductRate {
     // here is a real "this combo has never recorded bultos", which is what makes
     // the fallback decidable client-side.
     @Field(() => Float, { nullable: false })
-    recent_groups: number;
-
-    @Field(() => Float, { nullable: false })
     all_groups: number;
 
     // Waste attributed to this machine (or machine/product) by the line's kilo
     // share of its production total — the same proration as
     // getMachineProductPerformanceSummary, without the employee-count divisor.
-    // Paired with recent_kilos/all_kilos it yields a baseline merma ratio.
-    @Field(() => Float, { nullable: false })
-    recent_waste: number;
-
+    // Paired with all_kilos it yields a baseline merma ratio.
     @Field(() => Float, { nullable: false })
     all_waste: number;
+}
+
+// Consumption baseline for the upsert form's Rendimiento tab. Raw sums, not
+// ratios, so the caller can self-exclude the production being edited before
+// dividing. One row per (machine, consumed PRODUCT): `consumed_kilos` is the
+// real per-material breakdown from the consumed rows, while `packed_hours` and
+// `runs` are MACHINE-level (repeated on every product row of a machine), because
+// the borrowed packed hours can't follow a consumed product and the machine-level
+// Rendimiento is what the tab currently shows. Consumed material is a type-2 roll
+// keyed to the machine and is not attributable to a packed (type-1) product.
+@ObjectType('MachineConsumptionRate')
+export class MachineConsumptionRate {
+    @Field(() => Int, { nullable: false })
+    machine_id: number;
+
+    // The consumed material (order_production_products_consumed.product_id → a
+    // type-2 roll). Null only if a consumed row somehow has no product.
+    @Field(() => Int, { nullable: true })
+    product_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    product_name: string | null;
+
+    // Sum of order_production_products_consumed.kilos for THIS (machine, product)
+    // over the window — the real per-material consumed quantity. Numerator of
+    // Rendimiento (kg consumidos / horas) once summed to machine level.
+    @Field(() => Float, { nullable: false })
+    consumed_kilos: number;
+
+    // Two candidate denominators for Rendimiento, both MACHINE-level (repeated
+    // across a machine's product rows) and self-excludable via raw sums:
+    //
+    //   consumed_hours — the consumed side's OWN hours
+    //     (order_production_products_consumed.hours). This is the default
+    //     denominator the tab divides by; it agrees with the Rendimiento page's
+    //     `Consumo kg/hr`, which reads the same column. It is known to be
+    //     wrongly captured — surfaced with a warning, never backfilled, so COGS
+    //     discovery can still measure the capture gap.
+    //
+    //   packed_hours — the PACKED side's hours (order_production_products.hours),
+    //     summed across the production's packed lines on the machine. A
+    //     workaround the tab can opt into to sidestep the consumed-hours
+    //     mis-capture.
+    @Field(() => Float, { nullable: false })
+    consumed_hours: number;
+
+    @Field(() => Float, { nullable: false })
+    packed_hours: number;
+
+    // Distinct productions that consumed material on this machine in the window,
+    // so the caller can drop the edited run (runs − 1) alongside its kilos/hours.
+    @Field(() => Int, { nullable: false })
+    runs: number;
 }

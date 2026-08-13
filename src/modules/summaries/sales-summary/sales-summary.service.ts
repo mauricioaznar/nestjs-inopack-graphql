@@ -67,14 +67,25 @@ export class SalesSummaryService {
                     groupByEntityGroup +=
                         'product_category_id, product_category_name, order_production_type_id, order_production_type_name';
                     break;
+                case 'productMaterial':
+                    selectEntityGroup += `${convertToInt(
+                        'product_material_id',
+                    )}, product_material_name`;
+                    groupByEntityGroup +=
+                        'product_material_id, product_material_name';
+                    break;
                 case 'product':
+                    // product_material_name is functionally dependent on
+                    // product_id (already grouped), so carrying it here lets the
+                    // product-level export show each product's material without a
+                    // separate productMaterial grouping.
                     selectEntityGroup += `${convertToInt(
                         'product_id',
                     )}, product_name, ${convertToInt('width')}, ${convertToInt(
                         'calibre',
-                    )}, ${convertToInt('length')}`;
+                    )}, ${convertToInt('length')}, product_material_name`;
                     groupByEntityGroup +=
-                        'product_id, product_name, width, calibre, length';
+                        'product_id, product_name, width, calibre, length, product_material_name';
                     break;
 
                 case 'productAccount':
@@ -145,6 +156,8 @@ export class SalesSummaryService {
                          order_production_type.name order_production_type_name,
                          product_categories.id product_category_id,
                          product_categories.name product_category_name,
+                         product_materials.id product_material_id,
+                         product_materials.name product_material_name,
                          accounts.id account_id,
                          accounts.name account_name,
                          accounts.abbreviation account_abbreviation,
@@ -207,6 +220,8 @@ export class SalesSummaryService {
                         on order_production_type.id = products.order_production_type_id
                         left join product_categories
                         on products.product_category_id = product_categories.id
+                        left join product_materials
+                        on products.product_material_id = product_materials.id
                         left join accounts
                         on accounts.id = osp.account_id
                         left join order_sale_statuses
