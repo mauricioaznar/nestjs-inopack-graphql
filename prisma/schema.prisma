@@ -867,6 +867,8 @@ model accounts {
   active                                        Int                 @default(1)
   name                                          String              @db.VarChar(255)
   abbreviation                                  String              @db.VarChar(255)
+  rfc                                           String              @default("") @db.VarChar(255)
+  address                                       String              @default("") @db.VarChar(255)
   house_phone                                   String              @default("") @db.VarChar(255)
   address1                                      String              @default("") @db.VarChar(60)
   address2                                      String              @default("") @db.VarChar(60)

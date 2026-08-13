@@ -1466,6 +1466,12 @@ export class OrderQuotationsService {
             id: account.id,
             name: account.name,
             abbreviation: account.abbreviation,
+            // Every scalar the account carries must be echoed back unchanged, or
+            // upsertAccount rewrites it. rfc/address are the two new general
+            // columns; the two reconciliation_only flags were added to AccountBase
+            // after this builder was first written and must be passed through too.
+            rfc: account.rfc,
+            address: account.address,
             is_supplier: account.is_supplier,
             requires_order_request: account.requires_order_request,
             monitor_supplier_expenses: account.monitor_supplier_expenses,
@@ -1484,6 +1490,8 @@ export class OrderQuotationsService {
             supplier_recurring_expenses: account.supplier_recurring_expenses,
             client_automatic_tax_calculation:
                 account.client_automatic_tax_calculation,
+            client_reconciliation_only: account.client_reconciliation_only,
+            supplier_reconciliation_only: account.supplier_reconciliation_only,
             account_contacts: existingContacts.map((contact) => ({
                 id: contact.id,
                 first_name: contact.first_name,

@@ -139,11 +139,32 @@ export class AddOrderQuotations1786060000000 implements MigrationInterface {
                     REFERENCES \`order_quotations\` (\`id\`)
                     ON DELETE NO ACTION ON UPDATE NO ACTION;
         `);
+
+        // 5. rfc + address on accounts — GENERAL account columns (no client_
+        //    prefix): an account has one RFC and one address regardless of whether
+        //    it is a client, a supplier, or both. They surface in the account
+        //    form's General tab and print in the cotización's DATOS DEL CLIENTE
+        //    block (empty renders as "No proporcionado"). Plain scalar columns:
+        //    NOT NULL DEFAULT '' like name/abbreviation/payment_terms, so every
+        //    existing row backfills to '' and no code path has to handle NULL.
+        //    Folded into this feature's single migration per the in-place rule;
+        //    they are independent of the quotation tables above.
+        await queryRunner.query(`
+            ALTER TABLE \`accounts\`
+                ADD COLUMN \`rfc\`     varchar(255) NOT NULL DEFAULT '',
+                ADD COLUMN \`address\` varchar(255) NOT NULL DEFAULT '';
+        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
         // Reverse order: drop the FK and column on order_requests BEFORE dropping
         // the tables they reference, or the FK drop fails.
+        await queryRunner.query(`
+            ALTER TABLE \`accounts\`
+                DROP COLUMN \`rfc\`,
+                DROP COLUMN \`address\`;
+        `);
+
         await queryRunner.query(`
             ALTER TABLE \`order_requests\`
                 DROP FOREIGN KEY \`order_requests_order_quotation_id_foreign\`,
