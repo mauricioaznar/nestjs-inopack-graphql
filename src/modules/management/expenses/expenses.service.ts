@@ -319,6 +319,18 @@ export class ExpensesService {
             });
         }
 
+        if (expensesQueryArgs.only_pending_document) {
+            expensesAndWhere.push({
+                expense_comments: {
+                    some: {
+                        active: 1,
+                        requires_pending_document: true,
+                        pending_document_delivered: false,
+                    },
+                },
+            });
+        }
+
         const expensesWhere: Prisma.expensesWhereInput = {
             AND: expensesAndWhere,
         };
@@ -349,6 +361,24 @@ export class ExpensesService {
             count: expensesCount,
             docs: expenses,
         };
+    }
+
+    // An expense carries a pending document when at least one of its live
+    // comments still requires a document that has not been delivered.
+    async hasPendingDocument({
+        expense_id,
+    }: {
+        expense_id: number;
+    }): Promise<boolean> {
+        const count = await this.prisma.expense_comments.count({
+            where: {
+                expense_id,
+                active: 1,
+                requires_pending_document: true,
+                pending_document_delivered: false,
+            },
+        });
+        return count > 0;
     }
 
     async getExpensesWithDisparities(

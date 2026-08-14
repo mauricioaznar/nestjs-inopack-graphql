@@ -219,6 +219,18 @@ export class OrderSaleService {
             });
         }
 
+        if (orderSalesQueryArgs.only_pending_document) {
+            orderSalesAndWhere.push({
+                order_sale_comments: {
+                    some: {
+                        active: 1,
+                        requires_pending_document: true,
+                        pending_document_delivered: false,
+                    },
+                },
+            });
+        }
+
         const orderSalesWhere: Prisma.order_salesWhereInput = {
             AND: orderSalesAndWhere,
         };
@@ -260,6 +272,24 @@ export class OrderSaleService {
             count: orderSalesCount,
             docs: orderSales,
         };
+    }
+
+    // A sale carries a pending document when at least one of its live comments
+    // still requires a document that has not been delivered.
+    async hasPendingDocument({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<boolean> {
+        const count = await this.prisma.order_sale_comments.count({
+            where: {
+                order_sale_id,
+                active: 1,
+                requires_pending_document: true,
+                pending_document_delivered: false,
+            },
+        });
+        return count > 0;
     }
 
     async getOrderSale({

@@ -5,6 +5,7 @@ import { OrderRequestProductsModule } from './order-request-products/order-reque
 import { OrderSaleModule } from './order-sale/order-sale.module';
 import { OrderSaleProductsModule } from './order-sale-products/order-sale-products.module';
 import { OrderSaleStatusesModule } from './order-sale-statuses/order-sale-statuses.module';
+import { OrderSaleCommentsModule } from './order-sale-comments/order-sale-comments.module';
 
 @Module({
     imports: [
@@ -14,6 +15,7 @@ import { OrderSaleStatusesModule } from './order-sale-statuses/order-sale-status
         OrderSaleModule,
         OrderSaleProductsModule,
         OrderSaleStatusesModule,
+        OrderSaleCommentsModule,
     ],
 })
 export class SalesModule {}

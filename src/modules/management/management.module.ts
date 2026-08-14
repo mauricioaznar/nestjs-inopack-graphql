@@ -11,6 +11,7 @@ import { TransferReceiptsModule } from './transfer-receipts/transfer-receipts.mo
 import { ReceiptTypeModule } from './receipt-type/receipt-type.module';
 import { ExpenseResourcesModule } from './expense-resources/expense-resources.module';
 import { TransferTypeModule } from './transfer-types/transfer-type.module';
+import { ExpenseCommentsModule } from './expense-comments/expense-comments.module';
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { TransferTypeModule } from './transfer-types/transfer-type.module';
         AccountResourcesModule,
         ExpenseResourcesModule,
         ExpensesModule,
+        ExpenseCommentsModule,
         ResourcesModule,
         ResourceCategoriesModule,
         TransferReceiptsModule,

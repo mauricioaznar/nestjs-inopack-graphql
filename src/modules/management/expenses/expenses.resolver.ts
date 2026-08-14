@@ -287,6 +287,13 @@ export class ExpensesResolver {
         });
     }
 
+    @ResolveField(() => Boolean)
+    async has_pending_document(@Parent() expense: Expense): Promise<boolean> {
+        return this.service.hasPendingDocument({
+            expense_id: expense.id,
+        });
+    }
+
     @Query(() => [RecurringExpenseCandidate])
     @UseGuards(GqlAuthGuard)
     @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)

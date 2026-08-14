@@ -403,6 +403,15 @@ export class OrderSaleResolver {
         });
     }
 
+    @ResolveField(() => Boolean)
+    async has_pending_document(
+        @Parent() orderSale: OrderSale,
+    ): Promise<boolean> {
+        return this.service.hasPendingDocument({
+            order_sale_id: orderSale.id,
+        });
+    }
+
     @Subscription(() => OrderSale)
     async order_sale() {
         return this.pubSubService.listenForOrderSale();

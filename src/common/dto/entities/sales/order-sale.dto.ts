@@ -183,6 +183,11 @@ export class PaginatedOrderSalesQueryArgs {
 
     @Field(() => Int, { nullable: true })
     product_id: number | null;
+
+    // Follow-up queue: keep only sales that have at least one comment marking a
+    // still-undelivered pending document.
+    @Field(() => Boolean, { nullable: true })
+    only_pending_document: boolean;
 }
 
 @ArgsType()
