@@ -177,10 +177,18 @@ export class OrderQuotationsService {
     }
 
     // Cotización codes have their OWN sequence, independent of pedido codes.
+    // Restricted to active rows so the suggested folio agrees with
+    // isOrderQuotationCodeOccupied (which is also active-only): a soft-deleted
+    // folio is free to reuse there, so it must not inflate the suggested next
+    // code here. Without this, a deletion left a gap the occupied check would
+    // happily let you fill, yet the suggestion skipped past it.
     async getOrderQuotationMaxOrderCode(): Promise<number> {
         const {
             _max: { order_code },
         } = await this.prisma.order_quotations.aggregate({
+            where: {
+                active: 1,
+            },
             _max: {
                 order_code: true,
             },
