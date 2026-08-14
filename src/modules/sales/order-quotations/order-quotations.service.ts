@@ -20,6 +20,7 @@ import {
     OrderQuotationCatalogPreview,
     OrderQuotationDetailsInput,
     OrderQuotationInput,
+    OrderQuotationPedidoStepState,
     OrderQuotationProduct,
     OrderQuotationsSortArgs,
     OrderQuotationStatus,
@@ -36,6 +37,7 @@ import {
     getUpdatedByProperty,
     vennDiagram,
 } from '../../../common/helpers';
+import { BUSINESS_TZ } from '../../../common/helpers/dates/business-day';
 import {
     OffsetPaginatorArgs,
     DatePaginator,
@@ -51,9 +53,11 @@ import {
 } from '../../../common/modules/pub-sub/activity-audit';
 
 // The status ids seeded by 1786060000000-AddOrderQuotations, in order:
-// 1 Borrador, 2 Enviada, 3 Aceptada, 4 Rechazada. Enviada (2) is not referenced
-// by id — it is simply "acceptable but not terminal", the same as Borrador.
+// 1 Borrador, 2 Enviada, 3 Aceptada, 4 Rechazada. Only Enviada (2) is
+// acceptable: a Borrador is still a draft, so it must be sent first; Aceptada
+// and Rechazada are terminal.
 const STATUS_BORRADOR = 1;
+const STATUS_ENVIADA = 2;
 const STATUS_ACEPTADA = 3;
 const STATUS_RECHAZADA = 4;
 
@@ -65,6 +69,21 @@ export class OrderQuotationsService {
         private orderRequestsService: OrderRequestsService,
         private pubSubService: PubSubService,
     ) {}
+
+    // The single price rule, applied EVERYWHERE (upsert validation, the catalog
+    // preview, and acceptance): EXACTLY ONE of kilo_price / group_price is
+    // greater than zero and the other is exactly zero. Both zero is invalid
+    // (no price), both positive is invalid (ambiguous), and a negative price is
+    // invalid. Since negatives are rejected first, "exactly one positive" reduces
+    // to an XOR. Keep this in lockstep with the frontend rule
+    // (make-is-quotation-price-valid.ts). See the plan, "Make price validation
+    // consistent".
+    static isLinePriceValid(kilo_price: number, group_price: number): boolean {
+        if (kilo_price < 0 || group_price < 0) return false;
+        const kiloPositive = kilo_price > 0;
+        const groupPositive = group_price > 0;
+        return kiloPositive !== groupPositive;
+    }
 
     async getOrderQuotations({
         order_quotation_status_ids,
@@ -433,6 +452,14 @@ export class OrderQuotationsService {
 
     // Vencida is derived, not stored: expiration_date < today. A blank vigencia
     // (NULL) never expires.
+    //
+    // expiration_date is a BUSINESS CALENDAR date, so "today" is the current
+    // calendar date in Mexico City (America/Mexico_City), NOT the UTC calendar
+    // day. Comparing against the UTC day would flip a quotation to vencida after
+    // ~18:00 local (once UTC has already rolled to the next date) while it is
+    // still valid locally. Both sides are reduced to a YYYY-MM-DD string and
+    // compared lexicographically (valid for that format). See the plan, "Use the
+    // Mexico City business date for expiration".
     isExpired({
         expiration_date,
     }: {
@@ -440,9 +467,12 @@ export class OrderQuotationsService {
     }): boolean {
         if (!expiration_date) return false;
 
-        return dayjs(expiration_date)
-            .utc()
-            .isBefore(dayjs().utc().startOf('day'));
+        const businessToday = dayjs().tz(BUSINESS_TZ).format('YYYY-MM-DD');
+        const expirationDate = dayjs
+            .utc(expiration_date)
+            .format('YYYY-MM-DD');
+
+        return expirationDate < businessToday;
     }
 
     // Whether the quotation is in a state that acceptance would accept. Pure
@@ -470,10 +500,10 @@ export class OrderQuotationsService {
     // The single source of "why can this not be accepted". Reused by
     // isAcceptable, the catalog preview (to explain a disabled button), and
     // acceptOrderQuotation (to refuse). User-facing Spanish, since the preview
-    // shows these verbatim. Acceptable requires: a non-terminal, non-declined
-    // status; not expired; the account still a client; at least one line; and
-    // every line linked to a real product (a free line means Producción has not
-    // created the specification yet), naming the offending lines.
+    // shows these verbatim. Acceptable requires: the Enviada (sent) status
+    // specifically; not expired; the account still a client; at least one line;
+    // and every line linked to a real product (a free line means Producción has
+    // not created the specification yet), naming the offending lines.
     private async getAcceptanceBlockingReasons({
         orderQuotation,
     }: {
@@ -486,6 +516,10 @@ export class OrderQuotationsService {
             reasons.push('La cotización ya fue aceptada');
         } else if (status === STATUS_RECHAZADA) {
             reasons.push('La cotización fue rechazada');
+        } else if (status !== STATUS_ENVIADA) {
+            // Only a sent (Enviada) quotation can be accepted. A Borrador — or
+            // any non-terminal status that isn't Enviada — must be sent first.
+            reasons.push('La cotización debe estar enviada para poder aceptarse');
         }
 
         if (
@@ -521,6 +555,45 @@ export class OrderQuotationsService {
                     ', ',
                 )}`,
             );
+        }
+
+        // Legacy / invalid prices: EXACTLY ONE of kilo/group price must be > 0.
+        // A quotation captured before this rule (both zero, both positive, or a
+        // negative) is blocked from acceptance and must be corrected first —
+        // never silently pushed into the catalog. Names the offending lines.
+        const invalidPriceLineNumbers = lines
+            .map((line, index) =>
+                OrderQuotationsService.isLinePriceValid(
+                    line.kilo_price,
+                    line.group_price,
+                )
+                    ? null
+                    : index + 1,
+            )
+            .filter((n): n is number => n !== null);
+        if (invalidPriceLineNumbers.length > 0) {
+            reasons.push(
+                `Líneas con precio inválido (debe ser exactamente uno de precio por kilo o por bulto): ${invalidPriceLineNumbers.join(
+                    ', ',
+                )}`,
+            );
+        }
+
+        // DIAGNOSTIC half-state: a pedido row is linked but its creation was
+        // never stamped completed (order_request_completed_at is NULL). The app
+        // must NOT create another pedido or repair this one — it blocks the step
+        // and an engineer diagnoses it by hand. The linked pedido's code is named
+        // so the diagnostics tab and logs point at the same row. See the plan,
+        // "The pedido completion marker".
+        if (!orderQuotation.order_request_completed_at) {
+            const linkedPedido = await this.prisma.order_requests.findFirst({
+                where: { order_quotation_id: orderQuotation.id },
+            });
+            if (linkedPedido) {
+                reasons.push(
+                    `El pedido #${linkedPedido.order_code} existe pero su creación no se marcó como completada. Espera a que se diagnostique el problema de software antes de continuar.`,
+                );
+            }
         }
 
         return reasons;
@@ -688,10 +761,15 @@ export class OrderQuotationsService {
             ]);
         }
 
-        // Terminal — an accepted quotation cannot be un-accepted or moved.
-        if (orderQuotation.order_quotation_status_id === STATUS_ACEPTADA) {
+        // Acceptance-start lock: once acceptance has started (catalog written, a
+        // pedido linked, completion stamped, or already Aceptada) no ordinary
+        // status change is allowed — including moving back to Borrador or
+        // Rechazada. Only the internal acceptance flow (markAccepted, a direct
+        // update that bypasses this method) may set the final Aceptada. See the
+        // plan, "Lock quotation changes after acceptance starts".
+        if (await this.hasAcceptanceStarted(orderQuotation)) {
             throw new BadRequestException([
-                'La cotización aceptada es terminal y no puede cambiar de estado',
+                'La aceptación de la cotización ya inició; su estado no puede cambiarse',
             ]);
         }
 
@@ -726,14 +804,16 @@ export class OrderQuotationsService {
             throw new NotFoundException();
         }
 
-        // An accepted quotation is TERMINAL and fully read-only — even its notes.
-        // Unlike updateOrderRequestDetails (deliberately unlocked), the cotización
-        // is the record of what the client agreed to, so it must not change
-        // quietly after acceptance. Details stay editable in Enviada; only
-        // Aceptada is closed. See the plan, "Acceptance is terminal".
-        if (orderQuotation.order_quotation_status_id === STATUS_ACEPTADA) {
+        // Details (notes, entrega estimada, condiciones de pago) stay editable in
+        // Borrador and Enviada — but only until acceptance STARTS. Once the
+        // catalog is written, a pedido is linked, completion is stamped, or the
+        // status is Aceptada, the cotización is the frozen record of what the
+        // client agreed to and even its notes are locked. Unlike
+        // updateOrderRequestDetails (deliberately unlocked). See the plan, "Lock
+        // quotation changes after acceptance starts".
+        if (await this.hasAcceptanceStarted(orderQuotation)) {
             throw new BadRequestException([
-                'La cotización aceptada es terminal y no puede editarse',
+                'La aceptación de la cotización ya inició; no puede editarse',
             ]);
         }
 
@@ -751,6 +831,134 @@ export class OrderQuotationsService {
                 id: input.order_quotation_id,
             },
         });
+    }
+
+    // Focused mutation: point a persisted FREE line at a real product, WITHOUT
+    // going through the whole upsert (which would rewrite the entire lines set).
+    // This is the "Ventas apunta la línea libre al producto ya creado" step of
+    // the flow. It sets ONLY product_id — quantities, description, group weight
+    // and prices are left exactly as captured; nothing is auto-adjusted. Rules:
+    //   · SALES role (gated at the resolver)
+    //   · quotation must be Borrador or Enviada, and acceptance not yet started
+    //   · the line must currently be a free line (no relinking an already-linked)
+    //   · the product must exist and be active
+    //   · the quoted group weight must be COMPATIBLE with the product (same rule
+    //     linked lines validate), so the newly linked line is not left in a state
+    //     the upsert or acceptance would reject — an incompatible weight is
+    //     refused, not silently rewritten
+    // Publishes the quotation subscription event with the standard audit envelope
+    // (mirroring acceptOrderQuotation, which also publishes from the service).
+    // See the plan, "Allow linking a persisted free line to a product".
+    async linkOrderQuotationProduct({
+        order_quotation_product_id,
+        product_id,
+        current_user_id,
+    }: {
+        order_quotation_product_id: number;
+        product_id: number;
+        current_user_id: number;
+    }): Promise<OrderQuotation> {
+        const line = await this.prisma.order_quotation_products.findFirst({
+            where: { id: order_quotation_product_id, active: 1 },
+        });
+        if (!line) {
+            throw new NotFoundException();
+        }
+
+        const orderQuotation = await this.getOrderQuotation({
+            orderQuotationId: line.order_quotation_id ?? 0,
+        });
+        if (!orderQuotation) {
+            throw new NotFoundException();
+        }
+
+        const errors: string[] = [];
+
+        const status = orderQuotation.order_quotation_status_id;
+        if (status !== STATUS_BORRADOR && status !== STATUS_ENVIADA) {
+            errors.push(
+                'Solo se puede vincular un producto en una cotización en Borrador o Enviada',
+            );
+        }
+
+        if (await this.hasAcceptanceStarted(orderQuotation)) {
+            errors.push(
+                'La aceptación de la cotización ya inició; no se pueden vincular productos',
+            );
+        }
+
+        // No relinking: the line must currently be a free line.
+        if (line.product_id !== null && line.product_id !== undefined) {
+            errors.push('La línea ya tiene un producto vinculado');
+        }
+
+        const product = await this.prisma.products.findFirst({
+            where: { id: product_id },
+        });
+        if (!product || product.active !== 1) {
+            errors.push('El producto no existe o no está activo');
+        }
+
+        // Group-weight compatibility — the same check linked lines already pass.
+        if (product) {
+            const currentGroupWeight = product.current_group_weight || 0;
+            if (Number(line.group_weight) !== currentGroupWeight) {
+                errors.push(
+                    `El peso por bulto de la línea (${line.group_weight}) no coincide con el del producto (${currentGroupWeight})`,
+                );
+            }
+        }
+
+        if (errors.length > 0) {
+            throw new BadRequestException(errors);
+        }
+
+        const auditContext = {
+            entityName: ActivityEntityName.ORDER_QUOTATION,
+            entityId: orderQuotation.id,
+            activityType: ActivityTypeName.UPDATE,
+            userId: current_user_id,
+        };
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () =>
+                this.getOrderQuotationSnapshot({
+                    order_quotation_id: orderQuotation.id,
+                }),
+        );
+
+        // Set ONLY product_id — every other column is left untouched.
+        await this.prisma.order_quotation_products.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                product_id: product_id,
+            },
+            where: { id: order_quotation_product_id },
+        });
+
+        const updated = await this.getOrderQuotation({
+            orderQuotationId: orderQuotation.id,
+        });
+
+        const newCapture = await captureSnapshotSafely(
+            auditContext,
+            'new_snapshot',
+            () =>
+                this.getOrderQuotationSnapshot({
+                    order_quotation_id: orderQuotation.id,
+                }),
+        );
+
+        await this.pubSubService.orderQuotation({
+            orderQuotation: updated!,
+            type: ActivityTypeName.UPDATE,
+            userId: current_user_id,
+            oldCapture,
+            newCapture,
+        });
+
+        return updated!;
     }
 
     async validateOrderQuotation(
@@ -907,16 +1115,22 @@ export class OrderQuotationsService {
             }
         }
 
-        // One of kilo price and group price have to be different than 0
+        // Price rule: EXACTLY ONE of kilo_price / group_price greater than zero,
+        // the other exactly zero. Both zero, both positive, and negatives are all
+        // invalid. Shared with the frontend and the acceptance preview through
+        // OrderQuotationsService.isLinePriceValid. See "Make price validation
+        // consistent".
         {
             input.order_quotation_products.forEach(
                 (orderQuotationProduct, index) => {
                     if (
-                        orderQuotationProduct.group_price !== 0 &&
-                        orderQuotationProduct.kilo_price !== 0
+                        !OrderQuotationsService.isLinePriceValid(
+                            orderQuotationProduct.kilo_price,
+                            orderQuotationProduct.group_price,
+                        )
                     ) {
                         errors.push(
-                            `Only one of kilo price and group price can be different than 0 (index: ${index}, product id: ${orderQuotationProduct.product_id}, kilo price: ${orderQuotationProduct.kilo_price}, group price: ${orderQuotationProduct.group_price})`,
+                            `Exactly one of kilo price and group price must be greater than zero, the other zero (index: ${index}, product id: ${orderQuotationProduct.product_id}, kilo price: ${orderQuotationProduct.kilo_price}, group price: ${orderQuotationProduct.group_price})`,
                         );
                     }
                 },
@@ -1041,12 +1255,14 @@ export class OrderQuotationsService {
         });
     }
 
-    // Has a pedido EVER been created for this quotation? Deliberately UNFILTERED
-    // by active: a soft-deleted pedido still counts as created. The question is
-    // "was one ever created", not "is one live" — filtering on active would let a
-    // resume mint a second pedido after the first was deleted. See the plan,
-    // "How the pedido step is actually derived".
-    async isOrderRequestStepDone({
+    // Has a pedido row EVER been linked to this quotation? Deliberately
+    // UNFILTERED by active: a soft-deleted pedido still counts as linked. This is
+    // NOT the pedido-completion signal — it is only used to detect the DIAGNOSTIC
+    // half-state (a row exists but order_request_completed_at was never stamped)
+    // and to guard against creating a second pedido. Completion is the stored
+    // order_request_completed_at, never the mere existence of this row. See the
+    // plan, "The pedido completion marker".
+    async hasLinkedOrderRequest({
         order_quotation_id,
     }: {
         order_quotation_id: number;
@@ -1057,10 +1273,49 @@ export class OrderQuotationsService {
         return created !== null;
     }
 
+    // The Pedido step's diagnostic tri-state. COMPLETED is authoritative — the
+    // stored order_request_completed_at. A linked pedido WITHOUT that stamp is
+    // CREATED_INCOMPLETE: a software fault interrupted acceptance after the row
+    // was created but before completion was recorded. The app never creates a
+    // second pedido, inspects its lines, or repairs it — an engineer diagnoses
+    // the logs and DB by hand. See the plan, "The pedido completion marker".
+    async getPedidoStepState(
+        orderQuotation: OrderQuotation,
+    ): Promise<OrderQuotationPedidoStepState> {
+        if (orderQuotation.order_request_completed_at) {
+            return OrderQuotationPedidoStepState.COMPLETED;
+        }
+        const linked = await this.hasLinkedOrderRequest({
+            order_quotation_id: orderQuotation.id,
+        });
+        return linked
+            ? OrderQuotationPedidoStepState.CREATED_INCOMPLETE
+            : OrderQuotationPedidoStepState.NOT_CREATED;
+    }
+
+    // Acceptance has STARTED when any one-time acceptance side effect has landed:
+    // the catalog was written, a pedido is linked (even a soft-deleted or
+    // incomplete one), the pedido completion was stamped, or the status is
+    // already Aceptada. Once started, every ordinary write path is locked and
+    // only the acceptance flow may finish the remaining steps. See the plan,
+    // "Lock quotation changes after acceptance starts".
+    async hasAcceptanceStarted(
+        orderQuotation: OrderQuotation,
+    ): Promise<boolean> {
+        if (orderQuotation.account_products_updated_at) return true;
+        if (orderQuotation.order_request_completed_at) return true;
+        if (orderQuotation.order_quotation_status_id === STATUS_ACEPTADA)
+            return true;
+        return this.hasLinkedOrderRequest({
+            order_quotation_id: orderQuotation.id,
+        });
+    }
+
     // The three acceptance step-states plus the roll-up, for the acceptance
-    // panel. Catálogo is the STORED stamp; Pedido derives from a linked pedido
-    // (ignoring active); Estado reads the status. See the plan, "One stored
-    // column, two derived".
+    // panel and the diagnostics tab. Catálogo is the STORED catalog stamp; Pedido
+    // is the STORED completion stamp (order_request_completed_at — NOT the mere
+    // existence of a linked pedido); Estado reads the status. See the plan, "The
+    // pedido completion marker" and "One stored column, two derived".
     async getAcceptanceSteps(orderQuotation: OrderQuotation): Promise<{
         catalog_step_done: boolean;
         order_request_step_done: boolean;
@@ -1070,9 +1325,11 @@ export class OrderQuotationsService {
         const catalog_step_done =
             orderQuotation.account_products_updated_at !== null &&
             orderQuotation.account_products_updated_at !== undefined;
-        const order_request_step_done = await this.isOrderRequestStepDone({
-            order_quotation_id: orderQuotation.id,
-        });
+        // Pedido completion is the STORED stamp, never the linked-row existence:
+        // a CREATED_INCOMPLETE half-state must read "not done".
+        const order_request_step_done =
+            orderQuotation.order_request_completed_at !== null &&
+            orderQuotation.order_request_completed_at !== undefined;
         const status_step_done =
             orderQuotation.order_quotation_status_id === STATUS_ACEPTADA;
 
@@ -1161,10 +1418,22 @@ export class OrderQuotationsService {
         // quotation, an admin first moves it back to Borrador via
         // updateOrderQuotationStatus. An accepted quotation is terminal and stays
         // read-only.
-        return (
-            previousOrderQuotation.order_quotation_status_id ===
-            STATUS_BORRADOR
+        if (
+            previousOrderQuotation.order_quotation_status_id !== STATUS_BORRADOR
+        ) {
+            return false;
+        }
+
+        // Belt-and-suspenders lock: once acceptance has started (catalog written,
+        // a pedido linked, completion stamped, or Aceptada) the quotation is
+        // read-only even if it is somehow still a Borrador — only the acceptance
+        // flow may finish the remaining steps. See the plan, "Lock quotation
+        // changes after acceptance starts". This also propagates to isDeletable,
+        // which composes isEditable.
+        const acceptanceStarted = await this.hasAcceptanceStarted(
+            previousOrderQuotation,
         );
+        return !acceptanceStarted;
     }
 
     // The acceptance preview (step 9): what accepting will do to the client's
@@ -1306,13 +1575,15 @@ export class OrderQuotationsService {
         }
 
         // ── Step 2 · Pedido ────────────────────────────────────────────────
-        // Skipped when a pedido was EVER created for this quotation (ignoring
-        // active), so a resume never mints a second one.
-        if (
-            !(await this.isOrderRequestStepDone({
-                order_quotation_id,
-            }))
-        ) {
+        // Completion is the STORED order_request_completed_at, set ONLY after
+        // upsertOrderRequest returns. Skipped when it is already set.
+        //
+        // The CREATED_INCOMPLETE half-state (a pedido row exists but the stamp is
+        // NULL) is already a blocking reason above, so this point is never reached
+        // with a linked-but-incomplete pedido — a resume can therefore never mint
+        // a second pedido, and the app never inspects or repairs the existing one.
+        // See the plan, "The pedido completion marker".
+        if (!orderQuotation.order_request_completed_at) {
             await this.createAcceptedOrderRequest({
                 orderQuotation,
                 current_user_id,
@@ -1516,6 +1787,15 @@ export class OrderQuotationsService {
     // the pedido never exists unlinked and the link is immutable by construction.
     // Builds the pedido audit envelope (a create), since upsertOrderRequest's own
     // activity is published in the order-requests RESOLVER.
+    //
+    // NON-TRANSACTIONAL by design: the pedido, its lines, the completion stamp
+    // and the audit are separate writes, not wrapped in a transaction (see the
+    // plan, "The pedido completion marker"). order_request_completed_at is the
+    // AUTHORITATIVE completion signal and is stamped ONLY after upsertOrderRequest
+    // returns from creating the pedido and all its lines. If the process dies
+    // between the pedido write and this stamp, the quotation is left in the
+    // CREATED_INCOMPLETE half-state: an engineer diagnoses it and the app never
+    // creates a second pedido or repairs the first.
     private async createAcceptedOrderRequest({
         orderQuotation,
         current_user_id,
@@ -1559,6 +1839,19 @@ export class OrderQuotationsService {
                 },
                 { order_quotation_id: orderQuotation.id },
             );
+
+        // Stamp the AUTHORITATIVE completion marker — ONLY now that
+        // upsertOrderRequest has returned from creating the pedido and all its
+        // lines. This is the single signal the Pedido step reads; completion is
+        // never inferred by comparing the quotation with the pedido. See the
+        // plan, "The pedido completion marker".
+        await this.prisma.order_quotations.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                order_request_completed_at: new Date(),
+            },
+            where: { id: orderQuotation.id },
+        });
 
         const auditContext = {
             entityName: ActivityEntityName.ORDER_REQUEST,

@@ -94,6 +94,15 @@ export class OrderQuotation extends OrderQuotationBase {
     @Field(() => Date, { nullable: true })
     account_products_updated_at?: Date | null;
 
+    // The AUTHORITATIVE pedido-completion marker (the acceptance Pedido step).
+    // STORED, set ONLY after the order-request service returns from creating the
+    // pedido and all its lines. NULL = not yet completed. A linked pedido whose
+    // row exists but whose completion was never stamped is a DIAGNOSTIC
+    // half-state, never "done" — completion is not inferred by comparing the
+    // quotation with the pedido. See the plan, "The pedido completion marker".
+    @Field(() => Date, { nullable: true })
+    order_request_completed_at?: Date | null;
+
     // Audit stamps — server-side only, never part of the upsert input.
     @Field(() => Int, { nullable: true })
     created_by_id: number | null;
@@ -101,6 +110,24 @@ export class OrderQuotation extends OrderQuotationBase {
     @Field(() => Int, { nullable: true })
     updated_by_id: number | null;
 }
+
+// The acceptance Pedido step, as a diagnostic tri-state. The completion marker
+// (order_request_completed_at) is authoritative; a linked pedido row without it
+// is a half-state the diagnostics tab surfaces, never "done".
+export enum OrderQuotationPedidoStepState {
+    // No pedido has ever been linked to this quotation.
+    NOT_CREATED = 'NOT_CREATED',
+    // A pedido row exists (ignoring active) but its creation was never stamped
+    // completed — a software fault mid-acceptance. Blocks the step; an engineer
+    // diagnoses it. The app never creates a second pedido or repairs this one.
+    CREATED_INCOMPLETE = 'CREATED_INCOMPLETE',
+    // order_request_completed_at is set: the pedido creation returned cleanly.
+    COMPLETED = 'COMPLETED',
+}
+
+registerEnumType(OrderQuotationPedidoStepState, {
+    name: 'OrderQuotationPedidoStepState',
+});
 
 // One row of the acceptance PREVIEW: what accepting will do to this line in the
 // client's catalog. Read-only (getOrderQuotationCatalogChanges writes nothing).

@@ -20,6 +20,7 @@ import {
     OrderQuotationCatalogPreview,
     OrderQuotationDetailsInput,
     OrderQuotationInput,
+    OrderQuotationPedidoStepState,
     OrderQuotationProduct,
     OrderQuotationsSortArgs,
     OrderQuotationStatus,
@@ -273,6 +274,27 @@ export class OrderQuotationsResolver {
         });
     }
 
+    // Point a persisted FREE line at a real product without a full upsert — the
+    // "Ventas apunta la línea libre al producto ya creado" step. SALES-gated,
+    // allowed only while Borrador/Enviada and before acceptance starts, refuses a
+    // relink or an incompatible group weight. The service validates, writes only
+    // product_id, and publishes the quotation subscription + audit itself. See
+    // the plan, "Allow linking a persisted free line to a product".
+    @Mutation(() => OrderQuotation)
+    @RolesDecorator(RoleId.SALES)
+    async linkOrderQuotationProduct(
+        @Args('OrderQuotationProductId', { type: () => Int })
+        orderQuotationProductId: number,
+        @Args('ProductId', { type: () => Int }) productId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<OrderQuotation> {
+        return this.service.linkOrderQuotationProduct({
+            order_quotation_product_id: orderQuotationProductId,
+            product_id: productId,
+            current_user_id: currentUser.id,
+        });
+    }
+
     @Mutation(() => Boolean)
     @RolesDecorator(RoleId.SALES)
     async deleteOrderQuotation(
@@ -407,6 +429,18 @@ export class OrderQuotationsResolver {
     ): Promise<boolean> {
         return (await this.service.getAcceptanceSteps(orderQuotation))
             .acceptance_complete;
+    }
+
+    // The Pedido step as a diagnostic tri-state for the diagnostics tab:
+    // NOT_CREATED / CREATED_INCOMPLETE / COMPLETED. CREATED_INCOMPLETE is the
+    // half-state a linked pedido without its completion stamp lands in — the app
+    // never repairs it; an engineer diagnoses it. See the plan, "The pedido
+    // completion marker".
+    @ResolveField(() => OrderQuotationPedidoStepState)
+    async order_request_step_state(
+        @Parent() orderQuotation: OrderQuotation,
+    ): Promise<OrderQuotationPedidoStepState> {
+        return this.service.getPedidoStepState(orderQuotation);
     }
 
     // The LIVE pedido this quotation converted into (active: 1), the UI's

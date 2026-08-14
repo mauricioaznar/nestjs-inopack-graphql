@@ -476,6 +476,11 @@ model order_quotations {
   // cuándo esta cotización escribió el catálogo; NULL = todavía no. STORED, not
   // derived — see the plan, "One stored column, two derived".
   account_products_updated_at DateTime?                  @db.DateTime(0)
+  // cuándo la creación del pedido terminó correctamente; NULL = todavía no. The
+  // AUTHORITATIVE pedido-completion marker — set only after upsertOrderRequest
+  // returns. A linked pedido without this stamp is a diagnostic half-state, not
+  // "done". See the plan, "The pedido completion marker".
+  order_request_completed_at  DateTime?                  @db.DateTime(0)
   created_by_id               Int?                       @db.UnsignedInt
   updated_by_id               Int?                       @db.UnsignedInt
   created_by_user             users?                     @relation("order_quotations_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_quotations_created_by_id_foreign")

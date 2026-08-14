@@ -72,6 +72,14 @@ export class AddOrderQuotations1786060000000 implements MigrationInterface {
                 -- happened, and must never be re-inferred from a catalog others
                 -- can edit. See the plan, "One stored column, two derived".
                 \`account_products_updated_at\` datetime              DEFAULT NULL,
+                -- cuándo la creación del pedido terminó correctamente; NULL =
+                -- todavía no. The AUTHORITATIVE pedido-completion marker: set ONLY
+                -- after the order-request service returns from creating the pedido
+                -- and all its lines. Completion is NOT inferred by comparing the
+                -- quotation with the pedido — a linked pedido whose row exists but
+                -- whose completion was never stamped is a DIAGNOSTIC half-state,
+                -- not "done". See the plan, "The pedido completion marker".
+                \`order_request_completed_at\` datetime               DEFAULT NULL,
                 \`created_by_id\`               int unsigned          DEFAULT NULL,
                 \`updated_by_id\`               int unsigned          DEFAULT NULL,
                 PRIMARY KEY (\`id\`),
