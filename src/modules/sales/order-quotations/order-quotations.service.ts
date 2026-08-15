@@ -1762,6 +1762,8 @@ export class OrderQuotationsService {
                 account.client_automatic_tax_calculation,
             client_reconciliation_only: account.client_reconciliation_only,
             supplier_reconciliation_only: account.supplier_reconciliation_only,
+            supplier_payment_authorized_default:
+                account.supplier_payment_authorized_default,
             account_contacts: existingContacts.map((contact) => ({
                 id: contact.id,
                 first_name: contact.first_name,

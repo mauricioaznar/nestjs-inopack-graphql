@@ -393,6 +393,8 @@ export class AccountsService {
                     input.client_reconciliation_only,
                 supplier_reconciliation_only:
                     input.supplier_reconciliation_only,
+                supplier_payment_authorized_default:
+                    input.supplier_payment_authorized_default,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -425,6 +427,8 @@ export class AccountsService {
                     input.client_reconciliation_only,
                 supplier_reconciliation_only:
                     input.supplier_reconciliation_only,
+                supplier_payment_authorized_default:
+                    input.supplier_payment_authorized_default,
             },
             where: {
                 id: input.id || 0,
@@ -1092,8 +1096,7 @@ export class AccountsService {
                     'receipt_type_id',
                 )},
                 wtv_s.total as total_with_tax,
-                ifnull(otv_s.total, 0) as transfer_receipts_total,
-                NULL as expense_status_color
+                ifnull(otv_s.total, 0) as transfer_receipts_total
             FROM order_sales
             JOIN (
                 SELECT order_sales.id order_sale_id,
@@ -1129,8 +1132,7 @@ export class AccountsService {
                 expenses.notes,
                 ${convertToInt('expenses.receipt_type_id', 'receipt_type_id')},
                 wtv_e.total as total_with_tax,
-                ifnull(otv_e.total, 0) as transfer_receipts_total,
-                expense_statuses.color as expense_status_color
+                ifnull(otv_e.total, 0) as transfer_receipts_total
             FROM expenses
             JOIN (
                 SELECT expenses.id,
@@ -1150,7 +1152,6 @@ export class AccountsService {
                 AND ex_scope.account_id = ${account_id}
                 GROUP BY expense_id
             ) AS otv_e ON otv_e.expense_id = expenses.id
-            LEFT JOIN expense_statuses ON expense_statuses.id = expenses.expense_status_id
             WHERE expenses.active = 1
             AND expenses.canceled = 0
             AND expenses.account_id = ${account_id}

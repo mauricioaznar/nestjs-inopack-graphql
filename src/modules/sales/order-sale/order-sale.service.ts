@@ -292,6 +292,19 @@ export class OrderSaleService {
         return count > 0;
     }
 
+    async getCommentsCount({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<number> {
+        return this.prisma.order_sale_comments.count({
+            where: {
+                order_sale_id,
+                active: 1,
+            },
+        });
+    }
+
     async getOrderSale({
         orderSaleId,
     }: {
@@ -321,6 +334,12 @@ export class OrderSaleService {
     // `products` is trimmed to three columns: the snapshot stores the product
     // description as it was AT THE TIME, so an old audit entry never displays a
     // name the product only acquired later.
+    //
+    // This is an `include` (not a column `select`), so EVERY scalar column rides
+    // into old_data/new_data — including the boolean `reconciliation_only`. That
+    // is load-bearing: the audit diff surfaces the "Solo conciliación" toggle. Do
+    // NOT narrow this to a `select` without adding that flag back explicitly, or
+    // the change silently drops out of the trail.
     async getOrderSaleSnapshot({
         order_sale_id,
     }: {

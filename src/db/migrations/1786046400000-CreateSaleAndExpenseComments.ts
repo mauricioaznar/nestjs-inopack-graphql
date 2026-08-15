@@ -12,6 +12,18 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * `requires_pending_document` gates `pending_document_delivered` and
  * `document_name`; the second checkbox is only meaningful when the first is on.
+ *
+ * This migration also carries two unrelated-but-concurrent schema moves for the
+ * same feature branch, both one-way (no `down` reversal, by request):
+ *
+ *  - `payment_authorized`: a per-expense "the payment is authorized" flag, with
+ *    an account-level default (`supplier_payment_authorized_default`). Both
+ *    default ON; only monitored-balance suppliers
+ *    (`accounts.monitor_supplier_expenses = 1`) start OFF, because those are the
+ *    accounts whose payments still need explicit sign-off.
+ *  - Dropping the stale `expense_statuses` feature (the color "status" icon):
+ *    the `expenses.expense_status_id` FK/column and the `expense_statuses` table
+ *    are removed outright.
  */
 export class CreateSaleAndExpenseComments1786046400000
     implements MigrationInterface
@@ -72,8 +84,52 @@ export class CreateSaleAndExpenseComments1786046400000
               DEFAULT CHARSET = utf8
               COLLATE = utf8_unicode_ci;
         `);
+
+        // --- Payment authorization -------------------------------------------
+        // Account-level default that seeds new expenses. ON everywhere except
+        // monitored-balance suppliers, which keep needing explicit sign-off.
+        await queryRunner.query(`
+            ALTER TABLE \`accounts\`
+                ADD COLUMN \`supplier_payment_authorized_default\` tinyint(1) NOT NULL DEFAULT 1
+                AFTER \`supplier_reconciliation_only\`;
+        `);
+        await queryRunner.query(`
+            UPDATE \`accounts\`
+            SET \`supplier_payment_authorized_default\` = 0
+            WHERE \`monitor_supplier_expenses\` = 1;
+        `);
+
+        // Per-expense flag. Backfill mirrors the account default: authorized
+        // unless the expense belongs to a monitored-balance supplier.
+        await queryRunner.query(`
+            ALTER TABLE \`expenses\`
+                ADD COLUMN \`payment_authorized\` tinyint(1) NOT NULL DEFAULT 1
+                AFTER \`reconciliation_only\`;
+        `);
+        await queryRunner.query(`
+            UPDATE \`expenses\` e
+            JOIN \`accounts\` a ON a.id = e.account_id
+            SET e.\`payment_authorized\` = 0
+            WHERE a.\`monitor_supplier_expenses\` = 1;
+        `);
+
+        // --- Drop the stale expense-status feature ---------------------------
+        // The color "status" icon went stale and is being removed outright.
+        await queryRunner.query(`
+            ALTER TABLE \`expenses\`
+                DROP FOREIGN KEY \`expenses_expense_status_id_foreign\`;
+        `);
+        await queryRunner.query(`
+            ALTER TABLE \`expenses\` DROP COLUMN \`expense_status_id\`;
+        `);
+        await queryRunner.query(
+            `DROP TABLE IF EXISTS \`expense_statuses\`;`,
+        );
     }
 
+    // Only the comment tables are reversible. The payment-authorization columns
+    // and the expense-status teardown are intentionally one-way (see the class
+    // doc): re-adding a dropped table with lost rows would be a false rollback.
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(
             `DROP TABLE IF EXISTS \`order_sale_comments\`;`,

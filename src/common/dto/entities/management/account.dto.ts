@@ -89,6 +89,11 @@ export class AccountBase {
 
     @Field(() => Boolean, { nullable: false })
     supplier_reconciliation_only: boolean;
+
+    // Default for a new expense's `payment_authorized`. ON everywhere except
+    // monitored-balance suppliers, which keep needing explicit sign-off.
+    @Field(() => Boolean, { nullable: false })
+    supplier_payment_authorized_default: boolean;
 }
 
 @InputType('AccountUpsertInput')
@@ -210,9 +215,6 @@ export class AccountTransactionItem {
 
     @Field(() => Float)
     transfer_receipts_total: number;
-
-    @Field(() => String, { nullable: true })
-    expense_status_color: string | null;
 }
 
 // A single transfer (payment) as its own ledger row, filtered by its own

@@ -62,9 +62,6 @@ export class ExpenseBase {
     @Field(() => Int, { nullable: true })
     receipt_type_id: number | null;
 
-    @Field(() => Int, { nullable: true })
-    expense_status_id: number | null;
-
     @Field(() => String, { nullable: false })
     notes: string;
 
@@ -73,6 +70,22 @@ export class ExpenseBase {
 
     @Field(() => Boolean, { nullable: false })
     reconciliation_only: boolean;
+
+    // "The payment is authorized." Seeds from the supplier account default on
+    // create; toggled inline from the balances views or in the upsert dialog.
+    @Field(() => Boolean, { nullable: false })
+    payment_authorized: boolean;
+}
+
+// Single-field inline toggle from the balances views — no full upsert, its own
+// audited mutation.
+@InputType('UpdateExpensePaymentAuthorizedInput')
+export class UpdateExpensePaymentAuthorizedInput {
+    @Field(() => Int, { nullable: false })
+    expense_id: number;
+
+    @Field(() => Boolean, { nullable: false })
+    payment_authorized: boolean;
 }
 
 @InputType('ExpenseUpsertInput')
