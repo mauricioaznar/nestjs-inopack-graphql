@@ -22,6 +22,15 @@ export class AccountBase {
     @Field()
     abbreviation: string;
 
+    // General account identity, independent of client/supplier role: an account
+    // has one RFC and one address. Empty '' is the "no proporcionado" case; they
+    // print in the cotización's DATOS DEL CLIENTE block.
+    @Field()
+    rfc: string;
+
+    @Field()
+    address: string;
+
     @Field(() => Boolean, { nullable: false })
     is_supplier: boolean;
 
