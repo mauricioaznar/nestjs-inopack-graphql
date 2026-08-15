@@ -145,18 +145,18 @@ export class ProductionPerformanceService {
 
     // Hourly-throughput rows for any machine / product combination:
     // one row per production, no employee split. Each side is aggregated in its
-    // own derived table first — joining the product lines and resource lines
+    // own derived table first — joining the packed and consumed lines
     // directly would fan out (cartesian) and inflate the sums, so we pre-sum per
     // production_id then join on it. Null hours count as 0 in the denominator
     // (coalesce), per the user's decision; the client computes kg/hr as
     // totals-over-totals. The product side drives (which productions matched the
-    // filters); the resource side is left-joined and coalesced to 0 when absent.
+    // filters); the consumed side is left-joined and coalesced to 0 when absent.
     // At least one of the two ids is required (BadRequest otherwise).
     //
-    // machine_id/product_id narrow the product side (and the resource side by
+    // machine_id/product_id narrow the product side (and the consumed side by
     // machine): with a product_id set, the product side sums ONLY that product's
-    // lines so kilos/hours + kg/hr reflect the single product; the resource side
-    // stays whole-production (resources aren't attributable to one product), so
+    // lines so kilos/hours + kg/hr reflect the single product; the consumed side
+    // stays whole-production (consumption isn't attributable to one product), so
     // "Consumo kg/hr" remains the total of the matched runs — noted in the UI.
     // from_date/to_date drop productions outside the window (pre-hour-capture
     // corridas would inflate kg/hr). All ids validated with Number() and dates by
@@ -184,10 +184,10 @@ export class ProductionPerformanceService {
         const ppProductFilter = product_id
             ? `and product_id = ${Number(product_id)}`
             : '';
-        // Resource side is keyed by machine when a machine is selected; without
-        // one it sums every resource line of the matched production (still the
+        // Consumed side is keyed by machine when a machine is selected; without
+        // one it sums every consumed line of the matched production (still the
         // "full consumption of the matched runs").
-        const rrMachineFilter = machine_id
+        const consumedMachineFilter = machine_id
             ? `and machine_id = ${Number(machine_id)}`
             : '';
         const sharedFilters = this.buildSharedFilters({ from_date, to_date });
@@ -197,8 +197,8 @@ export class ProductionPerformanceService {
                 op.start_date as date,
                 pp.kilos_produced as kilos_produced,
                 pp.hours_produced as hours_produced,
-                coalesce(rr.kilos_resource, 0) as kilos_resource,
-                coalesce(rr.hours_resource, 0) as hours_resource,
+                coalesce(consumed.kilos_consumed, 0) as kilos_consumed,
+                coalesce(consumed.hours_consumed, 0) as hours_consumed,
                 ${convertToInt('pc.product_count', 'product_count')}
             from (
                 select
@@ -230,13 +230,13 @@ export class ProductionPerformanceService {
             left join (
                 select
                     order_production_id,
-                    sum(kilos) as kilos_resource,
-                    sum(coalesce(hours, 0)) as hours_resource
+                    sum(kilos) as kilos_consumed,
+                    sum(coalesce(hours, 0)) as hours_consumed
                 from order_production_products_consumed
                 where active = 1
-                    ${rrMachineFilter}
+                    ${consumedMachineFilter}
                 group by order_production_id
-            ) rr on rr.order_production_id = op.id
+            ) consumed on consumed.order_production_id = op.id
             order by op.start_date
         `);
     }

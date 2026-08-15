@@ -150,14 +150,14 @@ export class MachineHourlyRun {
     @Field(() => Float, { nullable: false })
     hours_produced: number;
 
-    // Resource side: SUM over order_production_products_consumed for the same production
-    // + machine (active = 1, coalesce(hours, 0)); 0/0 when the production has no
-    // resource lines.
+    // Consumed side: SUM over order_production_products_consumed for the same
+    // production + machine (active = 1, coalesce(hours, 0)); 0/0 when the
+    // production has no consumed lines.
     @Field(() => Float, { nullable: false })
-    kilos_resource: number;
+    kilos_consumed: number;
 
     @Field(() => Float, { nullable: false })
-    hours_resource: number;
+    hours_consumed: number;
 
     // Distinct products this production ran on the machine — the row aggregates
     // them all, so the UI surfaces how many were mixed together.
