@@ -8,6 +8,7 @@ import {
     Expense,
     ExpenseResource,
     Machine,
+    OrderQuotation,
     OrderRequest,
     OrderSale,
     Product,
@@ -224,12 +225,18 @@ export class PubSubService {
         userId,
         oldCapture,
         newCapture,
+        title,
     }: {
         account: Account;
         type: ActivityTypeName;
         userId: number;
         oldCapture: SnapshotCapture;
         newCapture: SnapshotCapture;
+        // Optional title override — the title reaches publishActivity as a
+        // thunk precisely so it is injectable per call site. The cotización
+        // acceptance path passes one that names the cotización for provenance;
+        // every other caller omits it and gets the default account title.
+        title?: () => string | Promise<string>;
     }) {
         const context: ActivityLogContext = {
             entityName: ActivityEntityName.ACCOUNT,
@@ -243,7 +250,7 @@ export class PubSubService {
             type: type,
             entity_id: account.id,
             userId,
-            title: () => this.activityTitle.account(account),
+            title: title ?? (() => this.activityTitle.account(account)),
             snapshots: { supported: true, old: oldCapture, new: newCapture },
         });
     }
@@ -311,6 +318,40 @@ export class PubSubService {
             entity_id: orderRequest.id,
             userId,
             title: () => this.activityTitle.orderRequest(orderRequest),
+            snapshots: { supported: true, old: oldCapture, new: newCapture },
+        });
+    }
+
+    async orderQuotation({
+        orderQuotation,
+        type,
+        userId,
+        oldCapture,
+        newCapture,
+    }: {
+        orderQuotation: OrderQuotation;
+        type: ActivityTypeName;
+        userId: number;
+        oldCapture: SnapshotCapture;
+        newCapture: SnapshotCapture;
+    }) {
+        const context: ActivityLogContext = {
+            entityName: ActivityEntityName.ORDER_QUOTATION,
+            entityId: orderQuotation.id,
+            activityType: type,
+            userId,
+        };
+        await this.publishEntity(
+            'order_quotation',
+            { order_quotation: orderQuotation },
+            context,
+        );
+        await this.publishActivity({
+            entity_name: ActivityEntityName.ORDER_QUOTATION,
+            type: type,
+            entity_id: orderQuotation.id,
+            userId,
+            title: () => this.activityTitle.orderQuotation(orderQuotation),
             snapshots: { supported: true, old: oldCapture, new: newCapture },
         });
     }
@@ -674,6 +715,10 @@ export class PubSubService {
 
     async listenForOrderRequest() {
         return this.pubSub.asyncIterator('order_request');
+    }
+
+    async listenForOrderQuotation() {
+        return this.pubSub.asyncIterator('order_quotation');
     }
 
     async listenForOrderSale() {
