@@ -19,6 +19,18 @@ import {
 export class ExpenseCommentsService {
     constructor(private prisma: PrismaService) {}
 
+    // No active filter: the delete audit captures the row before soft deletion,
+    // while historical reads must also be able to describe a deleted comment.
+    async getExpenseCommentSnapshot({
+        expense_comment_id,
+    }: {
+        expense_comment_id: number;
+    }): Promise<unknown> {
+        return this.prisma.expense_comments.findUnique({
+            where: { id: expense_comment_id },
+        });
+    }
+
     async getExpenseComments({
         expense_id,
     }: {
@@ -120,7 +132,7 @@ export class ExpenseCommentsService {
             expense_comment_id: number;
         },
         { current_user_id }: { current_user_id?: number | null } = {},
-    ): Promise<boolean> {
+    ): Promise<ExpenseComment> {
         const existing = await this.prisma.expense_comments.findFirst({
             where: {
                 id: expense_comment_id,
@@ -151,6 +163,6 @@ export class ExpenseCommentsService {
             },
         });
 
-        return true;
+        return existing;
     }
 }

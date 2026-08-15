@@ -10,6 +10,8 @@ import {
 import { Injectable, UseGuards } from '@nestjs/common';
 import { ExpenseCommentsService } from './expense-comments.service';
 import {
+    ActivityEntityName,
+    ActivityTypeName,
     CreateExpenseCommentInput,
     ExpenseComment,
     UpdateExpenseCommentInput,
@@ -18,6 +20,11 @@ import {
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
+import { PubSubService } from '../../../common/modules/pub-sub/pub-sub.service';
+import {
+    captureSnapshotSafely,
+    INTENTIONALLY_ABSENT,
+} from '../../../common/modules/pub-sub/activity-audit';
 
 // No @RolesDecorator on any handler: comments are cross-cutting, so ANY
 // authenticated user may read and add them (GqlAuthGuard + GqlRolesGuard are
@@ -30,6 +37,7 @@ export class ExpenseCommentsResolver {
     constructor(
         private service: ExpenseCommentsService,
         private auditUsersService: AuditUsersService,
+        private pubSubService: PubSubService,
     ) {}
 
     @Query(() => [ExpenseComment])
@@ -47,9 +55,31 @@ export class ExpenseCommentsResolver {
         input: CreateExpenseCommentInput,
         @CurrentUser() currentUser: User,
     ): Promise<ExpenseComment> {
-        return this.service.createExpenseComment(input, {
+        const auditContext = {
+            entityName: ActivityEntityName.EXPENSE_COMMENT,
+            entityId: null,
+            activityType: ActivityTypeName.CREATE,
+            userId: currentUser.id,
+        };
+        const comment = await this.service.createExpenseComment(input, {
             current_user_id: currentUser.id,
         });
+        const newCapture = await captureSnapshotSafely(
+            { ...auditContext, entityId: comment.id },
+            'new_snapshot',
+            () =>
+                this.service.getExpenseCommentSnapshot({
+                    expense_comment_id: comment.id,
+                }),
+        );
+        await this.pubSubService.expenseComment({
+            comment,
+            type: ActivityTypeName.CREATE,
+            userId: currentUser.id,
+            oldCapture: INTENTIONALLY_ABSENT,
+            newCapture,
+        });
+        return comment;
     }
 
     @Mutation(() => ExpenseComment)
@@ -58,9 +88,39 @@ export class ExpenseCommentsResolver {
         input: UpdateExpenseCommentInput,
         @CurrentUser() currentUser: User,
     ): Promise<ExpenseComment> {
-        return this.service.updateExpenseComment(input, {
+        const auditContext = {
+            entityName: ActivityEntityName.EXPENSE_COMMENT,
+            entityId: input.expense_comment_id,
+            activityType: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        };
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () =>
+                this.service.getExpenseCommentSnapshot({
+                    expense_comment_id: input.expense_comment_id,
+                }),
+        );
+        const comment = await this.service.updateExpenseComment(input, {
             current_user_id: currentUser.id,
         });
+        const newCapture = await captureSnapshotSafely(
+            auditContext,
+            'new_snapshot',
+            () =>
+                this.service.getExpenseCommentSnapshot({
+                    expense_comment_id: comment.id,
+                }),
+        );
+        await this.pubSubService.expenseComment({
+            comment,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+            oldCapture,
+            newCapture,
+        });
+        return comment;
     }
 
     @Mutation(() => Boolean)
@@ -69,10 +129,32 @@ export class ExpenseCommentsResolver {
         expenseCommentId: number,
         @CurrentUser() currentUser: User,
     ): Promise<boolean> {
-        return this.service.deleteExpenseComment(
+        const auditContext = {
+            entityName: ActivityEntityName.EXPENSE_COMMENT,
+            entityId: expenseCommentId,
+            activityType: ActivityTypeName.DELETE,
+            userId: currentUser.id,
+        };
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () =>
+                this.service.getExpenseCommentSnapshot({
+                    expense_comment_id: expenseCommentId,
+                }),
+        );
+        const deletedComment = await this.service.deleteExpenseComment(
             { expense_comment_id: expenseCommentId },
             { current_user_id: currentUser.id },
         );
+        await this.pubSubService.expenseComment({
+            comment: deletedComment,
+            type: ActivityTypeName.DELETE,
+            userId: currentUser.id,
+            oldCapture,
+            newCapture: INTENTIONALLY_ABSENT,
+        });
+        return true;
     }
 
     @ResolveField(() => User, { nullable: true })
