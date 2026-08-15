@@ -53,26 +53,6 @@ export class OrderQuotationInput extends OrderQuotationBase {
     order_quotation_products: OrderQuotationProductInput[];
 }
 
-// Lets sales users edit the optional, operational fields of a quotation AFTER it
-// locks past status 1 (Borrador) — mirroring OrderRequestDetailsInput. Nullable
-// fields mean "leave unchanged" (Prisma skips undefined). Deliberately covers
-// notes, estimated delivery date, and condiciones de pago; the commercial terms
-// that define the offer (prices, lines, vigencia, IVA) stay locked.
-@InputType('OrderQuotationDetailsInput')
-export class OrderQuotationDetailsInput {
-    @Field(() => Int)
-    order_quotation_id: number;
-
-    @Field(() => String, { nullable: true })
-    notes?: string | null;
-
-    @Field(() => Date, { nullable: true })
-    estimated_delivery_date?: Date | null;
-
-    @Field(() => String, { nullable: true })
-    payment_terms?: string | null;
-}
-
 @ObjectType('OrderQuotation')
 export class OrderQuotation extends OrderQuotationBase {
     @Field({ nullable: false })

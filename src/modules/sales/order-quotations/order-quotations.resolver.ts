@@ -18,7 +18,6 @@ import {
     GetOrderQuotationsArgs,
     OrderQuotation,
     OrderQuotationCatalogPreview,
-    OrderQuotationDetailsInput,
     OrderQuotationInput,
     OrderQuotationPedidoStepState,
     OrderQuotationProduct,
@@ -211,51 +210,6 @@ export class OrderQuotationsResolver {
         return orderQuotation;
     }
 
-    // Edit the optional operational fields (notes, estimated delivery date,
-    // condiciones de pago) of a quotation. Deliberately NOT status-locked
-    // (unlike upsert): operational metadata must stay editable after the
-    // status-1 lock, mirroring updateOrderRequestDetails.
-    @Mutation(() => OrderQuotation)
-    @RolesDecorator(RoleId.SALES)
-    async updateOrderQuotationDetails(
-        @Args('OrderQuotationDetailsInput') input: OrderQuotationDetailsInput,
-        @CurrentUser() currentUser: User,
-    ): Promise<OrderQuotation> {
-        const auditContext = {
-            entityName: ActivityEntityName.ORDER_QUOTATION,
-            entityId: input.order_quotation_id,
-            activityType: ActivityTypeName.UPDATE,
-            userId: currentUser.id,
-        };
-        const oldCapture = await captureSnapshotSafely(
-            auditContext,
-            'old_snapshot',
-            () =>
-                this.service.getOrderQuotationSnapshot({
-                    order_quotation_id: input.order_quotation_id,
-                }),
-        );
-        const orderQuotation = await this.service.updateOrderQuotationDetails({
-            input,
-        });
-        const newCapture = await captureSnapshotSafely(
-            auditContext,
-            'new_snapshot',
-            () =>
-                this.service.getOrderQuotationSnapshot({
-                    order_quotation_id: orderQuotation.id,
-                }),
-        );
-        await this.pubSubService.orderQuotation({
-            orderQuotation,
-            type: ActivityTypeName.UPDATE,
-            userId: currentUser.id,
-            oldCapture,
-            newCapture,
-        });
-        return orderQuotation;
-    }
-
     // Acceptance — ADMIN only, exactly like pedido/venta status changes, because
     // accepting writes the client's price catalog (upsertAccount is already
     // ADMIN). The service runs the three steps (catálogo → pedido → estado),
@@ -296,7 +250,7 @@ export class OrderQuotationsResolver {
     }
 
     @Mutation(() => Boolean)
-    @RolesDecorator(RoleId.SALES)
+    @RolesDecorator(RoleId.ADMIN)
     async deleteOrderQuotation(
         @Args('OrderQuotationId') orderQuotationId: number,
         @CurrentUser() currentUser: User,
@@ -491,8 +445,7 @@ export class OrderQuotationsResolver {
         @Parent() orderQuotation: OrderQuotation,
     ): Promise<OrderQuotationStatus | null> {
         return this.service.getOrderQuotationStatus({
-            order_quotation_status_id:
-                orderQuotation.order_quotation_status_id,
+            order_quotation_status_id: orderQuotation.order_quotation_status_id,
         });
     }
 

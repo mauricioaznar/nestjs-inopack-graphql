@@ -18,7 +18,6 @@ import {
     OrderQuotationCatalogAction,
     OrderQuotationCatalogChange,
     OrderQuotationCatalogPreview,
-    OrderQuotationDetailsInput,
     OrderQuotationInput,
     OrderQuotationPedidoStepState,
     OrderQuotationProduct,
@@ -367,9 +366,7 @@ export class OrderQuotationsService {
             },
         });
 
-        return order_quotation_id &&
-            order_quotation_id >= 0 &&
-            orderQuotation
+        return order_quotation_id && order_quotation_id >= 0 && orderQuotation
             ? orderQuotation.id !== order_quotation_id
             : !!orderQuotation;
     }
@@ -468,17 +465,11 @@ export class OrderQuotationsService {
     // still valid locally. Both sides are reduced to a YYYY-MM-DD string and
     // compared lexicographically (valid for that format). See the plan, "Use the
     // Mexico City business date for expiration".
-    isExpired({
-        expiration_date,
-    }: {
-        expiration_date?: Date | null;
-    }): boolean {
+    isExpired({ expiration_date }: { expiration_date?: Date | null }): boolean {
         if (!expiration_date) return false;
 
         const businessToday = dayjs().tz(BUSINESS_TZ).format('YYYY-MM-DD');
-        const expirationDate = dayjs
-            .utc(expiration_date)
-            .format('YYYY-MM-DD');
+        const expirationDate = dayjs.utc(expiration_date).format('YYYY-MM-DD');
 
         return expirationDate < businessToday;
     }
@@ -527,7 +518,9 @@ export class OrderQuotationsService {
         } else if (status !== STATUS_ENVIADA) {
             // Only a sent (Enviada) quotation can be accepted. A Borrador — or
             // any non-terminal status that isn't Enviada — must be sent first.
-            reasons.push('La cotización debe estar enviada para poder aceptarse');
+            reasons.push(
+                'La cotización debe estar enviada para poder aceptarse',
+            );
         }
 
         if (
@@ -560,6 +553,43 @@ export class OrderQuotationsService {
         if (freeLineNumbers.length > 0) {
             reasons.push(
                 `Líneas sin producto (Producción debe crear el producto primero): ${freeLineNumbers.join(
+                    ', ',
+                )}`,
+            );
+        }
+
+        // A product can become inactive or discontinued after the quotation was
+        // captured. Re-check at acceptance so an old linked line cannot enter
+        // the client catalog or the generated pedido after it stops being
+        // eligible for new commercial documents.
+        const linkedProductIds = Array.from(
+            new Set(
+                lines
+                    .map((line) => line.product_id)
+                    .filter((id): id is number => id != null),
+            ),
+        );
+        const linkedProducts =
+            linkedProductIds.length > 0
+                ? await this.prisma.products.findMany({
+                      where: { id: { in: linkedProductIds } },
+                  })
+                : [];
+        const productById = new Map(
+            linkedProducts.map((product) => [product.id, product]),
+        );
+        const unavailableProductLineNumbers = lines
+            .map((line, index) => {
+                if (line.product_id == null) return null;
+                const product = productById.get(line.product_id);
+                return !product || product.active !== 1 || product.discontinued
+                    ? index + 1
+                    : null;
+            })
+            .filter((n): n is number => n !== null);
+        if (unavailableProductLineNumbers.length > 0) {
+            reasons.push(
+                `Líneas con producto inactivo o descontinuado: ${unavailableProductLineNumbers.join(
                     ', ',
                 )}`,
             );
@@ -792,55 +822,6 @@ export class OrderQuotationsService {
         });
     }
 
-    // Lets sales users edit the optional, operational fields of a quotation
-    // (notes, estimated delivery date, condiciones de pago) AFTER it locks past
-    // status 1 — mirroring updateOrderRequestDetails. Deliberately NOT
-    // status-locked: operational metadata must stay correctable once an admin
-    // advances the status. Each field is applied only when provided (Prisma
-    // skips undefined); estimated_delivery_date is nullable, so a null clears it
-    // and only a truly omitted (undefined) field is left untouched.
-    async updateOrderQuotationDetails({
-        input,
-    }: {
-        input: OrderQuotationDetailsInput;
-    }): Promise<OrderQuotation> {
-        const orderQuotation = await this.getOrderQuotation({
-            orderQuotationId: input.order_quotation_id,
-        });
-
-        if (!orderQuotation) {
-            throw new NotFoundException();
-        }
-
-        // Details (notes, entrega estimada, condiciones de pago) stay editable in
-        // Borrador and Enviada — but only until acceptance STARTS. Once the
-        // catalog is written, a pedido is linked, completion is stamped, or the
-        // status is Aceptada, the cotización is the frozen record of what the
-        // client agreed to and even its notes are locked. Unlike
-        // updateOrderRequestDetails (deliberately unlocked). See the plan, "Lock
-        // quotation changes after acceptance starts".
-        if (await this.hasAcceptanceStarted(orderQuotation)) {
-            throw new BadRequestException([
-                'La aceptación de la cotización ya inició; no puede editarse',
-            ]);
-        }
-
-        return this.prisma.order_quotations.update({
-            data: {
-                ...getUpdatedAtProperty(),
-                notes: input.notes ?? undefined,
-                payment_terms: input.payment_terms ?? undefined,
-                estimated_delivery_date:
-                    input.estimated_delivery_date === undefined
-                        ? undefined
-                        : input.estimated_delivery_date,
-            },
-            where: {
-                id: input.order_quotation_id,
-            },
-        });
-    }
-
     // Focused mutation: point a persisted FREE line at a real product, WITHOUT
     // going through the whole upsert (which would rewrite the entire lines set).
     // This is the "Ventas apunta la línea libre al producto ya creado" step of
@@ -903,12 +884,16 @@ export class OrderQuotationsService {
         const product = await this.prisma.products.findFirst({
             where: { id: product_id },
         });
-        if (!product || product.active !== 1) {
-            errors.push('El producto no existe o no está activo');
+        const productIsEligible =
+            !!product && product.active === 1 && !product.discontinued;
+        if (!productIsEligible) {
+            errors.push(
+                'El producto no existe, no está activo o está descontinuado',
+            );
         }
 
         // Group-weight compatibility — the same check linked lines already pass.
-        if (product) {
+        if (product && product.active === 1 && !product.discontinued) {
             const currentGroupWeight = product.current_group_weight || 0;
             if (Number(line.group_weight) !== currentGroupWeight) {
                 errors.push(
@@ -990,11 +975,12 @@ export class OrderQuotationsService {
 
         // IsOrderCodeOccupied — own sequence, independent of pedido codes.
         {
-            const isOrderCodeOccupied =
-                await this.isOrderQuotationCodeOccupied({
+            const isOrderCodeOccupied = await this.isOrderQuotationCodeOccupied(
+                {
                     order_code: input.order_code,
                     order_quotation_id: input && input.id ? input.id : null,
-                });
+                },
+            );
 
             if (isOrderCodeOccupied) {
                 errors.push(
@@ -1045,26 +1031,32 @@ export class OrderQuotationsService {
                         },
                     });
 
-                    const currentGroupWeight =
-                        product?.current_group_weight || 0;
-
                     if (
-                        groupWeight !== null &&
-                        Number(groupWeight) !== currentGroupWeight
+                        !product ||
+                        product.active !== 1 ||
+                        product.discontinued
                     ) {
                         errors.push(
-                            `current group weight doesnt match group weight (group_weight: ${groupWeight}, current_group_weight: ${currentGroupWeight})`,
+                            `product must be active and not discontinued (product_id: ${product_id})`,
                         );
+                    } else {
+                        const currentGroupWeight =
+                            product.current_group_weight || 0;
+
+                        if (
+                            groupWeight !== null &&
+                            Number(groupWeight) !== currentGroupWeight
+                        ) {
+                            errors.push(
+                                `current group weight doesnt match group weight (group_weight: ${groupWeight}, current_group_weight: ${currentGroupWeight})`,
+                            );
+                        }
                     }
                 }
 
                 // No group dimension on this line (kilo-priced): nothing to
                 // check. Applies to free and linked lines alike.
-                if (
-                    groupWeight === null ||
-                    groupWeight === 0 ||
-                    !groupWeight
-                ) {
+                if (groupWeight === null || groupWeight === 0 || !groupWeight) {
                     continue;
                 }
 
@@ -1096,7 +1088,8 @@ export class OrderQuotationsService {
                         orderQuotationProduct.product_id !== undefined;
                     const hasDescription =
                         !!orderQuotationProduct.proposed_description &&
-                        orderQuotationProduct.proposed_description.trim() !== '';
+                        orderQuotationProduct.proposed_description.trim() !==
+                            '';
                     if (!hasProduct && !hasDescription) {
                         errors.push(
                             `free line (index: ${index}) must have a proposed description`,
@@ -1180,9 +1173,7 @@ export class OrderQuotationsService {
 
             const errors: string[] = [];
             if (order_requests_count > 0) {
-                errors.push(
-                    `order requests count is ${order_requests_count}`,
-                );
+                errors.push(`order requests count is ${order_requests_count}`);
             } else {
                 errors.push('Order quotation is not deletable');
             }
@@ -1839,14 +1830,13 @@ export class OrderQuotationsService {
             })),
         };
 
-        const orderRequest =
-            await this.orderRequestsService.upsertOrderRequest(
-                {
-                    input,
-                    current_user_id,
-                },
-                { order_quotation_id: orderQuotation.id },
-            );
+        const orderRequest = await this.orderRequestsService.upsertOrderRequest(
+            {
+                input,
+                current_user_id,
+            },
+            { order_quotation_id: orderQuotation.id },
+        );
 
         // Stamp the AUTHORITATIVE completion marker — ONLY now that
         // upsertOrderRequest has returned from creating the pedido and all its
