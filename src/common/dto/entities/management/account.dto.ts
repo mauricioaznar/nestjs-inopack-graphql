@@ -94,6 +94,12 @@ export class AccountBase {
     // monitored-balance suppliers, which keep needing explicit sign-off.
     @Field(() => Boolean, { nullable: false })
     supplier_payment_authorized_default: boolean;
+
+    // Default for a new expense's `is_draft`. ON (draft) everywhere except
+    // monitored-balance and recurring-expense suppliers, whose expenses are
+    // captured as final rather than as drafts.
+    @Field(() => Boolean, { nullable: false })
+    supplier_is_draft: boolean;
 }
 
 @InputType('AccountUpsertInput')

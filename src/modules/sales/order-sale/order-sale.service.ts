@@ -219,13 +219,13 @@ export class OrderSaleService {
             });
         }
 
-        if (orderSalesQueryArgs.only_pending_document) {
+        if (orderSalesQueryArgs.only_pending_task) {
             orderSalesAndWhere.push({
                 order_sale_comments: {
                     some: {
                         active: 1,
-                        requires_pending_document: true,
-                        pending_document_delivered: false,
+                        has_pending_task: true,
+                        pending_task_complete: false,
                     },
                 },
             });
@@ -274,9 +274,9 @@ export class OrderSaleService {
         };
     }
 
-    // A sale carries a pending document when at least one of its live comments
-    // still requires a document that has not been delivered.
-    async hasPendingDocument({
+    // A sale carries a pending task when at least one of its live comments
+    // declares a pending task that is not yet complete.
+    async hasPendingTask({
         order_sale_id,
     }: {
         order_sale_id: number;
@@ -285,8 +285,8 @@ export class OrderSaleService {
             where: {
                 order_sale_id,
                 active: 1,
-                requires_pending_document: true,
-                pending_document_delivered: false,
+                has_pending_task: true,
+                pending_task_complete: false,
             },
         });
         return count > 0;

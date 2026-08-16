@@ -404,10 +404,10 @@ export class OrderSaleResolver {
     }
 
     @ResolveField(() => Boolean)
-    async has_pending_document(
+    async has_pending_task(
         @Parent() orderSale: OrderSale,
     ): Promise<boolean> {
-        return this.service.hasPendingDocument({
+        return this.service.hasPendingTask({
             order_sale_id: orderSale.id,
         });
     }

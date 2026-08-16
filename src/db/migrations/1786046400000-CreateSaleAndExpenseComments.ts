@@ -10,17 +10,24 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * `created_by_id` audit stamp FK to `users` (the same relation pattern already
  * on `order_sales` / `expenses`).
  *
- * `requires_pending_document` gates `pending_document_delivered` and
- * `document_name`; the second checkbox is only meaningful when the first is on.
+ * `has_pending_task` gates `pending_task_complete` and `pending_task_comment`;
+ * the complete flag + free-text comment are only meaningful when the toggle is
+ * on. The free-text comment is generic — a document name, a cloud link, or any
+ * note the user needs.
  *
- * This migration also carries two unrelated-but-concurrent schema moves for the
- * same feature branch, both one-way (no `down` reversal, by request):
+ * This migration also carries three unrelated-but-concurrent schema moves for
+ * the same feature branch, all one-way (no `down` reversal, by request):
  *
  *  - `payment_authorized`: a per-expense "the payment is authorized" flag, with
  *    an account-level default (`supplier_payment_authorized_default`). Both
  *    default ON; only monitored-balance suppliers
  *    (`accounts.monitor_supplier_expenses = 1`) start OFF, because those are the
  *    accounts whose payments still need explicit sign-off.
+ *  - `is_draft`: a per-expense "still a draft" flag, with an account-level
+ *    default (`supplier_is_draft`). The account default is ON (draft) except
+ *    monitored-balance and recurring-expense suppliers. Existing expenses stay
+ *    non-draft (column DEFAULT 0); only new expenses seed from the default.
+ *    While draft, the balances views hide the payment-authorized control.
  *  - Dropping the stale `expense_statuses` feature (the color "status" icon):
  *    the `expenses.expense_status_id` FK/column and the `expense_statuses` table
  *    are removed outright.
@@ -39,9 +46,9 @@ export class CreateSaleAndExpenseComments1786046400000
                 \`body\`                      text         NOT NULL,
                 \`order_sale_id\`             int unsigned NULL     DEFAULT NULL,
                 \`created_by_id\`             int unsigned NULL     DEFAULT NULL,
-                \`requires_pending_document\` tinyint(1)   NOT NULL DEFAULT '0',
-                \`pending_document_delivered\` tinyint(1)  NOT NULL DEFAULT '0',
-                \`document_name\`             varchar(255) NOT NULL DEFAULT '',
+                \`has_pending_task\`          tinyint(1)   NOT NULL DEFAULT '0',
+                \`pending_task_complete\`     tinyint(1)   NOT NULL DEFAULT '0',
+                \`pending_task_comment\`      varchar(255) NOT NULL DEFAULT '',
                 PRIMARY KEY (\`id\`),
                 KEY \`order_sale_comments_order_sale_id_foreign\` (\`order_sale_id\`),
                 KEY \`order_sale_comments_created_by_id_foreign\` (\`created_by_id\`),
@@ -67,9 +74,9 @@ export class CreateSaleAndExpenseComments1786046400000
                 \`body\`                      text         NOT NULL,
                 \`expense_id\`                int unsigned NULL     DEFAULT NULL,
                 \`created_by_id\`             int unsigned NULL     DEFAULT NULL,
-                \`requires_pending_document\` tinyint(1)   NOT NULL DEFAULT '0',
-                \`pending_document_delivered\` tinyint(1)  NOT NULL DEFAULT '0',
-                \`document_name\`             varchar(255) NOT NULL DEFAULT '',
+                \`has_pending_task\`          tinyint(1)   NOT NULL DEFAULT '0',
+                \`pending_task_complete\`     tinyint(1)   NOT NULL DEFAULT '0',
+                \`pending_task_comment\`      varchar(255) NOT NULL DEFAULT '',
                 PRIMARY KEY (\`id\`),
                 KEY \`expense_comments_expense_id_foreign\` (\`expense_id\`),
                 KEY \`expense_comments_created_by_id_foreign\` (\`created_by_id\`),
@@ -111,6 +118,31 @@ export class CreateSaleAndExpenseComments1786046400000
             JOIN \`accounts\` a ON a.id = e.account_id
             SET e.\`payment_authorized\` = 0
             WHERE a.\`monitor_supplier_expenses\` = 1;
+        `);
+
+        // --- Draft flag ------------------------------------------------------
+        // Account-level default that seeds new expenses. ON (draft) everywhere
+        // except monitored-balance and recurring-expense suppliers, whose
+        // expenses are captured as final rather than as drafts.
+        await queryRunner.query(`
+            ALTER TABLE \`accounts\`
+                ADD COLUMN \`supplier_is_draft\` tinyint(1) NOT NULL DEFAULT 1
+                AFTER \`supplier_payment_authorized_default\`;
+        `);
+        await queryRunner.query(`
+            UPDATE \`accounts\`
+            SET \`supplier_is_draft\` = 0
+            WHERE \`monitor_supplier_expenses\` = 1
+               OR \`supplier_recurring_expenses\` = 1;
+        `);
+
+        // Per-expense flag. Existing expenses are already finalized, so the
+        // DEFAULT 0 leaves every historical row non-draft; only NEW expenses
+        // seed their draft state from the supplier account default.
+        await queryRunner.query(`
+            ALTER TABLE \`expenses\`
+                ADD COLUMN \`is_draft\` tinyint(1) NOT NULL DEFAULT 0
+                AFTER \`payment_authorized\`;
         `);
 
         // --- Drop the stale expense-status feature ---------------------------

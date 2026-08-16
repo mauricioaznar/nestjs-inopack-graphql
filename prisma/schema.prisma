@@ -907,6 +907,7 @@ model accounts {
   client_reconciliation_only                    Boolean             @default(false)
   supplier_reconciliation_only                  Boolean             @default(false)
   supplier_payment_authorized_default           Boolean             @default(true)
+  supplier_is_draft                             Boolean             @default(true)
   exclude_from_accountability_export            Boolean             @default(false)
   merged_into_account_id                        Int?                @db.UnsignedInt
   created_by_id                                 Int?                @db.UnsignedInt
@@ -961,6 +962,7 @@ model expenses {
   generated_from_expense_id              Int?                @db.UnsignedInt
   reconciliation_only                    Boolean             @default(false)
   payment_authorized                     Boolean             @default(true)
+  is_draft                               Boolean             @default(false)
   created_by_id                          Int?                @db.UnsignedInt
   updated_by_id                          Int?                @db.UnsignedInt
   created_by_user                        users?              @relation("expenses_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expenses_created_by_id_foreign")
@@ -988,9 +990,9 @@ model order_sale_comments {
   body                       String       @db.Text
   order_sale_id              Int?         @db.UnsignedInt
   created_by_id              Int?         @db.UnsignedInt
-  requires_pending_document  Boolean      @default(false)
-  pending_document_delivered Boolean      @default(false)
-  document_name              String       @default("") @db.VarChar(255)
+  has_pending_task           Boolean      @default(false)
+  pending_task_complete      Boolean      @default(false)
+  pending_task_comment       String       @default("") @db.VarChar(255)
   order_sales                order_sales? @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_comments_order_sale_id_foreign")
   created_by_user            users?       @relation("order_sale_comments_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_comments_created_by_id_foreign")
 
@@ -1006,9 +1008,9 @@ model expense_comments {
   body                       String    @db.Text
   expense_id                 Int?      @db.UnsignedInt
   created_by_id              Int?      @db.UnsignedInt
-  requires_pending_document  Boolean   @default(false)
-  pending_document_delivered Boolean   @default(false)
-  document_name              String    @default("") @db.VarChar(255)
+  has_pending_task           Boolean   @default(false)
+  pending_task_complete      Boolean   @default(false)
+  pending_task_comment       String    @default("") @db.VarChar(255)
   expenses                   expenses? @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_comments_expense_id_foreign")
   created_by_user            users?    @relation("expense_comments_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_comments_created_by_id_foreign")
 

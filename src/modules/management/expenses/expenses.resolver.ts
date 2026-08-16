@@ -324,8 +324,8 @@ export class ExpensesResolver {
     }
 
     @ResolveField(() => Boolean)
-    async has_pending_document(@Parent() expense: Expense): Promise<boolean> {
-        return this.service.hasPendingDocument({
+    async has_pending_task(@Parent() expense: Expense): Promise<boolean> {
+        return this.service.hasPendingTask({
             expense_id: expense.id,
         });
     }

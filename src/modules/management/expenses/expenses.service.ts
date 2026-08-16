@@ -320,13 +320,13 @@ export class ExpensesService {
             });
         }
 
-        if (expensesQueryArgs.only_pending_document) {
+        if (expensesQueryArgs.only_pending_task) {
             expensesAndWhere.push({
                 expense_comments: {
                     some: {
                         active: 1,
-                        requires_pending_document: true,
-                        pending_document_delivered: false,
+                        has_pending_task: true,
+                        pending_task_complete: false,
                     },
                 },
             });
@@ -364,9 +364,9 @@ export class ExpensesService {
         };
     }
 
-    // An expense carries a pending document when at least one of its live
-    // comments still requires a document that has not been delivered.
-    async hasPendingDocument({
+    // An expense carries a pending task when at least one of its live comments
+    // declares a pending task that is not yet complete.
+    async hasPendingTask({
         expense_id,
     }: {
         expense_id: number;
@@ -375,8 +375,8 @@ export class ExpensesService {
             where: {
                 expense_id,
                 active: 1,
-                requires_pending_document: true,
-                pending_document_delivered: false,
+                has_pending_task: true,
+                pending_task_complete: false,
             },
         });
         return count > 0;
@@ -577,6 +577,7 @@ export class ExpensesService {
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
                 payment_authorized: input.payment_authorized,
+                is_draft: input.is_draft,
                 resources_total: input.resources_total,
             },
             update: {
@@ -604,6 +605,7 @@ export class ExpensesService {
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
                 payment_authorized: input.payment_authorized,
+                is_draft: input.is_draft,
                 resources_total: input.resources_total,
             },
             where: {
@@ -1254,6 +1256,7 @@ export class ExpensesService {
                         canceled: false,
                         reconciliation_only: source.reconciliation_only,
                         payment_authorized: source.payment_authorized,
+                        is_draft: source.is_draft,
                         resources_total: subtotal,
                         transfer_receipts_total: 0,
                         transfer_receipts_total_no_adjustments: 0,

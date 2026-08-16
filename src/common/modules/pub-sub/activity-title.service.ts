@@ -149,12 +149,12 @@ export class ActivityTitleService {
     async orderSaleComment(comment: {
         id: number;
         order_sale_id?: number | null;
-        document_name?: string | null;
+        pending_task_comment?: string | null;
     }): Promise<string> {
         return buildTitle(
             comment.id,
             await this.getOrderSaleCode(comment.order_sale_id),
-            comment.document_name,
+            comment.pending_task_comment,
         );
     }
 
@@ -299,12 +299,12 @@ export class ActivityTitleService {
     async expenseComment(comment: {
         id: number;
         expense_id?: number | null;
-        document_name?: string | null;
+        pending_task_comment?: string | null;
     }): Promise<string> {
         return buildTitle(
             comment.id,
             await this.getExpenseCode(comment.expense_id),
-            comment.document_name,
+            comment.pending_task_comment,
         );
     }
 

@@ -7,13 +7,13 @@ export class OrderSaleCommentBase {
     body: string;
 
     @Field(() => Boolean, { nullable: false })
-    requires_pending_document: boolean;
+    has_pending_task: boolean;
 
     @Field(() => Boolean, { nullable: false })
-    pending_document_delivered: boolean;
+    pending_task_complete: boolean;
 
     @Field(() => String, { nullable: false })
-    document_name: string;
+    pending_task_comment: string;
 }
 
 @InputType('CreateOrderSaleCommentInput')

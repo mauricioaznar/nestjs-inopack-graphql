@@ -75,6 +75,13 @@ export class ExpenseBase {
     // create; toggled inline from the balances views or in the upsert dialog.
     @Field(() => Boolean, { nullable: false })
     payment_authorized: boolean;
+
+    // "This expense is still a draft." Seeds from the supplier account default
+    // (`supplier_is_draft`) on create and carries onto recurring-generated
+    // expenses. Editable only in the upsert dialog. While draft, the balances
+    // views hide the Pago aut. control and show a draft warning instead.
+    @Field(() => Boolean, { nullable: false })
+    is_draft: boolean;
 }
 
 // Single-field inline toggle from the balances views — no full upsert, its own
@@ -160,10 +167,10 @@ export class ExpensesQueryArgs {
     @Field(() => Int, { nullable: true })
     resource_id: number;
 
-    // Follow-up queue: keep only expenses that have at least one comment marking
-    // a still-undelivered pending document.
+    // Follow-up queue: keep only expenses that have at least one comment with an
+    // incomplete pending task.
     @Field(() => Boolean, { nullable: true })
-    only_pending_document: boolean;
+    only_pending_task: boolean;
 }
 
 @ArgsType()

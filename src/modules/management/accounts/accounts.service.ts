@@ -395,6 +395,7 @@ export class AccountsService {
                     input.supplier_reconciliation_only,
                 supplier_payment_authorized_default:
                     input.supplier_payment_authorized_default,
+                supplier_is_draft: input.supplier_is_draft,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -429,6 +430,7 @@ export class AccountsService {
                     input.supplier_reconciliation_only,
                 supplier_payment_authorized_default:
                     input.supplier_payment_authorized_default,
+                supplier_is_draft: input.supplier_is_draft,
             },
             where: {
                 id: input.id || 0,
