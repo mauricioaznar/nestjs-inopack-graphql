@@ -305,6 +305,37 @@ export class OrderSaleService {
         });
     }
 
+    // Total tasks on a sale = live comments flagged as pending tasks (complete or
+    // not). Paired with getPendingTaskCompleteCount to render "completed/total".
+    async getPendingTaskCount({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<number> {
+        return this.prisma.order_sale_comments.count({
+            where: {
+                order_sale_id,
+                active: 1,
+                has_pending_task: true,
+            },
+        });
+    }
+
+    async getPendingTaskCompleteCount({
+        order_sale_id,
+    }: {
+        order_sale_id: number;
+    }): Promise<number> {
+        return this.prisma.order_sale_comments.count({
+            where: {
+                order_sale_id,
+                active: 1,
+                has_pending_task: true,
+                pending_task_complete: true,
+            },
+        });
+    }
+
     async getOrderSale({
         orderSaleId,
     }: {

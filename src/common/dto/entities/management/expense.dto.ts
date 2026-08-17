@@ -95,6 +95,40 @@ export class UpdateExpensePaymentAuthorizedInput {
     payment_authorized: boolean;
 }
 
+// Lightweight "optional details" edit from the balances views — the expense
+// counterpart of OrderSaleDetailsInput. Only the side-effect-free documentation
+// fields (notes, payment date, folio, supplement, conciliation, canceled) so no
+// totals recompute is triggered; the financial fields live on the full upsert.
+@InputType('ExpenseDetailsInput')
+export class ExpenseDetailsInput {
+    @Field(() => Int, { nullable: false })
+    expense_id: number;
+
+    @Field(() => String, { nullable: false })
+    notes: string;
+
+    @Field(() => Date, { nullable: true })
+    expected_payment_date: Date | null;
+
+    @Field(() => Boolean, { nullable: false })
+    require_external_code: boolean;
+
+    @Field(() => String, { nullable: false })
+    external_code: string;
+
+    @Field(() => Boolean, { nullable: false })
+    require_supplement: boolean;
+
+    @Field(() => String, { nullable: false })
+    supplement_code: string;
+
+    @Field(() => Boolean, { nullable: false })
+    reconciliation_only: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    canceled: boolean;
+}
+
 @InputType('ExpenseUpsertInput')
 export class ExpenseUpsertInput extends ExpenseBase {
     @Field(() => Int, { nullable: true })

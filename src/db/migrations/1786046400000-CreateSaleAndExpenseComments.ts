@@ -25,9 +25,11 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *    accounts whose payments still need explicit sign-off.
  *  - `is_draft`: a per-expense "still a draft" flag, with an account-level
  *    default (`supplier_is_draft`). The account default is ON (draft) except
- *    monitored-balance and recurring-expense suppliers. Existing expenses stay
- *    non-draft (column DEFAULT 0); only new expenses seed from the default.
- *    While draft, the balances views hide the payment-authorized control.
+ *    recurring-expense suppliers. Monitored-balance suppliers stay ON (draft)
+ *    even though their payment_authorized default is OFF — the two flags are
+ *    independent. Existing expenses stay non-draft (column DEFAULT 0); only new
+ *    expenses seed from the default. While draft, the balances views hide the
+ *    payment-authorized control.
  *  - Dropping the stale `expense_statuses` feature (the color "status" icon):
  *    the `expenses.expense_status_id` FK/column and the `expense_statuses` table
  *    are removed outright.
@@ -122,8 +124,11 @@ export class CreateSaleAndExpenseComments1786046400000
 
         // --- Draft flag ------------------------------------------------------
         // Account-level default that seeds new expenses. ON (draft) everywhere
-        // except monitored-balance and recurring-expense suppliers, whose
-        // expenses are captured as final rather than as drafts.
+        // except recurring-expense suppliers, whose expenses are captured as
+        // final rather than as drafts. Monitored-balance suppliers intentionally
+        // stay ON (draft) — those are the accounts whose capture we most want to
+        // hold as a draft until reviewed, even though their payment stays
+        // unauthorized by default (the two flags are independent).
         await queryRunner.query(`
             ALTER TABLE \`accounts\`
                 ADD COLUMN \`supplier_is_draft\` tinyint(1) NOT NULL DEFAULT 1
@@ -132,8 +137,7 @@ export class CreateSaleAndExpenseComments1786046400000
         await queryRunner.query(`
             UPDATE \`accounts\`
             SET \`supplier_is_draft\` = 0
-            WHERE \`monitor_supplier_expenses\` = 1
-               OR \`supplier_recurring_expenses\` = 1;
+            WHERE \`supplier_recurring_expenses\` = 1;
         `);
 
         // Per-expense flag. Existing expenses are already finalized, so the

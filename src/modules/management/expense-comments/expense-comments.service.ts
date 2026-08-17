@@ -89,20 +89,12 @@ export class ExpenseCommentsService {
         const isAuthor =
             !!current_user_id && existing.created_by_id === current_user_id;
 
-        // Body and the has-pending-task toggle are the author's own words —
-        // only the author may change them. The complete flag and the free-text
-        // comment are operational and editable by anyone authenticated.
-        if (input.body !== existing.body && !isAuthor) {
+        // The whole comment — body, the pending-task toggle, AND the operational
+        // task fields (complete flag + free-text detail) — is author-only. A
+        // task belongs to whoever wrote the comment; no other user may edit it.
+        if (!isAuthor) {
             throw new ForbiddenException(
-                'Only the author can edit the comment body',
-            );
-        }
-        if (
-            input.has_pending_task !== existing.has_pending_task &&
-            !isAuthor
-        ) {
-            throw new ForbiddenException(
-                'Only the author can change the pending-task toggle',
+                'Only the author can edit this comment',
             );
         }
 

@@ -21,6 +21,7 @@ import {
     ExpensesSortArgs,
     ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
+    ExpenseDetailsInput,
     UpdateExpensePaymentAuthorizedInput,
     GenerateRecurringExpenseInput,
     GenerateRecurringExpensesResult,
@@ -132,6 +133,49 @@ export class ExpensesResolver {
         const expense = await this.service.updateExpensePaymentAuthorized(
             input,
         );
+        const newCapture = await captureSnapshotSafely(
+            auditContext,
+            'new_snapshot',
+            () =>
+                this.service.getExpenseSnapshot({
+                    expense_id: input.expense_id,
+                }),
+        );
+        await this.pubSubService.expense({
+            expense,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+            oldCapture,
+            newCapture,
+        });
+        return expense;
+    }
+
+    // Optional-details edit from the balances views (folio, notes, payment date,
+    // supplement, conciliation, canceled). Like updateExpensePaymentAuthorized it
+    // bypasses the status-locked upsert and is audited with old/new snapshots.
+    @Mutation(() => Expense)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
+    async updateExpenseDetails(
+        @Args('ExpenseDetailsInput') input: ExpenseDetailsInput,
+        @CurrentUser() currentUser: User,
+    ): Promise<Expense> {
+        const auditContext = {
+            entityName: ActivityEntityName.EXPENSE,
+            entityId: input.expense_id,
+            activityType: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        };
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () =>
+                this.service.getExpenseSnapshot({
+                    expense_id: input.expense_id,
+                }),
+        );
+        const expense = await this.service.updateExpenseDetails({ input });
         const newCapture = await captureSnapshotSafely(
             auditContext,
             'new_snapshot',
@@ -290,6 +334,20 @@ export class ExpensesResolver {
     @ResolveField(() => Int)
     async comments_count(@Parent() expense: Expense): Promise<number> {
         return this.service.getCommentsCount({ expense_id: expense.id });
+    }
+
+    @ResolveField(() => Int)
+    async pending_task_count(@Parent() expense: Expense): Promise<number> {
+        return this.service.getPendingTaskCount({ expense_id: expense.id });
+    }
+
+    @ResolveField(() => Int)
+    async pending_task_complete_count(
+        @Parent() expense: Expense,
+    ): Promise<number> {
+        return this.service.getPendingTaskCompleteCount({
+            expense_id: expense.id,
+        });
     }
 
     @ResolveField(() => [ExpenseResource])

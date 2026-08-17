@@ -12,6 +12,7 @@ import {
     ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
     UpdateExpensePaymentAuthorizedInput,
+    ExpenseDetailsInput,
     GenerateRecurringExpenseInput,
     GenerateRecurringExpensesResult,
     GetExpensesQueryArgs,
@@ -455,6 +456,38 @@ export class ExpensesService {
         });
     }
 
+    // Total tasks on an expense = live comments flagged as pending tasks
+    // (complete or not). Paired with getPendingTaskCompleteCount to render the
+    // "completed/total" chip.
+    async getPendingTaskCount({
+        expense_id,
+    }: {
+        expense_id: number;
+    }): Promise<number> {
+        return this.prisma.expense_comments.count({
+            where: {
+                expense_id,
+                active: 1,
+                has_pending_task: true,
+            },
+        });
+    }
+
+    async getPendingTaskCompleteCount({
+        expense_id,
+    }: {
+        expense_id: number;
+    }): Promise<number> {
+        return this.prisma.expense_comments.count({
+            where: {
+                expense_id,
+                active: 1,
+                has_pending_task: true,
+                pending_task_complete: true,
+            },
+        });
+    }
+
     // Inline single-field toggle, bypassing the status-locked upsert. Only
     // touches payment_authorized (and the updated_at stamp).
     async updateExpensePaymentAuthorized(
@@ -470,6 +503,44 @@ export class ExpensesService {
             data: {
                 ...getUpdatedAtProperty(),
                 payment_authorized: input.payment_authorized,
+            },
+            where: {
+                id: input.expense_id,
+            },
+        });
+    }
+
+    // Lightweight optional-details edit, the expense counterpart of
+    // updateOrderSaleDetails. Touches only side-effect-free documentation fields
+    // so no totals recompute is needed; the status-locked full upsert is
+    // bypassed on purpose (a locked expense can still have its folio/notes fixed).
+    async updateExpenseDetails({
+        input,
+    }: {
+        input: ExpenseDetailsInput;
+    }): Promise<Expense> {
+        const existing = await this.getExpense({
+            expense_id: input.expense_id,
+        });
+        if (!existing) {
+            throw new NotFoundException();
+        }
+        return this.prisma.expenses.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                notes: input.notes,
+                // expected_payment_date is the one nullable column here, so a
+                // null clears it; only a truly omitted field would skip.
+                expected_payment_date:
+                    input.expected_payment_date === undefined
+                        ? undefined
+                        : input.expected_payment_date,
+                require_external_code: input.require_external_code,
+                external_code: input.external_code,
+                require_supplement: input.require_supplement,
+                supplement_code: input.supplement_code,
+                reconciliation_only: input.reconciliation_only,
+                canceled: input.canceled,
             },
             where: {
                 id: input.expense_id,

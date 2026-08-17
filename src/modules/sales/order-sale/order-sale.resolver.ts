@@ -419,6 +419,24 @@ export class OrderSaleResolver {
         });
     }
 
+    @ResolveField(() => Int)
+    async pending_task_count(
+        @Parent() orderSale: OrderSale,
+    ): Promise<number> {
+        return this.service.getPendingTaskCount({
+            order_sale_id: orderSale.id,
+        });
+    }
+
+    @ResolveField(() => Int)
+    async pending_task_complete_count(
+        @Parent() orderSale: OrderSale,
+    ): Promise<number> {
+        return this.service.getPendingTaskCompleteCount({
+            order_sale_id: orderSale.id,
+        });
+    }
+
     @Subscription(() => OrderSale)
     async order_sale() {
         return this.pubSubService.listenForOrderSale();
