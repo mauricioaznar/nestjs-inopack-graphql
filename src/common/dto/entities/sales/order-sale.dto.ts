@@ -184,10 +184,6 @@ export class PaginatedOrderSalesQueryArgs {
     @Field(() => Int, { nullable: true })
     product_id: number | null;
 
-    // Follow-up queue: keep only sales that have at least one comment with an
-    // incomplete pending task.
-    @Field(() => Boolean, { nullable: true })
-    only_pending_task: boolean;
 }
 
 @ArgsType()

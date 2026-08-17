@@ -403,36 +403,9 @@ export class OrderSaleResolver {
         });
     }
 
-    @ResolveField(() => Boolean)
-    async has_pending_task(
-        @Parent() orderSale: OrderSale,
-    ): Promise<boolean> {
-        return this.service.hasPendingTask({
-            order_sale_id: orderSale.id,
-        });
-    }
-
     @ResolveField(() => Int)
     async comments_count(@Parent() orderSale: OrderSale): Promise<number> {
         return this.service.getCommentsCount({
-            order_sale_id: orderSale.id,
-        });
-    }
-
-    @ResolveField(() => Int)
-    async pending_task_count(
-        @Parent() orderSale: OrderSale,
-    ): Promise<number> {
-        return this.service.getPendingTaskCount({
-            order_sale_id: orderSale.id,
-        });
-    }
-
-    @ResolveField(() => Int)
-    async pending_task_complete_count(
-        @Parent() orderSale: OrderSale,
-    ): Promise<number> {
-        return this.service.getPendingTaskCompleteCount({
             order_sale_id: orderSale.id,
         });
     }

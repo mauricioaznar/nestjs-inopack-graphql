@@ -201,10 +201,6 @@ export class ExpensesQueryArgs {
     @Field(() => Int, { nullable: true })
     resource_id: number;
 
-    // Follow-up queue: keep only expenses that have at least one comment with an
-    // incomplete pending task.
-    @Field(() => Boolean, { nullable: true })
-    only_pending_task: boolean;
 }
 
 @ArgsType()

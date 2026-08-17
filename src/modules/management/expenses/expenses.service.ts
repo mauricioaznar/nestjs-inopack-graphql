@@ -321,18 +321,6 @@ export class ExpensesService {
             });
         }
 
-        if (expensesQueryArgs.only_pending_task) {
-            expensesAndWhere.push({
-                expense_comments: {
-                    some: {
-                        active: 1,
-                        has_pending_task: true,
-                        pending_task_complete: false,
-                    },
-                },
-            });
-        }
-
         const expensesWhere: Prisma.expensesWhereInput = {
             AND: expensesAndWhere,
         };
@@ -363,24 +351,6 @@ export class ExpensesService {
             count: expensesCount,
             docs: expenses,
         };
-    }
-
-    // An expense carries a pending task when at least one of its live comments
-    // declares a pending task that is not yet complete.
-    async hasPendingTask({
-        expense_id,
-    }: {
-        expense_id: number;
-    }): Promise<boolean> {
-        const count = await this.prisma.expense_comments.count({
-            where: {
-                expense_id,
-                active: 1,
-                has_pending_task: true,
-                pending_task_complete: false,
-            },
-        });
-        return count > 0;
     }
 
     async getExpensesWithDisparities(
@@ -452,38 +422,6 @@ export class ExpensesService {
             where: {
                 expense_id,
                 active: 1,
-            },
-        });
-    }
-
-    // Total tasks on an expense = live comments flagged as pending tasks
-    // (complete or not). Paired with getPendingTaskCompleteCount to render the
-    // "completed/total" chip.
-    async getPendingTaskCount({
-        expense_id,
-    }: {
-        expense_id: number;
-    }): Promise<number> {
-        return this.prisma.expense_comments.count({
-            where: {
-                expense_id,
-                active: 1,
-                has_pending_task: true,
-            },
-        });
-    }
-
-    async getPendingTaskCompleteCount({
-        expense_id,
-    }: {
-        expense_id: number;
-    }): Promise<number> {
-        return this.prisma.expense_comments.count({
-            where: {
-                expense_id,
-                active: 1,
-                has_pending_task: true,
-                pending_task_complete: true,
             },
         });
     }

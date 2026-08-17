@@ -145,16 +145,16 @@ export class ActivityTitleService {
         );
     }
 
-    /** `1042 (F103) · Factura firmada` */
+    /** `1042 (F103) · Confirmado con cliente` */
     async orderSaleComment(comment: {
         id: number;
         order_sale_id?: number | null;
-        pending_task_comment?: string | null;
+        body?: string | null;
     }): Promise<string> {
         return buildTitle(
             comment.id,
             await this.getOrderSaleCode(comment.order_sale_id),
-            comment.pending_task_comment,
+            comment.body,
         );
     }
 
@@ -295,16 +295,16 @@ export class ActivityTitleService {
         );
     }
 
-    /** `EXT-8891 · Comprobante de pago` */
+    /** `EXT-8891 · Confirmado con proveedor` */
     async expenseComment(comment: {
         id: number;
         expense_id?: number | null;
-        pending_task_comment?: string | null;
+        body?: string | null;
     }): Promise<string> {
         return buildTitle(
             comment.id,
             await this.getExpenseCode(comment.expense_id),
-            comment.pending_task_comment,
+            comment.body,
         );
     }
 

@@ -5,15 +5,6 @@ import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 export class OrderSaleCommentBase {
     @Field(() => String, { nullable: false })
     body: string;
-
-    @Field(() => Boolean, { nullable: false })
-    has_pending_task: boolean;
-
-    @Field(() => Boolean, { nullable: false })
-    pending_task_complete: boolean;
-
-    @Field(() => String, { nullable: false })
-    pending_task_comment: string;
 }
 
 @InputType('CreateOrderSaleCommentInput')

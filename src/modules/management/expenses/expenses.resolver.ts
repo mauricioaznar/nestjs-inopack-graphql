@@ -336,20 +336,6 @@ export class ExpensesResolver {
         return this.service.getCommentsCount({ expense_id: expense.id });
     }
 
-    @ResolveField(() => Int)
-    async pending_task_count(@Parent() expense: Expense): Promise<number> {
-        return this.service.getPendingTaskCount({ expense_id: expense.id });
-    }
-
-    @ResolveField(() => Int)
-    async pending_task_complete_count(
-        @Parent() expense: Expense,
-    ): Promise<number> {
-        return this.service.getPendingTaskCompleteCount({
-            expense_id: expense.id,
-        });
-    }
-
     @ResolveField(() => [ExpenseResource])
     async expense_resources(expense: Expense): Promise<ExpenseResource[]> {
         return this.service.getExpenseResources({
@@ -377,13 +363,6 @@ export class ExpensesResolver {
         @CurrentUser() user: User,
     ): Promise<boolean> {
         return this.service.isEditable({
-            expense_id: expense.id,
-        });
-    }
-
-    @ResolveField(() => Boolean)
-    async has_pending_task(@Parent() expense: Expense): Promise<boolean> {
-        return this.service.hasPendingTask({
             expense_id: expense.id,
         });
     }

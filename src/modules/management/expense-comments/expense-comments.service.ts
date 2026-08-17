@@ -51,10 +51,6 @@ export class ExpenseCommentsService {
         input: CreateExpenseCommentInput,
         { current_user_id }: { current_user_id?: number | null } = {},
     ): Promise<ExpenseComment> {
-        // The complete flag + free-text comment are gated behind the toggle:
-        // they are only meaningful while the comment declares a pending task.
-        const requires = input.has_pending_task;
-
         return this.prisma.expense_comments.create({
             data: {
                 ...getCreatedAtProperty(),
@@ -62,11 +58,6 @@ export class ExpenseCommentsService {
                 ...getCreatedByProperty(current_user_id),
                 expense_id: input.expense_id,
                 body: input.body,
-                has_pending_task: requires,
-                pending_task_complete: requires
-                    ? input.pending_task_complete
-                    : false,
-                pending_task_comment: requires ? input.pending_task_comment : '',
             },
         });
     }
@@ -89,26 +80,17 @@ export class ExpenseCommentsService {
         const isAuthor =
             !!current_user_id && existing.created_by_id === current_user_id;
 
-        // The whole comment — body, the pending-task toggle, AND the operational
-        // task fields (complete flag + free-text detail) — is author-only. A
-        // task belongs to whoever wrote the comment; no other user may edit it.
+        // A comment belongs to its author; no other user may edit its body.
         if (!isAuthor) {
             throw new ForbiddenException(
                 'Only the author can edit this comment',
             );
         }
 
-        const requires = input.has_pending_task;
-
         return this.prisma.expense_comments.update({
             data: {
                 ...getUpdatedAtProperty(),
                 body: input.body,
-                has_pending_task: requires,
-                pending_task_complete: requires
-                    ? input.pending_task_complete
-                    : false,
-                pending_task_comment: requires ? input.pending_task_comment : '',
             },
             where: {
                 id: existing.id,

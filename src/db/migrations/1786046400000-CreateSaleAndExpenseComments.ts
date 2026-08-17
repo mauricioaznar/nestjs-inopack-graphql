@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
- * Comment + pending-document tracking for sales and expenses.
+ * Comments for sales and expenses.
  *
  * Two parallel tables rather than a polymorphic pattern — the codebase has no
  * polymorphic relations, so each comment table owns a plain FK to its parent
@@ -9,11 +9,6 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * `active` soft-delete flag, nullable `created_at` / `updated_at`, and a
  * `created_by_id` audit stamp FK to `users` (the same relation pattern already
  * on `order_sales` / `expenses`).
- *
- * `has_pending_task` gates `pending_task_complete` and `pending_task_comment`;
- * the complete flag + free-text comment are only meaningful when the toggle is
- * on. The free-text comment is generic — a document name, a cloud link, or any
- * note the user needs.
  *
  * This migration also carries three unrelated-but-concurrent schema moves for
  * the same feature branch, all one-way (no `down` reversal, by request):
@@ -48,9 +43,6 @@ export class CreateSaleAndExpenseComments1786046400000
                 \`body\`                      text         NOT NULL,
                 \`order_sale_id\`             int unsigned NULL     DEFAULT NULL,
                 \`created_by_id\`             int unsigned NULL     DEFAULT NULL,
-                \`has_pending_task\`          tinyint(1)   NOT NULL DEFAULT '0',
-                \`pending_task_complete\`     tinyint(1)   NOT NULL DEFAULT '0',
-                \`pending_task_comment\`      varchar(255) NOT NULL DEFAULT '',
                 PRIMARY KEY (\`id\`),
                 KEY \`order_sale_comments_order_sale_id_foreign\` (\`order_sale_id\`),
                 KEY \`order_sale_comments_created_by_id_foreign\` (\`created_by_id\`),
@@ -76,9 +68,6 @@ export class CreateSaleAndExpenseComments1786046400000
                 \`body\`                      text         NOT NULL,
                 \`expense_id\`                int unsigned NULL     DEFAULT NULL,
                 \`created_by_id\`             int unsigned NULL     DEFAULT NULL,
-                \`has_pending_task\`          tinyint(1)   NOT NULL DEFAULT '0',
-                \`pending_task_complete\`     tinyint(1)   NOT NULL DEFAULT '0',
-                \`pending_task_comment\`      varchar(255) NOT NULL DEFAULT '',
                 PRIMARY KEY (\`id\`),
                 KEY \`expense_comments_expense_id_foreign\` (\`expense_id\`),
                 KEY \`expense_comments_created_by_id_foreign\` (\`created_by_id\`),

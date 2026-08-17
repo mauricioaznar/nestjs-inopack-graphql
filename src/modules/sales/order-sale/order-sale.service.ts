@@ -219,18 +219,6 @@ export class OrderSaleService {
             });
         }
 
-        if (orderSalesQueryArgs.only_pending_task) {
-            orderSalesAndWhere.push({
-                order_sale_comments: {
-                    some: {
-                        active: 1,
-                        has_pending_task: true,
-                        pending_task_complete: false,
-                    },
-                },
-            });
-        }
-
         const orderSalesWhere: Prisma.order_salesWhereInput = {
             AND: orderSalesAndWhere,
         };
@@ -274,24 +262,6 @@ export class OrderSaleService {
         };
     }
 
-    // A sale carries a pending task when at least one of its live comments
-    // declares a pending task that is not yet complete.
-    async hasPendingTask({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<boolean> {
-        const count = await this.prisma.order_sale_comments.count({
-            where: {
-                order_sale_id,
-                active: 1,
-                has_pending_task: true,
-                pending_task_complete: false,
-            },
-        });
-        return count > 0;
-    }
-
     async getCommentsCount({
         order_sale_id,
     }: {
@@ -301,37 +271,6 @@ export class OrderSaleService {
             where: {
                 order_sale_id,
                 active: 1,
-            },
-        });
-    }
-
-    // Total tasks on a sale = live comments flagged as pending tasks (complete or
-    // not). Paired with getPendingTaskCompleteCount to render "completed/total".
-    async getPendingTaskCount({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<number> {
-        return this.prisma.order_sale_comments.count({
-            where: {
-                order_sale_id,
-                active: 1,
-                has_pending_task: true,
-            },
-        });
-    }
-
-    async getPendingTaskCompleteCount({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<number> {
-        return this.prisma.order_sale_comments.count({
-            where: {
-                order_sale_id,
-                active: 1,
-                has_pending_task: true,
-                pending_task_complete: true,
             },
         });
     }
