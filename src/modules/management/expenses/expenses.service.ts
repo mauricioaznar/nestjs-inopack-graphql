@@ -413,19 +413,6 @@ export class ExpensesService {
         });
     }
 
-    async getCommentsCount({
-        expense_id,
-    }: {
-        expense_id: number;
-    }): Promise<number> {
-        return this.prisma.expense_comments.count({
-            where: {
-                expense_id,
-                active: 1,
-            },
-        });
-    }
-
     // Inline single-field toggle, bypassing the status-locked upsert. Only
     // touches payment_authorized (and the updated_at stamp).
     async updateExpensePaymentAuthorized(
@@ -451,7 +438,7 @@ export class ExpensesService {
     // Lightweight optional-details edit, the expense counterpart of
     // updateOrderSaleDetails. Touches only side-effect-free documentation fields
     // so no totals recompute is needed; the status-locked full upsert is
-    // bypassed on purpose (a locked expense can still have its folio/notes fixed).
+    // bypassed on purpose (a locked expense can still have its folio fixed).
     async updateExpenseDetails({
         input,
     }: {
@@ -603,8 +590,8 @@ export class ExpensesService {
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
-                subtotal: input.subtotal,
                 notes: input.notes,
+                subtotal: input.subtotal,
                 tax: input.tax,
                 tax_retained: input.tax_retained,
                 non_tax_retained: input.non_tax_retained,
@@ -1265,7 +1252,9 @@ export class ExpensesService {
                         canceled: false,
                         reconciliation_only: source.reconciliation_only,
                         payment_authorized: source.payment_authorized,
-                        is_draft: source.is_draft,
+                        // Anything created through the recurring-expense dialog
+                        // requires review, regardless of the supplier default.
+                        is_draft: true,
                         resources_total: subtotal,
                         transfer_receipts_total: 0,
                         transfer_receipts_total_no_adjustments: 0,

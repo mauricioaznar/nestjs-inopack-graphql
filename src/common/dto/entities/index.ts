@@ -37,7 +37,6 @@ export * from './sales/order-sale.dto';
 export * from './sales/receipt-type.dto';
 export * from './sales/order-sale-status.dto';
 export * from './sales/order-sale-product.dto';
-export * from './sales/order-sale-comment.dto';
 
 // activities
 export * from './activities/activity.dto';
@@ -51,7 +50,6 @@ export * from './management/account-contact.dto';
 export * from './management/account-product.dto';
 export * from './management/account-resource.dto';
 export * from './management/expense.dto';
-export * from './management/expense-comment.dto';
 export * from './management/resource.dto';
 export * from './management/resource-category.dto';
 export * from './management/expense-resource.dto';

@@ -95,9 +95,8 @@ export class AccountBase {
     @Field(() => Boolean, { nullable: false })
     supplier_payment_authorized_default: boolean;
 
-    // Default for a new expense's `is_draft`. ON (draft) everywhere except
-    // monitored-balance and recurring-expense suppliers, whose expenses are
-    // captured as final rather than as drafts.
+    // Default for a manually captured expense's `is_draft`. Accounts start OFF
+    // and users explicitly opt individual suppliers into draft-by-default.
     @Field(() => Boolean, { nullable: false })
     supplier_is_draft: boolean;
 }

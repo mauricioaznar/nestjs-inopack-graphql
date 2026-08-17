@@ -53,9 +53,6 @@ export class OrderSaleBase {
     @Field(() => Float, { nullable: false })
     credit_note_amount: number;
 
-    @Field(() => String, { nullable: false })
-    notes: string;
-
     @Field(() => Int, { nullable: true })
     account_id: number | null;
 
@@ -67,6 +64,9 @@ export class OrderSaleBase {
 
     @Field(() => Boolean, { nullable: false })
     automatic_tax_calculation: boolean;
+
+    @Field(() => String, { nullable: false })
+    notes: string;
 
     @Field(() => Float, { nullable: false })
     tax: number;

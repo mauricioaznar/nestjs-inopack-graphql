@@ -262,19 +262,6 @@ export class OrderSaleService {
         };
     }
 
-    async getCommentsCount({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<number> {
-        return this.prisma.order_sale_comments.count({
-            where: {
-                order_sale_id,
-                active: 1,
-            },
-        });
-    }
-
     async getOrderSale({
         orderSaleId,
     }: {
@@ -766,10 +753,10 @@ export class OrderSaleService {
                 supplement_code: input.supplement_code,
                 credit_note_code: input.credit_note_code,
                 credit_note_amount: input.credit_note_amount,
-                notes: input.notes,
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
                 automatic_tax_calculation: input.automatic_tax_calculation,
+                notes: input.notes,
                 subtotal: round(subtotal),
                 tax: round(tax),
                 total_with_tax: round(total_with_tax),
@@ -794,9 +781,9 @@ export class OrderSaleService {
                 credit_note_code: input.credit_note_code,
                 credit_note_amount: input.credit_note_amount,
                 automatic_tax_calculation: input.automatic_tax_calculation,
-                notes: input.notes,
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
+                notes: input.notes,
                 subtotal: round(subtotal),
                 tax: round(tax),
                 total_with_tax: round(total_with_tax),

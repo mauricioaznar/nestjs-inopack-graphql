@@ -403,13 +403,6 @@ export class OrderSaleResolver {
         });
     }
 
-    @ResolveField(() => Int)
-    async comments_count(@Parent() orderSale: OrderSale): Promise<number> {
-        return this.service.getCommentsCount({
-            order_sale_id: orderSale.id,
-        });
-    }
-
     @Subscription(() => OrderSale)
     async order_sale() {
         return this.pubSubService.listenForOrderSale();

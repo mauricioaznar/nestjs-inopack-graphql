@@ -6,13 +6,11 @@ import {
     ActivityEntityName,
     ActivityTypeName,
     Expense,
-    ExpenseComment,
     ExpenseResource,
     Machine,
     OrderQuotation,
     OrderRequest,
     OrderSale,
-    OrderSaleComment,
     Product,
     Resource,
     Transfer,
@@ -478,55 +476,6 @@ export class PubSubService {
             entity_id: expense.id,
             userId,
             title: () => this.activityTitle.expense(expense),
-            snapshots: { supported: true, old: oldCapture, new: newCapture },
-        });
-    }
-
-    // Comments have no entity subscription topic. Their mutations refresh the
-    // active parent list and comments query directly in Apollo; this wrapper is
-    // solely the canonical activity-audit path.
-    async expenseComment({
-        comment,
-        type,
-        userId,
-        oldCapture,
-        newCapture,
-    }: {
-        comment: ExpenseComment;
-        type: ActivityTypeName;
-        userId: number;
-        oldCapture: SnapshotCapture;
-        newCapture: SnapshotCapture;
-    }) {
-        await this.publishActivity({
-            entity_name: ActivityEntityName.EXPENSE_COMMENT,
-            type,
-            entity_id: comment.id,
-            userId,
-            title: () => this.activityTitle.expenseComment(comment),
-            snapshots: { supported: true, old: oldCapture, new: newCapture },
-        });
-    }
-
-    async orderSaleComment({
-        comment,
-        type,
-        userId,
-        oldCapture,
-        newCapture,
-    }: {
-        comment: OrderSaleComment;
-        type: ActivityTypeName;
-        userId: number;
-        oldCapture: SnapshotCapture;
-        newCapture: SnapshotCapture;
-    }) {
-        await this.publishActivity({
-            entity_name: ActivityEntityName.ORDER_SALE_COMMENT,
-            type,
-            entity_id: comment.id,
-            userId,
-            title: () => this.activityTitle.orderSaleComment(comment),
             snapshots: { supported: true, old: oldCapture, new: newCapture },
         });
     }

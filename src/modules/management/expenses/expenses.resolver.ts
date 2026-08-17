@@ -151,7 +151,7 @@ export class ExpensesResolver {
         return expense;
     }
 
-    // Optional-details edit from the balances views (folio, notes, payment date,
+    // Optional-details edit from the balances views (folio, payment date,
     // supplement, conciliation, canceled). Like updateExpensePaymentAuthorized it
     // bypasses the status-locked upsert and is audited with old/new snapshots.
     @Mutation(() => Expense)
@@ -329,11 +329,6 @@ export class ExpensesResolver {
         return this.service.getReceiptType({
             receipt_type_id: expense.receipt_type_id,
         });
-    }
-
-    @ResolveField(() => Int)
-    async comments_count(@Parent() expense: Expense): Promise<number> {
-        return this.service.getCommentsCount({ expense_id: expense.id });
     }
 
     @ResolveField(() => [ExpenseResource])

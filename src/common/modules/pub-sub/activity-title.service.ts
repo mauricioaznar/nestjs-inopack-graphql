@@ -100,20 +100,6 @@ export class ActivityTitleService {
         return this.expenseCode(expense);
     }
 
-    private async getOrderSaleCode(
-        orderSaleId?: number | null,
-    ): Promise<string> {
-        if (!orderSaleId) return '';
-        const orderSale = await this.prisma.order_sales.findFirst({
-            where: { id: orderSaleId },
-            select: { order_code: true, invoice_code: true },
-        });
-        if (!orderSale) return '';
-        return orderSale.invoice_code
-            ? `${orderSale.order_code} (F${orderSale.invoice_code})`
-            : `${orderSale.order_code}`;
-    }
-
     // `external_code` defaults to '' rather than null, so `||` and not `??`.
     private expenseCode(expense: {
         external_code?: string | null;
@@ -142,19 +128,6 @@ export class ActivityTitleService {
             orderSale.id,
             code,
             await this.getAccountName(orderSale.account_id),
-        );
-    }
-
-    /** `1042 (F103) · Confirmado con cliente` */
-    async orderSaleComment(comment: {
-        id: number;
-        order_sale_id?: number | null;
-        body?: string | null;
-    }): Promise<string> {
-        return buildTitle(
-            comment.id,
-            await this.getOrderSaleCode(comment.order_sale_id),
-            comment.body,
         );
     }
 
@@ -292,19 +265,6 @@ export class ActivityTitleService {
             expense.id,
             this.expenseCode(expense),
             await this.getAccountName(expense.account_id),
-        );
-    }
-
-    /** `EXT-8891 · Confirmado con proveedor` */
-    async expenseComment(comment: {
-        id: number;
-        expense_id?: number | null;
-        body?: string | null;
-    }): Promise<string> {
-        return buildTitle(
-            comment.id,
-            await this.getExpenseCode(comment.expense_id),
-            comment.body,
         );
     }
 

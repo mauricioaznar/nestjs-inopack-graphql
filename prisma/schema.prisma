@@ -588,7 +588,6 @@ model order_sales {
   order_sale_statuses                    order_sale_statuses?  @relation(fields: [order_sale_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_order_sale_status_id_foreign")
   receipt_types                          receipt_types?        @relation(fields: [receipt_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sales_receipt_type_foreign")
   transfer_receipts                      transfer_receipts[]
-  order_sale_comments                    order_sale_comments[]
 
   @@index([order_request_id], map: "order_sales_order_request_id_foreign")
   @@index([receipt_type_id], map: "order_sales_order_sale_receipt_type_id_foreign")
@@ -724,10 +723,6 @@ model users {
   resources_updated_by         resources[]         @relation("resources_updated_by")
   transfers_created_by         transfers[]         @relation("transfers_created_by")
   transfers_updated_by         transfers[]         @relation("transfers_updated_by")
-
-  // Comment-author audit back-relations (feature/comments-pending-documents).
-  order_sale_comments_created_by order_sale_comments[] @relation("order_sale_comments_created_by")
-  expense_comments_created_by    expense_comments[]    @relation("expense_comments_created_by")
 
   branches branches? @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_branch_id_foreign")
   roles    roles?    @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_role_id_foreign")
@@ -907,7 +902,7 @@ model accounts {
   client_reconciliation_only                    Boolean             @default(false)
   supplier_reconciliation_only                  Boolean             @default(false)
   supplier_payment_authorized_default           Boolean             @default(true)
-  supplier_is_draft                             Boolean             @default(true)
+  supplier_is_draft                             Boolean             @default(false)
   exclude_from_accountability_export            Boolean             @default(false)
   merged_into_account_id                        Int?                @db.UnsignedInt
   created_by_id                                 Int?                @db.UnsignedInt
@@ -973,43 +968,12 @@ model expenses {
   generated_from_expense                 expenses?           @relation("expense_provenance", fields: [generated_from_expense_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "expenses_generated_from_expense_id_foreign")
   generated_expenses                     expenses[]          @relation("expense_provenance")
   transfer_receipts                      transfer_receipts[]
-  expense_comments                       expense_comments[]
 
   @@index([account_id], map: "expenses_account_id_foreign")
   @@index([receipt_type_id], map: "expenses_receipt_type_foreign")
   @@index([generated_from_expense_id], map: "expenses_generated_from_expense_id_idx")
   @@index([created_by_id], map: "expenses_created_by_id_foreign")
   @@index([updated_by_id], map: "expenses_updated_by_id_foreign")
-}
-
-model order_sale_comments {
-  id                         Int          @id @default(autoincrement()) @db.UnsignedInt
-  active                     Int          @default(1)
-  created_at                 DateTime?    @db.DateTime(0)
-  updated_at                 DateTime?    @db.DateTime(0)
-  body                       String       @db.Text
-  order_sale_id              Int?         @db.UnsignedInt
-  created_by_id              Int?         @db.UnsignedInt
-  order_sales                order_sales? @relation(fields: [order_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_comments_order_sale_id_foreign")
-  created_by_user            users?       @relation("order_sale_comments_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_sale_comments_created_by_id_foreign")
-
-  @@index([order_sale_id], map: "order_sale_comments_order_sale_id_foreign")
-  @@index([created_by_id], map: "order_sale_comments_created_by_id_foreign")
-}
-
-model expense_comments {
-  id                         Int       @id @default(autoincrement()) @db.UnsignedInt
-  active                     Int       @default(1)
-  created_at                 DateTime? @db.DateTime(0)
-  updated_at                 DateTime? @db.DateTime(0)
-  body                       String    @db.Text
-  expense_id                 Int?      @db.UnsignedInt
-  created_by_id              Int?      @db.UnsignedInt
-  expenses                   expenses? @relation(fields: [expense_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_comments_expense_id_foreign")
-  created_by_user            users?    @relation("expense_comments_created_by", fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "expense_comments_created_by_id_foreign")
-
-  @@index([expense_id], map: "expense_comments_expense_id_foreign")
-  @@index([created_by_id], map: "expense_comments_created_by_id_foreign")
 }
 
 model resource_categories {

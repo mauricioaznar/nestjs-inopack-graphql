@@ -6,7 +6,6 @@ import { OrderQuotationsModule } from './order-quotations/order-quotations.modul
 import { OrderSaleModule } from './order-sale/order-sale.module';
 import { OrderSaleProductsModule } from './order-sale-products/order-sale-products.module';
 import { OrderSaleStatusesModule } from './order-sale-statuses/order-sale-statuses.module';
-import { OrderSaleCommentsModule } from './order-sale-comments/order-sale-comments.module';
 
 @Module({
     imports: [
@@ -17,7 +16,6 @@ import { OrderSaleCommentsModule } from './order-sale-comments/order-sale-commen
         OrderSaleModule,
         OrderSaleProductsModule,
         OrderSaleStatusesModule,
-        OrderSaleCommentsModule,
     ],
 })
 export class SalesModule {}
