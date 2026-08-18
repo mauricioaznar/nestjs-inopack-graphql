@@ -71,33 +71,17 @@ export class ExpenseBase {
     @Field(() => Boolean, { nullable: false })
     reconciliation_only: boolean;
 
-    // "The payment is authorized." Seeds from the supplier account default on
-    // create; toggled inline from the balances views or in the upsert dialog.
-    @Field(() => Boolean, { nullable: false })
-    payment_authorized: boolean;
-
     // "This expense is still a draft." Seeds from the supplier account default
     // (`supplier_is_draft`) on manual create. Recurring-generated expenses are
-    // always drafts. Editable only in the upsert dialog. While draft, balances
-    // views hide the Pago aut. control and show a draft warning instead.
+    // always drafts. Balance de proveedores presents the inverse as a supplier
+    // agreement checkbox: checked means this stored value is false.
     @Field(() => Boolean, { nullable: false })
     is_draft: boolean;
 }
 
-// Single-field inline toggle from the balances views — no full upsert, its own
-// audited mutation.
-@InputType('UpdateExpensePaymentAuthorizedInput')
-export class UpdateExpensePaymentAuthorizedInput {
-    @Field(() => Int, { nullable: false })
-    expense_id: number;
-
-    @Field(() => Boolean, { nullable: false })
-    payment_authorized: boolean;
-}
-
 // Lightweight "optional details" edit from the balances views — the expense
 // counterpart of OrderSaleDetailsInput. Only the side-effect-free documentation
-// fields (payment date, folio, supplement, conciliation, canceled) so no
+// fields (payment date, folio, supplement, conciliation, draft, canceled) so no
 // totals recompute is triggered; the financial fields live on the full upsert.
 @InputType('ExpenseDetailsInput')
 export class ExpenseDetailsInput {
@@ -124,6 +108,9 @@ export class ExpenseDetailsInput {
 
     @Field(() => Boolean, { nullable: false })
     reconciliation_only: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    is_draft: boolean;
 
     @Field(() => Boolean, { nullable: false })
     canceled: boolean;

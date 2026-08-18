@@ -901,7 +901,6 @@ model accounts {
   client_automatic_tax_calculation              Boolean             @default(true)
   client_reconciliation_only                    Boolean             @default(false)
   supplier_reconciliation_only                  Boolean             @default(false)
-  supplier_payment_authorized_default           Boolean             @default(true)
   supplier_is_draft                             Boolean             @default(false)
   exclude_from_accountability_export            Boolean             @default(false)
   merged_into_account_id                        Int?                @db.UnsignedInt
@@ -956,7 +955,6 @@ model expenses {
   internal_code                          Int                 @default(0)
   generated_from_expense_id              Int?                @db.UnsignedInt
   reconciliation_only                    Boolean             @default(false)
-  payment_authorized                     Boolean             @default(true)
   is_draft                               Boolean             @default(false)
   created_by_id                          Int?                @db.UnsignedInt
   updated_by_id                          Int?                @db.UnsignedInt

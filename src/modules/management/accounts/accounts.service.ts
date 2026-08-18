@@ -358,6 +358,8 @@ export class AccountsService {
                   select: { name: true },
               })
             : null;
+        const supplierIsDraft =
+            input.monitor_supplier_expenses || input.supplier_is_draft;
 
         const account = await this.prisma.accounts.upsert({
             create: {
@@ -393,9 +395,7 @@ export class AccountsService {
                     input.client_reconciliation_only,
                 supplier_reconciliation_only:
                     input.supplier_reconciliation_only,
-                supplier_payment_authorized_default:
-                    input.supplier_payment_authorized_default,
-                supplier_is_draft: input.supplier_is_draft,
+                supplier_is_draft: supplierIsDraft,
             },
             update: {
                 ...getUpdatedAtProperty(),
@@ -428,9 +428,7 @@ export class AccountsService {
                     input.client_reconciliation_only,
                 supplier_reconciliation_only:
                     input.supplier_reconciliation_only,
-                supplier_payment_authorized_default:
-                    input.supplier_payment_authorized_default,
-                supplier_is_draft: input.supplier_is_draft,
+                supplier_is_draft: supplierIsDraft,
             },
             where: {
                 id: input.id || 0,
