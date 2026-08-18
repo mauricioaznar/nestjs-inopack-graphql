@@ -15,10 +15,12 @@ interface MovementsInput {
 
 // Per-product inventory ledger. Deliberately built by reading the same four
 // tables the balance query reads (adjustments, production, consumption, sales),
-// each filtered to one product and a date window, then merged and signed in
-// TypeScript — NOT a raw UNION. The sign rules and the active/status filters
+// each filtered to one product and an updated_at window, then merged and signed
+// in TypeScript — NOT a raw UNION. The sign rules and the active/status filters
 // mirror ProductInventoryService.getProductsInventory() exactly, so the ledger
-// reconciles to the balance it drills into.
+// reconciles to the balance it drills into. The window and the running-balance
+// reconstruction both run on updated_at (last edited), so the range, the sort,
+// and the "Inv" column all share one timeline.
 @Injectable()
 export class ProductInventoryMovementsService {
     constructor(private prisma: PrismaService) {}
@@ -33,10 +35,23 @@ export class ProductInventoryMovementsService {
             new Date(endDate.getTime() - DEFAULT_WINDOW_DAYS * 86_400_000);
         const includeAllSaleStatuses = input.includeAllSaleStatuses ?? false;
 
-        // Anchor = the product's stock AS OF endDate (all movements up to
-        // endDate, delivered-only). The backward walk starts here, so it stays
-        // correct even when the window ends in the past. Committed sales never
-        // enter the anchor regardless of the toggle — they do not move stock.
+        // Window bounds. A movement is IN the window when its line OR its header
+        // was last edited inside [startDate, endDate] — the ledger is driven by
+        // WHEN a row changed (updated_at), not by its document date, so an old
+        // sale edited today shows up today. This helper builds that OR for a
+        // given header relation.
+        const updatedInWindow = (headerRelation: string) => ({
+            OR: [
+                { updated_at: { gte: startDate, lte: endDate } },
+                { [headerRelation]: { updated_at: { gte: startDate, lte: endDate } } },
+            ],
+        });
+
+        // Anchor = the product's CURRENT stock (all active rows, delivered-only).
+        // Because the ledger is reconstructed in updated_at order (newest edit
+        // first) and the window ends "now" by default, unwinding the shown
+        // movements from the current stock is exact. Committed sales never enter
+        // the anchor regardless of the toggle — they do not move stock.
         const [
             anchor,
             saleRows,
@@ -44,7 +59,7 @@ export class ProductInventoryMovementsService {
             productionRows,
             consumedRows,
         ] = await Promise.all([
-            this.balanceAsOf(product_id, endDate),
+            this.currentBalance(product_id),
             this.prisma.order_sale_products.findMany({
                 where: {
                     active: 1,
@@ -54,8 +69,8 @@ export class ProductInventoryMovementsService {
                         ...(includeAllSaleStatuses
                             ? {}
                             : { order_sale_status_id: ENTREGADO_STATUS_ID }),
-                        date: { gte: startDate, lte: endDate },
                     },
+                    ...updatedInWindow('order_sales'),
                 },
                 include: { order_sales: true },
             }),
@@ -63,10 +78,8 @@ export class ProductInventoryMovementsService {
                 where: {
                     active: 1,
                     product_id,
-                    order_adjustments: {
-                        active: 1,
-                        date: { gte: startDate, lte: endDate },
-                    },
+                    order_adjustments: { active: 1 },
+                    ...updatedInWindow('order_adjustments'),
                 },
                 include: { order_adjustments: true },
             }),
@@ -74,10 +87,8 @@ export class ProductInventoryMovementsService {
                 where: {
                     active: 1,
                     product_id,
-                    order_productions: {
-                        active: 1,
-                        start_date: { gte: startDate, lte: endDate },
-                    },
+                    order_productions: { active: 1 },
+                    ...updatedInWindow('order_productions'),
                 },
                 include: { order_productions: true },
             }),
@@ -85,10 +96,8 @@ export class ProductInventoryMovementsService {
                 where: {
                     active: 1,
                     product_id,
-                    order_productions: {
-                        active: 1,
-                        start_date: { gte: startDate, lte: endDate },
-                    },
+                    order_productions: { active: 1 },
+                    ...updatedInWindow('order_productions'),
                 },
                 include: { order_productions: true },
             }),
@@ -176,18 +185,21 @@ export class ProductInventoryMovementsService {
             });
         }
 
-        // The balance reconstruction must run in CHRONOLOGICAL order (by
-        // document date, newest first) regardless of how the list is finally
-        // displayed — "stock just before this movement" is only meaningful along
-        // the event timeline. So walk on a date-sorted copy, stamp each row, then
-        // present the rows in a different order below.
-        const byDateDesc = [...movements].sort(
-            (a, b) => b.date.getTime() - a.date.getTime(),
-        );
+        // Display order = reconstruction order: most-recently-edited first
+        // (updated_at, falling back to document date when a row has none). The
+        // balance is unwound in this SAME order so the "Inv" column reads as one
+        // clean running total down the list — each row differs from the next by
+        // exactly its own movement. (This makes "Inv" the recorded balance just
+        // before this row's latest edit, unwound in edit order — the right
+        // meaning for a "where did it change?" ledger, not physical stock at a
+        // calendar date.)
+        const sortKey = (m: InventoryMovement): number =>
+            (m.updated_at ?? m.date).getTime();
+        movements.sort((a, b) => sortKey(b) - sortKey(a));
 
         let runKilos = anchor.kilos;
         let runGroups = anchor.groups;
-        for (const m of byDateDesc) {
+        for (const m of movements) {
             if (!m.affects_inventory) {
                 // Committed sales sit in the timeline but do not move stock, so
                 // they carry no reconstructed level and do not advance the walk.
@@ -195,30 +207,25 @@ export class ProductInventoryMovementsService {
                 m.balance_groups = null;
                 continue;
             }
-            // balance = stock immediately BEFORE this movement applied. runKilos
-            // holds the stock AFTER this movement (level at its date); undo the
-            // movement to get the level going into it.
+            // balance = stock immediately BEFORE this movement (its effect undone
+            // from the running total); runKilos then steps to that level for the
+            // next, older row.
             m.balance_kilos = round(runKilos - m.kilos);
             m.balance_groups = round(runGroups - m.groups);
             runKilos -= m.kilos;
             runGroups -= m.groups;
         }
 
-        // Display order: most-recently-edited first. Falls back to the document
-        // date when a row has no updated_at so it still sorts sensibly.
-        const sortKey = (m: InventoryMovement): number =>
-            (m.updated_at ?? m.date).getTime();
-        movements.sort((a, b) => sortKey(b) - sortKey(a));
-
         return movements;
     }
 
-    // Net stock of a product counting every movement dated on or before `asOf`,
-    // delivered-only for sales. Same sign rule as the balance query. Returns
-    // both kilos and groups so the backward walk can anchor both.
-    private async balanceAsOf(
+    // The product's CURRENT net stock (all active rows, delivered-only for
+    // sales) — the same value getProductsInventory shows. Same sign rule as that
+    // query; returns both kilos and groups to anchor the backward walk. No date
+    // bound: without an edit-history log we can only reconstruct relative to the
+    // current recorded values, so the walk anchors at "now" and unwinds edits.
+    private async currentBalance(
         product_id: number,
-        asOf: Date,
     ): Promise<{ kilos: number; groups: number }> {
         const [production, consumed, adjustment, sale] = await Promise.all([
             this.prisma.order_production_products.aggregate({
@@ -226,10 +233,7 @@ export class ProductInventoryMovementsService {
                 where: {
                     active: 1,
                     product_id,
-                    order_productions: {
-                        active: 1,
-                        start_date: { lte: asOf },
-                    },
+                    order_productions: { active: 1 },
                 },
             }),
             this.prisma.order_production_products_consumed.aggregate({
@@ -237,10 +241,7 @@ export class ProductInventoryMovementsService {
                 where: {
                     active: 1,
                     product_id,
-                    order_productions: {
-                        active: 1,
-                        start_date: { lte: asOf },
-                    },
+                    order_productions: { active: 1 },
                 },
             }),
             this.prisma.order_adjustment_products.aggregate({
@@ -248,10 +249,7 @@ export class ProductInventoryMovementsService {
                 where: {
                     active: 1,
                     product_id,
-                    order_adjustments: {
-                        active: 1,
-                        date: { lte: asOf },
-                    },
+                    order_adjustments: { active: 1 },
                 },
             }),
             this.prisma.order_sale_products.aggregate({
@@ -262,7 +260,6 @@ export class ProductInventoryMovementsService {
                     order_sales: {
                         active: 1,
                         order_sale_status_id: ENTREGADO_STATUS_ID,
-                        date: { lte: asOf },
                     },
                 },
             }),
