@@ -11,5 +11,5 @@ export function getCompoundOrderCode(
     if (!orderSale) return '';
     return `${orderSale.order_code}${
         orderSale.invoice_code ? ' (' + orderSale.invoice_code + ')' : ''
-    } `;
+    }`;
 }
