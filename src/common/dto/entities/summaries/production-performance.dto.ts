@@ -126,6 +126,9 @@ export class ProductWithRuns {
 
     @Field(() => String, { nullable: false })
     description: string;
+
+    @Field(() => String, { nullable: true })
+    product_category_name: string | null;
 }
 
 // One row per production for the MACHINE-level hourly-throughput view (no

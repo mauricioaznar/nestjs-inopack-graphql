@@ -89,6 +89,11 @@ export class AccountBase {
 
     @Field(() => Boolean, { nullable: false })
     supplier_reconciliation_only: boolean;
+
+    // Default for a manually captured expense's `is_draft`. Monitored-balance
+    // suppliers start ON; other suppliers may opt into draft-by-default.
+    @Field(() => Boolean, { nullable: false })
+    supplier_is_draft: boolean;
 }
 
 @InputType('AccountUpsertInput')
@@ -210,9 +215,6 @@ export class AccountTransactionItem {
 
     @Field(() => Float)
     transfer_receipts_total: number;
-
-    @Field(() => String, { nullable: true })
-    expense_status_color: string | null;
 }
 
 // A single transfer (payment) as its own ledger row, filtered by its own

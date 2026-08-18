@@ -11,6 +11,7 @@ import {
     ExpensesSortArgs,
     ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
+    ExpenseDetailsInput,
     GenerateRecurringExpenseInput,
     GenerateRecurringExpensesResult,
     GetExpensesQueryArgs,
@@ -70,6 +71,12 @@ export class ExpensesService {
     //
     // `transfer_receipts` is deliberately excluded — payments applied to an
     // expense are a separate entity with their own activities.
+    //
+    // This is an `include` (not a column `select`), so EVERY scalar column rides
+    // into old_data/new_data — including the boolean flags `reconciliation_only`
+    // and `is_draft`. That is load-bearing: the audit diff surfaces those
+    // toggles. Do NOT narrow this to a `select` without adding those flags back
+    // explicitly, or the changes silently drop out of the trail.
     async getExpenseSnapshot({
         expense_id,
     }: {
@@ -89,12 +96,6 @@ export class ExpensesService {
                     },
                 },
                 receipt_types: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
-                expense_statuses: {
                     select: {
                         id: true,
                         name: true,
@@ -366,7 +367,6 @@ export class ExpensesService {
                 ${convertToInt('expenses.id', 'id')},
                 ${convertToInt('account_id')},
                 ${convertToInt('receipt_type_id')},
-                ${convertToInt('expense_status_id')},
                 wtv.total as expenses_total,
                 ifnull(otv.total, 0) as transfer_receipts_total
             FROM expenses
@@ -412,29 +412,41 @@ export class ExpensesService {
         });
     }
 
-    async getExpenseStatus({
-        expense_status_id,
+    // Lightweight optional-details edit, the expense counterpart of
+    // updateOrderSaleDetails. Touches only side-effect-free workflow fields
+    // so no totals recompute is needed; the status-locked full upsert is
+    // bypassed on purpose (a locked expense can still have its folio fixed).
+    async updateExpenseDetails({
+        input,
     }: {
-        expense_status_id: number | null;
-    }) {
-        if (!expense_status_id) {
-            return null;
-        }
-
-        return this.prisma.expense_statuses.findFirst({
-            where: {
-                id: expense_status_id,
-            },
+        input: ExpenseDetailsInput;
+    }): Promise<Expense> {
+        const existing = await this.getExpense({
+            expense_id: input.expense_id,
         });
-    }
-
-    async getExpenseStatuses() {
-        return this.prisma.expense_statuses.findMany({
-            where: {
-                active: 1,
+        if (!existing) {
+            throw new NotFoundException();
+        }
+        return this.prisma.expenses.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                notes: input.notes,
+                // expected_payment_date is the one nullable column here, so a
+                // null clears it; only a truly omitted field would skip.
+                expected_payment_date:
+                    input.expected_payment_date === undefined
+                        ? undefined
+                        : input.expected_payment_date,
+                require_external_code: input.require_external_code,
+                external_code: input.external_code,
+                require_supplement: input.require_supplement,
+                supplement_code: input.supplement_code,
+                reconciliation_only: input.reconciliation_only,
+                is_draft: input.is_draft,
+                canceled: input.canceled,
             },
-            orderBy: {
-                id: 'asc',
+            where: {
+                id: input.expense_id,
             },
         });
     }
@@ -528,7 +540,6 @@ export class ExpensesService {
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
-                expense_status_id: input.expense_status_id,
                 notes: input.notes,
                 subtotal: input.subtotal,
                 tax: input.tax,
@@ -539,6 +550,7 @@ export class ExpensesService {
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
+                is_draft: input.is_draft,
                 resources_total: input.resources_total,
             },
             update: {
@@ -555,9 +567,8 @@ export class ExpensesService {
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
-                expense_status_id: input.expense_status_id,
-                subtotal: input.subtotal,
                 notes: input.notes,
+                subtotal: input.subtotal,
                 tax: input.tax,
                 tax_retained: input.tax_retained,
                 non_tax_retained: input.non_tax_retained,
@@ -566,6 +577,7 @@ export class ExpensesService {
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
+                is_draft: input.is_draft,
                 resources_total: input.resources_total,
             },
             where: {
@@ -1215,8 +1227,10 @@ export class ExpensesService {
                         internal_code: 0,
                         canceled: false,
                         reconciliation_only: source.reconciliation_only,
+                        // Anything created through the recurring-expense dialog
+                        // requires review, regardless of the supplier default.
+                        is_draft: true,
                         resources_total: subtotal,
-                        expense_status_id: null,
                         transfer_receipts_total: 0,
                         transfer_receipts_total_no_adjustments: 0,
                         generated_from_expense_id: item.source_expense_id,

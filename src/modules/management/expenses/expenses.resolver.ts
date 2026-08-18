@@ -17,11 +17,11 @@ import {
     ActivityTypeName,
     Expense,
     ExpenseResource,
-    ExpenseStatus,
     ExpensesQueryArgs,
     ExpensesSortArgs,
     ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
+    ExpenseDetailsInput,
     GenerateRecurringExpenseInput,
     GenerateRecurringExpensesResult,
     GetExpensesQueryArgs,
@@ -103,6 +103,49 @@ export class ExpensesResolver {
         return expense;
     }
 
+    // Optional-details edit from the balances views (folio, payment date,
+    // supplement, conciliation, canceled). It bypasses the status-locked upsert
+    // and is audited with old/new snapshots.
+    @Mutation(() => Expense)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
+    async updateExpenseDetails(
+        @Args('ExpenseDetailsInput') input: ExpenseDetailsInput,
+        @CurrentUser() currentUser: User,
+    ): Promise<Expense> {
+        const auditContext = {
+            entityName: ActivityEntityName.EXPENSE,
+            entityId: input.expense_id,
+            activityType: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        };
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () =>
+                this.service.getExpenseSnapshot({
+                    expense_id: input.expense_id,
+                }),
+        );
+        const expense = await this.service.updateExpenseDetails({ input });
+        const newCapture = await captureSnapshotSafely(
+            auditContext,
+            'new_snapshot',
+            () =>
+                this.service.getExpenseSnapshot({
+                    expense_id: input.expense_id,
+                }),
+        );
+        await this.pubSubService.expense({
+            expense,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+            oldCapture,
+            newCapture,
+        });
+        return expense;
+    }
+
     @Mutation(() => Boolean)
     @UseGuards(GqlAuthGuard)
     @RolesDecorator(RoleId.EXPENSES)
@@ -148,13 +191,6 @@ export class ExpensesResolver {
     @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getExpense(@Args('ExpenseId') id: number): Promise<Expense | null> {
         return this.service.getExpense({ expense_id: id });
-    }
-
-    @Query(() => [ExpenseStatus])
-    @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
-    async getExpenseStatuses(): Promise<ExpenseStatus[]> {
-        return this.service.getExpenseStatuses();
     }
 
     @Query(() => [Expense])
@@ -244,15 +280,6 @@ export class ExpensesResolver {
     ): Promise<ReceiptType | null> {
         return this.service.getReceiptType({
             receipt_type_id: expense.receipt_type_id,
-        });
-    }
-
-    @ResolveField(() => ExpenseStatus, { nullable: true })
-    async expense_status(
-        @Parent() expense: Expense,
-    ): Promise<ExpenseStatus | null> {
-        return this.service.getExpenseStatus({
-            expense_status_id: expense.expense_status_id,
         });
     }
 

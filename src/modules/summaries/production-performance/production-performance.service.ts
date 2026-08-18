@@ -625,7 +625,8 @@ export class ProductionPerformanceService {
         return this.prisma.$queryRawUnsafe(`
             select distinct
                 ${convertToInt('products.id', 'id')},
-                products.description as description
+                products.description as description,
+                product_categories.name as product_category_name
             from order_production_products opp
             join order_productions op
                 on op.id = opp.order_production_id
@@ -634,8 +635,11 @@ export class ProductionPerformanceService {
                 on products.id = opp.product_id
                 and products.active = 1
                 and products.discontinued = 0
+            left join product_categories
+                on product_categories.id = products.product_category_id
+                and product_categories.active = 1
             where opp.active = 1
-            order by products.description
+            order by product_categories.name, products.description
         `);
     }
 }
