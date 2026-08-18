@@ -11,7 +11,6 @@ import {
     ExpensesSortArgs,
     ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
-    UpdateExpensePaymentAuthorizedInput,
     ExpenseDetailsInput,
     GenerateRecurringExpenseInput,
     GenerateRecurringExpensesResult,
@@ -75,9 +74,9 @@ export class ExpensesService {
     //
     // This is an `include` (not a column `select`), so EVERY scalar column rides
     // into old_data/new_data — including the boolean flags `reconciliation_only`
-    // and `payment_authorized`. That is load-bearing: the audit diff surfaces
-    // those toggles. Do NOT narrow this to a `select` without adding those flags
-    // back explicitly, or the changes silently drop out of the trail.
+    // and `is_draft`. That is load-bearing: the audit diff surfaces those
+    // toggles. Do NOT narrow this to a `select` without adding those flags back
+    // explicitly, or the changes silently drop out of the trail.
     async getExpenseSnapshot({
         expense_id,
     }: {
@@ -413,30 +412,8 @@ export class ExpensesService {
         });
     }
 
-    // Inline single-field toggle, bypassing the status-locked upsert. Only
-    // touches payment_authorized (and the updated_at stamp).
-    async updateExpensePaymentAuthorized(
-        input: UpdateExpensePaymentAuthorizedInput,
-    ): Promise<Expense> {
-        const existing = await this.getExpense({
-            expense_id: input.expense_id,
-        });
-        if (!existing) {
-            throw new NotFoundException();
-        }
-        return this.prisma.expenses.update({
-            data: {
-                ...getUpdatedAtProperty(),
-                payment_authorized: input.payment_authorized,
-            },
-            where: {
-                id: input.expense_id,
-            },
-        });
-    }
-
     // Lightweight optional-details edit, the expense counterpart of
-    // updateOrderSaleDetails. Touches only side-effect-free documentation fields
+    // updateOrderSaleDetails. Touches only side-effect-free workflow fields
     // so no totals recompute is needed; the status-locked full upsert is
     // bypassed on purpose (a locked expense can still have its folio fixed).
     async updateExpenseDetails({
@@ -465,6 +442,7 @@ export class ExpensesService {
                 require_supplement: input.require_supplement,
                 supplement_code: input.supplement_code,
                 reconciliation_only: input.reconciliation_only,
+                is_draft: input.is_draft,
                 canceled: input.canceled,
             },
             where: {
@@ -572,7 +550,6 @@ export class ExpensesService {
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
-                payment_authorized: input.payment_authorized,
                 is_draft: input.is_draft,
                 resources_total: input.resources_total,
             },
@@ -600,7 +577,6 @@ export class ExpensesService {
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
-                payment_authorized: input.payment_authorized,
                 is_draft: input.is_draft,
                 resources_total: input.resources_total,
             },
@@ -1251,7 +1227,6 @@ export class ExpensesService {
                         internal_code: 0,
                         canceled: false,
                         reconciliation_only: source.reconciliation_only,
-                        payment_authorized: source.payment_authorized,
                         // Anything created through the recurring-expense dialog
                         // requires review, regardless of the supplier default.
                         is_draft: true,

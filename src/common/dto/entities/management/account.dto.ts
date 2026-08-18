@@ -90,13 +90,8 @@ export class AccountBase {
     @Field(() => Boolean, { nullable: false })
     supplier_reconciliation_only: boolean;
 
-    // Default for a new expense's `payment_authorized`. ON everywhere except
-    // monitored-balance suppliers, which keep needing explicit sign-off.
-    @Field(() => Boolean, { nullable: false })
-    supplier_payment_authorized_default: boolean;
-
-    // Default for a manually captured expense's `is_draft`. Accounts start OFF
-    // and users explicitly opt individual suppliers into draft-by-default.
+    // Default for a manually captured expense's `is_draft`. Monitored-balance
+    // suppliers start ON; other suppliers may opt into draft-by-default.
     @Field(() => Boolean, { nullable: false })
     supplier_is_draft: boolean;
 }

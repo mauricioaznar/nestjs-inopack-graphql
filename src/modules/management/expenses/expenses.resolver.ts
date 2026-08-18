@@ -22,7 +22,6 @@ import {
     ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
     ExpenseDetailsInput,
-    UpdateExpensePaymentAuthorizedInput,
     GenerateRecurringExpenseInput,
     GenerateRecurringExpensesResult,
     GetExpensesQueryArgs,
@@ -104,56 +103,9 @@ export class ExpensesResolver {
         return expense;
     }
 
-    // Inline single-field toggle from the balances views. Kept separate from
-    // the full upsert (which is status-locked and re-writes every field) so a
-    // non-editable expense can still have its payment authorization flipped.
-    // Audited like the upsert: old/new snapshots around a guarded write.
-    @Mutation(() => Expense)
-    @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
-    async updateExpensePaymentAuthorized(
-        @Args('UpdateExpensePaymentAuthorizedInput')
-        input: UpdateExpensePaymentAuthorizedInput,
-        @CurrentUser() currentUser: User,
-    ): Promise<Expense> {
-        const auditContext = {
-            entityName: ActivityEntityName.EXPENSE,
-            entityId: input.expense_id,
-            activityType: ActivityTypeName.UPDATE,
-            userId: currentUser.id,
-        };
-        const oldCapture = await captureSnapshotSafely(
-            auditContext,
-            'old_snapshot',
-            () =>
-                this.service.getExpenseSnapshot({
-                    expense_id: input.expense_id,
-                }),
-        );
-        const expense = await this.service.updateExpensePaymentAuthorized(
-            input,
-        );
-        const newCapture = await captureSnapshotSafely(
-            auditContext,
-            'new_snapshot',
-            () =>
-                this.service.getExpenseSnapshot({
-                    expense_id: input.expense_id,
-                }),
-        );
-        await this.pubSubService.expense({
-            expense,
-            type: ActivityTypeName.UPDATE,
-            userId: currentUser.id,
-            oldCapture,
-            newCapture,
-        });
-        return expense;
-    }
-
     // Optional-details edit from the balances views (folio, payment date,
-    // supplement, conciliation, canceled). Like updateExpensePaymentAuthorized it
-    // bypasses the status-locked upsert and is audited with old/new snapshots.
+    // supplement, conciliation, canceled). It bypasses the status-locked upsert
+    // and is audited with old/new snapshots.
     @Mutation(() => Expense)
     @UseGuards(GqlAuthGuard)
     @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
