@@ -102,6 +102,7 @@ export class ProductInventoryMovementsService {
                 movement_type: 'sale',
                 product_id,
                 date: row.order_sales?.date ?? startDate,
+                updated_at: row.updated_at ?? null,
                 // A sale subtracts. Committed sales keep the negative sign for
                 // display but are flagged as not affecting inventory.
                 kilos: -row.kilos,
@@ -120,6 +121,7 @@ export class ProductInventoryMovementsService {
                 movement_type: 'adjustment',
                 product_id,
                 date: row.order_adjustments?.date ?? startDate,
+                updated_at: row.updated_at ?? null,
                 kilos: row.kilos,
                 groups: row.groups,
                 affects_inventory: true,
@@ -134,6 +136,7 @@ export class ProductInventoryMovementsService {
                 movement_type: 'production',
                 product_id,
                 date: row.order_productions?.start_date ?? startDate,
+                updated_at: row.updated_at ?? null,
                 kilos: row.kilos,
                 groups: row.groups,
                 affects_inventory: true,
@@ -148,6 +151,7 @@ export class ProductInventoryMovementsService {
                 movement_type: 'consumption',
                 product_id,
                 date: row.order_productions?.start_date ?? startDate,
+                updated_at: row.updated_at ?? null,
                 kilos: -row.kilos,
                 groups: -(row.groups ?? 0),
                 affects_inventory: true,
@@ -157,12 +161,18 @@ export class ProductInventoryMovementsService {
             });
         }
 
-        // Newest first. The reconstructed balance walks from endDate backward.
-        movements.sort((a, b) => b.date.getTime() - a.date.getTime());
+        // The balance reconstruction must run in CHRONOLOGICAL order (by
+        // document date, newest first) regardless of how the list is finally
+        // displayed — "stock just before this movement" is only meaningful along
+        // the event timeline. So walk on a date-sorted copy, stamp each row, then
+        // present the rows in a different order below.
+        const byDateDesc = [...movements].sort(
+            (a, b) => b.date.getTime() - a.date.getTime(),
+        );
 
         let runKilos = anchor.kilos;
         let runGroups = anchor.groups;
-        for (const m of movements) {
+        for (const m of byDateDesc) {
             if (!m.affects_inventory) {
                 // Committed sales sit in the timeline but do not move stock, so
                 // they carry no reconstructed level and do not advance the walk.
@@ -178,6 +188,12 @@ export class ProductInventoryMovementsService {
             runKilos -= m.kilos;
             runGroups -= m.groups;
         }
+
+        // Display order: most-recently-edited first. Falls back to the document
+        // date when a row has no updated_at so it still sorts sensibly.
+        const sortKey = (m: InventoryMovement): number =>
+            (m.updated_at ?? m.date).getTime();
+        movements.sort((a, b) => sortKey(b) - sortKey(a));
 
         return movements;
     }

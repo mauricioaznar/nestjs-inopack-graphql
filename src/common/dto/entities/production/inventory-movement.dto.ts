@@ -15,9 +15,16 @@ export class InventoryMovement {
     product_id?: number | null;
 
     // The parent order's date (order_sales.date / order_adjustments.date /
-    // order_productions.start_date). Movements are sorted by this, newest first.
+    // order_productions.start_date). Drives the backward balance walk.
     @Field(() => Date, { nullable: false })
     date: Date;
+
+    // When this movement row was last edited (the line's updated_at). The ledger
+    // is returned sorted by this, newest first, so a recently-touched movement
+    // surfaces at the top even if its document date is old — that is usually the
+    // change a user is hunting for.
+    @Field(() => Date, { nullable: true })
+    updated_at?: Date | null;
 
     // SIGNED effect on inventory: production +, consumption −, sale(delivered) −,
     // adjustment = its raw (already-signed) value. Committed sales carry the
