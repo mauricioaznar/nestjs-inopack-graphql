@@ -10,6 +10,7 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import { getCompoundOrderCode } from '../../../common/helpers';
 import { OrderSaleService } from './order-sale.service';
 import {
     Account,
@@ -372,11 +373,7 @@ export class OrderSaleResolver {
 
     @ResolveField(() => String)
     async compound_order_code(@Parent() orderSale: OrderSale): Promise<string> {
-        return `${orderSale.order_code}${
-            orderSale && orderSale.invoice_code
-                ? ' (' + orderSale.invoice_code + ')'
-                : ''
-        } `;
+        return getCompoundOrderCode(orderSale);
     }
 
     @ResolveField(() => Boolean)
