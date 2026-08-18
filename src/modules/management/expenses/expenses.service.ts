@@ -899,6 +899,7 @@ export class ExpensesService {
         await this.prisma.expenses.update({
             data: {
                 active: -1,
+                ...getUpdatedAtProperty(),
                 ...getUpdatedByProperty(current_user_id),
             },
             where: {
