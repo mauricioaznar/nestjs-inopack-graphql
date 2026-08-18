@@ -102,7 +102,11 @@ export class ProductInventoryMovementsService {
                 movement_type: 'sale',
                 product_id,
                 date: row.order_sales?.date ?? startDate,
-                updated_at: row.updated_at ?? null,
+                // Max of line and header: a status change (Entregado <->
+                // Comprometido) bumps order_sales.updated_at (the header), not
+                // the line — and that flip is exactly what moves inventory, so
+                // it must count as the movement's last update.
+                updated_at: latest(row.updated_at, row.order_sales?.updated_at),
                 // A sale subtracts. Committed sales keep the negative sign for
                 // display but are flagged as not affecting inventory.
                 kilos: -row.kilos,
@@ -121,7 +125,10 @@ export class ProductInventoryMovementsService {
                 movement_type: 'adjustment',
                 product_id,
                 date: row.order_adjustments?.date ?? startDate,
-                updated_at: row.updated_at ?? null,
+                updated_at: latest(
+                    row.updated_at,
+                    row.order_adjustments?.updated_at,
+                ),
                 kilos: row.kilos,
                 groups: row.groups,
                 affects_inventory: true,
@@ -136,7 +143,10 @@ export class ProductInventoryMovementsService {
                 movement_type: 'production',
                 product_id,
                 date: row.order_productions?.start_date ?? startDate,
-                updated_at: row.updated_at ?? null,
+                updated_at: latest(
+                    row.updated_at,
+                    row.order_productions?.updated_at,
+                ),
                 kilos: row.kilos,
                 groups: row.groups,
                 affects_inventory: true,
@@ -151,7 +161,10 @@ export class ProductInventoryMovementsService {
                 movement_type: 'consumption',
                 product_id,
                 date: row.order_productions?.start_date ?? startDate,
-                updated_at: row.updated_at ?? null,
+                updated_at: latest(
+                    row.updated_at,
+                    row.order_productions?.updated_at,
+                ),
                 kilos: -row.kilos,
                 groups: -(row.groups ?? 0),
                 affects_inventory: true,
@@ -272,4 +285,17 @@ export class ProductInventoryMovementsService {
 
 function round(value: number): number {
     return Math.round(value * 100) / 100;
+}
+
+// Most-recent non-null date, or null if all are missing. Used to fold a line's
+// updated_at together with its header's so a header-only edit (e.g. a sale
+// status change) still counts as the movement's last update.
+function latest(...dates: (Date | null | undefined)[]): Date | null {
+    let max: Date | null = null;
+    for (const d of dates) {
+        if (d && (!max || d.getTime() > max.getTime())) {
+            max = d;
+        }
+    }
+    return max;
 }
