@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import { InventoryMovement } from '../../../common/dto/entities/production/inventory-movement.dto';
+import { getCompoundOrderCode } from '../../../common/helpers';
 
 const ENTREGADO_STATUS_ID = 2;
 const DEFAULT_WINDOW_DAYS = 21;
@@ -114,6 +115,7 @@ export class ProductInventoryMovementsService {
                 affects_inventory: delivered,
                 order_id: row.order_sale_id ?? null,
                 order_code: row.order_sales?.order_code ?? null,
+                compound_order_code: getCompoundOrderCode(row.order_sales),
                 order_sale_status_id: row.order_sales?.order_sale_status_id ?? null,
             });
         }

@@ -61,6 +61,12 @@ export class InventoryMovement {
     @Field(() => Int, { nullable: true })
     order_code?: number | null;
 
+    // Sale folio for display: reuses OrderSale's `compound_order_code` computed
+    // format (order code + invoice code in parens) via the shared helper. Only
+    // sales carry a document reference; non-sale legs leave it null.
+    @Field(() => String, { nullable: true })
+    compound_order_code?: string | null;
+
     // Sale status of the parent (null for non-sale legs). 2 = Entregado.
     @Field(() => Int, { nullable: true })
     order_sale_status_id?: number | null;
