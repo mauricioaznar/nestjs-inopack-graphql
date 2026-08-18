@@ -14,15 +14,17 @@ export class InventoryMovement {
     @Field(() => Int, { nullable: true })
     product_id?: number | null;
 
-    // The parent order's date (order_sales.date / order_adjustments.date /
-    // order_productions.start_date). Drives the backward balance walk.
+    // The parent order's document date (order_sales.date / order_adjustments.date
+    // / order_productions.start_date). Informational only now — kept as a
+    // fallback sort key when updated_at is missing.
     @Field(() => Date, { nullable: false })
     date: Date;
 
-    // When this movement row was last edited (the line's updated_at). The ledger
-    // is returned sorted by this, newest first, so a recently-touched movement
-    // surfaces at the top even if its document date is old — that is usually the
-    // change a user is hunting for.
+    // When this movement was last edited (max of line and header updated_at).
+    // This is the ledger's timeline: it drives the window filter, the sort, and
+    // the running-balance reconstruction, so a recently-touched movement surfaces
+    // at the top even if its document date is old — usually the change a user is
+    // hunting for.
     @Field(() => Date, { nullable: true })
     updated_at?: Date | null;
 
