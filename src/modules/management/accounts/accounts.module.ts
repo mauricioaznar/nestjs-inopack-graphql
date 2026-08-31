@@ -5,6 +5,9 @@ import { AuditUsersService } from '../../../common/services/entities/audit-users
 
 @Module({
     providers: [AccountsResolver, AccountsService, AuditUsersService],
-    exports: [AccountsResolver],
+    // AccountsService is exported so the cotización acceptance path
+    // (OrderQuotationsModule) can reuse upsertAccount / syncAccountProducts for
+    // the catalog write instead of forking that diff logic.
+    exports: [AccountsResolver, AccountsService],
 })
 export class AccountsModule {}

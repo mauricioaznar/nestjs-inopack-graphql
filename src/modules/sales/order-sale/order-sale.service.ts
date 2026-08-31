@@ -291,6 +291,12 @@ export class OrderSaleService {
     // `products` is trimmed to three columns: the snapshot stores the product
     // description as it was AT THE TIME, so an old audit entry never displays a
     // name the product only acquired later.
+    //
+    // This is an `include` (not a column `select`), so EVERY scalar column rides
+    // into old_data/new_data — including the boolean `reconciliation_only`. That
+    // is load-bearing: the audit diff surfaces the "Solo conciliación" toggle. Do
+    // NOT narrow this to a `select` without adding that flag back explicitly, or
+    // the change silently drops out of the trail.
     async getOrderSaleSnapshot({
         order_sale_id,
     }: {
@@ -747,10 +753,10 @@ export class OrderSaleService {
                 supplement_code: input.supplement_code,
                 credit_note_code: input.credit_note_code,
                 credit_note_amount: input.credit_note_amount,
-                notes: input.notes,
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
                 automatic_tax_calculation: input.automatic_tax_calculation,
+                notes: input.notes,
                 subtotal: round(subtotal),
                 tax: round(tax),
                 total_with_tax: round(total_with_tax),
@@ -775,9 +781,9 @@ export class OrderSaleService {
                 credit_note_code: input.credit_note_code,
                 credit_note_amount: input.credit_note_amount,
                 automatic_tax_calculation: input.automatic_tax_calculation,
-                notes: input.notes,
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
+                notes: input.notes,
                 subtotal: round(subtotal),
                 tax: round(tax),
                 total_with_tax: round(total_with_tax),

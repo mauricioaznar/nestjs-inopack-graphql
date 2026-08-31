@@ -21,7 +21,7 @@ import {
     ActivityEntityName,
     ActivityTypeName,
     Branch,
-    OrderProductionResource,
+    OrderProductionProductConsumed,
     OrderProductionType,
     User,
 } from '../../../common/dto/entities';
@@ -173,11 +173,11 @@ export class OrderProductionsResolver {
         });
     }
 
-    @ResolveField(() => [OrderProductionResource])
-    async order_production_resources(
+    @ResolveField(() => [OrderProductionProductConsumed])
+    async order_production_products_consumed(
         orderProduction: OrderProduction,
-    ): Promise<OrderProductionResource[]> {
-        return this.service.getOrderProductionResources({
+    ): Promise<OrderProductionProductConsumed[]> {
+        return this.service.getOrderProductionProductsConsumed({
             order_production_id: orderProduction.id,
         });
     }

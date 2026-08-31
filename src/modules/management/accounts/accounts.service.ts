@@ -358,6 +358,8 @@ export class AccountsService {
                   select: { name: true },
               })
             : null;
+        const supplierIsDraft =
+            input.monitor_supplier_expenses || input.supplier_is_draft;
 
         const account = await this.prisma.accounts.upsert({
             create: {
@@ -367,6 +369,8 @@ export class AccountsService {
                 ...getUpdatedByProperty(current_user_id),
                 name: input.name,
                 abbreviation: input.abbreviation,
+                rfc: input.rfc,
+                address: input.address,
                 requires_order_request: input.requires_order_request,
                 is_supplier: input.is_supplier,
                 is_client: input.is_client,
@@ -387,12 +391,19 @@ export class AccountsService {
                     input.supplier_recurring_expenses,
                 client_automatic_tax_calculation:
                     input.client_automatic_tax_calculation,
+                client_reconciliation_only:
+                    input.client_reconciliation_only,
+                supplier_reconciliation_only:
+                    input.supplier_reconciliation_only,
+                supplier_is_draft: supplierIsDraft,
             },
             update: {
                 ...getUpdatedAtProperty(),
                 ...getUpdatedByProperty(current_user_id),
                 name: input.name,
                 abbreviation: input.abbreviation,
+                rfc: input.rfc,
+                address: input.address,
                 requires_order_request: input.requires_order_request,
                 is_supplier: input.is_supplier,
                 is_client: input.is_client,
@@ -413,6 +424,11 @@ export class AccountsService {
                     input.supplier_recurring_expenses,
                 client_automatic_tax_calculation:
                     input.client_automatic_tax_calculation,
+                client_reconciliation_only:
+                    input.client_reconciliation_only,
+                supplier_reconciliation_only:
+                    input.supplier_reconciliation_only,
+                supplier_is_draft: supplierIsDraft,
             },
             where: {
                 id: input.id || 0,
@@ -1080,8 +1096,7 @@ export class AccountsService {
                     'receipt_type_id',
                 )},
                 wtv_s.total as total_with_tax,
-                ifnull(otv_s.total, 0) as transfer_receipts_total,
-                NULL as expense_status_color
+                ifnull(otv_s.total, 0) as transfer_receipts_total
             FROM order_sales
             JOIN (
                 SELECT order_sales.id order_sale_id,
@@ -1117,8 +1132,7 @@ export class AccountsService {
                 expenses.notes,
                 ${convertToInt('expenses.receipt_type_id', 'receipt_type_id')},
                 wtv_e.total as total_with_tax,
-                ifnull(otv_e.total, 0) as transfer_receipts_total,
-                expense_statuses.color as expense_status_color
+                ifnull(otv_e.total, 0) as transfer_receipts_total
             FROM expenses
             JOIN (
                 SELECT expenses.id,
@@ -1138,7 +1152,6 @@ export class AccountsService {
                 AND ex_scope.account_id = ${account_id}
                 GROUP BY expense_id
             ) AS otv_e ON otv_e.expense_id = expenses.id
-            LEFT JOIN expense_statuses ON expense_statuses.id = expenses.expense_status_id
             WHERE expenses.active = 1
             AND expenses.canceled = 0
             AND expenses.account_id = ${account_id}

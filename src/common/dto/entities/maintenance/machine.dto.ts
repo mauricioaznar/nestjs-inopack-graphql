@@ -23,6 +23,13 @@ export class MachineBase {
 
     @Field(() => Boolean, { nullable: false })
     discontinued: boolean;
+
+    // Whether this machine consumes a product as input. False for the packing
+    // áreas, which pack bags that were already cut elsewhere; their runs are
+    // excluded from the material-balance identity because production with no
+    // matching consumption would bias it permanently negative.
+    @Field(() => Boolean, { nullable: false })
+    consumes_input: boolean;
 }
 
 @InputType('MachineUpsertInput')

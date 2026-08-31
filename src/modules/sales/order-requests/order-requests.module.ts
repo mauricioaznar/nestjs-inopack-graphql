@@ -11,6 +11,9 @@ import { AuditUsersService } from '../../../common/services/entities/audit-users
         OrderRequestRemainingProductsService,
         AuditUsersService,
     ],
-    exports: [OrderRequestsResolver],
+    // OrderRequestsService is exported so the cotización acceptance path
+    // (OrderQuotationsModule) can create the pedido through the validated
+    // upsertOrderRequest instead of a hand-written insert.
+    exports: [OrderRequestsResolver, OrderRequestsService],
 })
 export class OrderRequestsModule {}

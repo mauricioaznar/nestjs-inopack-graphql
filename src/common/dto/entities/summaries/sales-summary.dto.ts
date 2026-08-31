@@ -28,6 +28,7 @@ export class SalesSummaryArgs {
 
 export enum SalesSummaryEntitiesGroup {
     productCategory = 'productCategory',
+    productMaterial = 'productMaterial',
     account = 'account',
     receipt = 'receipt',
     product = 'product',
@@ -82,6 +83,12 @@ export class SalesRecord {
 
     @Field(() => String, { nullable: true })
     product_category_name: string | null;
+
+    @Field(() => Int, { nullable: true })
+    product_material_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    product_material_name: string | null;
 
     @Field(() => Int, { nullable: true })
     account_id: number | null;

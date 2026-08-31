@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 import {
+    MachineConsumptionRate,
     MachineHourlyRun,
     MachineProduct,
     MachineProductEmployeeRun,
@@ -11,6 +12,17 @@ import {
     ProductWithRuns,
 } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
+
+// Corridas before this date predate reliable hour capture on productions: their
+// kilos count but their hours read as 0, which would inflate any kg/hr ratio
+// (numerator grows, denominator doesn't). It is the ONE window every production-
+// performance surface reads from, and — since 2026-08-11 — the default the
+// shared filter falls back to when a caller omits the date. Omitting the date
+// used to mean "all of history", which is what let the grading dialog span
+// pre-capture runs and read 161 kg/hr where the page read 86. Defaulting to the
+// epoch makes that class of bug impossible rather than merely fixed once. Mirror
+// of the frontend HOURLY_DATA_EPOCH.
+export const HOURLY_DATA_EPOCH = '2026-01-01';
 
 @Injectable()
 export class ProductionPerformanceService {
@@ -133,18 +145,18 @@ export class ProductionPerformanceService {
 
     // Hourly-throughput rows for any machine / product combination:
     // one row per production, no employee split. Each side is aggregated in its
-    // own derived table first — joining the product lines and resource lines
+    // own derived table first — joining the packed and consumed lines
     // directly would fan out (cartesian) and inflate the sums, so we pre-sum per
     // production_id then join on it. Null hours count as 0 in the denominator
     // (coalesce), per the user's decision; the client computes kg/hr as
     // totals-over-totals. The product side drives (which productions matched the
-    // filters); the resource side is left-joined and coalesced to 0 when absent.
+    // filters); the consumed side is left-joined and coalesced to 0 when absent.
     // At least one of the two ids is required (BadRequest otherwise).
     //
-    // machine_id/product_id narrow the product side (and the resource side by
+    // machine_id/product_id narrow the product side (and the consumed side by
     // machine): with a product_id set, the product side sums ONLY that product's
-    // lines so kilos/hours + kg/hr reflect the single product; the resource side
-    // stays whole-production (resources aren't attributable to one product), so
+    // lines so kilos/hours + kg/hr reflect the single product; the consumed side
+    // stays whole-production (consumption isn't attributable to one product), so
     // "Consumo kg/hr" remains the total of the matched runs — noted in the UI.
     // from_date/to_date drop productions outside the window (pre-hour-capture
     // corridas would inflate kg/hr). All ids validated with Number() and dates by
@@ -172,10 +184,10 @@ export class ProductionPerformanceService {
         const ppProductFilter = product_id
             ? `and product_id = ${Number(product_id)}`
             : '';
-        // Resource side is keyed by machine when a machine is selected; without
-        // one it sums every resource line of the matched production (still the
+        // Consumed side is keyed by machine when a machine is selected; without
+        // one it sums every consumed line of the matched production (still the
         // "full consumption of the matched runs").
-        const rrMachineFilter = machine_id
+        const consumedMachineFilter = machine_id
             ? `and machine_id = ${Number(machine_id)}`
             : '';
         const sharedFilters = this.buildSharedFilters({ from_date, to_date });
@@ -185,15 +197,14 @@ export class ProductionPerformanceService {
                 op.start_date as date,
                 pp.kilos_produced as kilos_produced,
                 pp.hours_produced as hours_produced,
-                coalesce(rr.kilos_resource, 0) as kilos_resource,
-                coalesce(rr.hours_resource, 0) as hours_resource,
-                ${convertToInt('pp.product_count', 'product_count')}
+                coalesce(consumed.kilos_consumed, 0) as kilos_consumed,
+                coalesce(consumed.hours_consumed, 0) as hours_consumed,
+                ${convertToInt('pc.product_count', 'product_count')}
             from (
                 select
                     order_production_id,
                     sum(kilos) as kilos_produced,
-                    sum(coalesce(hours, 0)) as hours_produced,
-                    count(distinct product_id) as product_count
+                    sum(coalesce(hours, 0)) as hours_produced
                 from order_production_products
                 where active = 1
                     ${ppMachineFilter}
@@ -204,33 +215,57 @@ export class ProductionPerformanceService {
                 on op.id = pp.order_production_id
                 and op.active = 1
                 ${sharedFilters}
+            join (
+                -- Distinct products in the WHOLE production (NOT narrowed by the
+                -- product filter, unlike pp), so "single product" means the
+                -- production made one product — the case whose packed hours are
+                -- trustworthy. Matches the pt.product_count of the scatter query.
+                select
+                    order_production_id,
+                    count(distinct product_id) as product_count
+                from order_production_products
+                where active = 1
+                group by order_production_id
+            ) pc on pc.order_production_id = op.id
             left join (
                 select
                     order_production_id,
-                    sum(kilos) as kilos_resource,
-                    sum(coalesce(hours, 0)) as hours_resource
-                from order_production_resources
+                    sum(kilos) as kilos_consumed,
+                    sum(coalesce(hours, 0)) as hours_consumed
+                from order_production_products_consumed
                 where active = 1
-                    ${rrMachineFilter}
+                    ${consumedMachineFilter}
                 group by order_production_id
-            ) rr on rr.order_production_id = op.id
+            ) consumed on consumed.order_production_id = op.id
             order by op.start_date
         `);
     }
 
-    // Batch aggregate used by production planning. A null product in the
-    // request means the machine-level fallback rate; a product id means the
-    // machine x product rate. The query returns both the recent window and all
-    // available hourly history so the client can keep the existing
-    // "recent-first, all-history fallback" rule without downloading raw runs.
+    // Batch aggregate used by production planning and by the Producción list's
+    // performance flags. A null product in the request means the machine-level
+    // fallback rate; a product id means the machine x product rate. It returns a
+    // SINGLE window — every hourly run since HOURLY_DATA_EPOCH (the from_date the
+    // callers pass, and the shared filter's default). The rolling 12-month
+    // "recent" window it used to also return was dropped 2026-08-11: both windows
+    // covered identical runs while hourly data starts at the epoch, so carrying
+    // two only invited them to diverge in 2027. Kilos/bultos/hours/waste are
+    // returned as raw sums rather than ratios so a caller can subtract a single
+    // run's own contribution before dividing — the flags grade a run against a
+    // baseline that excludes it.
     async getMachineProductRates({
         pairs,
         from_date,
-        recent_from_date,
+        single_product_only,
     }: {
         pairs: MachineProductRatePairInput[];
         from_date?: string | null;
-        recent_from_date?: string | null;
+        // When true, only productions that made EXACTLY ONE product count toward
+        // the packed rates. Multi-product productions capture hours on their
+        // first packed row only, so their per-product kg/hr is unrecoverable;
+        // this restricts the baseline to clean single-product runs. Off by
+        // default, so the planning board and the Producción list flags — which
+        // share this query — are unaffected.
+        single_product_only?: boolean | null;
     }): Promise<MachineProductRate[]> {
         const normalizedPairs = pairs
             .map((pair) => ({
@@ -269,34 +304,46 @@ export class ProductionPerformanceService {
                     `(opp.machine_id = ${pair.machine_id} and opp.product_id = ${pair.product_id})`,
             );
 
-        const validRecentDate =
-            recent_from_date && /^\d{4}-\d{2}-\d{2}$/.test(recent_from_date)
-                ? recent_from_date
-                : null;
-        const recentCondition = validRecentDate
-            ? `op.start_date >= '${validRecentDate}'`
-            : '0 = 1';
         const sharedFilters = this.buildSharedFilters({ from_date });
+        // pt already computes a per-production product count, so restricting to
+        // single-product runs is a WHERE on it — no extra scan.
+        const singleProductFilter = single_product_only
+            ? 'AND pt.product_count = 1'
+            : '';
 
+        // The production's waste is a single figure for the whole run, so a
+        // line only ever owns its kilo share of it. Same proration as
+        // getMachineProductPerformanceSummary (no employee-count divisor).
+        const wasteShare = `CASE WHEN pt.total_kilos > 0 THEN op.waste * (opp.kilos / pt.total_kilos) ELSE 0 END`;
+
+        // `all_*` is the single window: every run the shared filter admits, i.e.
+        // since HOURLY_DATA_EPOCH. The name is kept from when a `recent_*` window
+        // stood beside it, so no consumer had to rename its columns.
         const aggregateSelect = `
                 ${convertToInt('opp.machine_id', 'machine_id')},
                 %PRODUCT_ID%,
-                SUM(CASE WHEN ${recentCondition} THEN COALESCE(opp.kilos, 0) ELSE 0 END) as recent_kilos,
-                SUM(CASE WHEN ${recentCondition} THEN COALESCE(opp.hours, 0) ELSE 0 END) as recent_hours,
-                ${convertToInt(
-                    `COUNT(DISTINCT CASE WHEN ${recentCondition} THEN op.id END)`,
-                    'recent_runs',
-                )},
                 SUM(COALESCE(opp.kilos, 0)) as all_kilos,
                 SUM(COALESCE(opp.hours, 0)) as all_hours,
-                ${convertToInt('COUNT(DISTINCT op.id)', 'all_runs')}
+                SUM(COALESCE(opp.groups, 0)) as all_groups,
+                ${convertToInt('COUNT(DISTINCT op.id)', 'all_runs')},
+                SUM(${wasteShare}) as all_waste
             FROM order_production_products opp
             JOIN order_productions op
                 ON op.id = opp.order_production_id
                 AND op.active = 1
+            JOIN (
+                SELECT
+                    order_production_id,
+                    SUM(kilos) as total_kilos,
+                    COUNT(DISTINCT product_id) as product_count
+                FROM order_production_products
+                WHERE active = 1
+                GROUP BY order_production_id
+            ) pt ON pt.order_production_id = op.id
             WHERE opp.active = 1
                 AND opp.machine_id IN (${machineIds.join(', ')})
                 ${sharedFilters}
+                ${singleProductFilter}
         `;
 
         const machineRates = `
@@ -321,8 +368,138 @@ export class ProductionPerformanceService {
         );
     }
 
+    // Batch consumption baseline feeding the upsert form's Rendimiento tab:
+    // how much material a machine consumes per hour (Rendimiento = kilos
+    // consumidos / horas). Now returns one row per (machine, CONSUMED PRODUCT)
+    // so `consumed_kilos` is a real per-material breakdown (the type-2 roll on
+    // each consumed row), while `packed_hours` and `runs` stay MACHINE-level and
+    // repeat across a machine's product rows — the tab still shows the machine
+    // Rendimiento, and the borrowed packed hours cannot follow a consumed
+    // product. Raw sums, not ratios, so the caller self-excludes the edited
+    // production before dividing — the same self-exclusion the packed flags do.
+    // (Eficiencia de corte / Rendimiento de corte real — which cross type-1 and
+    // type-2 — are deferred to a placeholder in the tab pending capture cleanup.)
+    //
+    // THE DENOMINATOR IS THE PACKED-SIDE HOURS, not the consumed side's own hours
+    // column. order_production_products_consumed carries an `hours` column that
+    // the user has confirmed is wrongly captured; reading it would make the rate
+    // fiction. The hours are summed from the production's packed lines on the
+    // machine (opp.hours) — capture puts them on the first packed row only today,
+    // so the sum equals the production total, and it keeps working untouched if
+    // capture ever spreads them across rows. This is derived at READ time on
+    // purpose: the consumed hours column is NOT backfilled, because COGS
+    // discovery is still measuring how bad that capture is and overwriting it
+    // would destroy the evidence. Using packed hours in both formulas is also
+    // what makes the arithmetic tie out — Eficiencia × Rendimiento cancels
+    // *consumidos* to leave packed/hours only when the same denominator runs
+    // through both.
+    async getMachineConsumptionRates({
+        machine_ids,
+        from_date,
+    }: {
+        machine_ids: number[];
+        from_date?: string | null;
+    }): Promise<MachineConsumptionRate[]> {
+        const machineIds = Array.from(
+            new Set(
+                (machine_ids ?? [])
+                    .map((id) => Number(id))
+                    .filter((id) => Number.isInteger(id) && id > 0),
+            ),
+        );
+        if (machineIds.length === 0) return [];
+
+        const sharedFilters = this.buildSharedFilters({ from_date });
+
+        // Two grains in one result. `consumed_kilos` is per (machine, PRODUCT) —
+        // the consumed material (a type-2 roll) carried on each consumed row — so
+        // the caller has a real per-material breakdown. `packed_hours` and `runs`
+        // stay MACHINE-level and are repeated on every product row: hours are the
+        // (borrowed, still mis-captured) packed-side denominator that can't follow
+        // a consumed product, and a run is one production that consumed on the
+        // machine. They are computed over the DISTINCT consuming productions so a
+        // multi-product production is not double-counted across its materials.
+        return this.prisma.$queryRawUnsafe<MachineConsumptionRate[]>(`
+            select
+                ${convertToInt('pp.machine_id', 'machine_id')},
+                ${convertToInt('pp.product_id', 'product_id')},
+                pp.product_name,
+                pp.consumed_kilos,
+                mm.consumed_hours,
+                mm.packed_hours,
+                ${convertToInt('mm.runs', 'runs')}
+            from (
+                select
+                    c.machine_id,
+                    c.product_id,
+                    pr.description as product_name,
+                    sum(c.consumed_kilos) as consumed_kilos
+                from (
+                    select
+                        opc.order_production_id,
+                        opc.machine_id,
+                        opc.product_id,
+                        sum(coalesce(opc.kilos, 0)) as consumed_kilos
+                    from order_production_products_consumed opc
+                    join order_productions op
+                        on op.id = opc.order_production_id
+                        and op.active = 1
+                        ${sharedFilters}
+                    where opc.active = 1
+                        and opc.machine_id in (${machineIds.join(', ')})
+                    group by opc.order_production_id, opc.machine_id, opc.product_id
+                ) c
+                left join products pr on pr.id = c.product_id
+                group by c.machine_id, c.product_id, pr.description
+            ) pp
+            join (
+                select
+                    cm.machine_id,
+                    sum(coalesce(cm.consumed_hours, 0)) as consumed_hours,
+                    sum(coalesce(ph.packed_hours, 0)) as packed_hours,
+                    count(distinct cm.order_production_id) as runs
+                from (
+                    -- One row per (consuming production, machine), carrying that
+                    -- production's own consumed hours so the machine-level sum
+                    -- below is a genuine per-run total, not fanned out.
+                    select
+                        opc.order_production_id,
+                        opc.machine_id,
+                        sum(coalesce(opc.hours, 0)) as consumed_hours
+                    from order_production_products_consumed opc
+                    join order_productions op
+                        on op.id = opc.order_production_id
+                        and op.active = 1
+                        ${sharedFilters}
+                    where opc.active = 1
+                        and opc.machine_id in (${machineIds.join(', ')})
+                    group by opc.order_production_id, opc.machine_id
+                ) cm
+                left join (
+                    select
+                        order_production_id,
+                        machine_id,
+                        sum(coalesce(hours, 0)) as packed_hours
+                    from order_production_products
+                    where active = 1
+                        and machine_id in (${machineIds.join(', ')})
+                    group by order_production_id, machine_id
+                ) ph
+                    on ph.order_production_id = cm.order_production_id
+                    and ph.machine_id = cm.machine_id
+                group by cm.machine_id
+            ) mm on mm.machine_id = pp.machine_id
+        `);
+    }
+
     // Shared filter fragment builder — applied to order_productions (aliased `op`).
-    // Each arg is independently optional; falsy values are skipped entirely.
+    // `to_date` is independently optional (omitted = up to now). `from_date` is
+    // NOT: an omitted or malformed from_date falls back to HOURLY_DATA_EPOCH
+    // rather than to no clause at all. An unbounded lower bound silently pulls in
+    // pre-capture corridas (kilos, hours = 0) that inflate every kg/hr, and only
+    // one caller ever omitted it — the grading dialog bug this branch fixes. A
+    // from_date the caller DOES pass is honoured verbatim, including a deliberate
+    // pre-epoch date (widen Desde into 2025 to reproduce the old inflated number).
     private buildSharedFilters({
         from_date,
         to_date,
@@ -330,9 +507,11 @@ export class ProductionPerformanceService {
         from_date?: string | null;
         to_date?: string | null;
     }): string {
-        const parts: string[] = [];
-        if (from_date && /^\d{4}-\d{2}-\d{2}$/.test(from_date))
-            parts.push(`and op.start_date >= '${from_date}'`);
+        const effectiveFrom =
+            from_date && /^\d{4}-\d{2}-\d{2}$/.test(from_date)
+                ? from_date
+                : HOURLY_DATA_EPOCH;
+        const parts: string[] = [`and op.start_date >= '${effectiveFrom}'`];
         if (to_date && /^\d{4}-\d{2}-\d{2}$/.test(to_date))
             parts.push(`and op.start_date <= '${to_date}'`);
         return parts.join('\n                ');
@@ -446,7 +625,8 @@ export class ProductionPerformanceService {
         return this.prisma.$queryRawUnsafe(`
             select distinct
                 ${convertToInt('products.id', 'id')},
-                products.description as description
+                products.description as description,
+                product_categories.name as product_category_name
             from order_production_products opp
             join order_productions op
                 on op.id = opp.order_production_id
@@ -455,8 +635,11 @@ export class ProductionPerformanceService {
                 on products.id = opp.product_id
                 and products.active = 1
                 and products.discontinued = 0
+            left join product_categories
+                on product_categories.id = products.product_category_id
+                and product_categories.active = 1
             where opp.active = 1
-            order by products.description
+            order by product_categories.name, products.description
         `);
     }
 }
