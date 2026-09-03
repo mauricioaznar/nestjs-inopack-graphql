@@ -15,12 +15,33 @@ export class OrderRequestSummaryArgs {
     include_reconciliation_only: boolean;
 }
 
-// One aggregated row per product: how much of that product was requested across
-// the period's order requests versus how much has actually been sold against
-// those same requests. Product-definition fields mirror the sales export so the
-// two reports line up column-for-column.
+// One row per request product line (a product within a pedido): how much of it
+// was requested on that pedido versus how much has been sold against the same
+// pedido. Line-level grain and product-definition fields mirror the sales export
+// (one row per sale line) so the two reports read as siblings; a product-level
+// rollup is a trivial pivot on top.
 @ObjectType('OrderRequestSummaryRecord')
 export class OrderRequestSummaryRecord {
+    @Field(() => Int, { nullable: true })
+    order_request_id: number | null;
+
+    @Field(() => Int, { nullable: true })
+    order_code: number | null;
+
+    @Field(() => Int, { nullable: true })
+    account_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    account_name: string | null;
+
+    @Field(() => String, { nullable: true })
+    account_abbreviation: string | null;
+
+    // The pedido's date — the report is scoped by it, and the export derives
+    // año / mes from it the same way the sales export does.
+    @Field(() => Date, { nullable: true })
+    date: Date | null;
+
     @Field(() => Int, { nullable: true })
     product_id: number | null;
 
