@@ -1111,6 +1111,12 @@ export class OrderSaleService {
                     const orderRequestProducts =
                         await this.prisma.order_request_products.findMany({
                             where: {
+                                // Only the CURRENT request-product row: a price
+                                // edit soft-deletes the old row (active != 1) and
+                                // inserts a new one, so without this filter the
+                                // price-match check could read the stale row and
+                                // reject a sale that actually matches.
+                                active: 1,
                                 order_requests: {
                                     AND: [
                                         {

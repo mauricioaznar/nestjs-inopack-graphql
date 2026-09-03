@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ProductInventoryModule } from './product-inventory/product-inventory.module';
 import { ProductionSummaryModule } from './production-summary/production-summary.module';
 import { SalesSummaryModule } from './sales-summary/sales-summary.module';
+import { OrderRequestSummaryModule } from './order-request-summary/order-request-summary.module';
 import { ExpensesSummaryModule } from './expenses-summary/expenses-summary.module';
 import { TransfersSummaryModule } from './transfers-summary/transfers-summary.module';
 import { EmployeesSummaryModule } from './employee-summary/employees-summary.module';
@@ -16,6 +17,7 @@ import { MaterialBalanceSummaryModule } from './material-balance-summary/materia
         ProductInventoryModule,
         ProductionSummaryModule,
         SalesSummaryModule,
+        OrderRequestSummaryModule,
         OwnAccountTransferSummariesModule,
         ThirdPartyAccountTransferSummariesModule,
         ExpensesSummaryModule,
