@@ -547,6 +547,16 @@ export class TransfersService {
         }
 
         for await (const updateItem of updateTransferReceipts) {
+            // updateItem is the NEW payload row (vennDiagram's intersection
+            // carries the b-side item). When a receipt is repointed to a
+            // different document, recomputing only the new target leaves the
+            // OLD document's stored transfer_receipts_total stale. Find the
+            // persisted row by id so we can also refresh whatever it used to
+            // point at.
+            const oldItem = oldTransferReceipts.find(
+                (old) => old.id === updateItem.id,
+            );
+
             if (updateItem && updateItem.id) {
                 await this.prisma.transfer_receipts.updateMany({
                     data: {
@@ -561,6 +571,28 @@ export class TransfersService {
                     },
                 });
             }
+
+            // Recompute the previous target first when it changed, so a
+            // document a receipt was moved OFF of drops the amount that no
+            // longer applies to it.
+            if (
+                oldItem?.expense_id &&
+                oldItem.expense_id !== updateItem.expense_id
+            ) {
+                await this.updateExpensesTransfersTotal({
+                    expense_id: oldItem.expense_id,
+                });
+            }
+
+            if (
+                oldItem?.order_sale_id &&
+                oldItem.order_sale_id !== updateItem.order_sale_id
+            ) {
+                await this.updateOrderSalesTransfersTotal({
+                    order_sale_id: oldItem.order_sale_id,
+                });
+            }
+
             if (updateItem.expense_id) {
                 await this.updateExpensesTransfersTotal({
                     expense_id: updateItem.expense_id,
