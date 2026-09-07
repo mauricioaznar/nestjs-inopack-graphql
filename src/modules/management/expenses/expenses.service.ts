@@ -1224,6 +1224,7 @@ export class ExpensesService {
                         require_supplement: source.require_supplement,
                         supplement_code: '',
                         require_external_code: source.require_external_code,
+                        require_tax: source.require_tax,
                         external_code: '',
                         internal_code: 0,
                         canceled: false,
