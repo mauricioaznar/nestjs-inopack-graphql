@@ -9,6 +9,21 @@ export class AddConsumesInputToMachines1785873600000
         ADD COLUMN \`consumes_input\` tinyint(1) NOT NULL DEFAULT 1;
     `);
 
+        // A database with no business data — the test/CI database rebuilt from
+        // the `--no-data` schema snapshot (see db/README.md) — has no machines,
+        // so the by-name seed below matches nothing and its assertion aborts the
+        // run on zero affected rows, leaving the ALTER above half-applied. Apply
+        // the column and stop before the seed when `machines` is empty. On a
+        // populated database the assertion stays strict, so catalog divergence
+        // is still caught.
+        if (await this.isMachinesEmpty(queryRunner)) {
+            console.log(
+                '  machines is empty — applied column only, skipping the ' +
+                    'packing-área seed (fresh/test database).',
+            );
+            return;
+        }
+
         // The packing áreas pack bags that were already cut, so they consume no
         // bobina. Leaving them inside the material-balance identity injects a
         // permanent negative bias (production with no matching consumption), so
@@ -51,5 +66,18 @@ export class AddConsumesInputToMachines1785873600000
       ALTER TABLE \`machines\`
         DROP COLUMN \`consumes_input\`;
     `);
+    }
+
+    private async isMachinesEmpty(queryRunner: QueryRunner): Promise<boolean> {
+        const result = await queryRunner.query(
+            `SELECT COUNT(*) AS count FROM \`machines\`;`,
+        );
+        // The MySQL driver can return the rows array directly or [rows, fields].
+        const rows =
+            Array.isArray(result) && Array.isArray(result[0])
+                ? result[0]
+                : result;
+        const count = Number((rows as { count?: number }[])[0]?.count ?? 0);
+        return count === 0;
     }
 }
