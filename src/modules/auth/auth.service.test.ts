@@ -431,10 +431,17 @@ describe('refresh tokens', () => {
                 authService.rotateRefreshToken(pair.refreshToken),
             );
 
-            await expect(
-                authService.rotateRefreshToken(pair.refreshToken),
-            ).resolves.toBeTruthy();
-            const loser = await race.finish();
+            // `race.finish()` restores the `issueTokenPair` seam; run it in a
+            // `finally` so that if the winning rotation throws or times out, the
+            // spy is still torn down and the failure cannot leak into later tests.
+            let loser: unknown;
+            try {
+                await expect(
+                    authService.rotateRefreshToken(pair.refreshToken),
+                ).resolves.toBeTruthy();
+            } finally {
+                loser = await race.finish();
+            }
 
             // Before 1.6.1 the loser read the row mid-window: revoked, and with
             // no live successor in the family *yet*, which reads as "this
@@ -551,11 +558,15 @@ describe('refresh tokens', () => {
 
         // The rotation itself succeeds: it is a legitimate refresh that had
         // already won its row before the logout arrived. What must not survive
-        // is the *session*.
-        await expect(
-            authService.rotateRefreshToken(pair.refreshToken),
-        ).resolves.toBeTruthy();
-        await race.finish();
+        // is the *session*. `race.finish()` runs in a `finally` so a throw or
+        // timeout here still tears down the seam instead of leaking it.
+        try {
+            await expect(
+                authService.rotateRefreshToken(pair.refreshToken),
+            ).resolves.toBeTruthy();
+        } finally {
+            await race.finish();
+        }
 
         const spent = await prisma.refresh_tokens.findFirst({
             where: { token_hash: sha256(pair.refreshToken) },

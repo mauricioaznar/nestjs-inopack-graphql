@@ -736,8 +736,25 @@ export class AuthService {
         family: LockedFamilyRow[],
         now: Date,
     ): boolean {
+        const graceMs = jwtConstants.refreshReuseGraceSeconds * 1000;
+
+        // A zero- (or negative-) width grace window means there is no tolerance
+        // at all: re-presenting a spent token is theft, never a race. This is
+        // handled before the timestamp comparison on purpose. `revoked_at` is
+        // `DATETIME(0)`, so MySQL rounds it to whole seconds on write — a token
+        // revoked at `…SS.750` persists as `…(SS+1).000`, i.e. up to ~0.5s in
+        // the future — and `now - revokedAt` can come back negative. With a
+        // strict `> graceMs` test and `graceMs === 0`, that negative value would
+        // slip past the guard and, finding the live successor, wrongly read as
+        // benign. Collapsing the window here keeps `grace=0` strict regardless
+        // of clock rounding; the production default (30s) dwarfs that rounding
+        // and takes the path below unchanged.
+        if (graceMs <= 0) {
+            return false;
+        }
+
         const revokedMsAgo = now.getTime() - revokedAt.getTime();
-        if (revokedMsAgo > jwtConstants.refreshReuseGraceSeconds * 1000) {
+        if (revokedMsAgo > graceMs) {
             return false;
         }
         return family.some(
