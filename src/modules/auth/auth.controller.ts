@@ -11,11 +11,16 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { AllowedOriginGuard } from './guards/allowed-origin.guard';
 import { SessionMeta, TokenPair } from '../../common/dto/entities';
 import { AppLoggerService } from '../../common/modules/logging/app-logger.service';
+import {
+    authThrottle,
+    LOGIN_FAILED_MESSAGE,
+} from '../../common/constants/login-protection';
 import {
     clearRefreshCookie,
     readRefreshCookie,
@@ -53,8 +58,14 @@ import {
 // routes and cannot be forgotten on a fourth — these are the only routes a
 // browser sends the refresh cookie to, which is exactly what makes them the
 // CSRF targets.
+//
+// `ThrottlerGuard` (Phase 2) rides alongside it, also class-wide. It rate-limits
+// per client IP; the per-route `@Throttle` decorators below set the strict login
+// and refresh limits, and any route without one falls back to the module's
+// default. It relies on `req.ip` being the real client address — see the
+// `trust proxy` setup in `main.ts`.
 @Controller('auth')
-@UseGuards(AllowedOriginGuard)
+@UseGuards(AllowedOriginGuard, ThrottlerGuard)
 export class AuthController {
     constructor(
         private authService: AuthService,
@@ -62,6 +73,11 @@ export class AuthController {
     ) {}
 
     @Public()
+    // Strict: a person logs in a few times a minute at most, so 5/min/IP is
+    // roomy for humans and hostile to a credential-stuffing script. Paired with
+    // the per-account lockout in `AuthService`, which catches an attack spread
+    // across many IPs to stay under this per-IP ceiling.
+    @Throttle(authThrottle.loginLimit, authThrottle.ttlSeconds)
     @Post('login')
     @HttpCode(HttpStatus.OK)
     async login(
@@ -82,6 +98,10 @@ export class AuthController {
     }
 
     @Public()
+    // Looser than login: a legitimate tab rotates its token as the access token
+    // expires, and several tabs share the cookie, so honest traffic here is
+    // higher. Still bounded so a stolen-cookie replay loop cannot pound it.
+    @Throttle(authThrottle.refreshLimit, authThrottle.ttlSeconds)
     @Post('refresh')
     @HttpCode(HttpStatus.OK)
     async refresh(
@@ -154,9 +174,7 @@ export class AuthController {
                 ip: req.ip ?? undefined,
                 requestId: req.requestId,
             });
-            throw new BadRequestException(
-                'Could not log-in with the provided credentials',
-            );
+            throw new BadRequestException(LOGIN_FAILED_MESSAGE);
         }
         return { email, password };
     }
@@ -175,10 +193,10 @@ function isUnauthorized(error: unknown): boolean {
 function sessionMeta(req: Request): SessionMeta {
     return {
         userAgent: req.headers['user-agent'] ?? null,
-        // Behind Nginx this is the proxy's address until Express is told to
-        // trust the proxy — Phase 2 needs the real client IP for per-IP
-        // throttling and will set that up. Stored as informational metadata
-        // only; nothing authenticates on it.
+        // `main.ts` now sets `trust proxy`, so behind Nginx this is the real
+        // client address rather than the proxy's — which is what makes per-IP
+        // throttling meaningful. Stored as informational metadata only; nothing
+        // authenticates on it.
         ip: req.ip ?? null,
         // Put there by `RequestIdMiddleware`, which `AuthModule` applies to
         // `auth/*`. Log-only; `issueTokenPair` never writes it to a row.

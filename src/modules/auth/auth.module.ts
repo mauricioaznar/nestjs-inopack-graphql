@@ -1,10 +1,12 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from '../../common/constants/jwt';
+import { authThrottle } from '../../common/constants/login-protection';
 import { AuthResolver } from './auth.resolver';
 import { FilesModule } from '../files/files.module';
 import { UserService } from './user.service';
@@ -26,6 +28,17 @@ import { RequestIdMiddleware } from '../../common/modules/logging/request-id.mid
         // same deliberate way. `AllowedOriginGuard` and `AuthController` both
         // inject `AppLoggerService`, so this line is what makes them resolvable.
         LoggingModule,
+        // Phase 2 rate limiting. Registered here, not globally in `AppModule`,
+        // and applied only to the REST auth routes via `@UseGuards(ThrottlerGuard)`
+        // on the controller. A *global* per-IP throttle was deliberately not used:
+        // most users share one facility WAN IP, so a global cap on GraphQL traffic
+        // would throttle the whole office as one client. The `ttl`/`limit` here is
+        // the per-route default (e.g. logout); `@Throttle` overrides it on login
+        // and refresh.
+        ThrottlerModule.forRoot({
+            ttl: authThrottle.ttlSeconds,
+            limit: authThrottle.defaultLimit,
+        }),
     ],
     // `auth.controller.ts` is back, but only for the httpOnly refresh-cookie
     // endpoints (login / refresh / logout). The legacy `GET /auth/users` route

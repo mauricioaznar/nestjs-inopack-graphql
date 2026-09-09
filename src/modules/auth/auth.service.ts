@@ -16,8 +16,20 @@ import { createHash, randomBytes, randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { jwtConstants } from '../../common/constants/jwt';
+import {
+    LOGIN_FAILED_MESSAGE,
+    loginLockout,
+} from '../../common/constants/login-protection';
 import { AppLoggerService } from '../../common/modules/logging/app-logger.service';
 import { TraceBuffer } from '../../common/modules/logging/trace-buffer';
+
+// A real bcrypt hash to compare an attempted password against when the email is
+// unknown, so an unknown account and a wrong password cost the same bcrypt time.
+// Without it, "no such user" returns fast (no hash to check) while "wrong
+// password" pays for a compare — a timing difference that lets an attacker
+// enumerate valid emails. Computed once at module load; the plaintext is
+// throwaway and never used again.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('inopack-timing-equalizer', 10);
 
 /*
  * LEARNING MAP — backend session lifecycle
@@ -92,6 +104,15 @@ export class AuthService {
         private logger: AppLoggerService,
     ) {}
 
+    // Returns the user on valid credentials, `null` on any failure. The caller
+    // cannot (and must not) tell *why* it failed — unknown email, wrong password
+    // and a locked account all collapse to `null`, and the controller turns every
+    // one into the same generic message (Phase 2 acceptance criterion 3).
+    //
+    // This method also owns the Phase 2 lockout bookkeeping, because it is the one
+    // place that both knows whether the account exists and holds its counter: it
+    // increments the failure count on a wrong password, freezes the account at the
+    // threshold, and clears the count on success.
     async validateUser({
         email,
         password,
@@ -115,20 +136,75 @@ export class AuthService {
             },
         });
         if (!user) {
+            // Unknown or deactivated account. Burn an equivalent bcrypt compare
+            // so the response time matches the wrong-password path and cannot be
+            // used to enumerate valid emails. There is no counter to touch — a
+            // row that does not exist cannot be locked.
+            await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
             return null;
         }
+
+        // A live lockout refuses the attempt before the password is even checked.
+        // Checking first would both leak (via timing) whether the password was
+        // right and let a persistent attacker keep the account frozen forever by
+        // continuing to guess. Note this is *not* extended on each blocked
+        // attempt — the window is fixed at lock time.
+        if (user.lockout_until && user.lockout_until.getTime() > Date.now()) {
+            return null;
+        }
+
         let storedPassword = user.password;
         if (user.password.match(/^\$2y(.+)$/i)) {
             storedPassword = user.password.replace(/^\$2y(.+)$/i, '$2a$1');
         }
         const isMatch = await bcrypt.compare(password, storedPassword);
         if (!isMatch) {
+            await this.registerFailedLogin(
+                user.id,
+                user.failed_login_count,
+            );
             return null;
         }
+
+        // Success wipes the slate: the counter resets and any expired lockout is
+        // cleared. Guarded so the common case (a clean account) does no write.
+        if (user.failed_login_count !== 0 || user.lockout_until !== null) {
+            await this.prisma.users.update({
+                where: { id: user.id },
+                data: { failed_login_count: 0, lockout_until: null },
+            });
+        }
+
         return {
             ...user,
             password: undefined,
         };
+    }
+
+    // Records one wrong-password attempt and freezes the account once the
+    // consecutive-failure threshold is reached. IP-independent by design: the
+    // counter lives on the user row, so an attack that spreads guesses across many
+    // IPs (to duck the per-IP rate limit) still trips the same lock. When it
+    // locks, the counter is reset to 0 — after the window expires the account
+    // starts fresh rather than re-locking on the very next miss.
+    private async registerFailedLogin(
+        userId: number,
+        currentCount: number,
+    ): Promise<void> {
+        const nextCount = currentCount + 1;
+        const shouldLock = nextCount >= loginLockout.maxFailedAttempts;
+        await this.prisma.users.update({
+            where: { id: userId },
+            data: shouldLock
+                ? {
+                      failed_login_count: 0,
+                      lockout_until: new Date(
+                          Date.now() +
+                              loginLockout.lockoutMinutes * 60 * 1000,
+                      ),
+                  }
+                : { failed_login_count: nextCount },
+        });
     }
 
     // REST login: full token pair. The caller (auth.controller) is responsible
@@ -156,24 +232,19 @@ export class AuthService {
         });
 
         if (!user) {
-            // ⚠️ Cannot say *why*. `validateUser` returns `null` for both an
-            // unknown user and a wrong password, and separating them means
-            // changing its return type — that is auth logic, not logging.
-            // Phase 2 needs the distinction for the lockout counter and adds it
-            // there.
-            //
-            // The attempted email is logged on purpose, and the asymmetry with
-            // Phase 2 is deliberate: the *response* must not distinguish
-            // unknown user from wrong password, but a log is not
-            // attacker-visible. Different surfaces.
+            // `validateUser` returns `null` for an unknown email, a wrong
+            // password *and* a locked account, and has already done the Phase 2
+            // lockout bookkeeping internally. The response deliberately cannot
+            // distinguish those cases — a distinct "locked" or "no such user"
+            // message would leak whether an account exists (acceptance criterion
+            // 3). The attempted email is still logged: a log is not
+            // attacker-visible, so it may carry what the response may not.
             this.logger.warn('auth.login.failed', {
                 email: userInput.email,
                 ip: meta.ip ?? undefined,
                 requestId: meta.requestId,
             });
-            throw new BadRequestException(
-                'Could not log-in with the provided credentials',
-            );
+            throw new BadRequestException(LOGIN_FAILED_MESSAGE);
         }
 
         // Opportunistic housekeeping: a user who logs in regularly would

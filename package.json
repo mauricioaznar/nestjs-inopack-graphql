@@ -1,6 +1,6 @@
 {
   "name": "nestjs-inopack-graphql",
-  "version": "7.41.0",
+  "version": "7.41.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -40,6 +40,7 @@
     "@nestjs/jwt": "^8.0.0",
     "@nestjs/passport": "^8.0.1",
     "@nestjs/platform-express": "^8.0.9",
+    "@nestjs/throttler": "^2.0.1",
     "@prisma/client": "^5.12.1",
     "apollo-server-express": "^3.3.0",
     "bcrypt": "^5.0.1",

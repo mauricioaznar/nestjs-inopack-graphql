@@ -7,6 +7,10 @@ import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { PrismaClient } from '@prisma/client';
 import { createHash } from 'crypto';
 import { jwtConstants } from '../../common/constants/jwt';
+import {
+    LOGIN_FAILED_MESSAGE,
+    loginLockout,
+} from '../../common/constants/login-protection';
 import { TokenPair } from '../../common/dto/entities';
 import {
     AppLoggerService,
@@ -264,8 +268,87 @@ describe('logins user', () => {
                 password: 'password123',
             });
         } catch (e) {
-            expect(e.response.message).toMatch(/provided credentials/i);
+            // The exact generic message, in Spanish. Asserting equality (not a
+            // loose match) is deliberate: criterion 3 requires this to be the
+            // *same* string for unknown email, wrong password and a locked
+            // account, so the test pins the shared constant.
+            expect(e.response.message).toBe(LOGIN_FAILED_MESSAGE);
         }
+    });
+});
+
+describe('login lockout', () => {
+    it('locks the account after the threshold of wrong passwords, then refuses even the correct one', async () => {
+        const user = await userService.create({
+            email: 'lockout-victim@email.com',
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'correct-password',
+            roles: roles,
+        });
+
+        // One short of nothing special — walk the counter up to the threshold.
+        for (let i = 0; i < loginLockout.maxFailedAttempts; i++) {
+            const attempt = await authService.validateUser({
+                email: user.email,
+                password: 'wrong-password',
+            });
+            expect(attempt).toBeNull();
+        }
+
+        const locked = await prisma.users.findUniqueOrThrow({
+            where: { id: user.id },
+        });
+        expect(locked.lockout_until).not.toBeNull();
+        expect(locked.lockout_until!.getTime()).toBeGreaterThan(Date.now());
+
+        // The lock is what matters: even the correct password is refused while
+        // it stands. This is the IP-independent half of the protection — the
+        // counter lives on the row, not on an address.
+        const whileLocked = await authService.validateUser({
+            email: user.email,
+            password: 'correct-password',
+        });
+        expect(whileLocked).toBeNull();
+    });
+
+    it('resets the failure counter on a successful login', async () => {
+        const user = await userService.create({
+            email: 'lockout-reset@email.com',
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'correct-password',
+            roles: roles,
+        });
+
+        // Stay one below the threshold so no lock lands.
+        for (let i = 0; i < loginLockout.maxFailedAttempts - 1; i++) {
+            await authService.validateUser({
+                email: user.email,
+                password: 'wrong-password',
+            });
+        }
+
+        const beforeSuccess = await prisma.users.findUniqueOrThrow({
+            where: { id: user.id },
+        });
+        expect(beforeSuccess.failed_login_count).toBe(
+            loginLockout.maxFailedAttempts - 1,
+        );
+        expect(beforeSuccess.lockout_until).toBeNull();
+
+        // A correct login wipes the counter clean.
+        const ok = await authService.validateUser({
+            email: user.email,
+            password: 'correct-password',
+        });
+        expect(ok).not.toBeNull();
+
+        const afterSuccess = await prisma.users.findUniqueOrThrow({
+            where: { id: user.id },
+        });
+        expect(afterSuccess.failed_login_count).toBe(0);
+        expect(afterSuccess.lockout_until).toBeNull();
     });
 });
 
