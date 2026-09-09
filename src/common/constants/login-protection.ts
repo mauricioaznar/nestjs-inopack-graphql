@@ -45,6 +45,12 @@ export const authThrottle = {
     loginLimit: readNumber('AUTH_THROTTLE_LOGIN_LIMIT', 5),
     refreshLimit: readNumber('AUTH_THROTTLE_REFRESH_LIMIT', 10),
     defaultLimit: readNumber('AUTH_THROTTLE_DEFAULT_LIMIT', 20),
+    // Phase 3 email MFA. `mfa/verify` is the brute-force surface — a 6-digit code
+    // is only ~20 bits — so it gets its own tight per-IP cap on top of the
+    // per-code `attempts` counter. `mfa/resend` is capped low so the endpoint
+    // cannot be used to spam a victim's mailbox or run up a mail bill.
+    mfaVerifyLimit: readNumber('AUTH_THROTTLE_MFA_VERIFY_LIMIT', 10),
+    mfaResendLimit: readNumber('AUTH_THROTTLE_MFA_RESEND_LIMIT', 3),
 };
 
 // Per-account lockout. `maxFailedAttempts` consecutive wrong passwords freeze the

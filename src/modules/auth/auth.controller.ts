@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { AuthService } from './auth.service';
+import { AuthService, AuthOutcome } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { AllowedOriginGuard } from './guards/allowed-origin.guard';
 import { SessionMeta, TokenPair } from '../../common/dto/entities';
@@ -84,17 +84,82 @@ export class AuthController {
         @Body() body: unknown,
         @Req() req: Request,
         @Res({ passthrough: true }) res: Response,
-    ): Promise<{ accessToken: string }> {
+    ): Promise<AuthResponse> {
         // Hand-validated rather than via a global ValidationPipe: this app has
         // never registered one, and adding it globally would start validating
         // every GraphQL input in the repo at the same time.
         const credentials = this.readCredentials(body, req);
 
-        const pair = await this.authService.loginWithCredentials(
+        const outcome = await this.authService.loginWithCredentials(
             credentials,
             sessionMeta(req),
         );
+        // Phase 3: a login no longer always produces tokens. It may instead hand
+        // back an MFA or password-change gate, which carry no cookie.
+        return this.respondWithOutcome(res, outcome);
+    }
+
+    @Public()
+    // The brute-force surface: a 6-digit code is only ~20 bits. Tightly capped
+    // per IP on top of the per-code `attempts` counter in the service.
+    @Throttle(authThrottle.mfaVerifyLimit, authThrottle.ttlSeconds)
+    @Post('mfa/verify')
+    @HttpCode(HttpStatus.OK)
+    async verifyMfa(
+        @Body() body: unknown,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<{ accessToken: string }> {
+        const { mfaToken, code } = this.readStringFields(
+            body,
+            ['mfaToken', 'code'],
+            req,
+        );
+        const pair = await this.authService.verifyMfaCode(
+            mfaToken,
+            code,
+            sessionMeta(req),
+        );
+        // A correct code always ends in a real session — the cookie is set here.
         return this.respondWithPair(res, pair);
+    }
+
+    @Public()
+    // Capped low: this endpoint sends mail, so it must not be usable to spam a
+    // victim's inbox or run up a mail bill.
+    @Throttle(authThrottle.mfaResendLimit, authThrottle.ttlSeconds)
+    @Post('mfa/resend')
+    @HttpCode(HttpStatus.OK)
+    async resendMfa(
+        @Body() body: unknown,
+        @Req() req: Request,
+    ): Promise<{ success: true }> {
+        const { mfaToken } = this.readStringFields(body, ['mfaToken'], req);
+        await this.authService.resendMfaCode(mfaToken, sessionMeta(req));
+        return { success: true };
+    }
+
+    @Public()
+    @Post('password/change')
+    @HttpCode(HttpStatus.OK)
+    async changePassword(
+        @Body() body: unknown,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<AuthResponse> {
+        const { changeToken, newPassword } = this.readStringFields(
+            body,
+            ['changeToken', 'newPassword'],
+            req,
+        );
+        const outcome = await this.authService.changePassword(
+            changeToken,
+            newPassword,
+            sessionMeta(req),
+        );
+        // A change can resolve straight to tokens, or — for an MFA-enforced
+        // account — into the MFA gate. `respondWithOutcome` handles both.
+        return this.respondWithOutcome(res, outcome);
     }
 
     @Public()
@@ -152,6 +217,26 @@ export class AuthController {
         return { accessToken: pair.accessToken };
     }
 
+    // Translate the service's three-way outcome into an HTTP response. Only the
+    // `tokens` case sets a cookie; the two gates hand back a body-only token that
+    // the frontend holds in memory for the next step (verify / change).
+    private respondWithOutcome(
+        res: Response,
+        outcome: AuthOutcome,
+    ): AuthResponse {
+        switch (outcome.kind) {
+            case 'tokens':
+                return this.respondWithPair(res, outcome.pair);
+            case 'mfa_required':
+                return { mfaRequired: true, mfaToken: outcome.mfaToken };
+            case 'password_change_required':
+                return {
+                    passwordChangeRequired: true,
+                    changeToken: outcome.changeToken,
+                };
+        }
+    }
+
     // A method rather than the module-level function it used to be, purely so it
     // can reach the injected logger. This is one of the two events the *service*
     // can never report: a body this malformed never becomes a service call at
@@ -178,6 +263,41 @@ export class AuthController {
         }
         return { email, password };
     }
+
+    // Same hand-validation as `readCredentials`, generalised for the Phase 3
+    // routes: every named field must be a non-empty string or the request is a
+    // 400. Returns a typed object keyed by the requested fields.
+    private readStringFields<K extends string>(
+        body: unknown,
+        fields: K[],
+        req: Request,
+    ): Record<K, string> {
+        const candidate = body as Record<string, unknown> | null;
+        const result = {} as Record<K, string>;
+        for (const field of fields) {
+            const value = candidate?.[field];
+            if (typeof value !== 'string' || value.length === 0) {
+                this.logger.warn('auth.request.malformed', {
+                    ip: req.ip ?? undefined,
+                    requestId: req.requestId,
+                });
+                throw new BadRequestException('Solicitud inválida.');
+            }
+            result[field] = value;
+        }
+        return result;
+    }
+}
+
+// A Phase 3 login/refresh/change response. Exactly one shape is populated:
+// `accessToken` for a real session, or one of the two gates. REST/JSON is loose
+// enough that a single optional-fields object is clearer here than a union.
+interface AuthResponse {
+    accessToken?: string;
+    mfaRequired?: boolean;
+    mfaToken?: string;
+    passwordChangeRequired?: boolean;
+    changeToken?: string;
 }
 
 // `UnauthorizedException` is an `HttpException` with status 401, and so is

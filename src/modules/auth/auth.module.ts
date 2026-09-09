@@ -14,6 +14,7 @@ import { RoleResolver } from './role.resolver';
 import { RoleService } from './role.service';
 import { LoggingModule } from '../../common/modules/logging/logging.module';
 import { RequestIdMiddleware } from '../../common/modules/logging/request-id.middleware';
+import { MailModule } from '../../common/modules/mail/mail.module';
 
 @Module({
     imports: [
@@ -28,6 +29,10 @@ import { RequestIdMiddleware } from '../../common/modules/logging/request-id.mid
         // same deliberate way. `AllowedOriginGuard` and `AuthController` both
         // inject `AppLoggerService`, so this line is what makes them resolvable.
         LoggingModule,
+        // Phase 3 email MFA sends the one-time code through this. Imported
+        // explicitly (not global), the same way LoggingModule is — AuthService
+        // is its only consumer today.
+        MailModule,
         // Phase 2 rate limiting. Registered here, not globally in `AppModule`,
         // and applied only to the REST auth routes via `@UseGuards(ThrottlerGuard)`
         // on the controller. A *global* per-IP throttle was deliberately not used:

@@ -40,6 +40,11 @@ export class CreateUserInput extends UserBase {
 
     @Field(() => [RoleInput])
     roles: RoleInput[];
+
+    // Phase 3: admin enrols the account into email MFA. Optional — omitted means
+    // the default (off).
+    @Field(() => Boolean, { nullable: true })
+    mfa_enabled?: boolean | null;
 }
 
 @InputType('UpdateUserInput')
@@ -52,6 +57,11 @@ export class UpdateUserInput extends UserBase {
 
     @Field(() => [RoleInput])
     roles: RoleInput[];
+
+    // Phase 3: the MFA-enforcement checkbox. Optional so an update that does not
+    // touch it leaves the flag as-is.
+    @Field(() => Boolean, { nullable: true })
+    mfa_enabled?: boolean | null;
 }
 
 @ObjectType('User')
@@ -61,6 +71,12 @@ export class User extends UserBase {
 
     @Field()
     fullname: string;
+
+    // Phase 3 MFA-enforcement flag, surfaced so the admin panel can show and
+    // toggle it. Stored as TINYINT(1); the GraphQL Boolean scalar coerces the
+    // 0/1 the resolver returns.
+    @Field(() => Boolean)
+    mfa_enabled: boolean;
 
     static isUserSalesman({ roles }: { roles: Role[] }): boolean {
         return !!roles.find((role) => {
@@ -95,6 +111,13 @@ export class UserWithRoles extends User {
     }[];
 
     password?: string;
+
+    // Phase 3 flags, TINYINT(1) so `1`/`0`. Plain properties (not `@Field`) like
+    // `password` above — they travel on the object `validateUser` returns so the
+    // post-password decision can read them, without becoming part of the GraphQL
+    // `User` type.
+    mfa_enabled?: number;
+    must_change_password?: number;
 }
 
 // What the access token actually carries. Deliberately minimal: a JWT is only

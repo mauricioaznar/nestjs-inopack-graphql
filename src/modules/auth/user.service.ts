@@ -47,6 +47,7 @@ export class UserService {
                 last_name: userInput.last_name,
                 fullname: `${userInput.first_name} ${userInput.last_name}`,
                 password,
+                mfa_enabled: userInput.mfa_enabled ? 1 : 0,
             },
         });
 
@@ -94,6 +95,14 @@ export class UserService {
                 last_name: userInput.last_name,
                 fullname: `${userInput.first_name} ${userInput.last_name}`,
                 password,
+                // `undefined` leaves the flag untouched; only an explicit
+                // true/false in the input writes it.
+                mfa_enabled:
+                    userInput.mfa_enabled == null
+                        ? undefined
+                        : userInput.mfa_enabled
+                        ? 1
+                        : 0,
             },
             where: {
                 id: userInput.id,
@@ -165,6 +174,10 @@ export class UserService {
                 active: true,
                 role_id: true,
                 branch_id: true,
+                // Phase 3 flags — safe to audit (not credentials), and worth it
+                // so an admin toggling MFA or a forced reset shows in the diff.
+                mfa_enabled: true,
+                must_change_password: true,
                 // The two foreign keys, denormalised to id + name so the diff
                 // reads the name rather than the number (§12). Both are nested
                 // `select`s, so this snapshot keeps the explicit-columns-only

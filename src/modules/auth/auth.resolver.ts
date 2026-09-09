@@ -17,6 +17,7 @@ import {
 import { Injectable, UseGuards } from '@nestjs/common';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { UserService } from './user.service';
+import { AuthService } from './auth.service';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { Role, RoleId } from '../../common/dto/entities/auth/role.dto';
 import { PubSubService } from '../../common/modules/pub-sub/pub-sub.service';
@@ -32,6 +33,10 @@ export class AuthResolver {
     constructor(
         private userService: UserService,
         private pubSubService: PubSubService,
+        // Re-added after 1.6.4 removed it: the Phase 3 super-user password reset
+        // is a session/auth operation (it revokes refresh families), so it lives
+        // in AuthService, not UserService.
+        private authService: AuthService,
     ) {}
 
     @Query(() => User)
@@ -143,6 +148,21 @@ export class AuthResolver {
         });
 
         return user;
+    }
+
+    // Phase 3 §3.3. A super-user forces the target to set a new password on
+    // their next login: no new password is set here, the account is flagged and
+    // its sessions revoked. The target logs in with their current password and
+    // is then routed through the change-password gate. Super-only, matching the
+    // other user-administration mutations.
+    @Mutation(() => User, { nullable: true })
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.SUPER)
+    async resetUserPassword(
+        @Args('UserId') userId: number,
+    ): Promise<User | null> {
+        await this.authService.requirePasswordChange(userId);
+        return this.userService.findUser({ user_id: userId });
     }
 
     @ResolveField(() => [Role])

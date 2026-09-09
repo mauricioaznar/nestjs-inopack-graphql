@@ -40,6 +40,10 @@ export default async function setupDatabase() {
     // below fails while a single refresh-token row survives. Without this line
     // the *second* consecutive run dies in global setup, before any test runs.
     await prismaService.refresh_tokens.deleteMany();
+    // Phase 3 email-MFA codes: same RESTRICT-FK-to-users trap as
+    // refresh_tokens above. Must be cleared before `users.deleteMany()` or the
+    // second consecutive run dies in global setup.
+    await prismaService.email_mfa_codes.deleteMany();
     await prismaService.account_contacts.deleteMany();
 
     // level 3

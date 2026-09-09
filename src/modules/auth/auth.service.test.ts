@@ -115,6 +115,22 @@ let userService: UserService;
 let authService: AuthService;
 let prisma: PrismaService;
 
+// Phase 3 turned `loginWithCredentials` into a three-way outcome. Every user in
+// this file is password-only (no MFA, no forced change), so login always
+// resolves to `{ kind: 'tokens' }`; this unwraps to the `TokenPair` the refresh
+// tests have always worked with, and asserts the kind so a regression that
+// silently gated one of these accounts fails loudly here.
+async function loginForTokens(
+    email: string,
+    password = 'password123',
+): Promise<TokenPair> {
+    const outcome = await authService.loginWithCredentials({ email, password });
+    if (outcome.kind !== 'tokens') {
+        throw new Error(`expected a token pair, got "${outcome.kind}"`);
+    }
+    return outcome.pair;
+}
+
 // Every context this file logs, in order, for the whole run. Recorded from
 // `beforeAll` rather than per test on purpose: the redaction assertion at the
 // bottom claims that **no** line anywhere carries a credential, and that claim
@@ -251,10 +267,7 @@ describe('logins user', () => {
         // `login` mutation and `AuthService#login` were deleted, because Phase 2
         // throttles the REST route and an unthrottled mutation beside it would
         // be a way straight around the rate limit.
-        const { accessToken } = await authService.loginWithCredentials({
-            email: 'loginuseremail@email.com',
-            password: 'password123',
-        });
+        const { accessToken } = await loginForTokens('loginuseremail@email.com');
 
         expect(typeof accessToken).toBe('string');
     });
@@ -361,10 +374,7 @@ describe('refresh tokens', () => {
             password: 'password123',
             roles: roles,
         });
-        return authService.loginWithCredentials({
-            email,
-            password: 'password123',
-        });
+        return loginForTokens(email);
     }
 
     it('issues a refresh token alongside the access token on login', async () => {
@@ -731,10 +741,7 @@ describe('refresh tokens', () => {
         const email = 'refreshallsessions@email.com';
         const first = await createUserAndLogin(email);
         // A second login is a second device: its own family.
-        const second = await authService.loginWithCredentials({
-            email,
-            password: 'password123',
-        });
+        const second = await loginForTokens(email);
 
         const user = await prisma.users.findFirst({ where: { email } });
         expect(user).toBeTruthy();
@@ -751,10 +758,7 @@ describe('refresh tokens', () => {
     it('a new login starts a separate family, so revoking one leaves the other alone', async () => {
         const email = 'refreshfamilies@email.com';
         const laptop = await createUserAndLogin(email);
-        const phone = await authService.loginWithCredentials({
-            email,
-            password: 'password123',
-        });
+        const phone = await loginForTokens(email);
 
         await authService.logout(laptop.refreshToken);
 
@@ -778,10 +782,7 @@ describe('auth logging', () => {
             password: 'password123',
             roles: roles,
         });
-        return authService.loginWithCredentials({
-            email,
-            password: 'password123',
-        });
+        return loginForTokens(email);
     }
 
     // Earlier tests in this file already trip several of these events, so each
