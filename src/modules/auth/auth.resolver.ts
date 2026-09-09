@@ -7,13 +7,10 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
-import { AuthService } from './auth.service';
 import {
-    AccessToken,
     ActivityEntityName,
     ActivityTypeName,
     CreateUserInput,
-    LoginInput,
     UpdateUserInput,
     User,
 } from '../../common/dto/entities';
@@ -21,7 +18,6 @@ import { Injectable, UseGuards } from '@nestjs/common';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { UserService } from './user.service';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
-import { Public } from './decorators/public.decorator';
 import { Role, RoleId } from '../../common/dto/entities/auth/role.dto';
 import { PubSubService } from '../../common/modules/pub-sub/pub-sub.service';
 import {
@@ -34,16 +30,9 @@ import { RolesDecorator } from './decorators/role.decorator';
 @Injectable()
 export class AuthResolver {
     constructor(
-        private authService: AuthService,
         private userService: UserService,
         private pubSubService: PubSubService,
     ) {}
-
-    @Mutation(() => AccessToken)
-    @Public()
-    async login(@Args('loginInput') input: LoginInput) {
-        return this.authService.login(input);
-    }
 
     @Query(() => User)
     @UseGuards(GqlAuthGuard)

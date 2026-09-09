@@ -15,6 +15,10 @@ export class UserBase {
     last_name: string;
 }
 
+// No GraphQL consumer any more — the `login` mutation was deleted, so this input
+// type is no longer reachable from any resolver and never reaches the generated
+// schema. It survives as the shape `AuthController` validates its request body
+// into, which is the only place credentials are accepted now.
 @InputType('loginInput')
 export class LoginInput {
     @Field()
@@ -93,8 +97,44 @@ export class UserWithRoles extends User {
     password?: string;
 }
 
-@ObjectType('AccessToken')
-export class AccessToken {
-    @Field({ nullable: false })
+// What the access token actually carries. Deliberately minimal: a JWT is only
+// base64 — everything in it is readable by anyone holding the token, and it is
+// copied on every single request. The whole `users` row used to travel in here.
+export interface AccessTokenPayload {
+    sub: number;
+    email: string;
+    role_ids: number[];
+}
+
+// What a login or a rotation produces. Only `accessToken` ever reaches the
+// response body; the refresh token is written straight into an httpOnly cookie
+// so no JavaScript on the page can read it (that is the whole point of moving
+// off localStorage).
+export interface TokenPair {
     accessToken: string;
+    refreshToken: string;
+    refreshExpiresAt: Date;
+}
+
+// Whatever we can learn about the client that opened this session. Purely
+// informational today; it is what a future "active sessions" screen would list.
+export interface SessionMeta {
+    userAgent?: string | null;
+    ip?: string | null;
+
+    // Log-only, and the one field here that is never persisted. Mixing it in
+    // beats a second parallel parameter on three service methods, and it cannot
+    // leak into `refresh_tokens` by accident: `issueTokenPair` writes an
+    // explicit allowlist (`meta.userAgent`, `meta.ip`) field by field rather
+    // than spreading `meta`.
+    requestId?: string;
+}
+
+// What `req.user` is after `JwtStrategy#validate` — i.e. what `@CurrentUser()`
+// and the role guard receive. `id` mirrors the payload's `sub` so the ~50
+// existing `currentUser.id` call sites keep working unchanged.
+export interface AuthenticatedUser {
+    id: number;
+    email: string;
+    role_ids: number[];
 }

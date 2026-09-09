@@ -20,6 +20,23 @@ export class AddAccountTaxRequirements1785348109789
             ADD COLUMN require_tax tinyint(1) NOT NULL DEFAULT '0' AFTER require_external_code;
         `);
 
+        // Everything below is a one-time production data correction keyed on
+        // hardcoded account, expense, and sale IDs, guarded by exact-count
+        // assertions. A database with no business data — the test/CI database
+        // rebuilt from the `--no-data` schema snapshot (see db/README.md) — has
+        // none of those rows, so the first assertion would abort the run on
+        // zero matched rows and leave the schema changes above half-applied.
+        // Apply the schema and stop before the data steps when `accounts` is
+        // empty. On a populated database the assertions below stay strict, so
+        // genuine hardcoded-ID drift on production is still caught.
+        if (await this.isAccountsEmpty(queryRunner)) {
+            console.log(
+                '  accounts is empty — applied schema only, skipping the ' +
+                    'hardcoded-ID data corrections (fresh/test database).',
+            );
+            return;
+        }
+
         // These supplier accounts require neither an external folio, IVA, nor a
         // complemento by default.
         const noExternalCodeResult = await queryRunner.query(`
@@ -496,6 +513,20 @@ export class AddAccountTaxRequirements1785348109789
             DROP COLUMN client_requires_invoice_code,
             DROP COLUMN client_requires_tax;
         `);
+    }
+
+    private async isAccountsEmpty(queryRunner: QueryRunner): Promise<boolean> {
+        const result = await queryRunner.query(
+            `SELECT COUNT(*) AS count FROM accounts;`,
+        );
+        // mysql2 returns SELECT results as [rows, fields] through this runner
+        // (see assertSelectedRows); other drivers return the rows array directly.
+        const rows =
+            Array.isArray(result) && Array.isArray(result[0])
+                ? result[0]
+                : result;
+        const count = Number((rows as { count?: number }[])[0]?.count ?? 0);
+        return count === 0;
     }
 
     private assertAffectedAccounts(
