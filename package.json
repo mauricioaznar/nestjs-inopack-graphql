@@ -1,6 +1,6 @@
 {
   "name": "nestjs-inopack-graphql",
-  "version": "7.41.2",
+  "version": "7.41.3",
   "description": "",
   "main": "index.js",
   "scripts": {

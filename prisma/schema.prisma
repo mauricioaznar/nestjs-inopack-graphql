@@ -693,9 +693,11 @@ model users {
   failed_login_count Int         @default(0)
   lockout_until      DateTime?   @db.DateTime(0)
   // Phase 3: email-MFA enforcement flag (admin-set) and the super-user
-  // forced-password-change gate. Both are TINYINT(1) booleans, default off.
-  mfa_enabled          Int       @default(0) @db.TinyInt
-  must_change_password Int       @default(0) @db.TinyInt
+  // forced-password-change gate. Both are TINYINT(1) booleans, default off —
+  // modelled as `Boolean` like every other flag in this schema (Prisma maps
+  // Boolean to TINYINT(1) in MySQL, so the migration's tinyint(1) columns match).
+  mfa_enabled          Boolean   @default(false)
+  must_change_password Boolean   @default(false)
   created_at     DateTime?       @db.DateTime(0)
   updated_at     DateTime?       @db.DateTime(0)
   role_id        Int?            @db.UnsignedInt

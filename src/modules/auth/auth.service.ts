@@ -129,9 +129,10 @@ interface AuthUser {
     // Optional so both `validateUser`'s `UserWithRoles` (where the flags are
     // declared optional) and a `readActiveUser` row satisfy this. The gate
     // checks are truthiness tests, so an absent flag reads as "off" — the safe
-    // default for both MFA enforcement and a forced password change.
-    mfa_enabled?: number;
-    must_change_password?: number;
+    // default for both MFA enforcement and a forced password change. Boolean
+    // because Prisma maps the TINYINT(1) columns to Boolean.
+    mfa_enabled?: boolean;
+    must_change_password?: boolean;
     user_roles: { role_id?: number | null }[];
 }
 
@@ -1095,7 +1096,7 @@ export class AuthService {
     async requirePasswordChange(userId: number): Promise<void> {
         await this.prisma.users.update({
             where: { id: userId },
-            data: { must_change_password: 1 },
+            data: { must_change_password: true },
         });
         // Revoke all families so a currently-open session cannot be used to keep
         // working around the forced change.
@@ -1129,7 +1130,7 @@ export class AuthService {
             where: { id: userId },
             data: {
                 password: hashed,
-                must_change_password: 0,
+                must_change_password: false,
                 // A fresh password also clears any brute-force state.
                 failed_login_count: 0,
                 lockout_until: null,

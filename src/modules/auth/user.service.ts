@@ -47,7 +47,7 @@ export class UserService {
                 last_name: userInput.last_name,
                 fullname: `${userInput.first_name} ${userInput.last_name}`,
                 password,
-                mfa_enabled: userInput.mfa_enabled ? 1 : 0,
+                mfa_enabled: userInput.mfa_enabled ?? false,
             },
         });
 
@@ -100,9 +100,7 @@ export class UserService {
                 mfa_enabled:
                     userInput.mfa_enabled == null
                         ? undefined
-                        : userInput.mfa_enabled
-                        ? 1
-                        : 0,
+                        : userInput.mfa_enabled,
             },
             where: {
                 id: userInput.id,

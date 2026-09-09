@@ -112,12 +112,14 @@ export class UserWithRoles extends User {
 
     password?: string;
 
-    // Phase 3 flags, TINYINT(1) so `1`/`0`. Plain properties (not `@Field`) like
-    // `password` above — they travel on the object `validateUser` returns so the
-    // post-password decision can read them, without becoming part of the GraphQL
-    // `User` type.
-    mfa_enabled?: number;
-    must_change_password?: number;
+    // `mfa_enabled` is inherited from `User` (a GraphQL `@Field`). This one is the
+    // internal-only forced-password-change flag: a plain property (not `@Field`)
+    // like `password` above, travelling on the object `validateUser` returns so the
+    // post-password decision can read it without it becoming part of the GraphQL
+    // `User` type. Surfaced as a boolean by Prisma (TINYINT(1) → Boolean). Optional
+    // because a `select` may omit it; the gate check is a truthiness test, so an
+    // absent flag reads as "off".
+    must_change_password?: boolean;
 }
 
 // What the access token actually carries. Deliberately minimal: a JWT is only
