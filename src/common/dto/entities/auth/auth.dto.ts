@@ -45,6 +45,12 @@ export class CreateUserInput extends UserBase {
     // the default (off).
     @Field(() => Boolean, { nullable: true })
     mfa_enabled?: boolean | null;
+
+    // Blocks login for the account without deleting it. Optional; omitted ⇒ off.
+    // Note there is deliberately no `is_root` input on either create or update:
+    // the root flag is DB-only and cannot be set through GraphQL.
+    @Field(() => Boolean, { nullable: true })
+    login_disabled?: boolean | null;
 }
 
 @InputType('UpdateUserInput')
@@ -62,6 +68,11 @@ export class UpdateUserInput extends UserBase {
     // touch it leaves the flag as-is.
     @Field(() => Boolean, { nullable: true })
     mfa_enabled?: boolean | null;
+
+    // The login-disable checkbox. Optional so an update that does not touch it
+    // leaves the flag as-is. `is_root` is intentionally absent — it is DB-only.
+    @Field(() => Boolean, { nullable: true })
+    login_disabled?: boolean | null;
 }
 
 @ObjectType('User')
@@ -77,6 +88,17 @@ export class User extends UserBase {
     // 0/1 the resolver returns.
     @Field(() => Boolean)
     mfa_enabled: boolean;
+
+    // Read-only surface of the two DB flags from the migration. `is_root` drives
+    // the "only editable by itself" protection (enforced in the resolver) and its
+    // UI badge; `login_disabled` drives the disable checkbox and the access
+    // column. `is_root` is never on an input type, so it can be read here but
+    // only written in the database.
+    @Field(() => Boolean)
+    is_root: boolean;
+
+    @Field(() => Boolean)
+    login_disabled: boolean;
 
     static isUserSalesman({ roles }: { roles: Role[] }): boolean {
         return !!roles.find((role) => {

@@ -365,6 +365,56 @@ describe('login lockout', () => {
     });
 });
 
+describe('login disabled', () => {
+    it('refuses a disabled account even with the correct password', async () => {
+        const user = await userService.create({
+            email: 'disabled-login@email.com',
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'password123',
+            roles: roles,
+        });
+        await prisma.users.update({
+            where: { id: user.id },
+            data: { login_disabled: true },
+        });
+
+        const attempt = await authService.validateUser({
+            email: 'disabled-login@email.com',
+            password: 'password123',
+        });
+        expect(attempt).toBeNull();
+    });
+
+    it('kills refresh for a disabled account: rotation revokes the family', async () => {
+        const user = await userService.create({
+            email: 'disabled-refresh@email.com',
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'password123',
+            roles: roles,
+        });
+        const pair = await loginForTokens('disabled-refresh@email.com');
+
+        await prisma.users.update({
+            where: { id: user.id },
+            data: { login_disabled: true },
+        });
+
+        // Refresh reads the user through `readActiveUser`, which now excludes
+        // disabled accounts, so rotation takes its inactive branch: it rejects…
+        await expect(
+            authService.rotateRefreshToken(pair.refreshToken),
+        ).rejects.toThrow();
+
+        // …and that branch revokes the whole family — no live rows remain.
+        const live = await prisma.refresh_tokens.count({
+            where: { user_id: user.id, revoked_at: null },
+        });
+        expect(live).toBe(0);
+    });
+});
+
 describe('refresh tokens', () => {
     async function createUserAndLogin(email: string) {
         await userService.create({

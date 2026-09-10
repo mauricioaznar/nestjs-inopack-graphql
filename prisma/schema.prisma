@@ -698,6 +698,11 @@ model users {
   // Boolean to TINYINT(1) in MySQL, so the migration's tinyint(1) columns match).
   mfa_enabled          Boolean   @default(false)
   must_change_password Boolean   @default(false)
+  // Protected root account (edit/reset/disable only by itself; never settable
+  // through the app) and the login-disable flag. Both TINYINT(1) → Boolean, like
+  // the two above.
+  is_root              Boolean   @default(false)
+  login_disabled       Boolean   @default(false)
   created_at     DateTime?       @db.DateTime(0)
   updated_at     DateTime?       @db.DateTime(0)
   role_id        Int?            @db.UnsignedInt

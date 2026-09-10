@@ -14,7 +14,7 @@ import {
     UpdateUserInput,
     User,
 } from '../../common/dto/entities';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { ForbiddenException, Injectable, UseGuards } from '@nestjs/common';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { UserService } from './user.service';
 import { AuthService } from './auth.service';
@@ -117,6 +117,8 @@ export class AuthResolver {
         @Args('UpdateUserInput') input: UpdateUserInput,
         @CurrentUser() currentUser: User,
     ) {
+        await this.assertEditableBy(input.id, currentUser);
+
         const auditContext = {
             entityName: ActivityEntityName.USER,
             entityId: input.id,
@@ -133,6 +135,17 @@ export class AuthResolver {
         );
         // OUTSIDE every audit guard — a real save failure still fails.
         const user = await this.userService.update(input);
+
+        // Disabling a user ends their access now: revoke every refresh family so
+        // a live session cannot be refreshed (the access token still lives out
+        // its ≤15-min TTL, but cannot be renewed, and every other token-issuing
+        // path reads the user through `readActiveUser`, which now excludes
+        // disabled accounts). Idempotent — re-running on an already-disabled
+        // account simply finds no live rows to revoke.
+        if (user.login_disabled) {
+            await this.authService.revokeAllForUser(user.id);
+        }
+
         const newCapture = await captureSnapshotSafely(
             auditContext,
             'new_snapshot',
@@ -160,9 +173,30 @@ export class AuthResolver {
     @RolesDecorator(RoleId.SUPER)
     async resetUserPassword(
         @Args('UserId') userId: number,
+        @CurrentUser() currentUser: User,
     ): Promise<User | null> {
+        await this.assertEditableBy(userId, currentUser);
         await this.authService.requirePasswordChange(userId);
         return this.userService.findUser({ user_id: userId });
+    }
+
+    // A root account may be edited (updated, reset, disabled) only by itself. Any
+    // other actor — Super included — is refused. The `is_root` flag is DB-only
+    // (on no GraphQL input), so this resolver check plus the missing input field
+    // are the whole of its protection; the only way to grant or move root is in
+    // the database.
+    private async assertEditableBy(
+        targetUserId: number,
+        currentUser: User,
+    ): Promise<void> {
+        const target = await this.userService.findUser({
+            user_id: targetUserId,
+        });
+        if (target?.is_root && currentUser.id !== target.id) {
+            throw new ForbiddenException(
+                'Esta cuenta solo puede ser modificada por sí misma.',
+            );
+        }
     }
 
     @ResolveField(() => [Role])

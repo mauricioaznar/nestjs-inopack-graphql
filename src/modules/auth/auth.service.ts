@@ -28,6 +28,7 @@ import {
 import { MailService } from '../../common/modules/mail/mail.service';
 import { AppLoggerService } from '../../common/modules/logging/app-logger.service';
 import { TraceBuffer } from '../../common/modules/logging/trace-buffer';
+import { assertPasswordStrength } from '../../common/constants/password-policy';
 
 // A real bcrypt hash to compare an attempted password against when the email is
 // unknown, so an unknown account and a wrong password cost the same bcrypt time.
@@ -182,6 +183,15 @@ export class AuthService {
             // used to enumerate valid emails. There is no counter to touch — a
             // row that does not exist cannot be locked.
             await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+            return null;
+        }
+
+        // A disabled account never authenticates, whatever the password. It
+        // collapses to the same `null` as every other failure so the response
+        // stays one generic message (no "account disabled" oracle), and it is
+        // checked before the password compare — like the lockout — so a disabled
+        // account cannot be probed for its password either.
+        if (user.login_disabled) {
             return null;
         }
 
@@ -899,7 +909,13 @@ export class AuthService {
     private async readActiveUser(userId: number) {
         return this.prisma.users.findFirst({
             include: { user_roles: { where: { active: 1 } } },
-            where: { id: userId, active: 1 },
+            // `login_disabled: false` here is what makes the disable flag end a
+            // live session, not just block new password logins: every
+            // token-issuing path (refresh rotation, MFA verify/resend,
+            // change-password) reads the user through this method, so a disabled
+            // account comes back `null` and the caller takes its inactive branch —
+            // which, on rotation, revokes the token family.
+            where: { id: userId, active: 1, login_disabled: false },
         });
     }
 
@@ -1118,7 +1134,7 @@ export class AuthService {
             changeToken,
             PASSWORD_CHANGE_PURPOSE,
         );
-        this.assertPasswordStrength(newPassword);
+        assertPasswordStrength(newPassword);
 
         const user = await this.readActiveUser(userId);
         if (!user) {
@@ -1246,13 +1262,5 @@ export class AuthService {
             throw new UnauthorizedException();
         }
         return payload.sub;
-    }
-
-    private assertPasswordStrength(password: unknown): void {
-        if (typeof password !== 'string' || password.length < 8) {
-            throw new BadRequestException(
-                'La nueva contraseña debe tener al menos 8 caracteres.',
-            );
-        }
     }
 }

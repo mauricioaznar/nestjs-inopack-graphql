@@ -296,7 +296,7 @@ describe('super-user forced password change', () => {
 
         const changed = await authService.changePassword(
             gated.changeToken,
-            'brand-new-password',
+            'brand-new-password1',
         );
         expect(changed.kind).toBe('tokens');
 
@@ -309,7 +309,7 @@ describe('super-user forced password change', () => {
         ).rejects.toThrow();
         const relogin = await authService.loginWithCredentials({
             email: user.email,
-            password: 'brand-new-password',
+            password: 'brand-new-password1',
         });
         expect(relogin.kind).toBe('tokens');
     });
@@ -331,12 +331,12 @@ describe('super-user forced password change', () => {
         // step, so the two gates compose instead of one bypassing the other.
         const after = await authService.changePassword(
             gated.changeToken,
-            'brand-new-password',
+            'brand-new-password1',
         );
         expect(after.kind).toBe('mfa_required');
     });
 
-    it('rejects a too-short new password', async () => {
+    it('rejects a new password that does not meet the policy', async () => {
         const user = await createUser('reset-weak@email.com');
         await authService.requirePasswordChange(user.id);
         const gated = await authService.loginWithCredentials({
@@ -346,8 +346,19 @@ describe('super-user forced password change', () => {
         if (gated.kind !== 'password_change_required')
             throw new Error('expected change gate');
 
+        // assertPasswordStrength throws before any DB write, so the change token
+        // is not spent — the same gate can be re-tried for each failing case.
+        // Too short.
         await expect(
             authService.changePassword(gated.changeToken, 'short'),
+        ).rejects.toThrow();
+        // Long enough, letters + digits, but no symbol.
+        await expect(
+            authService.changePassword(gated.changeToken, 'password1234'),
+        ).rejects.toThrow();
+        // Long enough, letters + a symbol, but no digit.
+        await expect(
+            authService.changePassword(gated.changeToken, 'password-only!'),
         ).rejects.toThrow();
     });
 });
