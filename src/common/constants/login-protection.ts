@@ -11,17 +11,7 @@
 //     password-guessing attack that spreads its attempts across many IPs to stay
 //     under the per-IP limit.
 
-function readNumber(name: string, fallback: number): number {
-    const raw = process.env[name];
-    if (raw === undefined || raw === '') {
-        return fallback;
-    }
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value < 0) {
-        throw new Error(`${name} must be a non-negative number, got "${raw}"`);
-    }
-    return value;
-}
+import { readNumber } from './env';
 
 // The generic Spanish message returned for every failed login, whatever the
 // actual cause. Unknown email, wrong password and a locked account must be

@@ -10,34 +10,11 @@
 //     so the verify endpoint does not re-accept a password. It is signed with
 //     its own secret and grants nothing but the verify call.
 
-function readSecret(name: string, developmentFallback: string): string {
-    const value = process.env[name];
-    if (value) {
-        return value;
-    }
-    // Same boot discipline as JWT_ACCESS_SECRET: in production an unset secret is
-    // a hard failure, because a fallback there would sign mfaTokens with a value
-    // that is public in this repository. This is why MFA_TOKEN_SECRET is listed
-    // in the stage/prod deployment prerequisites — set it before Phase 3 ships.
-    if (process.env.NODE_ENV === 'production') {
-        throw new Error(
-            `${name} is not set. Production requires an explicit MFA secret.`,
-        );
-    }
-    return developmentFallback;
-}
-
-function readNumber(name: string, fallback: number): number {
-    const raw = process.env[name];
-    if (raw === undefined || raw === '') {
-        return fallback;
-    }
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value < 0) {
-        throw new Error(`${name} must be a non-negative number, got "${raw}"`);
-    }
-    return value;
-}
+// `readSecret` applies the same boot discipline as JWT_ACCESS_SECRET: in
+// production an unset MFA_TOKEN_SECRET is a hard failure (a fallback there would
+// sign mfaTokens with a value public in this repository), which is why it is in
+// the stage/prod deployment prerequisites — set it before Phase 3 ships.
+import { readNumber, readSecret } from './env';
 
 // The `purpose` claim distinguishes the two short-lived "interstitial" tokens
 // issued after a password succeeds but before a full session exists. Both are

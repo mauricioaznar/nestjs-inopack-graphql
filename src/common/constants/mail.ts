@@ -17,17 +17,7 @@
 //                              (password-only users are unaffected) rather than
 //                              leaking codes.
 
-function readNumber(name: string, fallback: number): number {
-    const raw = process.env[name];
-    if (raw === undefined || raw === '') {
-        return fallback;
-    }
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value < 0) {
-        throw new Error(`${name} must be a non-negative number, got "${raw}"`);
-    }
-    return value;
-}
+import { readNumber } from './env';
 
 export type MailTransportKind = 'smtp' | 'console' | 'unconfigured';
 
