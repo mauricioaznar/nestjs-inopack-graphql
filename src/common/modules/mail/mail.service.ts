@@ -31,6 +31,10 @@ export class MailService {
                 host: mailConstants.host,
                 port: mailConstants.port,
                 secure: mailConstants.secure,
+                // The FQDN sent in EHLO/HELO. Without this nodemailer uses the
+                // bare OS hostname, which Google's relay rejects at EHLO
+                // (`421 4.7.0 … (EHLO)`). See mailConstants.ehloName.
+                name: mailConstants.ehloName || undefined,
                 // Only pass credentials when a username is configured — an open
                 // relay on the LAN legitimately needs none, and passing empty
                 // strings makes nodemailer attempt a broken AUTH.

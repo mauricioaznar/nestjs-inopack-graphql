@@ -28,10 +28,28 @@ function resolveTransport(): MailTransportKind {
     return process.env.NODE_ENV === 'production' ? 'unconfigured' : 'console';
 }
 
+// The hostname the client announces in EHLO/HELO. Nodemailer otherwise uses the
+// OS hostname, which on a cloud droplet is an unqualified name (e.g.
+// `ubuntu-s-1vcpu-2gb-nyc1`) that Google's SMTP relay rejects at EHLO with a
+// generic `421 4.7.0 Try again later, closing connection. (EHLO)`. A valid FQDN
+// is required. Prefer an explicit `MAIL_EHLO_NAME` (the sending host's real
+// FQDN, e.g. `stage.grupoinopack.com`); otherwise fall back to the MAIL_FROM
+// domain, which is always a valid FQDN and keeps us from ever greeting with the
+// bare OS hostname again. Empty only when there is no MAIL_FROM domain to derive.
+function resolveEhloName(): string {
+    if (process.env.MAIL_EHLO_NAME) {
+        return process.env.MAIL_EHLO_NAME;
+    }
+    const from = process.env.MAIL_FROM || '';
+    const at = from.lastIndexOf('@');
+    return at >= 0 ? from.slice(at + 1) : '';
+}
+
 export const mailConstants = {
     transport: resolveTransport(),
 
     host: process.env.MAIL_HOST || '',
+    ehloName: resolveEhloName(),
     port: readNumber('MAIL_PORT', 587),
     // STARTTLS on 587 is the common default, so `secure` (implicit TLS on 465)
     // is off unless explicitly asked for. Any non-empty non-"false" value is truthy.
