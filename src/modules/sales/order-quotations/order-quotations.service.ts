@@ -646,118 +646,125 @@ export class OrderQuotationsService {
     }): Promise<OrderQuotation> {
         await this.validateOrderQuotation(input, current_user_id);
 
-        const orderQuotation = await this.prisma.order_quotations.upsert({
-            create: {
-                ...getCreatedAtProperty(),
-                ...getUpdatedAtProperty(),
-                ...getCreatedByProperty(current_user_id),
-                ...getUpdatedByProperty(current_user_id),
-                notes: input.notes,
-                date: input.date,
-                order_code: input.order_code,
-                estimated_delivery_date: input.estimated_delivery_date,
-                account_id: input.account_id,
-                expiration_date: input.expiration_date,
-                payment_terms: input.payment_terms,
-                require_tax: input.require_tax,
-                // Status is not part of the input: new quotations always start at
-                // Borrador (id = 1). Only updateOrderQuotationStatus (admin-only)
-                // can change it afterwards.
-                order_quotation_status_id: 1,
-            },
-            update: {
-                ...getUpdatedAtProperty(),
-                ...getUpdatedByProperty(current_user_id),
-                notes: input.notes,
-                date: input.date,
-                order_code: input.order_code,
-                estimated_delivery_date: input.estimated_delivery_date,
-                account_id: input.account_id,
-                expiration_date: input.expiration_date,
-                payment_terms: input.payment_terms,
-                require_tax: input.require_tax,
-                // Intentionally omit order_quotation_status_id and
-                // account_products_updated_at so an upsert never overwrites a
-                // status an admin set nor the stored catalog-write stamp.
-            },
-            where: {
-                id: input.id || 0,
-            },
-        });
-
-        const newProductItems = input.order_quotation_products;
-        const oldProductItems = input.id
-            ? await this.prisma.order_quotation_products.findMany({
-                  where: {
-                      order_quotation_id: input.id,
-                  },
-              })
-            : [];
-
-        const {
-            aMinusB: deleteProductItems,
-            bMinusA: createProductItems,
-            intersection: updateProductItems,
-        } = vennDiagram({
-            a: oldProductItems,
-            b: newProductItems,
-            indexProperties: ['id'],
-        });
-
-        for await (const delItem of deleteProductItems) {
-            if (delItem && delItem.id) {
-                await this.prisma.order_quotation_products.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        active: -1,
-                    },
-                    where: {
-                        id: delItem.id,
-                    },
-                });
-            }
-        }
-
-        for await (const createItem of createProductItems) {
-            await this.prisma.order_quotation_products.create({
-                data: {
+        // Header + line items must land atomically: a throw mid-loop used to leave
+        // an orphan header (or partly written lines). Validation above needs no
+        // write snapshot, so it stays outside; the header upsert, the read of
+        // existing lines (so the venn diff is against the same snapshot the writes
+        // commit), and the three line loops all run on the transaction client `tx`.
+        return this.prisma.$transaction(async (tx) => {
+            const orderQuotation = await tx.order_quotations.upsert({
+                create: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
-                    kilo_price: createItem.kilo_price,
-                    group_price: createItem.group_price,
-                    order_quotation_id: orderQuotation.id,
-                    product_id: createItem.product_id,
-                    proposed_description: createItem.proposed_description,
-                    kilos: createItem.kilos,
-                    active: 1,
-                    group_weight: createItem.group_weight,
-                    groups: createItem.groups,
+                    ...getCreatedByProperty(current_user_id),
+                    ...getUpdatedByProperty(current_user_id),
+                    notes: input.notes,
+                    date: input.date,
+                    order_code: input.order_code,
+                    estimated_delivery_date: input.estimated_delivery_date,
+                    account_id: input.account_id,
+                    expiration_date: input.expiration_date,
+                    payment_terms: input.payment_terms,
+                    require_tax: input.require_tax,
+                    // Status is not part of the input: new quotations always start at
+                    // Borrador (id = 1). Only updateOrderQuotationStatus (admin-only)
+                    // can change it afterwards.
+                    order_quotation_status_id: 1,
+                },
+                update: {
+                    ...getUpdatedAtProperty(),
+                    ...getUpdatedByProperty(current_user_id),
+                    notes: input.notes,
+                    date: input.date,
+                    order_code: input.order_code,
+                    estimated_delivery_date: input.estimated_delivery_date,
+                    account_id: input.account_id,
+                    expiration_date: input.expiration_date,
+                    payment_terms: input.payment_terms,
+                    require_tax: input.require_tax,
+                    // Intentionally omit order_quotation_status_id and
+                    // account_products_updated_at so an upsert never overwrites a
+                    // status an admin set nor the stored catalog-write stamp.
+                },
+                where: {
+                    id: input.id || 0,
                 },
             });
-        }
 
-        for await (const updateItem of updateProductItems) {
-            if (updateItem && updateItem.id) {
-                await this.prisma.order_quotation_products.updateMany({
+            const newProductItems = input.order_quotation_products;
+            const oldProductItems = input.id
+                ? await tx.order_quotation_products.findMany({
+                      where: {
+                          order_quotation_id: input.id,
+                      },
+                  })
+                : [];
+
+            const {
+                aMinusB: deleteProductItems,
+                bMinusA: createProductItems,
+                intersection: updateProductItems,
+            } = vennDiagram({
+                a: oldProductItems,
+                b: newProductItems,
+                indexProperties: ['id'],
+            });
+
+            for await (const delItem of deleteProductItems) {
+                if (delItem && delItem.id) {
+                    await tx.order_quotation_products.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            active: -1,
+                        },
+                        where: {
+                            id: delItem.id,
+                        },
+                    });
+                }
+            }
+
+            for await (const createItem of createProductItems) {
+                await tx.order_quotation_products.create({
                     data: {
+                        ...getCreatedAtProperty(),
                         ...getUpdatedAtProperty(),
-                        product_id: updateItem.product_id,
-                        proposed_description: updateItem.proposed_description,
-                        kilos: updateItem.kilos,
+                        kilo_price: createItem.kilo_price,
+                        group_price: createItem.group_price,
+                        order_quotation_id: orderQuotation.id,
+                        product_id: createItem.product_id,
+                        proposed_description: createItem.proposed_description,
+                        kilos: createItem.kilos,
                         active: 1,
-                        group_weight: updateItem.group_weight,
-                        groups: updateItem.groups,
-                        kilo_price: updateItem.kilo_price,
-                        group_price: updateItem.group_price,
-                    },
-                    where: {
-                        id: updateItem.id,
+                        group_weight: createItem.group_weight,
+                        groups: createItem.groups,
                     },
                 });
             }
-        }
 
-        return orderQuotation;
+            for await (const updateItem of updateProductItems) {
+                if (updateItem && updateItem.id) {
+                    await tx.order_quotation_products.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            product_id: updateItem.product_id,
+                            proposed_description: updateItem.proposed_description,
+                            kilos: updateItem.kilos,
+                            active: 1,
+                            group_weight: updateItem.group_weight,
+                            groups: updateItem.groups,
+                            kilo_price: updateItem.kilo_price,
+                            group_price: updateItem.group_price,
+                        },
+                        where: {
+                            id: updateItem.id,
+                        },
+                    });
+                }
+            }
+
+            return orderQuotation;
+        });
     }
 
     // Admin-only status change, kept separate from upsert so that regular sales
