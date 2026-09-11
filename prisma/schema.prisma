@@ -689,6 +689,20 @@ model users {
   password       String          @db.VarChar(60)
   active         Int             @default(1)
   remember_token String?         @db.VarChar(100)
+  // Phase 2 brute-force lockout: consecutive-failure counter + lockout expiry.
+  failed_login_count Int         @default(0)
+  lockout_until      DateTime?   @db.DateTime(0)
+  // Phase 3: email-MFA enforcement flag (admin-set) and the super-user
+  // forced-password-change gate. Both are TINYINT(1) booleans, default off —
+  // modelled as `Boolean` like every other flag in this schema (Prisma maps
+  // Boolean to TINYINT(1) in MySQL, so the migration's tinyint(1) columns match).
+  mfa_enabled          Boolean   @default(false)
+  must_change_password Boolean   @default(false)
+  // Protected root account (edit/reset/disable only by itself; never settable
+  // through the app) and the login-disable flag. Both TINYINT(1) → Boolean, like
+  // the two above.
+  is_root              Boolean   @default(false)
+  login_disabled       Boolean   @default(false)
   created_at     DateTime?       @db.DateTime(0)
   updated_at     DateTime?       @db.DateTime(0)
   role_id        Int?            @db.UnsignedInt
@@ -696,6 +710,7 @@ model users {
   branch_id      Int?            @db.UnsignedInt
   activities     activities[]
   refresh_tokens refresh_tokens[]
+  email_mfa_codes email_mfa_codes[]
   user_branches  user_branches[]
   user_roles     user_roles[]
 
@@ -751,6 +766,24 @@ model refresh_tokens {
 
   @@index([user_id], map: "refresh_tokens_user_id_foreign")
   @@index([family_id], map: "refresh_tokens_family_id_index")
+}
+
+// Phase 3 email MFA: one row per issued one-time code. `code_hash` is the
+// SHA-256 of the raw digits (never the digits). `consumed_at` enforces
+// single-use, `expires_at` the short TTL, `attempts` the per-code brute-force
+// cap. The FK has no ON DELETE (RESTRICT) like refresh_tokens, so the Jest
+// teardown deletes these before users.
+model email_mfa_codes {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  user_id     Int       @db.UnsignedInt
+  code_hash   String    @db.Char(64)
+  expires_at  DateTime  @db.DateTime(0)
+  consumed_at DateTime? @db.DateTime(0)
+  attempts    Int       @default(0)
+  created_at  DateTime? @db.DateTime(0)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "email_mfa_codes_user_id_foreign")
+
+  @@index([user_id], map: "email_mfa_codes_user_id_foreign")
 }
 
 model machine_compatibilities {

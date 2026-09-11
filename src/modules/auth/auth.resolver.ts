@@ -14,9 +14,10 @@ import {
     UpdateUserInput,
     User,
 } from '../../common/dto/entities';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { ForbiddenException, Injectable, UseGuards } from '@nestjs/common';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { UserService } from './user.service';
+import { AuthService } from './auth.service';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { Role, RoleId } from '../../common/dto/entities/auth/role.dto';
 import { PubSubService } from '../../common/modules/pub-sub/pub-sub.service';
@@ -32,6 +33,10 @@ export class AuthResolver {
     constructor(
         private userService: UserService,
         private pubSubService: PubSubService,
+        // Re-added after 1.6.4 removed it: the Phase 3 super-user password reset
+        // is a session/auth operation (it revokes refresh families), so it lives
+        // in AuthService, not UserService.
+        private authService: AuthService,
     ) {}
 
     @Query(() => User)
@@ -112,6 +117,8 @@ export class AuthResolver {
         @Args('UpdateUserInput') input: UpdateUserInput,
         @CurrentUser() currentUser: User,
     ) {
+        await this.assertEditableBy(input.id, currentUser);
+
         const auditContext = {
             entityName: ActivityEntityName.USER,
             entityId: input.id,
@@ -128,6 +135,17 @@ export class AuthResolver {
         );
         // OUTSIDE every audit guard — a real save failure still fails.
         const user = await this.userService.update(input);
+
+        // Disabling a user ends their access now: revoke every refresh family so
+        // a live session cannot be refreshed (the access token still lives out
+        // its ≤15-min TTL, but cannot be renewed, and every other token-issuing
+        // path reads the user through `readActiveUser`, which now excludes
+        // disabled accounts). Idempotent — re-running on an already-disabled
+        // account simply finds no live rows to revoke.
+        if (user.login_disabled) {
+            await this.authService.revokeAllForUser(user.id);
+        }
+
         const newCapture = await captureSnapshotSafely(
             auditContext,
             'new_snapshot',
@@ -143,6 +161,42 @@ export class AuthResolver {
         });
 
         return user;
+    }
+
+    // Phase 3 §3.3. A super-user forces the target to set a new password on
+    // their next login: no new password is set here, the account is flagged and
+    // its sessions revoked. The target logs in with their current password and
+    // is then routed through the change-password gate. Super-only, matching the
+    // other user-administration mutations.
+    @Mutation(() => User, { nullable: true })
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.SUPER)
+    async resetUserPassword(
+        @Args('UserId') userId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<User | null> {
+        await this.assertEditableBy(userId, currentUser);
+        await this.authService.requirePasswordChange(userId);
+        return this.userService.findUser({ user_id: userId });
+    }
+
+    // A root account may be edited (updated, reset, disabled) only by itself. Any
+    // other actor — Super included — is refused. The `is_root` flag is DB-only
+    // (on no GraphQL input), so this resolver check plus the missing input field
+    // are the whole of its protection; the only way to grant or move root is in
+    // the database.
+    private async assertEditableBy(
+        targetUserId: number,
+        currentUser: User,
+    ): Promise<void> {
+        const target = await this.userService.findUser({
+            user_id: targetUserId,
+        });
+        if (target?.is_root && currentUser.id !== target.id) {
+            throw new ForbiddenException(
+                'Esta cuenta solo puede ser modificada por sí misma.',
+            );
+        }
     }
 
     @ResolveField(() => [Role])

@@ -40,6 +40,17 @@ export class CreateUserInput extends UserBase {
 
     @Field(() => [RoleInput])
     roles: RoleInput[];
+
+    // Phase 3: admin enrols the account into email MFA. Optional — omitted means
+    // the default (off).
+    @Field(() => Boolean, { nullable: true })
+    mfa_enabled?: boolean | null;
+
+    // Blocks login for the account without deleting it. Optional; omitted ⇒ off.
+    // Note there is deliberately no `is_root` input on either create or update:
+    // the root flag is DB-only and cannot be set through GraphQL.
+    @Field(() => Boolean, { nullable: true })
+    login_disabled?: boolean | null;
 }
 
 @InputType('UpdateUserInput')
@@ -52,6 +63,16 @@ export class UpdateUserInput extends UserBase {
 
     @Field(() => [RoleInput])
     roles: RoleInput[];
+
+    // Phase 3: the MFA-enforcement checkbox. Optional so an update that does not
+    // touch it leaves the flag as-is.
+    @Field(() => Boolean, { nullable: true })
+    mfa_enabled?: boolean | null;
+
+    // The login-disable checkbox. Optional so an update that does not touch it
+    // leaves the flag as-is. `is_root` is intentionally absent — it is DB-only.
+    @Field(() => Boolean, { nullable: true })
+    login_disabled?: boolean | null;
 }
 
 @ObjectType('User')
@@ -61,6 +82,23 @@ export class User extends UserBase {
 
     @Field()
     fullname: string;
+
+    // Phase 3 MFA-enforcement flag, surfaced so the admin panel can show and
+    // toggle it. Stored as TINYINT(1); the GraphQL Boolean scalar coerces the
+    // 0/1 the resolver returns.
+    @Field(() => Boolean)
+    mfa_enabled: boolean;
+
+    // Read-only surface of the two DB flags from the migration. `is_root` drives
+    // the "only editable by itself" protection (enforced in the resolver) and its
+    // UI badge; `login_disabled` drives the disable checkbox and the access
+    // column. `is_root` is never on an input type, so it can be read here but
+    // only written in the database.
+    @Field(() => Boolean)
+    is_root: boolean;
+
+    @Field(() => Boolean)
+    login_disabled: boolean;
 
     static isUserSalesman({ roles }: { roles: Role[] }): boolean {
         return !!roles.find((role) => {
@@ -95,6 +133,15 @@ export class UserWithRoles extends User {
     }[];
 
     password?: string;
+
+    // `mfa_enabled` is inherited from `User` (a GraphQL `@Field`). This one is the
+    // internal-only forced-password-change flag: a plain property (not `@Field`)
+    // like `password` above, travelling on the object `validateUser` returns so the
+    // post-password decision can read it without it becoming part of the GraphQL
+    // `User` type. Surfaced as a boolean by Prisma (TINYINT(1) → Boolean). Optional
+    // because a `select` may omit it; the gate check is a truthiness test, so an
+    // absent flag reads as "off".
+    must_change_password?: boolean;
 }
 
 // What the access token actually carries. Deliberately minimal: a JWT is only

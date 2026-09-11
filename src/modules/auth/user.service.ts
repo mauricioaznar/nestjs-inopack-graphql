@@ -9,6 +9,19 @@ import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { Role } from '../../common/dto/entities/auth/role.dto';
 import { vennDiagram } from '../../common/helpers';
 
+// Builds the denormalised `fullname` from the parts that are actually present.
+// Last name is optional, so a user with only a first name gets `"admin"`, not
+// `"admin "` with a trailing space.
+function buildFullName(
+    firstName: string,
+    lastName?: string | null,
+): string {
+    return [firstName ?? '', lastName ?? '']
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0)
+        .join(' ');
+}
+
 @Injectable()
 export class UserService {
     constructor(private prisma: PrismaService) {}
@@ -45,8 +58,15 @@ export class UserService {
                 email: userInput.email,
                 first_name: userInput.first_name,
                 last_name: userInput.last_name,
-                fullname: `${userInput.first_name} ${userInput.last_name}`,
+                fullname: buildFullName(
+                    userInput.first_name,
+                    userInput.last_name,
+                ),
                 password,
+                mfa_enabled: userInput.mfa_enabled ?? false,
+                login_disabled: userInput.login_disabled ?? false,
+                // `is_root` is never set here — it is DB-only (no input carries
+                // it), so a created user is always non-root.
             },
         });
 
@@ -92,8 +112,24 @@ export class UserService {
                 email: userInput.email,
                 first_name: userInput.first_name,
                 last_name: userInput.last_name,
-                fullname: `${userInput.first_name} ${userInput.last_name}`,
+                fullname: buildFullName(
+                    userInput.first_name,
+                    userInput.last_name,
+                ),
                 password,
+                // `undefined` leaves the flag untouched; only an explicit
+                // true/false in the input writes it.
+                mfa_enabled:
+                    userInput.mfa_enabled == null
+                        ? undefined
+                        : userInput.mfa_enabled,
+                // `undefined` leaves it untouched; an explicit true/false writes
+                // it. `is_root` is intentionally never written from an update —
+                // it is DB-only.
+                login_disabled:
+                    userInput.login_disabled == null
+                        ? undefined
+                        : userInput.login_disabled,
             },
             where: {
                 id: userInput.id,
@@ -165,6 +201,14 @@ export class UserService {
                 active: true,
                 role_id: true,
                 branch_id: true,
+                // Phase 3 flags — safe to audit (not credentials), and worth it
+                // so an admin toggling MFA or a forced reset shows in the diff.
+                mfa_enabled: true,
+                must_change_password: true,
+                // Root + disable flags — also safe to audit and worth surfacing
+                // in the diff (a disable is a security-relevant change).
+                is_root: true,
+                login_disabled: true,
                 // The two foreign keys, denormalised to id + name so the diff
                 // reads the name rather than the number (§12). Both are nested
                 // `select`s, so this snapshot keeps the explicit-columns-only

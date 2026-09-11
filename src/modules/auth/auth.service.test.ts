@@ -7,6 +7,10 @@ import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { PrismaClient } from '@prisma/client';
 import { createHash } from 'crypto';
 import { jwtConstants } from '../../common/constants/jwt';
+import {
+    LOGIN_FAILED_MESSAGE,
+    loginLockout,
+} from '../../common/constants/login-protection';
 import { TokenPair } from '../../common/dto/entities';
 import {
     AppLoggerService,
@@ -110,6 +114,22 @@ let app: INestApplication;
 let userService: UserService;
 let authService: AuthService;
 let prisma: PrismaService;
+
+// Phase 3 turned `loginWithCredentials` into a three-way outcome. Every user in
+// this file is password-only (no MFA, no forced change), so login always
+// resolves to `{ kind: 'tokens' }`; this unwraps to the `TokenPair` the refresh
+// tests have always worked with, and asserts the kind so a regression that
+// silently gated one of these accounts fails loudly here.
+async function loginForTokens(
+    email: string,
+    password = 'password123',
+): Promise<TokenPair> {
+    const outcome = await authService.loginWithCredentials({ email, password });
+    if (outcome.kind !== 'tokens') {
+        throw new Error(`expected a token pair, got "${outcome.kind}"`);
+    }
+    return outcome.pair;
+}
 
 // Every context this file logs, in order, for the whole run. Recorded from
 // `beforeAll` rather than per test on purpose: the redaction assertion at the
@@ -247,10 +267,7 @@ describe('logins user', () => {
         // `login` mutation and `AuthService#login` were deleted, because Phase 2
         // throttles the REST route and an unthrottled mutation beside it would
         // be a way straight around the rate limit.
-        const { accessToken } = await authService.loginWithCredentials({
-            email: 'loginuseremail@email.com',
-            password: 'password123',
-        });
+        const { accessToken } = await loginForTokens('loginuseremail@email.com');
 
         expect(typeof accessToken).toBe('string');
     });
@@ -264,8 +281,137 @@ describe('logins user', () => {
                 password: 'password123',
             });
         } catch (e) {
-            expect(e.response.message).toMatch(/provided credentials/i);
+            // The exact generic message, in Spanish. Asserting equality (not a
+            // loose match) is deliberate: criterion 3 requires this to be the
+            // *same* string for unknown email, wrong password and a locked
+            // account, so the test pins the shared constant.
+            expect(e.response.message).toBe(LOGIN_FAILED_MESSAGE);
         }
+    });
+});
+
+describe('login lockout', () => {
+    it('locks the account after the threshold of wrong passwords, then refuses even the correct one', async () => {
+        const user = await userService.create({
+            email: 'lockout-victim@email.com',
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'correct-password',
+            roles: roles,
+        });
+
+        // One short of nothing special — walk the counter up to the threshold.
+        for (let i = 0; i < loginLockout.maxFailedAttempts; i++) {
+            const attempt = await authService.validateUser({
+                email: user.email,
+                password: 'wrong-password',
+            });
+            expect(attempt).toBeNull();
+        }
+
+        const locked = await prisma.users.findUniqueOrThrow({
+            where: { id: user.id },
+        });
+        expect(locked.lockout_until).not.toBeNull();
+        expect(locked.lockout_until!.getTime()).toBeGreaterThan(Date.now());
+
+        // The lock is what matters: even the correct password is refused while
+        // it stands. This is the IP-independent half of the protection — the
+        // counter lives on the row, not on an address.
+        const whileLocked = await authService.validateUser({
+            email: user.email,
+            password: 'correct-password',
+        });
+        expect(whileLocked).toBeNull();
+    });
+
+    it('resets the failure counter on a successful login', async () => {
+        const user = await userService.create({
+            email: 'lockout-reset@email.com',
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'correct-password',
+            roles: roles,
+        });
+
+        // Stay one below the threshold so no lock lands.
+        for (let i = 0; i < loginLockout.maxFailedAttempts - 1; i++) {
+            await authService.validateUser({
+                email: user.email,
+                password: 'wrong-password',
+            });
+        }
+
+        const beforeSuccess = await prisma.users.findUniqueOrThrow({
+            where: { id: user.id },
+        });
+        expect(beforeSuccess.failed_login_count).toBe(
+            loginLockout.maxFailedAttempts - 1,
+        );
+        expect(beforeSuccess.lockout_until).toBeNull();
+
+        // A correct login wipes the counter clean.
+        const ok = await authService.validateUser({
+            email: user.email,
+            password: 'correct-password',
+        });
+        expect(ok).not.toBeNull();
+
+        const afterSuccess = await prisma.users.findUniqueOrThrow({
+            where: { id: user.id },
+        });
+        expect(afterSuccess.failed_login_count).toBe(0);
+        expect(afterSuccess.lockout_until).toBeNull();
+    });
+});
+
+describe('login disabled', () => {
+    it('refuses a disabled account even with the correct password', async () => {
+        const user = await userService.create({
+            email: 'disabled-login@email.com',
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'password123',
+            roles: roles,
+        });
+        await prisma.users.update({
+            where: { id: user.id },
+            data: { login_disabled: true },
+        });
+
+        const attempt = await authService.validateUser({
+            email: 'disabled-login@email.com',
+            password: 'password123',
+        });
+        expect(attempt).toBeNull();
+    });
+
+    it('kills refresh for a disabled account: rotation revokes the family', async () => {
+        const user = await userService.create({
+            email: 'disabled-refresh@email.com',
+            first_name: 'first name 1',
+            last_name: 'last name 2',
+            password: 'password123',
+            roles: roles,
+        });
+        const pair = await loginForTokens('disabled-refresh@email.com');
+
+        await prisma.users.update({
+            where: { id: user.id },
+            data: { login_disabled: true },
+        });
+
+        // Refresh reads the user through `readActiveUser`, which now excludes
+        // disabled accounts, so rotation takes its inactive branch: it rejects…
+        await expect(
+            authService.rotateRefreshToken(pair.refreshToken),
+        ).rejects.toThrow();
+
+        // …and that branch revokes the whole family — no live rows remain.
+        const live = await prisma.refresh_tokens.count({
+            where: { user_id: user.id, revoked_at: null },
+        });
+        expect(live).toBe(0);
     });
 });
 
@@ -278,10 +424,7 @@ describe('refresh tokens', () => {
             password: 'password123',
             roles: roles,
         });
-        return authService.loginWithCredentials({
-            email,
-            password: 'password123',
-        });
+        return loginForTokens(email);
     }
 
     it('issues a refresh token alongside the access token on login', async () => {
@@ -648,10 +791,7 @@ describe('refresh tokens', () => {
         const email = 'refreshallsessions@email.com';
         const first = await createUserAndLogin(email);
         // A second login is a second device: its own family.
-        const second = await authService.loginWithCredentials({
-            email,
-            password: 'password123',
-        });
+        const second = await loginForTokens(email);
 
         const user = await prisma.users.findFirst({ where: { email } });
         expect(user).toBeTruthy();
@@ -668,10 +808,7 @@ describe('refresh tokens', () => {
     it('a new login starts a separate family, so revoking one leaves the other alone', async () => {
         const email = 'refreshfamilies@email.com';
         const laptop = await createUserAndLogin(email);
-        const phone = await authService.loginWithCredentials({
-            email,
-            password: 'password123',
-        });
+        const phone = await loginForTokens(email);
 
         await authService.logout(laptop.refreshToken);
 
@@ -695,10 +832,7 @@ describe('auth logging', () => {
             password: 'password123',
             roles: roles,
         });
-        return authService.loginWithCredentials({
-            email,
-            password: 'password123',
-        });
+        return loginForTokens(email);
     }
 
     // Earlier tests in this file already trip several of these events, so each

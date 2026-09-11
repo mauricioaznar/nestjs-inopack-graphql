@@ -3,34 +3,10 @@
 // `jwtConstants`; only the source of the values changed — they now come from the
 // environment instead of being hardcoded in this file.
 //
-// In production an unset secret is a hard boot failure: a fallback there would
-// silently sign tokens with a value that is public in this repository. Outside
-// production the fallback keeps local development and the test suite running
-// without an env change.
-function readSecret(name: string, developmentFallback: string): string {
-    const value = process.env[name];
-    if (value) {
-        return value;
-    }
-    if (process.env.NODE_ENV === 'production') {
-        throw new Error(
-            `${name} is not set. Production requires an explicit JWT secret.`,
-        );
-    }
-    return developmentFallback;
-}
-
-function readNumber(name: string, fallback: number): number {
-    const raw = process.env[name];
-    if (raw === undefined || raw === '') {
-        return fallback;
-    }
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value < 0) {
-        throw new Error(`${name} must be a non-negative number, got "${raw}"`);
-    }
-    return value;
-}
+// `readSecret` (shared, in `./env`) makes an unset secret a hard boot failure in
+// production — a fallback there would silently sign tokens with a value that is
+// public in this repository — while keeping the fallback in dev and test.
+import { readNumber, readSecret } from './env';
 
 // The file token keeps the old 12h lifetime; only the *access* token shortened.
 const fileExpiresIn = '43200s';

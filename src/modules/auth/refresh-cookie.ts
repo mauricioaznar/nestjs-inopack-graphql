@@ -32,14 +32,17 @@ function isProduction(): boolean {
 //
 // - Dev: `localhost:3000` -> `localhost:3008` is *same-site* (port is not part
 //   of a site), so `lax` works and keeps the cookie off third-party navigations.
-// - Prod: the app is on Netlify and the API on `*.mauaznar.com` — different
-//   registrable domains, therefore cross-site, therefore `none` is required or
-//   the browser silently drops the cookie. `none` is only legal together with
-//   `Secure`, which is fine: both tiers are HTTPS.
+// - Prod: the app is on `grupoinopack.app` and the API on
+//   `server.grupoinopack.app` — the same registrable domain, i.e. *same-site*,
+//   so `AUTH_COOKIE_SAMESITE=lax` is set: stronger than `none` because the
+//   refresh cookie is never attached on cross-site requests. (Until the
+//   api-hostname-migration, 2026-09, the API lived on `*.mauaznar.com` — a
+//   different registrable domain, cross-site — which forced `none`.)
 //
-// Overridable because the production frontend domain is a deployment decision,
-// not a code one: put the app behind a `*.mauaznar.com` host and `lax` becomes
-// both possible and stronger.
+// Overridable, and the default below stays `none` in production as a
+// conservative fallback for a deployment whose API is *not* co-domained with the
+// frontend. Both current tiers set `AUTH_COOKIE_SAMESITE=lax` explicitly, so
+// that default is not exercised in practice.
 function cookieSameSite(): 'lax' | 'strict' | 'none' {
     const configured = (process.env.AUTH_COOKIE_SAMESITE || '').toLowerCase();
     if (

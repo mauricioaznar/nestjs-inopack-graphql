@@ -12,12 +12,31 @@ import {
     UserWithRoles,
 } from '../../common/dto/entities';
 import * as bcrypt from 'bcrypt';
-import { createHash, randomBytes, randomUUID } from 'crypto';
+import { createHash, randomBytes, randomInt, randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { jwtConstants } from '../../common/constants/jwt';
+import {
+    LOGIN_FAILED_MESSAGE,
+    loginLockout,
+} from '../../common/constants/login-protection';
+import {
+    mfaConstants,
+    MFA_TOKEN_PURPOSE,
+    PASSWORD_CHANGE_PURPOSE,
+} from '../../common/constants/mfa';
+import { MailService } from '../../common/modules/mail/mail.service';
 import { AppLoggerService } from '../../common/modules/logging/app-logger.service';
 import { TraceBuffer } from '../../common/modules/logging/trace-buffer';
+import { assertPasswordStrength } from '../../common/constants/password-policy';
+
+// A real bcrypt hash to compare an attempted password against when the email is
+// unknown, so an unknown account and a wrong password cost the same bcrypt time.
+// Without it, "no such user" returns fast (no hash to check) while "wrong
+// password" pays for a compare — a timing difference that lets an attacker
+// enumerate valid emails. Computed once at module load; the plaintext is
+// throwaway and never used again.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('inopack-timing-equalizer', 10);
 
 /*
  * LEARNING MAP — backend session lifecycle
@@ -84,14 +103,58 @@ type RotationOutcome =
     | { kind: 'inactive' }
     | { kind: 'row_missing' };
 
+// The three ways a password-verified login can end. Phase 1 only ever produced
+// tokens; Phase 3 adds two interstitial states that issue *no* session and
+// instead hand back a short-lived, single-purpose token gating the next step:
+//
+//   • `mfa_required`             — the account has email MFA enforced. A code was
+//                                  emailed; the holder must POST it to
+//                                  `/auth/mfa/verify` with `mfaToken`.
+//   • `password_change_required` — a super-user forced a password change. The
+//                                  holder must POST a new password to
+//                                  `/auth/password/change` with `changeToken`.
+//
+// Both gates come *before* tokens exist, so neither can be skipped by replaying
+// an access token — there isn't one yet.
+export type AuthOutcome =
+    | { kind: 'tokens'; pair: TokenPair }
+    | { kind: 'mfa_required'; mfaToken: string }
+    | { kind: 'password_change_required'; changeToken: string };
+
+// The minimum the post-password flow needs about a user. Both `validateUser`'s
+// `UserWithRoles` and a fresh `readActiveUser` row satisfy it structurally, so
+// the login path and the verify/change paths share one decision function.
+interface AuthUser {
+    id: number;
+    email: string;
+    // Optional so both `validateUser`'s `UserWithRoles` (where the flags are
+    // declared optional) and a `readActiveUser` row satisfy this. The gate
+    // checks are truthiness tests, so an absent flag reads as "off" — the safe
+    // default for both MFA enforcement and a forced password change. Boolean
+    // because Prisma maps the TINYINT(1) columns to Boolean.
+    mfa_enabled?: boolean;
+    must_change_password?: boolean;
+    user_roles: { role_id?: number | null }[];
+}
+
 @Injectable()
 export class AuthService {
     constructor(
         private jwtService: JwtService,
         private prisma: PrismaService,
         private logger: AppLoggerService,
+        private mail: MailService,
     ) {}
 
+    // Returns the user on valid credentials, `null` on any failure. The caller
+    // cannot (and must not) tell *why* it failed — unknown email, wrong password
+    // and a locked account all collapse to `null`, and the controller turns every
+    // one into the same generic message (Phase 2 acceptance criterion 3).
+    //
+    // This method also owns the Phase 2 lockout bookkeeping, because it is the one
+    // place that both knows whether the account exists and holds its counter: it
+    // increments the failure count on a wrong password, freezes the account at the
+    // threshold, and clears the count on success.
     async validateUser({
         email,
         password,
@@ -115,20 +178,84 @@ export class AuthService {
             },
         });
         if (!user) {
+            // Unknown or deactivated account. Burn an equivalent bcrypt compare
+            // so the response time matches the wrong-password path and cannot be
+            // used to enumerate valid emails. There is no counter to touch — a
+            // row that does not exist cannot be locked.
+            await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
             return null;
         }
+
+        // A disabled account never authenticates, whatever the password. It
+        // collapses to the same `null` as every other failure so the response
+        // stays one generic message (no "account disabled" oracle), and it is
+        // checked before the password compare — like the lockout — so a disabled
+        // account cannot be probed for its password either.
+        if (user.login_disabled) {
+            return null;
+        }
+
+        // A live lockout refuses the attempt before the password is even checked.
+        // Checking first would both leak (via timing) whether the password was
+        // right and let a persistent attacker keep the account frozen forever by
+        // continuing to guess. Note this is *not* extended on each blocked
+        // attempt — the window is fixed at lock time.
+        if (user.lockout_until && user.lockout_until.getTime() > Date.now()) {
+            return null;
+        }
+
         let storedPassword = user.password;
         if (user.password.match(/^\$2y(.+)$/i)) {
             storedPassword = user.password.replace(/^\$2y(.+)$/i, '$2a$1');
         }
         const isMatch = await bcrypt.compare(password, storedPassword);
         if (!isMatch) {
+            await this.registerFailedLogin(
+                user.id,
+                user.failed_login_count,
+            );
             return null;
         }
+
+        // Success wipes the slate: the counter resets and any expired lockout is
+        // cleared. Guarded so the common case (a clean account) does no write.
+        if (user.failed_login_count !== 0 || user.lockout_until !== null) {
+            await this.prisma.users.update({
+                where: { id: user.id },
+                data: { failed_login_count: 0, lockout_until: null },
+            });
+        }
+
         return {
             ...user,
             password: undefined,
         };
+    }
+
+    // Records one wrong-password attempt and freezes the account once the
+    // consecutive-failure threshold is reached. IP-independent by design: the
+    // counter lives on the user row, so an attack that spreads guesses across many
+    // IPs (to duck the per-IP rate limit) still trips the same lock. When it
+    // locks, the counter is reset to 0 — after the window expires the account
+    // starts fresh rather than re-locking on the very next miss.
+    private async registerFailedLogin(
+        userId: number,
+        currentCount: number,
+    ): Promise<void> {
+        const nextCount = currentCount + 1;
+        const shouldLock = nextCount >= loginLockout.maxFailedAttempts;
+        await this.prisma.users.update({
+            where: { id: userId },
+            data: shouldLock
+                ? {
+                      failed_login_count: 0,
+                      lockout_until: new Date(
+                          Date.now() +
+                              loginLockout.lockoutMinutes * 60 * 1000,
+                      ),
+                  }
+                : { failed_login_count: nextCount },
+        });
     }
 
     // REST login: full token pair. The caller (auth.controller) is responsible
@@ -137,7 +264,7 @@ export class AuthService {
     async loginWithCredentials(
         userInput: LoginInput,
         meta: SessionMeta = {},
-    ): Promise<TokenPair> {
+    ): Promise<AuthOutcome> {
         this.logger.trace('auth.trace.login.begin', {
             email: userInput.email,
             ip: meta.ip ?? undefined,
@@ -156,26 +283,95 @@ export class AuthService {
         });
 
         if (!user) {
-            // ⚠️ Cannot say *why*. `validateUser` returns `null` for both an
-            // unknown user and a wrong password, and separating them means
-            // changing its return type — that is auth logic, not logging.
-            // Phase 2 needs the distinction for the lockout counter and adds it
-            // there.
-            //
-            // The attempted email is logged on purpose, and the asymmetry with
-            // Phase 2 is deliberate: the *response* must not distinguish
-            // unknown user from wrong password, but a log is not
-            // attacker-visible. Different surfaces.
+            // `validateUser` returns `null` for an unknown email, a wrong
+            // password *and* a locked account, and has already done the Phase 2
+            // lockout bookkeeping internally. The response deliberately cannot
+            // distinguish those cases — a distinct "locked" or "no such user"
+            // message would leak whether an account exists (acceptance criterion
+            // 3). The attempted email is still logged: a log is not
+            // attacker-visible, so it may carry what the response may not.
             this.logger.warn('auth.login.failed', {
                 email: userInput.email,
                 ip: meta.ip ?? undefined,
                 requestId: meta.requestId,
             });
-            throw new BadRequestException(
-                'Could not log-in with the provided credentials',
-            );
+            throw new BadRequestException(LOGIN_FAILED_MESSAGE);
         }
 
+        // Password verified. What happens next depends on the account: an
+        // MFA-enforced account, or one a super-user reset, is gated here rather
+        // than handed a session outright. `decideAfterPassword` owns that fork
+        // and is shared with the verify and change-password paths so the gates
+        // cannot drift apart.
+        return this.decideAfterPassword(user, meta);
+    }
+
+    // The single fork every "the password (or emailed code) was correct" path
+    // funnels through, so login, `verifyMfaCode` and `changePassword` all apply
+    // the same rules in the same order:
+    //
+    //   1. A forced password change wins first — a super-user set this state and
+    //      the account cannot be used normally until it is resolved.
+    //   2. Then MFA — an enforced account never gets tokens on the password
+    //      alone (Phase 3 acceptance criterion 1). A code is emailed and the
+    //      caller is handed an `mfaToken`, nothing more.
+    //   3. Otherwise a normal session.
+    //
+    // Because `changePassword` re-enters here after clearing the flag, an
+    // MFA-enforced user who was just forced to rotate their password still lands
+    // on the MFA step next — the two gates compose instead of one bypassing the
+    // other.
+    private async decideAfterPassword(
+        user: AuthUser,
+        meta: SessionMeta,
+    ): Promise<AuthOutcome> {
+        if (user.must_change_password) {
+            this.logger.log('auth.password.change_required', {
+                userId: user.id,
+                email: user.email,
+                requestId: meta.requestId,
+            });
+            return {
+                kind: 'password_change_required',
+                changeToken: this.signInterstitialToken(
+                    user.id,
+                    PASSWORD_CHANGE_PURPOSE,
+                ),
+            };
+        }
+
+        if (user.mfa_enabled) {
+            // Emails the code first. If mail fails this throws and no token is
+            // signed — an enforced account fails closed (no access) rather than
+            // open, which is the whole point of gating on a channel that can be
+            // down.
+            await this.sendMfaChallenge(user, meta);
+            this.logger.log('auth.mfa.challenge_issued', {
+                userId: user.id,
+                email: user.email,
+                ip: meta.ip ?? undefined,
+                requestId: meta.requestId,
+            });
+            return {
+                kind: 'mfa_required',
+                mfaToken: this.signInterstitialToken(
+                    user.id,
+                    MFA_TOKEN_PURPOSE,
+                ),
+            };
+        }
+
+        return { kind: 'tokens', pair: await this.createSession(user, meta) };
+    }
+
+    // Everything that turns a verified user into a live session: sweep their
+    // expired refresh rows, start a fresh family, issue the pair, and log the
+    // success. Extracted from `loginWithCredentials` so the MFA-verify and
+    // password-change paths mint sessions the identical way.
+    private async createSession(
+        user: AuthUser,
+        meta: SessionMeta,
+    ): Promise<TokenPair> {
         // Opportunistic housekeeping: a user who logs in regularly would
         // otherwise accumulate one dead row per rotation forever. Cheap, indexed
         // by user_id, and only touches rows that can no longer authenticate
@@ -713,7 +909,13 @@ export class AuthService {
     private async readActiveUser(userId: number) {
         return this.prisma.users.findFirst({
             include: { user_roles: { where: { active: 1 } } },
-            where: { id: userId, active: 1 },
+            // `login_disabled: false` here is what makes the disable flag end a
+            // live session, not just block new password logins: every
+            // token-issuing path (refresh rotation, MFA verify/resend,
+            // change-password) reads the user through this method, so a disabled
+            // account comes back `null` and the caller takes its inactive branch —
+            // which, on rotation, revokes the token family.
+            where: { id: userId, active: 1, login_disabled: false },
         });
     }
 
@@ -779,5 +981,286 @@ export class AuthService {
     // database dump contains no usable session.
     private hashRefreshToken(rawToken: string): string {
         return createHash('sha256').update(rawToken).digest('hex');
+    }
+
+    /* ─────────────────────────── Phase 3 ───────────────────────────
+     * Email MFA, the super-user forced-password-change gate, and the two
+     * interstitial-token helpers both flows lean on. None of these touch the
+     * rotation transaction, so §1.7.6's "no I/O inside the lock" rule does not
+     * apply here — the logging is ordinary.
+     */
+
+    // Exchange a correct emailed code for a real session. The `mfaToken` proves
+    // the password step already passed (so no password is re-checked); the code
+    // proves control of the mailbox.
+    async verifyMfaCode(
+        mfaToken: string,
+        code: string,
+        meta: SessionMeta = {},
+    ): Promise<TokenPair> {
+        const userId = this.verifyInterstitialToken(
+            mfaToken,
+            MFA_TOKEN_PURPOSE,
+        );
+        const user = await this.readActiveUser(userId);
+        if (!user) {
+            // Deactivated between login and verify. Nothing to grant.
+            this.logger.warn('auth.mfa.verify.failed', {
+                userId,
+                reason: 'inactive',
+                requestId: meta.requestId,
+            });
+            throw new UnauthorizedException();
+        }
+
+        const now = new Date();
+        // The newest still-redeemable code. `issueMfaCode` consumes older ones,
+        // so at most one row matches, but ordering by id desc makes that
+        // explicit and independent of that invariant.
+        const record = await this.prisma.email_mfa_codes.findFirst({
+            where: {
+                user_id: userId,
+                consumed_at: null,
+                expires_at: { gt: now },
+            },
+            orderBy: { id: 'desc' },
+        });
+        if (!record) {
+            this.logger.warn('auth.mfa.verify.failed', {
+                userId,
+                reason: 'no_code',
+                requestId: meta.requestId,
+            });
+            throw new UnauthorizedException(
+                'El código expiró o no existe. Solicita uno nuevo.',
+            );
+        }
+
+        // Attempt cap: a 6-digit code is only ~20 bits, so the per-IP throttle on
+        // the route is not enough on its own — the code itself must burn after a
+        // few wrong guesses. Checked before the compare so a locked code can
+        // never be brute-forced one request past the limit.
+        if (record.attempts >= mfaConstants.maxAttempts) {
+            await this.prisma.email_mfa_codes.update({
+                where: { id: record.id },
+                data: { consumed_at: now },
+            });
+            this.logger.warn('auth.mfa.verify.locked', {
+                userId,
+                requestId: meta.requestId,
+            });
+            throw new UnauthorizedException(
+                'Demasiados intentos. Solicita un nuevo código.',
+            );
+        }
+
+        if (this.hashMfaCode(code) !== record.code_hash) {
+            await this.prisma.email_mfa_codes.update({
+                where: { id: record.id },
+                data: { attempts: record.attempts + 1 },
+            });
+            this.logger.warn('auth.mfa.verify.failed', {
+                userId,
+                reason: 'wrong_code',
+                requestId: meta.requestId,
+            });
+            throw new UnauthorizedException('Código incorrecto.');
+        }
+
+        // Correct. Single-use: consume it so a replay (or a second tab) cannot
+        // redeem the same code.
+        await this.prisma.email_mfa_codes.update({
+            where: { id: record.id },
+            data: { consumed_at: now },
+        });
+        this.logger.log('auth.mfa.verify.success', {
+            userId,
+            email: user.email,
+            requestId: meta.requestId,
+        });
+        return this.createSession(user, meta);
+    }
+
+    // Re-issue a code for an in-progress MFA challenge (the "Reenviar código"
+    // button). Gated by the same `mfaToken`, so only someone who already passed
+    // the password step can trigger a send — and the route is tightly throttled
+    // so it cannot be turned into a mailbox-spam or mail-cost amplifier.
+    async resendMfaCode(
+        mfaToken: string,
+        meta: SessionMeta = {},
+    ): Promise<void> {
+        const userId = this.verifyInterstitialToken(
+            mfaToken,
+            MFA_TOKEN_PURPOSE,
+        );
+        const user = await this.readActiveUser(userId);
+        if (!user) {
+            throw new UnauthorizedException();
+        }
+        await this.sendMfaChallenge(user, meta);
+        this.logger.log('auth.mfa.resent', {
+            userId,
+            email: user.email,
+            requestId: meta.requestId,
+        });
+    }
+
+    // Super-user reset (§3.3). Does **not** set a new password — it flags the
+    // account so the next successful login is forced through a password change,
+    // and kills every existing session so a live token cannot sidestep it. The
+    // target authenticates with their current password to reach the change gate.
+    async requirePasswordChange(userId: number): Promise<void> {
+        await this.prisma.users.update({
+            where: { id: userId },
+            data: { must_change_password: true },
+        });
+        // Revoke all families so a currently-open session cannot be used to keep
+        // working around the forced change.
+        await this.revokeAllForUser(userId);
+        this.logger.warn('auth.password.reset_by_admin', { userId });
+    }
+
+    // Complete a forced password change. `changeToken` carries the identity from
+    // the login that hit the gate. On success the flag clears, the new password
+    // is stored, any session is revoked, and the flow re-enters
+    // `decideAfterPassword` — so an MFA-enforced user is then sent to the MFA
+    // step rather than straight to tokens.
+    async changePassword(
+        changeToken: string,
+        newPassword: string,
+        meta: SessionMeta = {},
+    ): Promise<AuthOutcome> {
+        const userId = this.verifyInterstitialToken(
+            changeToken,
+            PASSWORD_CHANGE_PURPOSE,
+        );
+        assertPasswordStrength(newPassword);
+
+        const user = await this.readActiveUser(userId);
+        if (!user) {
+            throw new UnauthorizedException();
+        }
+
+        const hashed = await bcrypt.hash(newPassword, 10);
+        await this.prisma.users.update({
+            where: { id: userId },
+            data: {
+                password: hashed,
+                must_change_password: false,
+                // A fresh password also clears any brute-force state.
+                failed_login_count: 0,
+                lockout_until: null,
+            },
+        });
+        // The admin reset already revoked; do it again defensively in case a
+        // session was somehow established in between.
+        await this.revokeAllForUser(userId);
+
+        this.logger.log('auth.password.changed', {
+            userId,
+            email: user.email,
+            requestId: meta.requestId,
+        });
+
+        // Re-read so the decision sees `must_change_password = 0` and the live
+        // `mfa_enabled` flag rather than the pre-update values.
+        const refreshed = await this.readActiveUser(userId);
+        // Unreachable in practice (we just updated the same active row), but the
+        // type is nullable and a session must never be minted for a null user.
+        if (!refreshed) {
+            throw new UnauthorizedException();
+        }
+        return this.decideAfterPassword(refreshed, meta);
+    }
+
+    // Generate a code, invalidate any earlier unconsumed ones, store the hash,
+    // and email the raw digits. The raw code exists only in memory here and in
+    // the outgoing mail — the DB only ever holds its SHA-256.
+    private async sendMfaChallenge(
+        user: AuthUser,
+        meta: SessionMeta,
+    ): Promise<void> {
+        const code = this.generateMfaCode();
+        const now = new Date();
+
+        // A resend (or a re-login) invalidates the user's prior unconsumed codes
+        // so only the newest is redeemable — otherwise every old code stays live
+        // until its TTL, widening the guessing surface.
+        await this.prisma.email_mfa_codes.updateMany({
+            where: { user_id: user.id, consumed_at: null },
+            data: { consumed_at: now },
+        });
+
+        await this.prisma.email_mfa_codes.create({
+            data: {
+                user_id: user.id,
+                code_hash: this.hashMfaCode(code),
+                expires_at: new Date(
+                    now.getTime() + mfaConstants.codeTtlMinutes * 60 * 1000,
+                ),
+                created_at: now,
+            },
+        });
+
+        try {
+            await this.mail.sendMfaCode({ to: user.email, code });
+        } catch (error) {
+            // Fail closed: the caller (decideAfterPassword) never signs an
+            // mfaToken, so the login ends in an error rather than a bypass.
+            this.logger.error(
+                'auth.mfa.send_failed',
+                { userId: user.id, requestId: meta.requestId },
+                error,
+            );
+            throw new BadRequestException(
+                'No pudimos enviar el código de verificación. Intenta de nuevo más tarde.',
+            );
+        }
+    }
+
+    private generateMfaCode(): string {
+        // Uniform over [0, 10^length): `randomInt` is CSPRNG-backed and unbiased,
+        // unlike `Math.floor(Math.random()*n)`. Zero-padded so a leading-zero
+        // code is still the right length.
+        const ceiling = 10 ** mfaConstants.codeLength;
+        return randomInt(0, ceiling)
+            .toString()
+            .padStart(mfaConstants.codeLength, '0');
+    }
+
+    private hashMfaCode(code: string): string {
+        return createHash('sha256').update(code).digest('hex');
+    }
+
+    // Sign a short-lived, single-purpose token for the gap between a correct
+    // password and a real session. Signed with `MFA_TOKEN_SECRET`, not the
+    // access-token secret, and carrying a `purpose` claim — so it is worthless
+    // as an access token and worthless on the wrong endpoint.
+    private signInterstitialToken(userId: number, purpose: string): string {
+        return this.jwtService.sign(
+            { sub: userId, purpose },
+            {
+                secret: mfaConstants.tokenSecret,
+                expiresIn: mfaConstants.tokenTtl,
+            },
+        );
+    }
+
+    // Verify one and return its subject, or throw 401. A bad signature, an
+    // expired token, or the wrong `purpose` are all indistinguishable to the
+    // caller — it is a 401 either way.
+    private verifyInterstitialToken(token: string, purpose: string): number {
+        let payload: { sub?: unknown; purpose?: unknown };
+        try {
+            payload = this.jwtService.verify(token, {
+                secret: mfaConstants.tokenSecret,
+            });
+        } catch {
+            throw new UnauthorizedException();
+        }
+        if (payload.purpose !== purpose || typeof payload.sub !== 'number') {
+            throw new UnauthorizedException();
+        }
+        return payload.sub;
     }
 }
