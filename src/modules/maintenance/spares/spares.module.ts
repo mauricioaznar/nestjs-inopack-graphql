@@ -6,5 +6,7 @@ import { SpareInventoryModule } from '../../../common/services/entities/spare-in
 @Module({
     imports: [SpareInventoryModule],
     providers: [SparesResolver, SparesService],
+    // Injected by SpareSeederModule (via imports), so exported rather than re-declared there.
+    exports: [SparesService],
 })
 export class SparesModule {}
