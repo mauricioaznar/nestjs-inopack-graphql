@@ -7,6 +7,5 @@ import { OrderProductionProductsConsumedService } from './order-production-produ
         OrderProductionProductsConsumedResolver,
         OrderProductionProductsConsumedService,
     ],
-    exports: [OrderProductionProductsConsumedResolver],
 })
 export class OrderProductionProductsConsumedModule {}

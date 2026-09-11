@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { SparesResolver } from './spares.resolver';
 import { SparesService } from './spares.service';
-import { SpareInventoryService } from '../../../common/services/entities/spare-inventory.service';
+import { SpareInventoryModule } from '../../../common/services/entities/spare-inventory.module';
 
 @Module({
-    providers: [SparesResolver, SparesService, SpareInventoryService],
-    exports: [SparesResolver],
+    imports: [SpareInventoryModule],
+    providers: [SparesResolver, SparesService],
 })
 export class SparesModule {}

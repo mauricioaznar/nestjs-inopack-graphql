@@ -4,6 +4,5 @@ import { SpareCategoriesService } from './spare-categories.service';
 
 @Module({
     providers: [SpareCategoriesResolver, SpareCategoriesService],
-    exports: [SpareCategoriesResolver],
 })
 export class SpareCategoriesModule {}

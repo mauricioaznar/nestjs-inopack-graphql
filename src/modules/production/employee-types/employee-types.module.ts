@@ -4,6 +4,5 @@ import { EmployeeTypesService } from './employee-types.service';
 
 @Module({
     providers: [EmployeeTypesResolver, EmployeeTypesService],
-    exports: [EmployeeTypesResolver],
 })
 export class EmployeeTypesModule {}

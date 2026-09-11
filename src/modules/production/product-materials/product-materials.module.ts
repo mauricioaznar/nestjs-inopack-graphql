@@ -4,6 +4,5 @@ import { ProductMaterialsService } from './product-materials.service';
 
 @Module({
     providers: [ProductMaterialsResolver, ProductMaterialsService],
-    exports: [ProductMaterialsResolver],
 })
 export class ProductMaterialsModule {}

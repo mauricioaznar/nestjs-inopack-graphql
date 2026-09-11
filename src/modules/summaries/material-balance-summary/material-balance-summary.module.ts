@@ -4,6 +4,5 @@ import { MaterialBalanceSummaryService } from './material-balance-summary.servic
 
 @Module({
     providers: [MaterialBalanceSummaryResolver, MaterialBalanceSummaryService],
-    exports: [MaterialBalanceSummaryResolver],
 })
 export class MaterialBalanceSummaryModule {}

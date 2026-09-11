@@ -4,6 +4,5 @@ import { OrderProductionTypesService } from './order-production-types.service';
 
 @Module({
     providers: [OrderProductionTypesResolver, OrderProductionTypesService],
-    exports: [OrderProductionTypesResolver],
 })
 export class OrderProductionTypesModule {}

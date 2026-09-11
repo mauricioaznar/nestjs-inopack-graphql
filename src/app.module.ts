@@ -21,6 +21,7 @@ import { PrismaModule } from './common/modules/prisma/prisma.module';
 import { SummariesModule } from './modules/summaries/summaries.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { PubSubModule } from './common/modules/pub-sub/pub-sub.module';
+import { AuditUsersModule } from './common/services/entities/audit-users.module';
 import { ManagementModule } from './modules/management/management.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 
@@ -28,6 +29,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
     imports: [
         PrismaModule,
         PubSubModule,
+        AuditUsersModule,
         GraphQLModule.forRoot({
             autoSchemaFile: 'schema.gql',
             installSubscriptionHandlers: true,

@@ -4,6 +4,5 @@ import { TransferReceiptsService } from './transfer-receipts.service';
 
 @Module({
     providers: [TransferReceiptsResolver, TransferReceiptsService],
-    exports: [TransferReceiptsResolver],
 })
 export class TransferReceiptsModule {}

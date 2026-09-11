@@ -4,6 +4,5 @@ import { AccountProductsService } from './account-products.service';
 
 @Module({
     providers: [AccountProductsResolver, AccountProductsService],
-    exports: [AccountProductsResolver],
 })
 export class AccountProductsModule {}

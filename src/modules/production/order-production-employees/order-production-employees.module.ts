@@ -7,6 +7,5 @@ import { OrderProductionEmployeesService } from './order-production-employees.se
         OrderProductionEmployeesResolver,
         OrderProductionEmployeesService,
     ],
-    exports: [OrderProductionEmployeesResolver],
 })
 export class OrderProductionEmployeesModule {}

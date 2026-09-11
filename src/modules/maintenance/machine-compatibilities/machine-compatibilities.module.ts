@@ -4,6 +4,5 @@ import { MachineCompatibilitiesService } from './machine-compatibilities.service
 
 @Module({
     providers: [MachineCompatibilitiesResolver, MachineCompatibilitiesService],
-    exports: [MachineCompatibilitiesResolver],
 })
 export class MachineCompatibilitiesModule {}
