@@ -8,7 +8,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from '../../common/constants/jwt';
 import { authThrottle } from '../../common/constants/login-protection';
 import { AuthResolver } from './auth.resolver';
-import { FilesModule } from '../files/files.module';
 import { UserService } from './user.service';
 import { RoleResolver } from './role.resolver';
 import { RoleService } from './role.service';
@@ -23,7 +22,6 @@ import { MailModule } from '../../common/modules/mail/mail.module';
             secret: jwtConstants.authSecret,
             signOptions: { expiresIn: jwtConstants.authExpiresIn },
         }),
-        FilesModule,
         // Imported explicitly rather than picked up from a global module: this
         // is the first consumer of the logger, and the next one imports it the
         // same deliberate way. `AllowedOriginGuard` and `AuthController` both

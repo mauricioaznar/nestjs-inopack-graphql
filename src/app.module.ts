@@ -1,10 +1,4 @@
-import {
-    CacheModule,
-    MiddlewareConsumer,
-    Module,
-    NestModule,
-} from '@nestjs/common';
-import { graphqlUploadExpress } from 'graphql-upload';
+import { CacheModule, Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { AuthModule } from './modules/auth/auth.module';
 import { ApolloError } from 'apollo-server-express';
@@ -117,15 +111,4 @@ import { PayrollModule } from './modules/payroll/payroll.module';
         },
     ],
 })
-export class AppModule implements NestModule {
-    configure(consumer: MiddlewareConsumer) {
-        consumer
-            .apply(
-                graphqlUploadExpress({
-                    maxFileSize: 4000000,
-                    maxFiles: 3,
-                }),
-            )
-            .forRoutes('graphql');
-    }
-}
+export class AppModule {}
