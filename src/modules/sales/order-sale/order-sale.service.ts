@@ -628,48 +628,6 @@ export class OrderSaleService {
         });
     }
 
-    async getOrderSaleTransferReceipts({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<TransferReceipt[]> {
-        return this.prisma.transfer_receipts.findMany({
-            where: {
-                AND: [
-                    {
-                        order_sale_id: order_sale_id,
-                        active: 1,
-                    },
-                    {
-                        transfers: {
-                            active: 1,
-                        },
-                    },
-                    {
-                        order_sales: {
-                            active: 1,
-                        },
-                    },
-                ],
-            },
-        });
-    }
-
-    async getOrderSaleStatus({
-        order_sale_status_id,
-    }: {
-        order_sale_status_id?: number | null;
-    }): Promise<OrderSaleStatus | null> {
-        if (!order_sale_status_id) {
-            return null;
-        }
-        return this.prisma.order_sale_statuses.findFirst({
-            where: {
-                id: order_sale_status_id,
-            },
-        });
-    }
-
     // ── Batch (IN) variants for the resolve-field loaders ────────────────────
     // Each mirrors the WHERE of its singular sibling above but reads a whole page
     // of parents in one query; the loader (toOne/toMany) maps rows back per

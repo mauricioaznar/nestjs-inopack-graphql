@@ -298,25 +298,6 @@ export class MachinesService {
         );
     }
 
-    async getMachineUnassignedParts({
-        machineId,
-    }: {
-        machineId: number;
-    }): Promise<MachinePart[]> {
-        return this.prisma.machine_parts.findMany({
-            where: {
-                AND: [
-                    {
-                        machine_section_id: null,
-                    },
-                    {
-                        machine_id: machineId,
-                    },
-                ],
-            },
-        });
-    }
-
     async getMonthProduction({
         machineId,
         year,

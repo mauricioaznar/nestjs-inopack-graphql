@@ -1228,21 +1228,6 @@ export class OrderQuotationsService {
         });
     }
 
-    async getOrderQuotationStatus({
-        order_quotation_status_id,
-    }: {
-        order_quotation_status_id?: number | null;
-    }): Promise<OrderQuotationStatus | null> {
-        if (!order_quotation_status_id) {
-            return null;
-        }
-        return this.prisma.order_quotation_statuses.findFirst({
-            where: {
-                id: order_quotation_status_id,
-            },
-        });
-    }
-
     // The linked product of a quotation line. NULL on a free line (product_id
     // NULL) — that is the one place a line has no product. Backs the
     // OrderQuotationProduct.product ResolveField, mirroring the pedido side.
@@ -1354,16 +1339,6 @@ export class OrderQuotationsService {
     // target. Different query from the step lookup above: this one filters
     // active: 1 (a soft-deleted pedido is not something to link to), that one does
     // not. Same column, two filters, two purposes — do not collapse them.
-    async getConvertedOrderRequest({
-        order_quotation_id,
-    }: {
-        order_quotation_id: number;
-    }): Promise<OrderRequest | null> {
-        return this.prisma.order_requests.findFirst({
-            where: { order_quotation_id, active: 1 },
-        });
-    }
-
     // ── Batch (IN) variants for the resolve-field loaders ────────────────────
     // Each mirrors the WHERE of its singular sibling above but reads a whole page
     // of parents in one query; the loader (toOne/toMany) maps rows back per

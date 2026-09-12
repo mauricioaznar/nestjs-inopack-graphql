@@ -402,23 +402,6 @@ export class TransfersService {
         return Math.round(total * 100) / 100;
     }
 
-    async getTransferType({
-        transfer_type_id,
-    }: {
-        transfer_type_id: number | null;
-    }): Promise<TransferType | null> {
-        if (!transfer_type_id) {
-            return null;
-        }
-
-        return this.prisma.transfer_type.findFirst({
-            where: {
-                active: 1,
-                id: transfer_type_id,
-            },
-        });
-    }
-
     async getAccount({
         account_id,
     }: {

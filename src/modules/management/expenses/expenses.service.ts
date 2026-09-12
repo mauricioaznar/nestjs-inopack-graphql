@@ -774,47 +774,6 @@ export class ExpensesService {
         }
     }
 
-    async getExpenseTransferReceiptsTotal({
-        expense_id,
-    }: {
-        expense_id: number;
-    }): Promise<number> {
-        const transferReceipts = await this.prisma.transfer_receipts.findMany({
-            where: {
-                AND: [
-                    {
-                        expense_id: expense_id,
-                        active: 1,
-                    },
-                    {
-                        transfers: {
-                            active: 1,
-                        },
-                    },
-                    {
-                        expenses: {
-                            active: 1,
-                        },
-                    },
-                ],
-            },
-        });
-
-        const expense = await this.prisma.expenses.findUnique({
-            where: {
-                id: expense_id,
-            },
-        });
-
-        if (!expense) return 0;
-
-        const total = transferReceipts.reduce((acc, tr) => {
-            return acc + tr.amount;
-        }, 0);
-
-        return Math.round(total * 100) / 100;
-    }
-
     async getExpenseTransferReceipts({
         expense_id,
     }: {

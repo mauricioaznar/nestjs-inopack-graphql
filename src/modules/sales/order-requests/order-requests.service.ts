@@ -1048,21 +1048,6 @@ export class OrderRequestsService {
         });
     }
 
-    async getOrderRequestStatus({
-        order_request_status_id,
-    }: {
-        order_request_status_id?: number | null;
-    }): Promise<OrderRequestStatus | null> {
-        if (!order_request_status_id) {
-            return null;
-        }
-        return this.prisma.order_request_statuses.findFirst({
-            where: {
-                id: order_request_status_id,
-            },
-        });
-    }
-
     // ── Batch (IN) variants for the resolve-field loaders ────────────────────
     // Each mirrors the WHERE of its singular sibling above but reads a whole page
     // of parents in one query; the loader (toOne/toMany) maps rows back per

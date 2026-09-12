@@ -240,34 +240,6 @@ export class ProductsService {
         };
     }
 
-    async getProductCategory({
-        product_category_id,
-    }: {
-        product_category_id: number | null;
-    }): Promise<ProductCategory | null> {
-        if (!product_category_id) return null;
-
-        return this.prisma.product_categories.findFirst({
-            where: {
-                id: product_category_id,
-            },
-        });
-    }
-
-    async getProductMaterial({
-        product_material_id,
-    }: {
-        product_material_id: number | null;
-    }): Promise<ProductMaterial | null> {
-        if (!product_material_id) return null;
-
-        return this.prisma.product_materials.findFirst({
-            where: {
-                id: product_material_id,
-            },
-        });
-    }
-
     async getOrderProductionType({
         order_production_type_id,
     }: {
