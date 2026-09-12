@@ -390,115 +390,123 @@ export class OrderRequestsService {
     ): Promise<OrderRequest> {
         await this.validateOrderRequest(input, current_user_id);
 
-        const orderRequest = await this.prisma.order_requests.upsert({
-            create: {
-                ...getCreatedAtProperty(),
-                ...getUpdatedAtProperty(),
-                ...getCreatedByProperty(current_user_id),
-                ...getUpdatedByProperty(current_user_id),
-                notes: input.notes,
-                date: input.date,
-                order_code: input.order_code,
-                estimated_delivery_date: input.estimated_delivery_date,
-                account_id: input.account_id,
-                order_quotation_id: options?.order_quotation_id ?? undefined,
-                // Status is no longer part of the input: new requests always start
-                // at the first status (id = 1). Only updateOrderRequestStatus
-                // (admin-only) can change it afterwards.
-                order_request_status_id: 1,
-                priority: 0,
-            },
-            update: {
-                ...getUpdatedAtProperty(),
-                ...getUpdatedByProperty(current_user_id),
-                notes: input.notes,
-                date: input.date,
-                order_code: input.order_code,
-                estimated_delivery_date: input.estimated_delivery_date,
-                account_id: input.account_id,
-                // Intentionally omit order_request_status_id and priority so an
-                // upsert never overwrites a status an admin may have set, nor the
-                // manual production-planning order (updateOrderRequestPriority).
-            },
-            where: {
-                id: input.id || 0,
-            },
-        });
-
-        const newProductItems = input.order_request_products;
-        const oldProductItems = input.id
-            ? await this.prisma.order_request_products.findMany({
-                  where: {
-                      order_request_id: input.id,
-                  },
-              })
-            : [];
-
-        const {
-            aMinusB: deleteProductItems,
-            bMinusA: createProductItems,
-            intersection: updateProductItems,
-        } = vennDiagram({
-            a: oldProductItems,
-            b: newProductItems,
-            indexProperties: ['id'],
-        });
-
-        for await (const delItem of deleteProductItems) {
-            if (delItem && delItem.id) {
-                await this.prisma.order_request_products.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        active: -1,
-                    },
-                    where: {
-                        id: delItem.id,
-                    },
-                });
-                // await this.cacheManager.del(`product_inventory`);
-            }
-        }
-
-        for await (const createItem of createProductItems) {
-            await this.prisma.order_request_products.create({
-                data: {
+        // Header + line items must land atomically: a throw mid-loop used to leave
+        // an orphan header (or partly written lines). Validation above needs no
+        // write snapshot, so it stays outside; the header upsert, the read of
+        // existing lines (so the venn diff is against the same snapshot the writes
+        // commit), and the three line loops all run on the transaction client `tx`.
+        return this.prisma.$transaction(async (tx) => {
+            const orderRequest = await tx.order_requests.upsert({
+                create: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
-                    kilo_price: createItem.kilo_price,
-                    group_price: createItem.group_price,
-                    order_request_id: orderRequest.id,
-                    product_id: createItem.product_id,
-                    kilos: createItem.kilos,
-                    active: 1,
-                    group_weight: createItem.group_weight,
-                    groups: createItem.groups,
+                    ...getCreatedByProperty(current_user_id),
+                    ...getUpdatedByProperty(current_user_id),
+                    notes: input.notes,
+                    date: input.date,
+                    order_code: input.order_code,
+                    estimated_delivery_date: input.estimated_delivery_date,
+                    account_id: input.account_id,
+                    order_quotation_id: options?.order_quotation_id ?? undefined,
+                    // Status is no longer part of the input: new requests always
+                    // start at the first status (id = 1). Only
+                    // updateOrderRequestStatus (admin-only) can change it afterwards.
+                    order_request_status_id: 1,
+                    priority: 0,
+                },
+                update: {
+                    ...getUpdatedAtProperty(),
+                    ...getUpdatedByProperty(current_user_id),
+                    notes: input.notes,
+                    date: input.date,
+                    order_code: input.order_code,
+                    estimated_delivery_date: input.estimated_delivery_date,
+                    account_id: input.account_id,
+                    // Intentionally omit order_request_status_id and priority so an
+                    // upsert never overwrites a status an admin may have set, nor
+                    // the manual production-planning order
+                    // (updateOrderRequestPriority).
+                },
+                where: {
+                    id: input.id || 0,
                 },
             });
-            // await this.cacheManager.del(`product_inventory`);
-        }
 
-        for await (const updateItem of updateProductItems) {
-            if (updateItem && updateItem.id) {
-                await this.prisma.order_request_products.updateMany({
+            const newProductItems = input.order_request_products;
+            const oldProductItems = input.id
+                ? await tx.order_request_products.findMany({
+                      where: {
+                          order_request_id: input.id,
+                      },
+                  })
+                : [];
+
+            const {
+                aMinusB: deleteProductItems,
+                bMinusA: createProductItems,
+                intersection: updateProductItems,
+            } = vennDiagram({
+                a: oldProductItems,
+                b: newProductItems,
+                indexProperties: ['id'],
+            });
+
+            for await (const delItem of deleteProductItems) {
+                if (delItem && delItem.id) {
+                    await tx.order_request_products.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            active: -1,
+                        },
+                        where: {
+                            id: delItem.id,
+                        },
+                    });
+                    // await this.cacheManager.del(`product_inventory`);
+                }
+            }
+
+            for await (const createItem of createProductItems) {
+                await tx.order_request_products.create({
                     data: {
+                        ...getCreatedAtProperty(),
                         ...getUpdatedAtProperty(),
-                        product_id: updateItem.product_id,
-                        kilos: updateItem.kilos,
+                        kilo_price: createItem.kilo_price,
+                        group_price: createItem.group_price,
+                        order_request_id: orderRequest.id,
+                        product_id: createItem.product_id,
+                        kilos: createItem.kilos,
                         active: 1,
-                        group_weight: updateItem.group_weight,
-                        groups: updateItem.groups,
-                        kilo_price: updateItem.kilo_price,
-                        group_price: updateItem.group_price,
-                    },
-                    where: {
-                        id: updateItem.id,
+                        group_weight: createItem.group_weight,
+                        groups: createItem.groups,
                     },
                 });
                 // await this.cacheManager.del(`product_inventory`);
             }
-        }
 
-        return orderRequest;
+            for await (const updateItem of updateProductItems) {
+                if (updateItem && updateItem.id) {
+                    await tx.order_request_products.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            product_id: updateItem.product_id,
+                            kilos: updateItem.kilos,
+                            active: 1,
+                            group_weight: updateItem.group_weight,
+                            groups: updateItem.groups,
+                            kilo_price: updateItem.kilo_price,
+                            group_price: updateItem.group_price,
+                        },
+                        where: {
+                            id: updateItem.id,
+                        },
+                    });
+                    // await this.cacheManager.del(`product_inventory`);
+                }
+            }
+
+            return orderRequest;
+        });
     }
 
     // Admin-only status change, kept separate from upsert so that regular sales
