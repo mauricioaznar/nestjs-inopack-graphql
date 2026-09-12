@@ -12,7 +12,7 @@ import {
     UserWithRoles,
 } from '../../common/dto/entities';
 import * as bcrypt from 'bcrypt';
-import { createHash, randomBytes, randomInt, randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { jwtConstants } from '../../common/constants/jwt';
@@ -29,6 +29,12 @@ import { MailService } from '../../common/modules/mail/mail.service';
 import { AppLoggerService } from '../../common/modules/logging/app-logger.service';
 import { TraceBuffer } from '../../common/modules/logging/trace-buffer';
 import { assertPasswordStrength } from '../../common/constants/password-policy';
+import { hashRefreshToken } from './utils/refresh-token.util';
+import { generateMfaCode, hashMfaCode } from './utils/mfa-code.util';
+import {
+    signInterstitialToken,
+    verifyInterstitialToken,
+} from './utils/interstitial-token.util';
 
 // A real bcrypt hash to compare an attempted password against when the email is
 // unknown, so an unknown account and a wrong password cost the same bcrypt time.
@@ -333,7 +339,8 @@ export class AuthService {
             });
             return {
                 kind: 'password_change_required',
-                changeToken: this.signInterstitialToken(
+                changeToken: signInterstitialToken(
+                    this.jwtService,
                     user.id,
                     PASSWORD_CHANGE_PURPOSE,
                 ),
@@ -354,7 +361,8 @@ export class AuthService {
             });
             return {
                 kind: 'mfa_required',
-                mfaToken: this.signInterstitialToken(
+                mfaToken: signInterstitialToken(
+                    this.jwtService,
                     user.id,
                     MFA_TOKEN_PURPOSE,
                 ),
@@ -445,7 +453,7 @@ export class AuthService {
         // safe; every field the decision below turns on (`revoked_at`,
         // `expires_at`) is re-read under it.
         const presented = await this.prisma.refresh_tokens.findUnique({
-            where: { token_hash: this.hashRefreshToken(rawToken) },
+            where: { token_hash: hashRefreshToken(rawToken) },
         });
         if (!presented) {
             // No user id to give: the hash matched nothing, so there is no row
@@ -736,7 +744,7 @@ export class AuthService {
             return;
         }
         const stored = await this.prisma.refresh_tokens.findUnique({
-            where: { token_hash: this.hashRefreshToken(rawToken) },
+            where: { token_hash: hashRefreshToken(rawToken) },
         });
         if (!stored) {
             this.logger.verbose('auth.logout.unknown_token', {
@@ -868,7 +876,7 @@ export class AuthService {
         await client.refresh_tokens.create({
             data: {
                 user_id: user.id,
-                token_hash: this.hashRefreshToken(refreshToken),
+                token_hash: hashRefreshToken(refreshToken),
                 family_id: familyId,
                 expires_at: refreshExpiresAt,
                 created_at: now,
@@ -975,14 +983,6 @@ export class AuthService {
         });
     }
 
-    // SHA-256 rather than bcrypt on purpose: the input is 64 bytes of entropy,
-    // not a human password, so there is nothing to brute-force and the lookup
-    // must be a plain indexed equality check. Storing the digest means a leaked
-    // database dump contains no usable session.
-    private hashRefreshToken(rawToken: string): string {
-        return createHash('sha256').update(rawToken).digest('hex');
-    }
-
     /* ─────────────────────────── Phase 3 ───────────────────────────
      * Email MFA, the super-user forced-password-change gate, and the two
      * interstitial-token helpers both flows lean on. None of these touch the
@@ -998,7 +998,8 @@ export class AuthService {
         code: string,
         meta: SessionMeta = {},
     ): Promise<TokenPair> {
-        const userId = this.verifyInterstitialToken(
+        const userId = verifyInterstitialToken(
+            this.jwtService,
             mfaToken,
             MFA_TOKEN_PURPOSE,
         );
@@ -1054,7 +1055,7 @@ export class AuthService {
             );
         }
 
-        if (this.hashMfaCode(code) !== record.code_hash) {
+        if (hashMfaCode(code) !== record.code_hash) {
             await this.prisma.email_mfa_codes.update({
                 where: { id: record.id },
                 data: { attempts: record.attempts + 1 },
@@ -1089,7 +1090,8 @@ export class AuthService {
         mfaToken: string,
         meta: SessionMeta = {},
     ): Promise<void> {
-        const userId = this.verifyInterstitialToken(
+        const userId = verifyInterstitialToken(
+            this.jwtService,
             mfaToken,
             MFA_TOKEN_PURPOSE,
         );
@@ -1130,7 +1132,8 @@ export class AuthService {
         newPassword: string,
         meta: SessionMeta = {},
     ): Promise<AuthOutcome> {
-        const userId = this.verifyInterstitialToken(
+        const userId = verifyInterstitialToken(
+            this.jwtService,
             changeToken,
             PASSWORD_CHANGE_PURPOSE,
         );
@@ -1180,7 +1183,7 @@ export class AuthService {
         user: AuthUser,
         meta: SessionMeta,
     ): Promise<void> {
-        const code = this.generateMfaCode();
+        const code = generateMfaCode();
         const now = new Date();
 
         // A resend (or a re-login) invalidates the user's prior unconsumed codes
@@ -1194,7 +1197,7 @@ export class AuthService {
         await this.prisma.email_mfa_codes.create({
             data: {
                 user_id: user.id,
-                code_hash: this.hashMfaCode(code),
+                code_hash: hashMfaCode(code),
                 expires_at: new Date(
                     now.getTime() + mfaConstants.codeTtlMinutes * 60 * 1000,
                 ),
@@ -1218,49 +1221,4 @@ export class AuthService {
         }
     }
 
-    private generateMfaCode(): string {
-        // Uniform over [0, 10^length): `randomInt` is CSPRNG-backed and unbiased,
-        // unlike `Math.floor(Math.random()*n)`. Zero-padded so a leading-zero
-        // code is still the right length.
-        const ceiling = 10 ** mfaConstants.codeLength;
-        return randomInt(0, ceiling)
-            .toString()
-            .padStart(mfaConstants.codeLength, '0');
-    }
-
-    private hashMfaCode(code: string): string {
-        return createHash('sha256').update(code).digest('hex');
-    }
-
-    // Sign a short-lived, single-purpose token for the gap between a correct
-    // password and a real session. Signed with `MFA_TOKEN_SECRET`, not the
-    // access-token secret, and carrying a `purpose` claim — so it is worthless
-    // as an access token and worthless on the wrong endpoint.
-    private signInterstitialToken(userId: number, purpose: string): string {
-        return this.jwtService.sign(
-            { sub: userId, purpose },
-            {
-                secret: mfaConstants.tokenSecret,
-                expiresIn: mfaConstants.tokenTtl,
-            },
-        );
-    }
-
-    // Verify one and return its subject, or throw 401. A bad signature, an
-    // expired token, or the wrong `purpose` are all indistinguishable to the
-    // caller — it is a 401 either way.
-    private verifyInterstitialToken(token: string, purpose: string): number {
-        let payload: { sub?: unknown; purpose?: unknown };
-        try {
-            payload = this.jwtService.verify(token, {
-                secret: mfaConstants.tokenSecret,
-            });
-        } catch {
-            throw new UnauthorizedException();
-        }
-        if (payload.purpose !== purpose || typeof payload.sub !== 'number') {
-            throw new UnauthorizedException();
-        }
-        return payload.sub;
-    }
 }
