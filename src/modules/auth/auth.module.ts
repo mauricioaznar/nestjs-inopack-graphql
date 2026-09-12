@@ -1,6 +1,10 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { LoginService } from './login.service';
+import { RefreshTokenService } from './refresh-token.service';
+import { MfaService } from './mfa.service';
+import { PasswordService } from './password.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
@@ -49,7 +53,14 @@ import { MailModule } from '../../common/modules/mail/mail.module';
     // hashes — is not coming back.
     controllers: [AuthController],
     providers: [
+        // `AuthService` is a thin facade (Phase 5d) over the four services below,
+        // which hold the actual behaviour. All are registered here; only the
+        // facade is exported, so the module's public DI surface is unchanged.
         AuthService,
+        LoginService,
+        RefreshTokenService,
+        MfaService,
+        PasswordService,
         UserService,
         // `LocalStrategy` used to sit here. It was registered but never used —
         // nothing ever applied `AuthGuard('local')` — so it was deleted along

@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { UserService } from './users/user.service';
 import { setupApp } from '../../common/__tests__/helpers/setup-app';
 import { AuthService } from './auth.service';
+import { RefreshTokenService } from './refresh-token.service';
 import { roles } from '../../common/__tests__/objects/auth/roles';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';
 import { PrismaClient } from '@prisma/client';
@@ -72,20 +73,20 @@ function deferred() {
 function raceInsideRotation(competing: () => Promise<unknown>) {
     let competingResult: Promise<unknown> = Promise.resolve();
 
-    const seam = jest.spyOn(authService as any, 'issueTokenPair');
+    const seam = jest.spyOn(refreshTokenService as any, 'issueTokenPair');
     // Args are spread rather than named so the seam does not depend on
     // `issueTokenPair`'s signature, which 1.6.1 changed.
     seam.mockImplementationOnce((async (...args: any[]) => {
         const reachedLock = deferred();
-        const originalLockFamily = (authService as any).lockFamily;
+        const originalLockFamily = (refreshTokenService as any).lockFamily;
         const lockSpy =
             typeof originalLockFamily === 'function'
                 ? jest
-                      .spyOn(authService as any, 'lockFamily')
+                      .spyOn(refreshTokenService as any, 'lockFamily')
                       .mockImplementation((async (...lockArgs: any[]) => {
                           reachedLock.resolve();
                           return originalLockFamily.apply(
-                              authService,
+                              refreshTokenService,
                               lockArgs,
                           );
                       }) as any)
@@ -99,7 +100,7 @@ function raceInsideRotation(competing: () => Promise<unknown>) {
             // real method, blocked on the lock.
             lockSpy.mockRestore();
         }
-        return (authService as any).issueTokenPair(...args);
+        return (refreshTokenService as any).issueTokenPair(...args);
     }) as any);
 
     return {
@@ -113,6 +114,13 @@ function raceInsideRotation(competing: () => Promise<unknown>) {
 let app: INestApplication;
 let userService: UserService;
 let authService: AuthService;
+// Phase 5d split the rotation internals (`issueTokenPair`, `lockFamily`,
+// `readActiveUser`) out of `AuthService` into `RefreshTokenService`. The race
+// tests spy on those private methods, so they must target the instance that
+// actually owns them now — `authService` is a thin facade that delegates
+// `rotateRefreshToken`/`logout`/etc. to this service, and the internal
+// `this.<method>` calls happen here.
+let refreshTokenService: RefreshTokenService;
 let prisma: PrismaService;
 
 // Phase 3 turned `loginWithCredentials` into a three-way outcome. Every user in
@@ -154,6 +162,7 @@ beforeAll(async () => {
     app = await setupApp();
     userService = app.get(UserService);
     authService = app.get(AuthService);
+    refreshTokenService = app.get(RefreshTokenService);
     prisma = app.get(PrismaService);
 
     const logger = app.get(AppLoggerService);
@@ -530,7 +539,7 @@ describe('refresh tokens', () => {
             const pair = await createUserAndLogin('refreshrotaterace@email.com');
 
             const readActiveUser = jest.spyOn(
-                authService as any,
+                refreshTokenService as any,
                 'readActiveUser',
             );
             readActiveUser.mockImplementationOnce(((userId: number) =>
@@ -538,7 +547,9 @@ describe('refresh tokens', () => {
                 // the row and leaves a live successor behind.
                 authService
                     .rotateRefreshToken(pair.refreshToken)
-                    .then(() => (authService as any).readActiveUser(userId))) as any);
+                    .then(() =>
+                        (refreshTokenService as any).readActiveUser(userId),
+                    )) as any);
 
             try {
                 const loser = await authService.rotateRefreshToken(
@@ -662,13 +673,18 @@ describe('refresh tokens', () => {
         // refresh row and *before* writing its successor, which is exactly the
         // gap the conditional revoke closes — so logging out from inside that
         // read reproduces "logout landed mid-rotation".
-        const readActiveUser = jest.spyOn(authService as any, 'readActiveUser');
+        const readActiveUser = jest.spyOn(
+            refreshTokenService as any,
+            'readActiveUser',
+        );
         readActiveUser.mockImplementationOnce(((userId: number) =>
             authService
                 .logout(pair.refreshToken)
                 // The once-implementation is spent by now, so this re-entry
                 // reaches the real method.
-                .then(() => (authService as any).readActiveUser(userId))) as any);
+                .then(() =>
+                    (refreshTokenService as any).readActiveUser(userId),
+                )) as any);
 
         try {
             // Before the fix this resolved: the rotation revoked its row
@@ -750,14 +766,17 @@ describe('refresh tokens', () => {
 
         try {
             await prisma.$transaction(async (tx) => {
-                await (authService as any).lockFamily(tx, familyId);
+                await (refreshTokenService as any).lockFamily(tx, familyId);
 
                 contendedError = await contender
                     .$transaction(async (tx2) => {
                         await tx2.$executeRawUnsafe(
                             'SET SESSION innodb_lock_wait_timeout = 1',
                         );
-                        await (authService as any).lockFamily(tx2, familyId);
+                        await (refreshTokenService as any).lockFamily(
+                            tx2,
+                            familyId,
+                        );
                         acquiredWhileHeld = true;
                         return null;
                     })
@@ -775,7 +794,7 @@ describe('refresh tokens', () => {
         // ...and the lock is released on commit, not held forever.
         await expect(
             prisma.$transaction(async (tx) =>
-                (authService as any).lockFamily(tx, familyId),
+                (refreshTokenService as any).lockFamily(tx, familyId),
             ),
         ).resolves.toBeDefined();
     });
