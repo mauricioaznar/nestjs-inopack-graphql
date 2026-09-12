@@ -436,6 +436,37 @@ export class TransfersService {
         });
     }
 
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getTransferReceiptsByTransferIds(
+        transferIds: number[],
+    ): Promise<TransferReceipt[]> {
+        if (transferIds.length === 0) return [];
+        return this.prisma.transfer_receipts.findMany({
+            where: { active: 1, transfer_id: { in: transferIds } },
+        });
+    }
+
+    async getTransferTypesByIds(ids: number[]): Promise<TransferType[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.transfer_type.findMany({
+            where: { active: 1, id: { in: ids } },
+        });
+    }
+
+    // Serves both to_account and from_account: each keys on its own FK, so the
+    // two fields get their own loaders (Transfer.to_account / Transfer.from_account)
+    // but share this IN query. Mirrors getAccount's WHERE (active: 1).
+    async getAccountsByIds(ids: number[]): Promise<Account[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.accounts.findMany({
+            where: { active: 1, id: { in: ids } },
+        });
+    }
+
     async upsertTransfer(
         transferInput: TransferUpsertInput,
         { current_user_id }: { current_user_id?: number | null } = {},

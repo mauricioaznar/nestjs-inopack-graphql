@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
     GetProductsQueryFields,
+    OrderProductionType,
     PaginatedProducts,
     PaginatedProductsQueryArgs,
     PaginatedProductsSortArgs,
@@ -277,6 +278,55 @@ export class ProductsService {
         return this.prisma.order_production_type.findFirst({
             where: {
                 id: order_production_type_id,
+            },
+        });
+    }
+
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getProductCategoriesByIds(ids: number[]): Promise<ProductCategory[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.product_categories.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
+    async getProductMaterialsByIds(ids: number[]): Promise<ProductMaterial[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.product_materials.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
+    async getOrderProductionTypesByIds(
+        ids: number[],
+    ): Promise<OrderProductionType[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_production_type.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
+    async getOrderProductionProductsByProductIds(
+        productIds: number[],
+    ): Promise<OrderProductionProduct[]> {
+        if (productIds.length === 0) return [];
+        const firstOfDecember = getStringFromDate('2023-12-01');
+        return this.prisma.order_production_products.findMany({
+            where: {
+                AND: [
+                    { product_id: { in: productIds } },
+                    { active: 1 },
+                    { order_productions: { active: 1 } },
+                    {
+                        order_productions: {
+                            start_date: { gte: firstOfDecember },
+                        },
+                    },
+                ],
             },
         });
     }

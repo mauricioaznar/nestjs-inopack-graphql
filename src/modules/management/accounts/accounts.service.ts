@@ -883,6 +883,50 @@ export class AccountsService {
         });
     }
 
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    // account_contacts does not expose account_id as a GraphQL field, but the
+    // Prisma row carries it — annotate the return type so the loader can group by
+    // it. The extra prop is internal: GraphQL serves only the selected fields.
+    async getAccountContactsByAccountIds(
+        accountIds: number[],
+    ): Promise<(AccountContact & { account_id: number | null })[]> {
+        if (accountIds.length === 0) return [];
+        return this.prisma.account_contacts.findMany({
+            where: {
+                AND: [{ account_id: { in: accountIds } }, { active: 1 }],
+            },
+        });
+    }
+
+    async getAccountProductsByAccountIds(
+        accountIds: number[],
+    ): Promise<AccountProduct[]> {
+        if (accountIds.length === 0) return [];
+        return this.prisma.account_products.findMany({
+            where: { account_id: { in: accountIds }, active: 1 },
+        });
+    }
+
+    async getAccountResourcesByAccountIds(
+        accountIds: number[],
+    ): Promise<AccountResource[]> {
+        if (accountIds.length === 0) return [];
+        return this.prisma.account_resources.findMany({
+            where: { account_id: { in: accountIds }, active: 1 },
+        });
+    }
+
+    async getResourcesByIds(ids: number[]): Promise<Resource[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.resources.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
     async deletesAccount({
         account_id,
         current_user_id,

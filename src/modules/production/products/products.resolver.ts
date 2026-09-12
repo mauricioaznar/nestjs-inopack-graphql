@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Mutation,
     Parent,
     Query,
@@ -8,6 +9,11 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { ProductsService } from './products.service';
 import {
     ActivityEntityName,
@@ -167,30 +173,45 @@ export class ProductsResolver {
     }
 
     @ResolveField(() => ProductCategory, { nullable: true })
-    async product_category(
+    product_category(
         @Parent() product: Product,
+        @Context() ctx: LoaderContext,
     ): Promise<ProductCategory | null> {
-        return this.productsService.getProductCategory({
-            product_category_id: product.product_category_id,
-        });
+        return toOne(
+            ctx,
+            'Product.product_category',
+            product.product_category_id,
+            (ids) => this.productsService.getProductCategoriesByIds(ids),
+            (pc) => pc.id,
+        );
     }
 
     @ResolveField(() => ProductMaterial, { nullable: true })
-    async product_material(
+    product_material(
         @Parent() product: Product,
+        @Context() ctx: LoaderContext,
     ): Promise<ProductMaterial | null> {
-        return this.productsService.getProductMaterial({
-            product_material_id: product.product_material_id,
-        });
+        return toOne(
+            ctx,
+            'Product.product_material',
+            product.product_material_id,
+            (ids) => this.productsService.getProductMaterialsByIds(ids),
+            (pm) => pm.id,
+        );
     }
 
     @ResolveField(() => OrderProductionType, { nullable: true })
-    async order_production_type(
+    order_production_type(
         @Parent() product: Product,
-    ): Promise<ProductMaterial | null> {
-        return this.productsService.getOrderProductionType({
-            order_production_type_id: product.order_production_type_id,
-        });
+        @Context() ctx: LoaderContext,
+    ): Promise<OrderProductionType | null> {
+        return toOne(
+            ctx,
+            'Product.order_production_type',
+            product.order_production_type_id,
+            (ids) => this.productsService.getOrderProductionTypesByIds(ids),
+            (opt) => opt.id,
+        );
     }
 
     @ResolveField(() => Boolean, { nullable: false })
@@ -206,26 +227,48 @@ export class ProductsResolver {
     }
 
     @ResolveField(() => [OrderProductionProduct], { nullable: false })
-    async order_production_products(
+    order_production_products(
         @Parent() product: Product,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderProductionProduct[]> {
-        return this.productsService.getOrderProductionProducts({
-            product_id: product.id,
-        });
+        return toMany(
+            ctx,
+            'Product.order_production_products',
+            product.id,
+            (ids) =>
+                this.productsService.getOrderProductionProductsByProductIds(
+                    ids,
+                ),
+            (opp) => opp.product_id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(@Parent() product: Product): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: product.created_by_id,
-        });
+    created_by(
+        @Parent() product: Product,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            product.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(@Parent() product: Product): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: product.updated_by_id,
-        });
+    updated_by(
+        @Parent() product: Product,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            product.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @Subscription(() => Product)
