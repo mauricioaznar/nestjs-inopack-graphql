@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Float,
     Int,
     Mutation,
@@ -10,6 +11,11 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { ExpensesService } from './expenses.service';
 import {
     Account,
@@ -268,35 +274,59 @@ export class ExpensesResolver {
     }
 
     @ResolveField(() => Account, { nullable: true })
-    async account(@Parent() expense: Expense): Promise<Account | null> {
-        return this.service.getAccount({
-            account_id: expense.account_id,
-        });
+    account(
+        @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
+    ): Promise<Account | null> {
+        return toOne(
+            ctx,
+            'Expense.account',
+            expense.account_id,
+            (ids) => this.service.getAccountsByIds(ids),
+            (a) => a.id,
+        );
     }
 
     @ResolveField(() => ReceiptType, { nullable: true })
-    async receipt_type(
+    receipt_type(
         @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
     ): Promise<ReceiptType | null> {
-        return this.service.getReceiptType({
-            receipt_type_id: expense.receipt_type_id,
-        });
+        return toOne(
+            ctx,
+            'Expense.receipt_type',
+            expense.receipt_type_id,
+            (ids) => this.service.getReceiptTypesByIds(ids),
+            (rt) => rt.id,
+        );
     }
 
     @ResolveField(() => [ExpenseResource])
-    async expense_resources(expense: Expense): Promise<ExpenseResource[]> {
-        return this.service.getExpenseResources({
-            expense_id: expense.id,
-        });
+    expense_resources(
+        @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
+    ): Promise<ExpenseResource[]> {
+        return toMany(
+            ctx,
+            'Expense.expense_resources',
+            expense.id,
+            (ids) => this.service.getExpenseResourcesByExpenseIds(ids),
+            (er) => er.expense_id,
+        );
     }
 
     @ResolveField(() => [TransferReceipt])
-    async transfer_receipts(
+    transfer_receipts(
         @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
     ): Promise<TransferReceipt[]> {
-        return this.service.getExpenseTransferReceipts({
-            expense_id: expense.id,
-        });
+        return toMany(
+            ctx,
+            'Expense.transfer_receipts',
+            expense.id,
+            (ids) => this.service.getExpenseTransferReceiptsByExpenseIds(ids),
+            (tr) => tr.expense_id,
+        );
     }
 
     @ResolveField(() => String)
@@ -398,17 +428,31 @@ export class ExpensesResolver {
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(@Parent() expense: Expense): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: expense.created_by_id,
-        });
+    created_by(
+        @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            expense.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(@Parent() expense: Expense): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: expense.updated_by_id,
-        });
+    updated_by(
+        @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            expense.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @Subscription(() => Expense)

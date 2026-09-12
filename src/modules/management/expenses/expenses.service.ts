@@ -844,6 +844,55 @@ export class ExpensesService {
         });
     }
 
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getAccountsByIds(ids: number[]): Promise<Account[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.accounts.findMany({ where: { id: { in: ids } } });
+    }
+
+    // Mirrors getReceiptType, including the Number(tax_rate) mapping (the Prisma
+    // column is a Decimal; GraphQL Float wants a number).
+    async getReceiptTypesByIds(ids: number[]): Promise<ReceiptType[]> {
+        if (ids.length === 0) return [];
+        const rows = await this.prisma.receipt_types.findMany({
+            where: { id: { in: ids } },
+        });
+        return rows.map((rt) => ({ ...rt, tax_rate: Number(rt.tax_rate) }));
+    }
+
+    async getExpenseResourcesByExpenseIds(
+        expenseIds: number[],
+    ): Promise<ExpenseResource[]> {
+        if (expenseIds.length === 0) return [];
+        return this.prisma.expense_resources.findMany({
+            where: {
+                AND: [{ expense_id: { in: expenseIds } }, { active: 1 }],
+            },
+        });
+    }
+
+    // transfer_receipts carries a direct expense_id column (exposed on the DTO),
+    // so the loader groups by it; the WHERE mirrors getExpenseTransferReceipts,
+    // reaching the parent through the expenses relation with { in: ids }.
+    async getExpenseTransferReceiptsByExpenseIds(
+        expenseIds: number[],
+    ): Promise<TransferReceipt[]> {
+        if (expenseIds.length === 0) return [];
+        return this.prisma.transfer_receipts.findMany({
+            where: {
+                AND: [
+                    { expenses: { id: { in: expenseIds } }, active: 1 },
+                    { transfers: { active: 1 } },
+                    { expenses: { active: 1 } },
+                ],
+            },
+        });
+    }
+
     async deleteExpense({
         expense_id,
         current_user_id,

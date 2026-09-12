@@ -1063,6 +1063,39 @@ export class OrderRequestsService {
         });
     }
 
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getOrderRequestProductsByOrderRequestIds(
+        orderRequestIds: number[],
+    ): Promise<OrderRequestProduct[]> {
+        if (orderRequestIds.length === 0) return [];
+        return this.prisma.order_request_products.findMany({
+            where: {
+                AND: [
+                    { order_request_id: { in: orderRequestIds } },
+                    { active: 1 },
+                ],
+            },
+        });
+    }
+
+    async getAccountsByIds(ids: number[]): Promise<Account[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.accounts.findMany({ where: { id: { in: ids } } });
+    }
+
+    async getOrderRequestStatusesByIds(
+        ids: number[],
+    ): Promise<OrderRequestStatus[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_request_statuses.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
     async isDeletable({
         order_request_id,
         current_user_id,

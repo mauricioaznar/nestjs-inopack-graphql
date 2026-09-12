@@ -1364,6 +1364,54 @@ export class OrderQuotationsService {
         });
     }
 
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getOrderQuotationProductsByOrderQuotationIds(
+        orderQuotationIds: number[],
+    ): Promise<OrderQuotationProduct[]> {
+        if (orderQuotationIds.length === 0) return [];
+        return this.prisma.order_quotation_products.findMany({
+            where: {
+                AND: [
+                    { order_quotation_id: { in: orderQuotationIds } },
+                    { active: 1 },
+                ],
+            },
+        });
+    }
+
+    async getAccountsByIds(ids: number[]): Promise<Account[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.accounts.findMany({ where: { id: { in: ids } } });
+    }
+
+    async getOrderQuotationStatusesByIds(
+        ids: number[],
+    ): Promise<OrderQuotationStatus[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_quotation_statuses.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
+    // Reverse 1:1: the parent quotation carries no FK — the LIVE pedido points
+    // back via its own order_quotation_id (active: 1, at most one per quotation).
+    // Keyed on the quotation id, so the loader groups by the child's
+    // order_quotation_id. OrderRequest does not expose that column as a GraphQL
+    // field, but the Prisma row carries it — annotate the return type so the
+    // loader can key on it (internal prop; GraphQL serves only selected fields).
+    async getConvertedOrderRequestsByQuotationIds(
+        orderQuotationIds: number[],
+    ): Promise<(OrderRequest & { order_quotation_id: number | null })[]> {
+        if (orderQuotationIds.length === 0) return [];
+        return this.prisma.order_requests.findMany({
+            where: { order_quotation_id: { in: orderQuotationIds }, active: 1 },
+        });
+    }
+
     // Delete dependency: count LIVE pedidos converted from this quotation,
     // mirroring deleteOrderRequest's order_sales_count check (which filters
     // active: 1). A converted quotation cannot be deleted out from under its

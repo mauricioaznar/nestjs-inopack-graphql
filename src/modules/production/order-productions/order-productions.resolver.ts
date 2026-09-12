@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Mutation,
     Parent,
     Query,
@@ -8,6 +9,11 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { OrderProductionsService } from './order-productions.service';
 import {
     OrderProduction,
@@ -165,30 +171,54 @@ export class OrderProductionsResolver {
     }
 
     @ResolveField(() => [OrderProductionProduct])
-    async order_production_products(
-        orderProduction: OrderProduction,
+    order_production_products(
+        @Parent() orderProduction: OrderProduction,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderProductionProduct[]> {
-        return this.service.getOrderProductionProducts({
-            order_production_id: orderProduction.id,
-        });
+        return toMany(
+            ctx,
+            'OrderProduction.order_production_products',
+            orderProduction.id,
+            (ids) =>
+                this.service.getOrderProductionProductsByOrderProductionIds(
+                    ids,
+                ),
+            (opp) => opp.order_production_id,
+        );
     }
 
     @ResolveField(() => [OrderProductionProductConsumed])
-    async order_production_products_consumed(
-        orderProduction: OrderProduction,
+    order_production_products_consumed(
+        @Parent() orderProduction: OrderProduction,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderProductionProductConsumed[]> {
-        return this.service.getOrderProductionProductsConsumed({
-            order_production_id: orderProduction.id,
-        });
+        return toMany(
+            ctx,
+            'OrderProduction.order_production_products_consumed',
+            orderProduction.id,
+            (ids) =>
+                this.service.getOrderProductionProductsConsumedByOrderProductionIds(
+                    ids,
+                ),
+            (oppc) => oppc.order_production_id,
+        );
     }
 
     @ResolveField(() => [OrderProductionEmployee])
-    async order_production_employees(
-        orderProduction: OrderProduction,
+    order_production_employees(
+        @Parent() orderProduction: OrderProduction,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderProductionEmployee[]> {
-        return this.service.getOrderProductionEmployees({
-            order_production_id: orderProduction.id,
-        });
+        return toMany(
+            ctx,
+            'OrderProduction.order_production_employees',
+            orderProduction.id,
+            (ids) =>
+                this.service.getOrderProductionEmployeesByOrderProductionIds(
+                    ids,
+                ),
+            (ope) => ope.order_production_id,
+        );
     }
 
     @ResolveField(() => Boolean)
@@ -199,39 +229,59 @@ export class OrderProductionsResolver {
     }
 
     @ResolveField(() => OrderProductionType, { nullable: true })
-    async order_production_type(
+    order_production_type(
         @Parent() orderProduction: OrderProduction,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderProductionType | null> {
-        return this.service.getOrderProductionType({
-            order_production_type_id: orderProduction.order_production_type_id,
-        });
+        return toOne(
+            ctx,
+            'OrderProduction.order_production_type',
+            orderProduction.order_production_type_id,
+            (ids) => this.service.getOrderProductionTypesByIds(ids),
+            (opt) => opt.id,
+        );
     }
 
     @ResolveField(() => Branch, { nullable: true })
-    async branch(
+    branch(
         @Parent() orderProduction: OrderProduction,
+        @Context() ctx: LoaderContext,
     ): Promise<Branch | null> {
-        return this.service.getBranch({
-            branch_id: orderProduction.branch_id,
-        });
+        return toOne(
+            ctx,
+            'OrderProduction.branch',
+            orderProduction.branch_id,
+            (ids) => this.service.getBranchesByIds(ids),
+            (b) => b.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(
+    created_by(
         @Parent() orderProduction: OrderProduction,
+        @Context() ctx: LoaderContext,
     ): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: orderProduction.created_by_id,
-        });
+        return toOne(
+            ctx,
+            'audit.user',
+            orderProduction.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(
+    updated_by(
         @Parent() orderProduction: OrderProduction,
+        @Context() ctx: LoaderContext,
     ): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: orderProduction.updated_by_id,
-        });
+        return toOne(
+            ctx,
+            'audit.user',
+            orderProduction.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @Subscription(() => OrderProduction)

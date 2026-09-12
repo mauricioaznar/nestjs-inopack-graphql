@@ -970,4 +970,67 @@ export class OrderProductionsService {
             },
         });
     }
+
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getOrderProductionProductsByOrderProductionIds(
+        orderProductionIds: number[],
+    ): Promise<OrderProductionProduct[]> {
+        if (orderProductionIds.length === 0) return [];
+        return this.prisma.order_production_products.findMany({
+            where: {
+                AND: [
+                    { order_production_id: { in: orderProductionIds } },
+                    { active: 1 },
+                ],
+            },
+        });
+    }
+
+    async getOrderProductionProductsConsumedByOrderProductionIds(
+        orderProductionIds: number[],
+    ): Promise<OrderProductionProductConsumed[]> {
+        if (orderProductionIds.length === 0) return [];
+        return this.prisma.order_production_products_consumed.findMany({
+            where: {
+                AND: [
+                    { order_production_id: { in: orderProductionIds } },
+                    { active: 1 },
+                ],
+            },
+        });
+    }
+
+    async getOrderProductionEmployeesByOrderProductionIds(
+        orderProductionIds: number[],
+    ): Promise<OrderProductionEmployee[]> {
+        if (orderProductionIds.length === 0) return [];
+        return this.prisma.order_production_employees.findMany({
+            where: {
+                AND: [
+                    { order_production_id: { in: orderProductionIds } },
+                    { active: 1 },
+                ],
+            },
+        });
+    }
+
+    async getOrderProductionTypesByIds(
+        ids: number[],
+    ): Promise<OrderProductionType[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_production_type.findMany({
+            where: { id: { in: ids }, active: 1 },
+        });
+    }
+
+    async getBranchesByIds(ids: number[]): Promise<Branch[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.branches.findMany({
+            where: { id: { in: ids }, active: 1 },
+        });
+    }
 }
