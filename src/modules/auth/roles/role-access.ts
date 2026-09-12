@@ -1,4 +1,4 @@
-import { RoleId } from '../../common/dto/entities/auth/role.dto';
+import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 
 /**
  * The one role-satisfaction rule shared by every gate in the app.

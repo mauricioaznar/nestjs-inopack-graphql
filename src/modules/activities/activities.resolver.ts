@@ -25,7 +25,7 @@ import { ActivitiesService } from './activities.service';
 import { PubSubService } from '../../common/modules/pub-sub/pub-sub.service';
 import { RolesDecorator } from '../auth/decorators/role.decorator';
 import { RoleId } from '../../common/dto/entities/auth/role.dto';
-import { roleSatisfiesGate } from '../auth/role-access';
+import { roleSatisfiesGate } from '../auth/roles/role-access';
 
 // The activities table stores old_data/new_data as MySQL JSON, so Prisma hands
 // them back as parsed values. The GraphQL field is a String (see activity.dto),
