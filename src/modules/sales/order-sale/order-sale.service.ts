@@ -670,6 +670,89 @@ export class OrderSaleService {
         });
     }
 
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getOrderSaleProductsByOrderSaleIds(
+        orderSaleIds: number[],
+    ): Promise<OrderSaleProduct[]> {
+        if (orderSaleIds.length === 0) return [];
+        return this.prisma.order_sale_products.findMany({
+            where: { active: 1, order_sale_id: { in: orderSaleIds } },
+        });
+    }
+
+    // Nested to-many: the group key (order_sale_id) lives on order_adjustments,
+    // not on the product row, so pull it through the relation and annotate each
+    // row with __orderSaleId for grouping. The extra field is internal — GraphQL
+    // only serves the fields the query selects.
+    async getOrderAdjustmentProductsByOrderSaleIds(
+        orderSaleIds: number[],
+    ): Promise<(OrderAdjustmentProduct & { __orderSaleId: number })[]> {
+        if (orderSaleIds.length === 0) return [];
+        const rows = await this.prisma.order_adjustment_products.findMany({
+            where: {
+                active: 1,
+                order_adjustments: {
+                    active: 1,
+                    order_sales: { id: { in: orderSaleIds }, active: 1 },
+                },
+            },
+            include: {
+                order_adjustments: { select: { order_sale_id: true } },
+            },
+        });
+        return rows.map(({ order_adjustments, ...rest }) => ({
+            ...rest,
+            __orderSaleId: order_adjustments!.order_sale_id!,
+        }));
+    }
+
+    async getOrderSaleTransferReceiptsByOrderSaleIds(
+        orderSaleIds: number[],
+    ): Promise<TransferReceipt[]> {
+        if (orderSaleIds.length === 0) return [];
+        return this.prisma.transfer_receipts.findMany({
+            where: {
+                active: 1,
+                order_sale_id: { in: orderSaleIds },
+                transfers: { active: 1 },
+                order_sales: { active: 1 },
+            },
+        });
+    }
+
+    async getAccountsByIds(ids: number[]): Promise<Account[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.accounts.findMany({ where: { id: { in: ids } } });
+    }
+
+    async getOrderRequestsByIds(ids: number[]): Promise<OrderRequest[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_requests.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
+    async getReceiptTypesByIds(ids: number[]): Promise<ReceiptType[]> {
+        if (ids.length === 0) return [];
+        const rows = await this.prisma.receipt_types.findMany({
+            where: { id: { in: ids } },
+        });
+        return rows.map((rt) => ({ ...rt, tax_rate: Number(rt.tax_rate) }));
+    }
+
+    async getOrderSaleStatusesByIds(
+        ids: number[],
+    ): Promise<OrderSaleStatus[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_sale_statuses.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
     async upsertOrderSale({
         input,
         current_user_id,

@@ -112,3 +112,55 @@ export function groupByKey<K, T>(
     });
     return grouped;
 }
+
+// ── Generic resolve-field helpers ────────────────────────────────────────────
+// Almost every N+1 resolve-field is one of two shapes. These wrap the loader
+// above so a field body is a single call rather than a hand-rolled
+// getRequestLoader/createBatchLoader block, and so the fix is expressed once
+// instead of pasted across ~50 fields. A field keeps its own `name` (unique per
+// type+field, e.g. 'OrderSale.account') so its loader is isolated on the request
+// context — except audit users, which deliberately SHARE one name across every
+// type so a page's created_by + updated_by collapse into a single users query.
+
+// to-one-by-FK: the parent carries a foreign key; return the referenced row, or
+// null when the key is absent or nothing matches. `batchFn` receives the deduped,
+// non-null keys and returns the rows in any order; `keyOf` maps a row back to the
+// key it answers so the batch can be indexed.
+export async function toOne<K, V>(
+    context: LoaderContext,
+    name: string,
+    key: K | null | undefined,
+    batchFn: (keys: K[]) => Promise<V[]>,
+    keyOf: (value: V) => K,
+): Promise<V | null> {
+    if (key === null || key === undefined) return null;
+    const loader = getRequestLoader<K, V>(context, name, () =>
+        createBatchLoader<K, V>(async (keys) => {
+            const rows = await batchFn(keys);
+            const byKey = new Map<K, V>();
+            for (const row of rows) byKey.set(keyOf(row), row);
+            return byKey;
+        }),
+    );
+    return (await loader.load(key)) ?? null;
+}
+
+// to-many-by-parent-id: return the children whose foreign key points back to this
+// parent id — [] when none. `batchFn` receives the parent ids and returns a FLAT
+// child list; `parentKeyOf` maps each child to the parent id it belongs under, and
+// groupByKey folds the flat list into one list per requested id.
+export async function toMany<K, C>(
+    context: LoaderContext,
+    name: string,
+    parentId: K,
+    batchFn: (keys: K[]) => Promise<C[]>,
+    parentKeyOf: (child: C) => K | null | undefined,
+): Promise<C[]> {
+    const loader = getRequestLoader<K, C[]>(context, name, () =>
+        createBatchLoader<K, C[]>(async (keys) => {
+            const rows = await batchFn(keys);
+            return groupByKey(keys, rows, parentKeyOf);
+        }),
+    );
+    return (await loader.load(parentId)) ?? [];
+}

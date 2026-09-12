@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Float,
     Int,
     Mutation,
@@ -9,6 +10,11 @@ import {
     Resolver,
     Subscription,
 } from '@nestjs/graphql';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { getCompoundOrderCode } from '../../../common/helpers';
 import { OrderSaleService } from './order-sale.service';
@@ -292,35 +298,60 @@ export class OrderSaleResolver {
     }
 
     @ResolveField(() => [OrderSaleProduct])
-    async order_sale_products(
-        orderSale: OrderSale,
+    order_sale_products(
+        @Parent() orderSale: OrderSale,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderSaleProduct[]> {
-        return this.service.getOrderSaleProducts({
-            order_sale_id: orderSale.id,
-        });
+        return toMany(
+            ctx,
+            'OrderSale.order_sale_products',
+            orderSale.id,
+            (ids) => this.service.getOrderSaleProductsByOrderSaleIds(ids),
+            (osp) => osp.order_sale_id,
+        );
     }
 
     @ResolveField(() => [OrderAdjustmentProduct])
-    async order_adjustment_products(
-        orderSale: OrderSale,
+    order_adjustment_products(
+        @Parent() orderSale: OrderSale,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderAdjustmentProduct[]> {
-        return this.service.getOrderAdjustmentProducts({
-            order_sale_id: orderSale.id,
-        });
+        return toMany(
+            ctx,
+            'OrderSale.order_adjustment_products',
+            orderSale.id,
+            (ids) =>
+                this.service.getOrderAdjustmentProductsByOrderSaleIds(ids),
+            (p) => p.__orderSaleId,
+        );
     }
 
     @ResolveField(() => OrderRequest, { nullable: true })
-    async order_request(orderSale: OrderSale): Promise<OrderRequest | null> {
-        return this.service.getOrderRequest({
-            order_sale_id: orderSale.id,
-        });
+    order_request(
+        @Parent() orderSale: OrderSale,
+        @Context() ctx: LoaderContext,
+    ): Promise<OrderRequest | null> {
+        return toOne(
+            ctx,
+            'OrderSale.order_request',
+            orderSale.order_request_id,
+            (ids) => this.service.getOrderRequestsByIds(ids),
+            (r) => r.id,
+        );
     }
 
     @ResolveField(() => Account, { nullable: true })
-    async account(orderSale: OrderSale): Promise<Account | null> {
-        return this.service.getAccount({
-            order_sale_id: orderSale.id,
-        });
+    account(
+        @Parent() orderSale: OrderSale,
+        @Context() ctx: LoaderContext,
+    ): Promise<Account | null> {
+        return toOne(
+            ctx,
+            'OrderSale.account',
+            orderSale.account_id,
+            (ids) => this.service.getAccountsByIds(ids),
+            (a) => a.id,
+        );
     }
 
     @ResolveField(() => Float, { nullable: true })
@@ -331,44 +362,74 @@ export class OrderSaleResolver {
     }
 
     @ResolveField(() => ReceiptType, { nullable: true })
-    async receipt_type(
+    receipt_type(
         @Parent() orderSale: OrderSale,
+        @Context() ctx: LoaderContext,
     ): Promise<ReceiptType | null> {
-        return this.service.getReceiptType({
-            receipt_type_id: orderSale.receipt_type_id,
-        });
+        return toOne(
+            ctx,
+            'OrderSale.receipt_type',
+            orderSale.receipt_type_id,
+            (ids) => this.service.getReceiptTypesByIds(ids),
+            (rt) => rt.id,
+        );
     }
 
     @ResolveField(() => [TransferReceipt])
-    async transfer_receipts(
+    transfer_receipts(
         @Parent() orderSale: OrderSale,
+        @Context() ctx: LoaderContext,
     ): Promise<TransferReceipt[]> {
-        return this.service.getOrderSaleTransferReceipts({
-            order_sale_id: orderSale.id,
-        });
+        return toMany(
+            ctx,
+            'OrderSale.transfer_receipts',
+            orderSale.id,
+            (ids) =>
+                this.service.getOrderSaleTransferReceiptsByOrderSaleIds(ids),
+            (tr) => tr.order_sale_id,
+        );
     }
 
     @ResolveField(() => OrderSaleStatus, { nullable: true })
-    async order_sale_status(
+    order_sale_status(
         @Parent() orderSale: OrderSale,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderSaleStatus | null> {
-        return this.service.getOrderSaleStatus({
-            order_sale_status_id: orderSale.order_sale_status_id,
-        });
+        return toOne(
+            ctx,
+            'OrderSale.order_sale_status',
+            orderSale.order_sale_status_id,
+            (ids) => this.service.getOrderSaleStatusesByIds(ids),
+            (st) => st.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(@Parent() orderSale: OrderSale): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: orderSale.created_by_id,
-        });
+    created_by(
+        @Parent() orderSale: OrderSale,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            orderSale.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(@Parent() orderSale: OrderSale): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: orderSale.updated_by_id,
-        });
+    updated_by(
+        @Parent() orderSale: OrderSale,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            orderSale.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => String)
