@@ -8,7 +8,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from '../../common/constants/jwt';
 import { authThrottle } from '../../common/constants/login-protection';
 import { AuthResolver } from './auth.resolver';
-import { UserService } from './user.service';
+import { UserService } from './users/user.service';
 import { RoleResolver } from './roles/role.resolver';
 import { RoleService } from './roles/role.service';
 import { LoggingModule } from '../../common/modules/logging/logging.module';

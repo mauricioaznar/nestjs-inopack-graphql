@@ -3,11 +3,11 @@ import {
     CreateUserInput,
     UpdateUserInput,
     User,
-} from '../../common/dto/entities';
+} from '../../../common/dto/entities';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../../common/modules/prisma/prisma.service';
-import { Role } from '../../common/dto/entities/auth/role.dto';
-import { vennDiagram } from '../../common/helpers';
+import { PrismaService } from '../../../common/modules/prisma/prisma.service';
+import { Role } from '../../../common/dto/entities/auth/role.dto';
+import { vennDiagram } from '../../../common/helpers';
 
 // Builds the denormalised `fullname` from the parts that are actually present.
 // Last name is optional, so a user with only a first name gets `"admin"`, not

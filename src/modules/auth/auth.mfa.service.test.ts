@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { setupApp } from '../../common/__tests__/helpers/setup-app';
-import { UserService } from './user.service';
+import { UserService } from './users/user.service';
 import { AuthService } from './auth.service';
 import { MailService } from '../../common/modules/mail/mail.service';
 import { PrismaService } from '../../common/modules/prisma/prisma.service';

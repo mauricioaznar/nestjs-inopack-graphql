@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { UserService } from './user.service';
+import { UserService } from './users/user.service';
 import { setupApp } from '../../common/__tests__/helpers/setup-app';
 import { AuthService } from './auth.service';
 import { roles } from '../../common/__tests__/objects/auth/roles';
