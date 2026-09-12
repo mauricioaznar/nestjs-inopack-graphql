@@ -1663,18 +1663,29 @@ export class OrderQuotationsService {
             () => this.accountsService.getAccountSnapshot({ account_id }),
         );
 
-        const account = await this.accountsService.upsertAccount(input, {
-            current_user_id,
-        });
+        // Step 1 is atomic (Phase 4): the account catalog write and the STORED
+        // marker that records it commit together, so a failure can never leave the
+        // one-time destructive catalog write applied without its resume-skip marker
+        // (or the marker set without the write). upsertAccount joins this tx via its
+        // threaded client. Snapshot reads and the pub-sub publish stay OUTSIDE.
+        const account = await this.prisma.$transaction(async (tx) => {
+            const account = await this.accountsService.upsertAccount(
+                input,
+                { current_user_id },
+                tx,
+            );
 
-        // Stamp the STORED catalog-write marker on the quotation — the record
-        // that this one-time destructive write happened. Drives the resume skip.
-        await this.prisma.order_quotations.update({
-            data: {
-                ...getUpdatedAtProperty(),
-                account_products_updated_at: new Date(),
-            },
-            where: { id: orderQuotation.id },
+            // Stamp the STORED catalog-write marker on the quotation — the record
+            // that this one-time destructive write happened. Drives the resume skip.
+            await tx.order_quotations.update({
+                data: {
+                    ...getUpdatedAtProperty(),
+                    account_products_updated_at: new Date(),
+                },
+                where: { id: orderQuotation.id },
+            });
+
+            return account;
         });
 
         const newCapture = await captureSnapshotSafely(
@@ -1861,25 +1872,36 @@ export class OrderQuotationsService {
             })),
         };
 
-        const orderRequest = await this.orderRequestsService.upsertOrderRequest(
-            {
-                input,
-                current_user_id,
-            },
-            { order_quotation_id: orderQuotation.id },
-        );
+        // Step 2 is atomic (Phase 4): the pedido (header + lines) and the
+        // AUTHORITATIVE completion marker commit together, so a failure can never
+        // leave a created pedido whose completion stamp was never written — the
+        // CREATED_INCOMPLETE half-state acceptOrderQuotation guards against.
+        // upsertOrderRequest joins this tx via its threaded client. The snapshot
+        // read and pub-sub publish stay OUTSIDE.
+        const orderRequest = await this.prisma.$transaction(async (tx) => {
+            const orderRequest =
+                await this.orderRequestsService.upsertOrderRequest(
+                    {
+                        input,
+                        current_user_id,
+                    },
+                    { order_quotation_id: orderQuotation.id },
+                    tx,
+                );
 
-        // Stamp the AUTHORITATIVE completion marker — ONLY now that
-        // upsertOrderRequest has returned from creating the pedido and all its
-        // lines. This is the single signal the Pedido step reads; completion is
-        // never inferred by comparing the quotation with the pedido. See the
-        // plan, "The pedido completion marker".
-        await this.prisma.order_quotations.update({
-            data: {
-                ...getUpdatedAtProperty(),
-                order_request_completed_at: new Date(),
-            },
-            where: { id: orderQuotation.id },
+            // Stamp the AUTHORITATIVE completion marker — ONLY now that the pedido
+            // and all its lines are written. This is the single signal the Pedido
+            // step reads; completion is never inferred by comparing the quotation
+            // with the pedido. See the plan, "The pedido completion marker".
+            await tx.order_quotations.update({
+                data: {
+                    ...getUpdatedAtProperty(),
+                    order_request_completed_at: new Date(),
+                },
+                where: { id: orderQuotation.id },
+            });
+
+            return orderRequest;
         });
 
         const auditContext = {

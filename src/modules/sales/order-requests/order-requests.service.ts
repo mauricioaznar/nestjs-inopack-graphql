@@ -387,6 +387,11 @@ export class OrderRequestsService {
         // (acceptOrderQuotation); every normal pedido save omits it. See the
         // plan, "Services yes, resolvers no" consequence 2, option (a).
         options?: { order_quotation_id?: number | null },
+        // Phase 4 (cross-service transactions): when a caller is already inside a
+        // $transaction (acceptOrderQuotation's pedido step) it passes its tx client
+        // so the pedido write joins that transaction; standalone callers omit it and
+        // get their own transaction below. Validation stays OUTSIDE either way.
+        client?: Prisma.TransactionClient,
     ): Promise<OrderRequest> {
         await this.validateOrderRequest(input, current_user_id);
 
@@ -395,7 +400,7 @@ export class OrderRequestsService {
         // write snapshot, so it stays outside; the header upsert, the read of
         // existing lines (so the venn diff is against the same snapshot the writes
         // commit), and the three line loops all run on the transaction client `tx`.
-        return this.prisma.$transaction(async (tx) => {
+        const run = async (tx: Prisma.TransactionClient) => {
             const orderRequest = await tx.order_requests.upsert({
                 create: {
                     ...getCreatedAtProperty(),
@@ -506,7 +511,9 @@ export class OrderRequestsService {
             }
 
             return orderRequest;
-        });
+        };
+
+        return client ? run(client) : this.prisma.$transaction(run);
     }
 
     // Admin-only status change, kept separate from upsert so that regular sales
