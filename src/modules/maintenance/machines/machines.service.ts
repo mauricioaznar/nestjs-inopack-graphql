@@ -522,4 +522,53 @@ export class MachinesService {
             },
         });
     }
+
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+    //
+    // NOTE: machine_parts (the OR of a direct machine_id and a section's
+    // machine_id) is deliberately NOT batched — a part can match two machines, and
+    // the flat group-by-single-key loader can only file each row under one, so
+    // batching it would change results. It stays N+1 by design.
+
+    async getMachineSectionsByMachineIds(
+        machineIds: number[],
+    ): Promise<MachineSection[]> {
+        if (machineIds.length === 0) return [];
+        return this.prisma.machine_sections.findMany({
+            where: { machine_id: { in: machineIds } },
+        });
+    }
+
+    async getMachineUnassignedPartsByMachineIds(
+        machineIds: number[],
+    ): Promise<MachinePart[]> {
+        if (machineIds.length === 0) return [];
+        return this.prisma.machine_parts.findMany({
+            where: {
+                AND: [
+                    { machine_section_id: null },
+                    { machine_id: { in: machineIds } },
+                ],
+            },
+        });
+    }
+
+    async getOrderProductionTypesByIds(
+        ids: number[],
+    ): Promise<OrderProductionType[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_production_type.findMany({
+            where: { id: { in: ids }, active: 1 },
+        });
+    }
+
+    async getBranchesByIds(ids: number[]): Promise<Branch[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.branches.findMany({
+            where: { id: { in: ids }, active: 1 },
+        });
+    }
 }

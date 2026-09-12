@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Mutation,
     Parent,
     Query,
@@ -8,6 +9,10 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+    LoaderContext,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { EmployeesService } from './employees.service';
 import {
     Employee,
@@ -32,7 +37,6 @@ import {
     User,
 } from '../../../common/dto/entities';
 import { OffsetPaginatorArgs } from '../../../common/dto/pagination';
-import { EmployeeType } from '../../../common/dto/entities/production/employee-type.dto';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
@@ -166,31 +170,59 @@ export class EmployeesResolver {
     }
 
     @ResolveField(() => Branch, { nullable: true })
-    async branch(@Parent() employee: Employee): Promise<EmployeeType | null> {
-        return this.service.getBranch({ branch_id: employee.branch_id });
+    branch(
+        @Parent() employee: Employee,
+        @Context() ctx: LoaderContext,
+    ): Promise<Branch | null> {
+        return toOne(
+            ctx,
+            'Employee.branch',
+            employee.branch_id,
+            (ids) => this.service.getBranchesByIds(ids),
+            (b) => b.id,
+        );
     }
 
     @ResolveField(() => OrderProductionType, { nullable: true })
-    async order_production_type(
+    order_production_type(
         @Parent() employee: Employee,
-    ): Promise<EmployeeType | null> {
-        return this.service.getOrderProductionType({
-            order_production_type_id: employee.order_production_type_id,
-        });
+        @Context() ctx: LoaderContext,
+    ): Promise<OrderProductionType | null> {
+        return toOne(
+            ctx,
+            'Employee.order_production_type',
+            employee.order_production_type_id,
+            (ids) => this.service.getOrderProductionTypesByIds(ids),
+            (opt) => opt.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(@Parent() employee: Employee): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: employee.created_by_id,
-        });
+    created_by(
+        @Parent() employee: Employee,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            employee.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(@Parent() employee: Employee): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: employee.updated_by_id,
-        });
+    updated_by(
+        @Parent() employee: Employee,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            employee.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @Subscription(() => Employee)
