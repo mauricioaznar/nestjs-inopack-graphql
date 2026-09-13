@@ -753,6 +753,7 @@ export class ProductionPerformanceService {
                     end
                 ) as waste_share,
                 ${convertToInt('pt.product_count', 'product_count')},
+                ${convertToInt('op.shift', 'shift')},
                 coalesce(emp.employee_names, '') as employee_names
             from order_production_products opp
             join order_productions op
@@ -789,6 +790,7 @@ export class ProductionPerformanceService {
             group by
                 op.id,
                 op.start_date,
+                op.shift,
                 opp.machine_id,
                 m.name,
                 opp.product_id,

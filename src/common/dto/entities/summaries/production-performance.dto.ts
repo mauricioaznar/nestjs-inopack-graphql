@@ -310,6 +310,11 @@ export class WeeklyAuditRun {
     @Field(() => Int, { nullable: false })
     product_count: number;
 
+    // Production shift/turno (order_productions.shift): 1, 2, … or null when the
+    // corrida predates shift capture. Shown in the date cell as "#N".
+    @Field(() => Int, { nullable: true })
+    shift: number | null;
+
     // Distinct employees linked to the production, comma-joined ('' if none).
     @Field(() => String, { nullable: false })
     employee_names: string;
