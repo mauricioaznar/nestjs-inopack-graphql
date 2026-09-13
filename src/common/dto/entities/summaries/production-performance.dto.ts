@@ -83,6 +83,12 @@ export class MachineProductPerformanceSummary {
     @Field(() => Float, { nullable: false })
     hours: number;
 
+    // Bultos (order_production_products.groups) summed over the same rows as the
+    // kilos. bultos/hr = groups ÷ hours is the primary throughput unit the floor
+    // and planners communicate in; kilos stay for monthly totals.
+    @Field(() => Float, { nullable: false })
+    groups: number;
+
     @Field(() => Float, { nullable: false })
     waste_share_total: number;
 
@@ -109,6 +115,11 @@ export class ProductMachinePerformanceSummary {
 
     @Field(() => Float, { nullable: false })
     hours: number;
+
+    // See MachineProductPerformanceSummary.groups — bultos summed over the same
+    // rows, so the table can show bultos/hr and the 8 h-shift projection.
+    @Field(() => Float, { nullable: false })
+    groups: number;
 
     @Field(() => Float, { nullable: false })
     waste_share_total: number;
@@ -216,6 +227,92 @@ export class MachineProductRate {
     // Paired with all_kilos it yields a baseline merma ratio.
     @Field(() => Float, { nullable: false })
     all_waste: number;
+
+    // --- Per-run rate distribution, for the weekly audit's z-score layer ---
+    //
+    // The `all_*` sums above give a totals-over-totals baseline (Σ ÷ Σ), which is
+    // what gradeLine uses for its one-directional under-performance ratio. A
+    // z-score needs the MEAN and SAMPLE STDDEV of the per-run rates instead —
+    // which cannot be reconstructed from sums — so they are computed here over the
+    // same window and returned alongside. One resolver, one cache, both models:
+    // the ratio grade reads the sums, the z-flag reads these. Kept for BOTH units
+    // because the weekly audit grades bultos-first, kilos-fallback (Option 1), so
+    // a weighed line (groups = 0, e.g. extrusión) is still z-graded on kg/hr.
+    //
+    // mean/std are null when fewer than the applicable runs exist (STDDEV_SAMP
+    // needs ≥ 2; the client gates at MIN_BASELINE_RUNS = 10 anyway). The `*_n`
+    // counts are the runs that entered each distribution: bultos counts runs with
+    // hours > 0 AND groups > 0 (a zero-bultos run is "not counted in bultos", not
+    // a zero rate); kilos counts runs with hours > 0 (a zero-kilo run IS a real
+    // zero rate).
+    @Field(() => Float, { nullable: true })
+    all_groups_rate_mean: number | null;
+
+    @Field(() => Float, { nullable: true })
+    all_groups_rate_std: number | null;
+
+    @Field(() => Int, { nullable: false })
+    all_groups_rate_n: number;
+
+    @Field(() => Float, { nullable: true })
+    all_kilos_rate_mean: number | null;
+
+    @Field(() => Float, { nullable: true })
+    all_kilos_rate_std: number | null;
+
+    @Field(() => Int, { nullable: false })
+    all_kilos_rate_n: number;
+}
+
+// One graded corrida line for the weekly audit tab: a machine × product line of
+// one production in the selected ISO week (Mon–Sun) and, optionally, of one order
+// production type. Unlike the summaries this is NOT filtered by a chosen
+// machine/product — it lists every corrida in the week so each can be graded
+// against its OWN machine×product baseline (fetched separately via
+// getMachineProductRates). Raw per-line figures only; kg/hr, bultos/hr, the 8 h
+// projection, the ratio grade and the z-flag are all derived client-side.
+@ObjectType('WeeklyAuditRun')
+export class WeeklyAuditRun {
+    @Field(() => Int, { nullable: false })
+    order_production_id: number;
+
+    @Field(() => Date, { nullable: true })
+    date: Date | null;
+
+    @Field(() => Int, { nullable: false })
+    machine_id: number;
+
+    @Field(() => String, { nullable: false })
+    machine_name: string;
+
+    @Field(() => Int, { nullable: false })
+    product_id: number;
+
+    @Field(() => String, { nullable: false })
+    product_description: string;
+
+    // Sums over this product's lines on this machine in this production.
+    @Field(() => Float, { nullable: false })
+    kilos: number;
+
+    @Field(() => Float, { nullable: false })
+    hours: number;
+
+    @Field(() => Float, { nullable: false })
+    groups: number;
+
+    // This line's kilo-share of the production's waste (same proration as the
+    // summaries, no employee divisor), so gradeLine can grade the merma axis.
+    @Field(() => Float, { nullable: false })
+    waste_share: number;
+
+    // Distinct products the whole production made — lets the UI mark shared runs.
+    @Field(() => Int, { nullable: false })
+    product_count: number;
+
+    // Distinct employees linked to the production, comma-joined ('' if none).
+    @Field(() => String, { nullable: false })
+    employee_names: string;
 }
 
 // Consumption baseline for the upsert form's Rendimiento tab. Raw sums, not
