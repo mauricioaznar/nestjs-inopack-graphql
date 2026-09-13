@@ -381,6 +381,27 @@ export class EmployeesService {
         });
     }
 
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getBranchesByIds(ids: number[]): Promise<Branch[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.branches.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
+    async getOrderProductionTypesByIds(
+        ids: number[],
+    ): Promise<OrderProductionType[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_production_type.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
     async isDeletable({
         employee_id,
     }: {

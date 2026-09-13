@@ -16,7 +16,7 @@ import {
 } from '../../common/dto/entities';
 import { ForbiddenException, Injectable, UseGuards } from '@nestjs/common';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { UserService } from './user.service';
+import { UserService } from './users/user.service';
 import { AuthService } from './auth.service';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { Role, RoleId } from '../../common/dto/entities/auth/role.dto';

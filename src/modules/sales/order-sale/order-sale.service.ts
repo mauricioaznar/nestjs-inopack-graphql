@@ -628,45 +628,86 @@ export class OrderSaleService {
         });
     }
 
-    async getOrderSaleTransferReceipts({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }): Promise<TransferReceipt[]> {
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getOrderSaleProductsByOrderSaleIds(
+        orderSaleIds: number[],
+    ): Promise<OrderSaleProduct[]> {
+        if (orderSaleIds.length === 0) return [];
+        return this.prisma.order_sale_products.findMany({
+            where: { active: 1, order_sale_id: { in: orderSaleIds } },
+        });
+    }
+
+    // Nested to-many: the group key (order_sale_id) lives on order_adjustments,
+    // not on the product row, so pull it through the relation and annotate each
+    // row with __orderSaleId for grouping. The extra field is internal — GraphQL
+    // only serves the fields the query selects.
+    async getOrderAdjustmentProductsByOrderSaleIds(
+        orderSaleIds: number[],
+    ): Promise<(OrderAdjustmentProduct & { __orderSaleId: number })[]> {
+        if (orderSaleIds.length === 0) return [];
+        const rows = await this.prisma.order_adjustment_products.findMany({
+            where: {
+                active: 1,
+                order_adjustments: {
+                    active: 1,
+                    order_sales: { id: { in: orderSaleIds }, active: 1 },
+                },
+            },
+            include: {
+                order_adjustments: { select: { order_sale_id: true } },
+            },
+        });
+        return rows.map(({ order_adjustments, ...rest }) => ({
+            ...rest,
+            __orderSaleId: order_adjustments!.order_sale_id!,
+        }));
+    }
+
+    async getOrderSaleTransferReceiptsByOrderSaleIds(
+        orderSaleIds: number[],
+    ): Promise<TransferReceipt[]> {
+        if (orderSaleIds.length === 0) return [];
         return this.prisma.transfer_receipts.findMany({
             where: {
-                AND: [
-                    {
-                        order_sale_id: order_sale_id,
-                        active: 1,
-                    },
-                    {
-                        transfers: {
-                            active: 1,
-                        },
-                    },
-                    {
-                        order_sales: {
-                            active: 1,
-                        },
-                    },
-                ],
+                active: 1,
+                order_sale_id: { in: orderSaleIds },
+                transfers: { active: 1 },
+                order_sales: { active: 1 },
             },
         });
     }
 
-    async getOrderSaleStatus({
-        order_sale_status_id,
-    }: {
-        order_sale_status_id?: number | null;
-    }): Promise<OrderSaleStatus | null> {
-        if (!order_sale_status_id) {
-            return null;
-        }
-        return this.prisma.order_sale_statuses.findFirst({
-            where: {
-                id: order_sale_status_id,
-            },
+    async getAccountsByIds(ids: number[]): Promise<Account[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.accounts.findMany({ where: { id: { in: ids } } });
+    }
+
+    async getOrderRequestsByIds(ids: number[]): Promise<OrderRequest[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_requests.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
+    async getReceiptTypesByIds(ids: number[]): Promise<ReceiptType[]> {
+        if (ids.length === 0) return [];
+        const rows = await this.prisma.receipt_types.findMany({
+            where: { id: { in: ids } },
+        });
+        return rows.map((rt) => ({ ...rt, tax_rate: Number(rt.tax_rate) }));
+    }
+
+    async getOrderSaleStatusesByIds(
+        ids: number[],
+    ): Promise<OrderSaleStatus[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_sale_statuses.findMany({
+            where: { id: { in: ids } },
         });
     }
 
@@ -729,144 +770,152 @@ export class OrderSaleService {
                       },
                   );
 
-        const orderSale = await this.prisma.order_sales.upsert({
-            create: {
-                ...getCreatedAtProperty(),
-                ...getUpdatedAtProperty(),
-                ...getCreatedByProperty(current_user_id),
-                ...getUpdatedByProperty(current_user_id),
-                date: input.date,
-                order_code: input.order_code,
-                expected_payment_date: input.expected_payment_date,
-                invoice_code: input.invoice_code,
-                require_invoice_code: input.require_invoice_code,
-                require_tax: input.require_tax,
-                // Status is no longer part of the input: new sales always start at
-                // the first status (id = 1). Only updateOrderSaleStatus (admin-only)
-                // can change it afterwards.
-                order_sale_status_id: 1,
-                receipt_type_id: input.receipt_type_id,
-                account_id: input.account_id,
-                order_request_id: input.order_request_id || null,
-                require_supplement: input.require_supplement,
-                require_credit_note: input.require_credit_note,
-                supplement_code: input.supplement_code,
-                credit_note_code: input.credit_note_code,
-                credit_note_amount: input.credit_note_amount,
-                canceled: input.canceled,
-                reconciliation_only: input.reconciliation_only,
-                automatic_tax_calculation: input.automatic_tax_calculation,
-                notes: input.notes,
-                subtotal: round(subtotal),
-                tax: round(tax),
-                total_with_tax: round(total_with_tax),
-            },
-            update: {
-                ...getUpdatedAtProperty(),
-                ...getUpdatedByProperty(current_user_id),
-                date: input.date,
-                order_code: input.order_code,
-                expected_payment_date: input.expected_payment_date,
-                order_request_id: input.order_request_id || null,
-                invoice_code: input.invoice_code,
-                require_invoice_code: input.require_invoice_code,
-                require_tax: input.require_tax,
-                account_id: input.account_id,
-                // Intentionally omit order_sale_status_id so an upsert never
-                // overwrites a status an admin may have set.
-                receipt_type_id: input.receipt_type_id,
-                require_supplement: input.require_supplement,
-                require_credit_note: input.require_credit_note,
-                supplement_code: input.supplement_code,
-                credit_note_code: input.credit_note_code,
-                credit_note_amount: input.credit_note_amount,
-                automatic_tax_calculation: input.automatic_tax_calculation,
-                canceled: input.canceled,
-                reconciliation_only: input.reconciliation_only,
-                notes: input.notes,
-                subtotal: round(subtotal),
-                tax: round(tax),
-                total_with_tax: round(total_with_tax),
-            },
-            where: {
-                id: input.id || 0,
-            },
-        });
-
-        const newProductItems = input.order_sale_products;
-        const oldProductItems = input.id
-            ? await this.prisma.order_sale_products.findMany({
-                  where: {
-                      order_sale_id: input.id,
-                  },
-              })
-            : [];
-
-        const {
-            aMinusB: deleteProductItems,
-            bMinusA: createProductItems,
-            intersection: updateProductItems,
-        } = vennDiagram({
-            a: oldProductItems,
-            b: newProductItems,
-            indexProperties: ['id'],
-        });
-
-        for await (const delItem of deleteProductItems) {
-            if (delItem && delItem.id) {
-                await this.prisma.order_sale_products.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        active: -1,
-                    },
-                    where: {
-                        id: delItem.id,
-                    },
-                });
-                // await this.cacheManager.del(`product_inventory`);
-            }
-        }
-
-        for await (const createItem of createProductItems) {
-            await this.prisma.order_sale_products.create({
-                data: {
+        // Header + line items must land atomically: a throw mid-loop used to leave
+        // an orphan header (or partly written lines). Validation, the receipt-type
+        // lookup and the pure tax/subtotal math above need no write snapshot, so
+        // they stay outside; the header upsert, the read of existing lines (so the
+        // venn diff is against the same snapshot the writes commit), and the three
+        // line loops all run on the transaction client `tx`.
+        return this.prisma.$transaction(async (tx) => {
+            const orderSale = await tx.order_sales.upsert({
+                create: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
-                    kilo_price: createItem.kilo_price,
-                    order_sale_id: orderSale.id,
-                    product_id: createItem.product_id,
-                    kilos: createItem.kilos,
-                    active: 1,
-                    group_weight: createItem.group_weight,
-                    groups: createItem.groups,
-                    group_price: createItem.group_price,
+                    ...getCreatedByProperty(current_user_id),
+                    ...getUpdatedByProperty(current_user_id),
+                    date: input.date,
+                    order_code: input.order_code,
+                    expected_payment_date: input.expected_payment_date,
+                    invoice_code: input.invoice_code,
+                    require_invoice_code: input.require_invoice_code,
+                    require_tax: input.require_tax,
+                    // Status is no longer part of the input: new sales always start at
+                    // the first status (id = 1). Only updateOrderSaleStatus (admin-only)
+                    // can change it afterwards.
+                    order_sale_status_id: 1,
+                    receipt_type_id: input.receipt_type_id,
+                    account_id: input.account_id,
+                    order_request_id: input.order_request_id || null,
+                    require_supplement: input.require_supplement,
+                    require_credit_note: input.require_credit_note,
+                    supplement_code: input.supplement_code,
+                    credit_note_code: input.credit_note_code,
+                    credit_note_amount: input.credit_note_amount,
+                    canceled: input.canceled,
+                    reconciliation_only: input.reconciliation_only,
+                    automatic_tax_calculation: input.automatic_tax_calculation,
+                    notes: input.notes,
+                    subtotal: round(subtotal),
+                    tax: round(tax),
+                    total_with_tax: round(total_with_tax),
+                },
+                update: {
+                    ...getUpdatedAtProperty(),
+                    ...getUpdatedByProperty(current_user_id),
+                    date: input.date,
+                    order_code: input.order_code,
+                    expected_payment_date: input.expected_payment_date,
+                    order_request_id: input.order_request_id || null,
+                    invoice_code: input.invoice_code,
+                    require_invoice_code: input.require_invoice_code,
+                    require_tax: input.require_tax,
+                    account_id: input.account_id,
+                    // Intentionally omit order_sale_status_id so an upsert never
+                    // overwrites a status an admin may have set.
+                    receipt_type_id: input.receipt_type_id,
+                    require_supplement: input.require_supplement,
+                    require_credit_note: input.require_credit_note,
+                    supplement_code: input.supplement_code,
+                    credit_note_code: input.credit_note_code,
+                    credit_note_amount: input.credit_note_amount,
+                    automatic_tax_calculation: input.automatic_tax_calculation,
+                    canceled: input.canceled,
+                    reconciliation_only: input.reconciliation_only,
+                    notes: input.notes,
+                    subtotal: round(subtotal),
+                    tax: round(tax),
+                    total_with_tax: round(total_with_tax),
+                },
+                where: {
+                    id: input.id || 0,
                 },
             });
-            // await this.cacheManager.del(`product_inventory`);
-        }
 
-        for await (const updateItem of updateProductItems) {
-            if (updateItem && updateItem.id) {
-                await this.prisma.order_sale_products.updateMany({
+            const newProductItems = input.order_sale_products;
+            const oldProductItems = input.id
+                ? await tx.order_sale_products.findMany({
+                      where: {
+                          order_sale_id: input.id,
+                      },
+                  })
+                : [];
+
+            const {
+                aMinusB: deleteProductItems,
+                bMinusA: createProductItems,
+                intersection: updateProductItems,
+            } = vennDiagram({
+                a: oldProductItems,
+                b: newProductItems,
+                indexProperties: ['id'],
+            });
+
+            for await (const delItem of deleteProductItems) {
+                if (delItem && delItem.id) {
+                    await tx.order_sale_products.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            active: -1,
+                        },
+                        where: {
+                            id: delItem.id,
+                        },
+                    });
+                    // await this.cacheManager.del(`product_inventory`);
+                }
+            }
+
+            for await (const createItem of createProductItems) {
+                await tx.order_sale_products.create({
                     data: {
+                        ...getCreatedAtProperty(),
                         ...getUpdatedAtProperty(),
-                        product_id: updateItem.product_id,
-                        kilos: updateItem.kilos,
+                        kilo_price: createItem.kilo_price,
+                        order_sale_id: orderSale.id,
+                        product_id: createItem.product_id,
+                        kilos: createItem.kilos,
                         active: 1,
-                        group_weight: updateItem.group_weight,
-                        groups: updateItem.groups,
-                        kilo_price: updateItem.kilo_price,
-                        group_price: updateItem.group_price,
-                    },
-                    where: {
-                        id: updateItem.id,
+                        group_weight: createItem.group_weight,
+                        groups: createItem.groups,
+                        group_price: createItem.group_price,
                     },
                 });
                 // await this.cacheManager.del(`product_inventory`);
             }
-        }
 
-        return orderSale;
+            for await (const updateItem of updateProductItems) {
+                if (updateItem && updateItem.id) {
+                    await tx.order_sale_products.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            product_id: updateItem.product_id,
+                            kilos: updateItem.kilos,
+                            active: 1,
+                            group_weight: updateItem.group_weight,
+                            groups: updateItem.groups,
+                            kilo_price: updateItem.kilo_price,
+                            group_price: updateItem.group_price,
+                        },
+                        where: {
+                            id: updateItem.id,
+                        },
+                    });
+                    // await this.cacheManager.del(`product_inventory`);
+                }
+            }
+
+            return orderSale;
+        });
     }
 
     // Admin-only status change, kept separate from upsert so that regular sales

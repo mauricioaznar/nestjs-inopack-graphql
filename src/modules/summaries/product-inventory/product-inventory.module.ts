@@ -9,6 +9,5 @@ import { ProductInventoryMovementsService } from './product-inventory-movements.
         ProductInventoryService,
         ProductInventoryMovementsService,
     ],
-    exports: [ProductInventoryResolver],
 })
 export class ProductInventoryModule {}

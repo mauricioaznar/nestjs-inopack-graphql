@@ -1,5 +1,5 @@
 import { adminUser, salesUser } from '../objects/auth/users';
-import { UserService } from '../../../modules/auth/user.service';
+import { UserService } from '../../../modules/auth/users/user.service';
 import { setupApp } from './setup-app';
 import { orderProductionTypes } from '../objects';
 import { PrismaService } from '../../modules/prisma/prisma.service';

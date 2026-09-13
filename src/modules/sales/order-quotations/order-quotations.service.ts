@@ -646,118 +646,125 @@ export class OrderQuotationsService {
     }): Promise<OrderQuotation> {
         await this.validateOrderQuotation(input, current_user_id);
 
-        const orderQuotation = await this.prisma.order_quotations.upsert({
-            create: {
-                ...getCreatedAtProperty(),
-                ...getUpdatedAtProperty(),
-                ...getCreatedByProperty(current_user_id),
-                ...getUpdatedByProperty(current_user_id),
-                notes: input.notes,
-                date: input.date,
-                order_code: input.order_code,
-                estimated_delivery_date: input.estimated_delivery_date,
-                account_id: input.account_id,
-                expiration_date: input.expiration_date,
-                payment_terms: input.payment_terms,
-                require_tax: input.require_tax,
-                // Status is not part of the input: new quotations always start at
-                // Borrador (id = 1). Only updateOrderQuotationStatus (admin-only)
-                // can change it afterwards.
-                order_quotation_status_id: 1,
-            },
-            update: {
-                ...getUpdatedAtProperty(),
-                ...getUpdatedByProperty(current_user_id),
-                notes: input.notes,
-                date: input.date,
-                order_code: input.order_code,
-                estimated_delivery_date: input.estimated_delivery_date,
-                account_id: input.account_id,
-                expiration_date: input.expiration_date,
-                payment_terms: input.payment_terms,
-                require_tax: input.require_tax,
-                // Intentionally omit order_quotation_status_id and
-                // account_products_updated_at so an upsert never overwrites a
-                // status an admin set nor the stored catalog-write stamp.
-            },
-            where: {
-                id: input.id || 0,
-            },
-        });
-
-        const newProductItems = input.order_quotation_products;
-        const oldProductItems = input.id
-            ? await this.prisma.order_quotation_products.findMany({
-                  where: {
-                      order_quotation_id: input.id,
-                  },
-              })
-            : [];
-
-        const {
-            aMinusB: deleteProductItems,
-            bMinusA: createProductItems,
-            intersection: updateProductItems,
-        } = vennDiagram({
-            a: oldProductItems,
-            b: newProductItems,
-            indexProperties: ['id'],
-        });
-
-        for await (const delItem of deleteProductItems) {
-            if (delItem && delItem.id) {
-                await this.prisma.order_quotation_products.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        active: -1,
-                    },
-                    where: {
-                        id: delItem.id,
-                    },
-                });
-            }
-        }
-
-        for await (const createItem of createProductItems) {
-            await this.prisma.order_quotation_products.create({
-                data: {
+        // Header + line items must land atomically: a throw mid-loop used to leave
+        // an orphan header (or partly written lines). Validation above needs no
+        // write snapshot, so it stays outside; the header upsert, the read of
+        // existing lines (so the venn diff is against the same snapshot the writes
+        // commit), and the three line loops all run on the transaction client `tx`.
+        return this.prisma.$transaction(async (tx) => {
+            const orderQuotation = await tx.order_quotations.upsert({
+                create: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
-                    kilo_price: createItem.kilo_price,
-                    group_price: createItem.group_price,
-                    order_quotation_id: orderQuotation.id,
-                    product_id: createItem.product_id,
-                    proposed_description: createItem.proposed_description,
-                    kilos: createItem.kilos,
-                    active: 1,
-                    group_weight: createItem.group_weight,
-                    groups: createItem.groups,
+                    ...getCreatedByProperty(current_user_id),
+                    ...getUpdatedByProperty(current_user_id),
+                    notes: input.notes,
+                    date: input.date,
+                    order_code: input.order_code,
+                    estimated_delivery_date: input.estimated_delivery_date,
+                    account_id: input.account_id,
+                    expiration_date: input.expiration_date,
+                    payment_terms: input.payment_terms,
+                    require_tax: input.require_tax,
+                    // Status is not part of the input: new quotations always start at
+                    // Borrador (id = 1). Only updateOrderQuotationStatus (admin-only)
+                    // can change it afterwards.
+                    order_quotation_status_id: 1,
+                },
+                update: {
+                    ...getUpdatedAtProperty(),
+                    ...getUpdatedByProperty(current_user_id),
+                    notes: input.notes,
+                    date: input.date,
+                    order_code: input.order_code,
+                    estimated_delivery_date: input.estimated_delivery_date,
+                    account_id: input.account_id,
+                    expiration_date: input.expiration_date,
+                    payment_terms: input.payment_terms,
+                    require_tax: input.require_tax,
+                    // Intentionally omit order_quotation_status_id and
+                    // account_products_updated_at so an upsert never overwrites a
+                    // status an admin set nor the stored catalog-write stamp.
+                },
+                where: {
+                    id: input.id || 0,
                 },
             });
-        }
 
-        for await (const updateItem of updateProductItems) {
-            if (updateItem && updateItem.id) {
-                await this.prisma.order_quotation_products.updateMany({
+            const newProductItems = input.order_quotation_products;
+            const oldProductItems = input.id
+                ? await tx.order_quotation_products.findMany({
+                      where: {
+                          order_quotation_id: input.id,
+                      },
+                  })
+                : [];
+
+            const {
+                aMinusB: deleteProductItems,
+                bMinusA: createProductItems,
+                intersection: updateProductItems,
+            } = vennDiagram({
+                a: oldProductItems,
+                b: newProductItems,
+                indexProperties: ['id'],
+            });
+
+            for await (const delItem of deleteProductItems) {
+                if (delItem && delItem.id) {
+                    await tx.order_quotation_products.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            active: -1,
+                        },
+                        where: {
+                            id: delItem.id,
+                        },
+                    });
+                }
+            }
+
+            for await (const createItem of createProductItems) {
+                await tx.order_quotation_products.create({
                     data: {
+                        ...getCreatedAtProperty(),
                         ...getUpdatedAtProperty(),
-                        product_id: updateItem.product_id,
-                        proposed_description: updateItem.proposed_description,
-                        kilos: updateItem.kilos,
+                        kilo_price: createItem.kilo_price,
+                        group_price: createItem.group_price,
+                        order_quotation_id: orderQuotation.id,
+                        product_id: createItem.product_id,
+                        proposed_description: createItem.proposed_description,
+                        kilos: createItem.kilos,
                         active: 1,
-                        group_weight: updateItem.group_weight,
-                        groups: updateItem.groups,
-                        kilo_price: updateItem.kilo_price,
-                        group_price: updateItem.group_price,
-                    },
-                    where: {
-                        id: updateItem.id,
+                        group_weight: createItem.group_weight,
+                        groups: createItem.groups,
                     },
                 });
             }
-        }
 
-        return orderQuotation;
+            for await (const updateItem of updateProductItems) {
+                if (updateItem && updateItem.id) {
+                    await tx.order_quotation_products.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            product_id: updateItem.product_id,
+                            proposed_description: updateItem.proposed_description,
+                            kilos: updateItem.kilos,
+                            active: 1,
+                            group_weight: updateItem.group_weight,
+                            groups: updateItem.groups,
+                            kilo_price: updateItem.kilo_price,
+                            group_price: updateItem.group_price,
+                        },
+                        where: {
+                            id: updateItem.id,
+                        },
+                    });
+                }
+            }
+
+            return orderQuotation;
+        });
     }
 
     // Admin-only status change, kept separate from upsert so that regular sales
@@ -1221,21 +1228,6 @@ export class OrderQuotationsService {
         });
     }
 
-    async getOrderQuotationStatus({
-        order_quotation_status_id,
-    }: {
-        order_quotation_status_id?: number | null;
-    }): Promise<OrderQuotationStatus | null> {
-        if (!order_quotation_status_id) {
-            return null;
-        }
-        return this.prisma.order_quotation_statuses.findFirst({
-            where: {
-                id: order_quotation_status_id,
-            },
-        });
-    }
-
     // The linked product of a quotation line. NULL on a free line (product_id
     // NULL) — that is the one place a line has no product. Backs the
     // OrderQuotationProduct.product ResolveField, mirroring the pedido side.
@@ -1347,13 +1339,51 @@ export class OrderQuotationsService {
     // target. Different query from the step lookup above: this one filters
     // active: 1 (a soft-deleted pedido is not something to link to), that one does
     // not. Same column, two filters, two purposes — do not collapse them.
-    async getConvertedOrderRequest({
-        order_quotation_id,
-    }: {
-        order_quotation_id: number;
-    }): Promise<OrderRequest | null> {
-        return this.prisma.order_requests.findFirst({
-            where: { order_quotation_id, active: 1 },
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getOrderQuotationProductsByOrderQuotationIds(
+        orderQuotationIds: number[],
+    ): Promise<OrderQuotationProduct[]> {
+        if (orderQuotationIds.length === 0) return [];
+        return this.prisma.order_quotation_products.findMany({
+            where: {
+                AND: [
+                    { order_quotation_id: { in: orderQuotationIds } },
+                    { active: 1 },
+                ],
+            },
+        });
+    }
+
+    async getAccountsByIds(ids: number[]): Promise<Account[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.accounts.findMany({ where: { id: { in: ids } } });
+    }
+
+    async getOrderQuotationStatusesByIds(
+        ids: number[],
+    ): Promise<OrderQuotationStatus[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_quotation_statuses.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
+    // Reverse 1:1: the parent quotation carries no FK — the LIVE pedido points
+    // back via its own order_quotation_id (active: 1, at most one per quotation).
+    // Keyed on the quotation id, so the loader groups by the child's
+    // order_quotation_id. OrderRequest does not expose that column as a GraphQL
+    // field, but the Prisma row carries it — annotate the return type so the
+    // loader can key on it (internal prop; GraphQL serves only selected fields).
+    async getConvertedOrderRequestsByQuotationIds(
+        orderQuotationIds: number[],
+    ): Promise<(OrderRequest & { order_quotation_id: number | null })[]> {
+        if (orderQuotationIds.length === 0) return [];
+        return this.prisma.order_requests.findMany({
+            where: { order_quotation_id: { in: orderQuotationIds }, active: 1 },
         });
     }
 
@@ -1633,18 +1663,29 @@ export class OrderQuotationsService {
             () => this.accountsService.getAccountSnapshot({ account_id }),
         );
 
-        const account = await this.accountsService.upsertAccount(input, {
-            current_user_id,
-        });
+        // Step 1 is atomic (Phase 4): the account catalog write and the STORED
+        // marker that records it commit together, so a failure can never leave the
+        // one-time destructive catalog write applied without its resume-skip marker
+        // (or the marker set without the write). upsertAccount joins this tx via its
+        // threaded client. Snapshot reads and the pub-sub publish stay OUTSIDE.
+        const account = await this.prisma.$transaction(async (tx) => {
+            const account = await this.accountsService.upsertAccount(
+                input,
+                { current_user_id },
+                tx,
+            );
 
-        // Stamp the STORED catalog-write marker on the quotation — the record
-        // that this one-time destructive write happened. Drives the resume skip.
-        await this.prisma.order_quotations.update({
-            data: {
-                ...getUpdatedAtProperty(),
-                account_products_updated_at: new Date(),
-            },
-            where: { id: orderQuotation.id },
+            // Stamp the STORED catalog-write marker on the quotation — the record
+            // that this one-time destructive write happened. Drives the resume skip.
+            await tx.order_quotations.update({
+                data: {
+                    ...getUpdatedAtProperty(),
+                    account_products_updated_at: new Date(),
+                },
+                where: { id: orderQuotation.id },
+            });
+
+            return account;
         });
 
         const newCapture = await captureSnapshotSafely(
@@ -1831,25 +1872,36 @@ export class OrderQuotationsService {
             })),
         };
 
-        const orderRequest = await this.orderRequestsService.upsertOrderRequest(
-            {
-                input,
-                current_user_id,
-            },
-            { order_quotation_id: orderQuotation.id },
-        );
+        // Step 2 is atomic (Phase 4): the pedido (header + lines) and the
+        // AUTHORITATIVE completion marker commit together, so a failure can never
+        // leave a created pedido whose completion stamp was never written — the
+        // CREATED_INCOMPLETE half-state acceptOrderQuotation guards against.
+        // upsertOrderRequest joins this tx via its threaded client. The snapshot
+        // read and pub-sub publish stay OUTSIDE.
+        const orderRequest = await this.prisma.$transaction(async (tx) => {
+            const orderRequest =
+                await this.orderRequestsService.upsertOrderRequest(
+                    {
+                        input,
+                        current_user_id,
+                    },
+                    { order_quotation_id: orderQuotation.id },
+                    tx,
+                );
 
-        // Stamp the AUTHORITATIVE completion marker — ONLY now that
-        // upsertOrderRequest has returned from creating the pedido and all its
-        // lines. This is the single signal the Pedido step reads; completion is
-        // never inferred by comparing the quotation with the pedido. See the
-        // plan, "The pedido completion marker".
-        await this.prisma.order_quotations.update({
-            data: {
-                ...getUpdatedAtProperty(),
-                order_request_completed_at: new Date(),
-            },
-            where: { id: orderQuotation.id },
+            // Stamp the AUTHORITATIVE completion marker — ONLY now that the pedido
+            // and all its lines are written. This is the single signal the Pedido
+            // step reads; completion is never inferred by comparing the quotation
+            // with the pedido. See the plan, "The pedido completion marker".
+            await tx.order_quotations.update({
+                data: {
+                    ...getUpdatedAtProperty(),
+                    order_request_completed_at: new Date(),
+                },
+                where: { id: orderQuotation.id },
+            });
+
+            return orderRequest;
         });
 
         const auditContext = {

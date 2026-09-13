@@ -34,4 +34,16 @@ export class AuditUsersService {
             where: { id: updated_by_id },
         });
     }
+
+    // Batched sibling of getCreatedBy/getUpdatedBy: one IN query for a whole
+    // page's audit stamps. The `toOne` loader dedupes ids and maps each user back
+    // to the rows that asked for it, so created_by + updated_by across a list
+    // collapse into a single users query (see batch-loader `toOne`, shared name
+    // 'audit.user'). Missing ids simply do not appear in the result.
+    async getUsersByIds(ids: number[]): Promise<User[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.users.findMany({
+            where: { id: { in: ids } },
+        });
+    }
 }

@@ -13,6 +13,5 @@ import { ProductionPlansService } from './production-plans.service';
         ProductionPlanRowProductsResolver,
         ProductionPlansService,
     ],
-    exports: [ProductionPlansResolver],
 })
 export class ProductionPlansModule {}

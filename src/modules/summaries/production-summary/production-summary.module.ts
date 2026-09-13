@@ -4,6 +4,5 @@ import { ProductionSummaryService } from './production-summary.service';
 
 @Module({
     providers: [ProductionSummaryResolver, ProductionSummaryService],
-    exports: [ProductionSummaryResolver],
 })
 export class ProductionSummaryModule {}

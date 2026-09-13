@@ -4,6 +4,5 @@ import { EmployeesSummaryService } from './employees-summary.service';
 
 @Module({
     providers: [EmployeesSummaryResolver, EmployeesSummaryService],
-    exports: [EmployeesSummaryResolver],
 })
 export class EmployeesSummaryModule {}

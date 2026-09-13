@@ -1,10 +1,12 @@
 import { Logger, Module } from '@nestjs/common';
 import { SpareSeederService } from './spare-seeder.service';
-import { SparesService } from '../../../maintenance/spares/spares.service';
-import { PrismaService } from '../../../../common/modules/prisma/prisma.service';
+import { SparesModule } from '../../../maintenance/spares/spares.module';
 
 @Module({
-    providers: [Logger, SparesService, SpareSeederService, PrismaService],
+    // Import SparesModule for its exported service instead of re-declaring it.
+    // PrismaService is global.
+    imports: [SparesModule],
+    providers: [Logger, SpareSeederService],
     exports: [SpareSeederService],
 })
 export class SpareSeederModule {}

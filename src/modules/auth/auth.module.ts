@@ -1,6 +1,10 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { LoginService } from './login.service';
+import { RefreshTokenService } from './refresh-token.service';
+import { MfaService } from './mfa.service';
+import { PasswordService } from './password.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
@@ -8,10 +12,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from '../../common/constants/jwt';
 import { authThrottle } from '../../common/constants/login-protection';
 import { AuthResolver } from './auth.resolver';
-import { FilesModule } from '../files/files.module';
-import { UserService } from './user.service';
-import { RoleResolver } from './role.resolver';
-import { RoleService } from './role.service';
+import { UserService } from './users/user.service';
+import { RoleResolver } from './roles/role.resolver';
+import { RoleService } from './roles/role.service';
 import { LoggingModule } from '../../common/modules/logging/logging.module';
 import { RequestIdMiddleware } from '../../common/modules/logging/request-id.middleware';
 import { MailModule } from '../../common/modules/mail/mail.module';
@@ -23,7 +26,6 @@ import { MailModule } from '../../common/modules/mail/mail.module';
             secret: jwtConstants.authSecret,
             signOptions: { expiresIn: jwtConstants.authExpiresIn },
         }),
-        FilesModule,
         // Imported explicitly rather than picked up from a global module: this
         // is the first consumer of the logger, and the next one imports it the
         // same deliberate way. `AllowedOriginGuard` and `AuthController` both
@@ -51,7 +53,14 @@ import { MailModule } from '../../common/modules/mail/mail.module';
     // hashes — is not coming back.
     controllers: [AuthController],
     providers: [
+        // `AuthService` is a thin facade (Phase 5d) over the four services below,
+        // which hold the actual behaviour. All are registered here; only the
+        // facade is exported, so the module's public DI surface is unchanged.
         AuthService,
+        LoginService,
+        RefreshTokenService,
+        MfaService,
+        PasswordService,
         UserService,
         // `LocalStrategy` used to sit here. It was registered but never used —
         // nothing ever applied `AuthGuard('local')` — so it was deleted along

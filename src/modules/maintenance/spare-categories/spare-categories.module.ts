@@ -4,6 +4,7 @@ import { SpareCategoriesService } from './spare-categories.service';
 
 @Module({
     providers: [SpareCategoriesResolver, SpareCategoriesService],
-    exports: [SpareCategoriesResolver],
+    // Injected by SpareCategorySeederModule (via imports), so exported rather than re-declared there.
+    exports: [SpareCategoriesService],
 })
 export class SpareCategoriesModule {}

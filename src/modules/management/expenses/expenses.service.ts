@@ -774,47 +774,6 @@ export class ExpensesService {
         }
     }
 
-    async getExpenseTransferReceiptsTotal({
-        expense_id,
-    }: {
-        expense_id: number;
-    }): Promise<number> {
-        const transferReceipts = await this.prisma.transfer_receipts.findMany({
-            where: {
-                AND: [
-                    {
-                        expense_id: expense_id,
-                        active: 1,
-                    },
-                    {
-                        transfers: {
-                            active: 1,
-                        },
-                    },
-                    {
-                        expenses: {
-                            active: 1,
-                        },
-                    },
-                ],
-            },
-        });
-
-        const expense = await this.prisma.expenses.findUnique({
-            where: {
-                id: expense_id,
-            },
-        });
-
-        if (!expense) return 0;
-
-        const total = transferReceipts.reduce((acc, tr) => {
-            return acc + tr.amount;
-        }, 0);
-
-        return Math.round(total * 100) / 100;
-    }
-
     async getExpenseTransferReceipts({
         expense_id,
     }: {
@@ -839,6 +798,55 @@ export class ExpensesService {
                             active: 1,
                         },
                     },
+                ],
+            },
+        });
+    }
+
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getAccountsByIds(ids: number[]): Promise<Account[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.accounts.findMany({ where: { id: { in: ids } } });
+    }
+
+    // Mirrors getReceiptType, including the Number(tax_rate) mapping (the Prisma
+    // column is a Decimal; GraphQL Float wants a number).
+    async getReceiptTypesByIds(ids: number[]): Promise<ReceiptType[]> {
+        if (ids.length === 0) return [];
+        const rows = await this.prisma.receipt_types.findMany({
+            where: { id: { in: ids } },
+        });
+        return rows.map((rt) => ({ ...rt, tax_rate: Number(rt.tax_rate) }));
+    }
+
+    async getExpenseResourcesByExpenseIds(
+        expenseIds: number[],
+    ): Promise<ExpenseResource[]> {
+        if (expenseIds.length === 0) return [];
+        return this.prisma.expense_resources.findMany({
+            where: {
+                AND: [{ expense_id: { in: expenseIds } }, { active: 1 }],
+            },
+        });
+    }
+
+    // transfer_receipts carries a direct expense_id column (exposed on the DTO),
+    // so the loader groups by it; the WHERE mirrors getExpenseTransferReceipts,
+    // reaching the parent through the expenses relation with { in: ids }.
+    async getExpenseTransferReceiptsByExpenseIds(
+        expenseIds: number[],
+    ): Promise<TransferReceipt[]> {
+        if (expenseIds.length === 0) return [];
+        return this.prisma.transfer_receipts.findMany({
+            where: {
+                AND: [
+                    { expenses: { id: { in: expenseIds } }, active: 1 },
+                    { transfers: { active: 1 } },
+                    { expenses: { active: 1 } },
                 ],
             },
         });

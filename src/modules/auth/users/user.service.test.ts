@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { UserService } from './user.service';
-import { setupApp } from '../../common/__tests__/helpers/setup-app';
-import { superRole, roles } from '../../common/__tests__/objects/auth/roles';
+import { setupApp } from '../../../common/__tests__/helpers/setup-app';
+import { superRole, roles } from '../../../common/__tests__/objects/auth/roles';
 
 let app: INestApplication;
 let userService: UserService;

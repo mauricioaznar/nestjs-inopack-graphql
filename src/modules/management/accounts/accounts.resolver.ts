@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Float,
     Mutation,
     Parent,
@@ -9,6 +10,11 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { AccountsService } from './accounts.service';
 import {
     Account,
@@ -237,31 +243,59 @@ export class AccountsResolver {
     }
 
     @ResolveField(() => [AccountContact])
-    async account_contacts(@Parent() account: Account) {
-        return this.service.getAccountContacts({
-            account_id: account.id,
-        });
+    account_contacts(
+        @Parent() account: Account,
+        @Context() ctx: LoaderContext,
+    ): Promise<AccountContact[]> {
+        return toMany(
+            ctx,
+            'Account.account_contacts',
+            account.id,
+            (ids) => this.service.getAccountContactsByAccountIds(ids),
+            (c) => c.account_id,
+        );
     }
 
     @ResolveField(() => [AccountProduct])
-    async account_products(@Parent() account: Account) {
-        return this.service.getAccountProducts({
-            account_id: account.id,
-        });
+    account_products(
+        @Parent() account: Account,
+        @Context() ctx: LoaderContext,
+    ): Promise<AccountProduct[]> {
+        return toMany(
+            ctx,
+            'Account.account_products',
+            account.id,
+            (ids) => this.service.getAccountProductsByAccountIds(ids),
+            (p) => p.account_id,
+        );
     }
 
     @ResolveField(() => [AccountResource])
-    async account_resources(@Parent() account: Account) {
-        return this.service.getAccountResources({
-            account_id: account.id,
-        });
+    account_resources(
+        @Parent() account: Account,
+        @Context() ctx: LoaderContext,
+    ): Promise<AccountResource[]> {
+        return toMany(
+            ctx,
+            'Account.account_resources',
+            account.id,
+            (ids) => this.service.getAccountResourcesByAccountIds(ids),
+            (r) => r.account_id,
+        );
     }
 
     @ResolveField(() => Resource, { nullable: true })
-    async resource(@Parent() account: Account): Promise<Resource | null> {
-        return this.service.getResource({
-            resource_id: account.resource_id,
-        });
+    resource(
+        @Parent() account: Account,
+        @Context() ctx: LoaderContext,
+    ): Promise<Resource | null> {
+        return toOne(
+            ctx,
+            'Account.resource',
+            account.resource_id,
+            (ids) => this.service.getResourcesByIds(ids),
+            (r) => r.id!,
+        );
     }
 
     @ResolveField(() => Boolean, { nullable: false })
@@ -282,17 +316,31 @@ export class AccountsResolver {
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(@Parent() account: Account): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: account.created_by_id,
-        });
+    created_by(
+        @Parent() account: Account,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            account.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(@Parent() account: Account): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: account.updated_by_id,
-        });
+    updated_by(
+        @Parent() account: Account,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            account.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @Subscription(() => Account)

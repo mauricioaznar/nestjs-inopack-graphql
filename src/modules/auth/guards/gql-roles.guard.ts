@@ -4,7 +4,7 @@ import { ROLES_KEY } from '../decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { AuthenticatedUser } from '../../../common/dto/entities';
-import { roleSatisfiesGate } from '../role-access';
+import { roleSatisfiesGate } from '../roles/role-access';
 
 @Injectable()
 export class GqlRolesGuard implements CanActivate {

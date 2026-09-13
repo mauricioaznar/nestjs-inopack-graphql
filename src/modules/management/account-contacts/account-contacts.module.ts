@@ -4,6 +4,5 @@ import { AccountContactsService } from './account-contacts.service';
 
 @Module({
     providers: [AccountContactsResolver, AccountContactsService],
-    exports: [AccountContactsResolver],
 })
 export class AccountContactsModule {}

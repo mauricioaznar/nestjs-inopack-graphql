@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Float,
     Int,
     Mutation,
@@ -10,6 +11,11 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { OrderQuotationsService } from './order-quotations.service';
 import {
     ActivityEntityName,
@@ -293,12 +299,18 @@ export class OrderQuotationsResolver {
     }
 
     @ResolveField(() => [OrderQuotationProduct])
-    async order_quotation_products(
-        orderQuotation: OrderQuotation,
+    order_quotation_products(
+        @Parent() orderQuotation: OrderQuotation,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderQuotationProduct[]> {
-        return this.service.getOrderQuotationProducts({
-            order_quotation_id: orderQuotation.id,
-        });
+        return toMany(
+            ctx,
+            'OrderQuotation.order_quotation_products',
+            orderQuotation.id,
+            (ids) =>
+                this.service.getOrderQuotationProductsByOrderQuotationIds(ids),
+            (oqp) => oqp.order_quotation_id,
+        );
     }
 
     @ResolveField(() => Float)
@@ -401,12 +413,18 @@ export class OrderQuotationsResolver {
     // navigation target — a different query from order_request_step_done, which
     // asks "was one ever created" ignoring active. Same column, two filters.
     @ResolveField(() => OrderRequest, { nullable: true })
-    async order_request(
+    order_request(
         @Parent() orderQuotation: OrderQuotation,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderRequest | null> {
-        return this.service.getConvertedOrderRequest({
-            order_quotation_id: orderQuotation.id,
-        });
+        return toOne(
+            ctx,
+            'OrderQuotation.order_request',
+            orderQuotation.id,
+            (ids) =>
+                this.service.getConvertedOrderRequestsByQuotationIds(ids),
+            (or) => or.order_quotation_id!,
+        );
     }
 
     @ResolveField(() => Boolean)
@@ -432,39 +450,59 @@ export class OrderQuotationsResolver {
     }
 
     @ResolveField(() => Account, { nullable: true })
-    async account(
+    account(
         @Parent() orderQuotation: OrderQuotation,
+        @Context() ctx: LoaderContext,
     ): Promise<Account | null> {
-        return this.service.getAccount({
-            account_id: orderQuotation.account_id,
-        });
+        return toOne(
+            ctx,
+            'OrderQuotation.account',
+            orderQuotation.account_id,
+            (ids) => this.service.getAccountsByIds(ids),
+            (a) => a.id,
+        );
     }
 
     @ResolveField(() => OrderQuotationStatus, { nullable: true })
-    async order_quotation_status(
+    order_quotation_status(
         @Parent() orderQuotation: OrderQuotation,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderQuotationStatus | null> {
-        return this.service.getOrderQuotationStatus({
-            order_quotation_status_id: orderQuotation.order_quotation_status_id,
-        });
+        return toOne(
+            ctx,
+            'OrderQuotation.order_quotation_status',
+            orderQuotation.order_quotation_status_id,
+            (ids) => this.service.getOrderQuotationStatusesByIds(ids),
+            (st) => st.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(
+    created_by(
         @Parent() orderQuotation: OrderQuotation,
+        @Context() ctx: LoaderContext,
     ): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: orderQuotation.created_by_id,
-        });
+        return toOne(
+            ctx,
+            'audit.user',
+            orderQuotation.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(
+    updated_by(
         @Parent() orderQuotation: OrderQuotation,
+        @Context() ctx: LoaderContext,
     ): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: orderQuotation.updated_by_id,
-        });
+        return toOne(
+            ctx,
+            'audit.user',
+            orderQuotation.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @Subscription(() => OrderQuotation)

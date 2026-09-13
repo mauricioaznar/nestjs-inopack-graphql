@@ -1,7 +1,7 @@
 import { Query, Resolver } from '@nestjs/graphql';
 import { Injectable, UseGuards } from '@nestjs/common';
-import { GqlAuthGuard } from './guards/gql-auth.guard';
-import { Role } from '../../common/dto/entities/auth/role.dto';
+import { GqlAuthGuard } from '../guards/gql-auth.guard';
+import { Role } from '../../../common/dto/entities/auth/role.dto';
 import { RoleService } from './role.service';
 
 @Resolver(() => Role)

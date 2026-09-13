@@ -402,23 +402,6 @@ export class TransfersService {
         return Math.round(total * 100) / 100;
     }
 
-    async getTransferType({
-        transfer_type_id,
-    }: {
-        transfer_type_id: number | null;
-    }): Promise<TransferType | null> {
-        if (!transfer_type_id) {
-            return null;
-        }
-
-        return this.prisma.transfer_type.findFirst({
-            where: {
-                active: 1,
-                id: transfer_type_id,
-            },
-        });
-    }
-
     async getAccount({
         account_id,
     }: {
@@ -436,183 +419,243 @@ export class TransfersService {
         });
     }
 
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getTransferReceiptsByTransferIds(
+        transferIds: number[],
+    ): Promise<TransferReceipt[]> {
+        if (transferIds.length === 0) return [];
+        return this.prisma.transfer_receipts.findMany({
+            where: { active: 1, transfer_id: { in: transferIds } },
+        });
+    }
+
+    async getTransferTypesByIds(ids: number[]): Promise<TransferType[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.transfer_type.findMany({
+            where: { active: 1, id: { in: ids } },
+        });
+    }
+
+    // Serves both to_account and from_account: each keys on its own FK, so the
+    // two fields get their own loaders (Transfer.to_account / Transfer.from_account)
+    // but share this IN query. Mirrors getAccount's WHERE (active: 1).
+    async getAccountsByIds(ids: number[]): Promise<Account[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.accounts.findMany({
+            where: { active: 1, id: { in: ids } },
+        });
+    }
+
     async upsertTransfer(
         transferInput: TransferUpsertInput,
         { current_user_id }: { current_user_id?: number | null } = {},
     ): Promise<Transfer> {
         await this.validateUpsertTransfer(transferInput);
 
-        const transfer = await this.prisma.transfers.upsert({
-            create: {
-                ...getCreatedAtProperty(),
-                ...getUpdatedAtProperty(),
-                ...getCreatedByProperty(current_user_id),
-                ...getUpdatedByProperty(current_user_id),
-                amount: transferInput.amount,
-                from_account_id: transferInput.from_account_id,
-                to_account_id: transferInput.to_account_id,
-                expected_date: transferInput.expected_date,
-                transferred_date: transferInput.transferred_date,
-                transferred: transferInput.transferred,
-                transfer_type_id: transferInput.transfer_type_id,
-                notes: transferInput.notes,
-            },
-            update: {
-                ...getUpdatedAtProperty(),
-                ...getUpdatedByProperty(current_user_id),
-                amount: transferInput.amount,
-                from_account_id: transferInput.from_account_id,
-                to_account_id: transferInput.to_account_id,
-                expected_date: transferInput.expected_date,
-                transferred_date: transferInput.transferred_date,
-                transferred: transferInput.transferred,
-                transfer_type_id: transferInput.transfer_type_id,
-                notes: transferInput.notes,
-            },
-            where: {
-                id: transferInput.id || 0,
-            },
-        });
-
-        const newTransferReceipts = transferInput.transfer_receipts;
-        const oldTransferReceipts = transferInput.id
-            ? await this.prisma.transfer_receipts.findMany({
-                  where: {
-                      transfer_id: transferInput.id,
-                      active: 1,
-                  },
-              })
-            : [];
-
-        const {
-            aMinusB: deleteTransferReceipts,
-            bMinusA: createTransferReceipts,
-            intersection: updateTransferReceipts,
-        } = vennDiagram({
-            a: oldTransferReceipts,
-            b: newTransferReceipts,
-            indexProperties: ['id'],
-        });
-
-        for await (const delItem of deleteTransferReceipts) {
-            if (delItem && delItem.id) {
-                await this.prisma.transfer_receipts.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        active: -1,
-                    },
-                    where: {
-                        id: delItem.id,
-                    },
-                });
-                if (delItem.expense_id) {
-                    await this.updateExpensesTransfersTotal({
-                        expense_id: delItem.expense_id,
-                    });
-                }
-
-                if (delItem.order_sale_id) {
-                    await this.updateOrderSalesTransfersTotal({
-                        order_sale_id: delItem.order_sale_id,
-                    });
-                }
-                // await this.cacheManager.del(`product_inventory`);
-            }
-        }
-
-        for await (const createItem of createTransferReceipts) {
-            await this.prisma.transfer_receipts.create({
-                data: {
+        // Header + transfer_receipts + the derived parent totals must land
+        // atomically. Validation above stays outside; everything below runs on the
+        // transaction client `tx`, INCLUDING the two total-recompute helpers — they
+        // are passed `tx` so their aggregate reads the in-flight receipt writes and
+        // their parent-table updates roll back with the rest. Calling them on the
+        // default client here would both read stale sums and commit un-rollback-able
+        // parent totals. (Phase 2a pilot of the tx-threading pattern; see the note
+        // on updateExpensesTransfersTotal.)
+        return this.prisma.$transaction(async (tx) => {
+            const transfer = await tx.transfers.upsert({
+                create: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
-                    transfer_id: transfer.id,
-                    order_sale_id: createItem.order_sale_id,
-                    expense_id: createItem.expense_id,
-                    amount: createItem.amount,
+                    ...getCreatedByProperty(current_user_id),
+                    ...getUpdatedByProperty(current_user_id),
+                    amount: transferInput.amount,
+                    from_account_id: transferInput.from_account_id,
+                    to_account_id: transferInput.to_account_id,
+                    expected_date: transferInput.expected_date,
+                    transferred_date: transferInput.transferred_date,
+                    transferred: transferInput.transferred,
+                    transfer_type_id: transferInput.transfer_type_id,
+                    notes: transferInput.notes,
+                },
+                update: {
+                    ...getUpdatedAtProperty(),
+                    ...getUpdatedByProperty(current_user_id),
+                    amount: transferInput.amount,
+                    from_account_id: transferInput.from_account_id,
+                    to_account_id: transferInput.to_account_id,
+                    expected_date: transferInput.expected_date,
+                    transferred_date: transferInput.transferred_date,
+                    transferred: transferInput.transferred,
+                    transfer_type_id: transferInput.transfer_type_id,
+                    notes: transferInput.notes,
+                },
+                where: {
+                    id: transferInput.id || 0,
                 },
             });
 
-            if (createItem.expense_id) {
-                await this.updateExpensesTransfersTotal({
-                    expense_id: createItem.expense_id,
-                });
+            const newTransferReceipts = transferInput.transfer_receipts;
+            const oldTransferReceipts = transferInput.id
+                ? await tx.transfer_receipts.findMany({
+                      where: {
+                          transfer_id: transferInput.id,
+                          active: 1,
+                      },
+                  })
+                : [];
+
+            const {
+                aMinusB: deleteTransferReceipts,
+                bMinusA: createTransferReceipts,
+                intersection: updateTransferReceipts,
+            } = vennDiagram({
+                a: oldTransferReceipts,
+                b: newTransferReceipts,
+                indexProperties: ['id'],
+            });
+
+            for await (const delItem of deleteTransferReceipts) {
+                if (delItem && delItem.id) {
+                    await tx.transfer_receipts.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            active: -1,
+                        },
+                        where: {
+                            id: delItem.id,
+                        },
+                    });
+                    if (delItem.expense_id) {
+                        await this.updateExpensesTransfersTotal(
+                            { expense_id: delItem.expense_id },
+                            tx,
+                        );
+                    }
+
+                    if (delItem.order_sale_id) {
+                        await this.updateOrderSalesTransfersTotal(
+                            { order_sale_id: delItem.order_sale_id },
+                            tx,
+                        );
+                    }
+                    // await this.cacheManager.del(`product_inventory`);
+                }
             }
 
-            if (createItem.order_sale_id) {
-                await this.updateOrderSalesTransfersTotal({
-                    order_sale_id: createItem.order_sale_id,
-                });
-            }
-            // await this.cacheManager.del(`product_inventory`);
-        }
-
-        for await (const updateItem of updateTransferReceipts) {
-            // updateItem is the NEW payload row (vennDiagram's intersection
-            // carries the b-side item). When a receipt is repointed to a
-            // different document, recomputing only the new target leaves the
-            // OLD document's stored transfer_receipts_total stale. Find the
-            // persisted row by id so we can also refresh whatever it used to
-            // point at.
-            const oldItem = oldTransferReceipts.find(
-                (old) => old.id === updateItem.id,
-            );
-
-            if (updateItem && updateItem.id) {
-                await this.prisma.transfer_receipts.updateMany({
+            for await (const createItem of createTransferReceipts) {
+                await tx.transfer_receipts.create({
                     data: {
+                        ...getCreatedAtProperty(),
                         ...getUpdatedAtProperty(),
                         transfer_id: transfer.id,
-                        order_sale_id: updateItem.order_sale_id,
-                        expense_id: updateItem.expense_id,
-                        amount: updateItem.amount,
-                    },
-                    where: {
-                        id: updateItem.id,
+                        order_sale_id: createItem.order_sale_id,
+                        expense_id: createItem.expense_id,
+                        amount: createItem.amount,
                     },
                 });
+
+                if (createItem.expense_id) {
+                    await this.updateExpensesTransfersTotal(
+                        { expense_id: createItem.expense_id },
+                        tx,
+                    );
+                }
+
+                if (createItem.order_sale_id) {
+                    await this.updateOrderSalesTransfersTotal(
+                        { order_sale_id: createItem.order_sale_id },
+                        tx,
+                    );
+                }
+                // await this.cacheManager.del(`product_inventory`);
             }
 
-            // Recompute the previous target first when it changed, so a
-            // document a receipt was moved OFF of drops the amount that no
-            // longer applies to it.
-            if (
-                oldItem?.expense_id &&
-                oldItem.expense_id !== updateItem.expense_id
-            ) {
-                await this.updateExpensesTransfersTotal({
-                    expense_id: oldItem.expense_id,
-                });
+            for await (const updateItem of updateTransferReceipts) {
+                // updateItem is the NEW payload row (vennDiagram's intersection
+                // carries the b-side item). When a receipt is repointed to a
+                // different document, recomputing only the new target leaves the
+                // OLD document's stored transfer_receipts_total stale. Find the
+                // persisted row by id so we can also refresh whatever it used to
+                // point at.
+                const oldItem = oldTransferReceipts.find(
+                    (old) => old.id === updateItem.id,
+                );
+
+                if (updateItem && updateItem.id) {
+                    await tx.transfer_receipts.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            transfer_id: transfer.id,
+                            order_sale_id: updateItem.order_sale_id,
+                            expense_id: updateItem.expense_id,
+                            amount: updateItem.amount,
+                        },
+                        where: {
+                            id: updateItem.id,
+                        },
+                    });
+                }
+
+                // Recompute the previous target first when it changed, so a
+                // document a receipt was moved OFF of drops the amount that no
+                // longer applies to it.
+                if (
+                    oldItem?.expense_id &&
+                    oldItem.expense_id !== updateItem.expense_id
+                ) {
+                    await this.updateExpensesTransfersTotal(
+                        { expense_id: oldItem.expense_id },
+                        tx,
+                    );
+                }
+
+                if (
+                    oldItem?.order_sale_id &&
+                    oldItem.order_sale_id !== updateItem.order_sale_id
+                ) {
+                    await this.updateOrderSalesTransfersTotal(
+                        { order_sale_id: oldItem.order_sale_id },
+                        tx,
+                    );
+                }
+
+                if (updateItem.expense_id) {
+                    await this.updateExpensesTransfersTotal(
+                        { expense_id: updateItem.expense_id },
+                        tx,
+                    );
+                }
+
+                if (updateItem.order_sale_id) {
+                    await this.updateOrderSalesTransfersTotal(
+                        { order_sale_id: updateItem.order_sale_id },
+                        tx,
+                    );
+                }
             }
 
-            if (
-                oldItem?.order_sale_id &&
-                oldItem.order_sale_id !== updateItem.order_sale_id
-            ) {
-                await this.updateOrderSalesTransfersTotal({
-                    order_sale_id: oldItem.order_sale_id,
-                });
-            }
-
-            if (updateItem.expense_id) {
-                await this.updateExpensesTransfersTotal({
-                    expense_id: updateItem.expense_id,
-                });
-            }
-
-            if (updateItem.order_sale_id) {
-                await this.updateOrderSalesTransfersTotal({
-                    order_sale_id: updateItem.order_sale_id,
-                });
-            }
-        }
-
-        return transfer;
+            return transfer;
+        });
     }
 
-    async updateExpensesTransfersTotal({ expense_id }: { expense_id: number }) {
+    // `client` defaults to this.prisma so existing standalone callers are
+    // unchanged; upsertTransfer passes its `tx` so this recompute reads the
+    // in-flight receipt writes and the parent-total update rolls back with them.
+    // ⚠ Phase 2a pilot of the tx-threading pattern. Phase 4 (full threading) will
+    // generalize this exact `client: Prisma.TransactionClient = this.prisma`
+    // shape across services — revisit these transfer helpers for consistency
+    // then (optional-vs-required param; the delete-path caller around L1023 that
+    // still recomputes on the default client). See the plan's Phase 4 section.
+    async updateExpensesTransfersTotal(
+        { expense_id }: { expense_id: number },
+        client: Prisma.TransactionClient = this.prisma,
+    ) {
         const {
             _sum: { amount: transfersTotal },
-        } = await this.prisma.transfer_receipts.aggregate({
+        } = await client.transfer_receipts.aggregate({
             _sum: {
                 amount: true,
             },
@@ -624,7 +667,7 @@ export class TransfersService {
 
         const {
             _sum: { amount: transfersTotalNoAdjustments },
-        } = await this.prisma.transfer_receipts.aggregate({
+        } = await client.transfer_receipts.aggregate({
             _sum: {
                 amount: true,
             },
@@ -639,7 +682,7 @@ export class TransfersService {
             },
         });
 
-        await this.prisma.expenses.updateMany({
+        await client.expenses.updateMany({
             data: {
                 ...getUpdatedAtProperty(),
                 transfer_receipts_total: round(transfersTotal || 0),
@@ -653,14 +696,19 @@ export class TransfersService {
         });
     }
 
-    async updateOrderSalesTransfersTotal({
-        order_sale_id,
-    }: {
-        order_sale_id: number;
-    }) {
+    // Same tx-threading pilot as updateExpensesTransfersTotal above — see that
+    // method's note for the Phase 4 revision this leads into.
+    async updateOrderSalesTransfersTotal(
+        {
+            order_sale_id,
+        }: {
+            order_sale_id: number;
+        },
+        client: Prisma.TransactionClient = this.prisma,
+    ) {
         const {
             _sum: { amount },
-        } = await this.prisma.transfer_receipts.aggregate({
+        } = await client.transfer_receipts.aggregate({
             _sum: {
                 amount: true,
             },
@@ -672,7 +720,7 @@ export class TransfersService {
 
         const {
             _sum: { amount: transfersTotalNoAdjustments },
-        } = await this.prisma.transfer_receipts.aggregate({
+        } = await client.transfer_receipts.aggregate({
             _sum: {
                 amount: true,
             },
@@ -687,7 +735,7 @@ export class TransfersService {
             },
         });
 
-        await this.prisma.order_sales.updateMany({
+        await client.order_sales.updateMany({
             data: {
                 ...getUpdatedAtProperty(),
                 transfer_receipts_total: round(amount || 0),

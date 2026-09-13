@@ -373,258 +373,268 @@ export class OrderProductionsService {
     ): Promise<OrderProduction> {
         await this.validateOrderProduction(input);
 
-        const orderProduction = await this.prisma.order_productions.upsert({
-            create: {
-                ...getCreatedAtProperty(),
-                ...getUpdatedAtProperty(),
-                ...getCreatedByProperty(current_user_id),
-                ...getUpdatedByProperty(current_user_id),
-                start_date: input.start_date,
-                branch_id: input.branch_id,
-                order_production_type_id: input.order_production_type_id,
-                waste: input.waste,
-                shift: input.shift,
-            },
-            update: {
-                ...getUpdatedAtProperty(),
-                ...getUpdatedByProperty(current_user_id),
-                start_date: input.start_date,
-                branch_id: input.branch_id,
-                order_production_type_id: input.order_production_type_id,
-                waste: input.waste,
-                shift: input.shift,
-            },
-            where: {
-                id: input.id || 0,
-            },
-        });
+        // Header + three line-sets (products, employees, products_consumed) must
+        // land atomically: a throw partway through used to leave an orphan header
+        // or a production written with only some of its rows. Validation above needs
+        // no write snapshot, so it stays outside; the header upsert, each read of
+        // existing rows (so every venn diff is against the same snapshot the writes
+        // commit), and all nine line loops run on the transaction client `tx`.
+        return this.prisma.$transaction(async (tx) => {
+            const orderProduction = await tx.order_productions.upsert({
+                create: {
+                    ...getCreatedAtProperty(),
+                    ...getUpdatedAtProperty(),
+                    ...getCreatedByProperty(current_user_id),
+                    ...getUpdatedByProperty(current_user_id),
+                    start_date: input.start_date,
+                    branch_id: input.branch_id,
+                    order_production_type_id: input.order_production_type_id,
+                    waste: input.waste,
+                    shift: input.shift,
+                },
+                update: {
+                    ...getUpdatedAtProperty(),
+                    ...getUpdatedByProperty(current_user_id),
+                    start_date: input.start_date,
+                    branch_id: input.branch_id,
+                    order_production_type_id: input.order_production_type_id,
+                    waste: input.waste,
+                    shift: input.shift,
+                },
+                where: {
+                    id: input.id || 0,
+                },
+            });
 
-        const newProductItems = input.order_production_products;
-        const oldProductItems = input.id
-            ? await this.prisma.order_production_products.findMany({
-                  where: {
-                      order_production_id: input.id,
-                  },
-              })
-            : [];
+            const newProductItems = input.order_production_products;
+            const oldProductItems = input.id
+                ? await tx.order_production_products.findMany({
+                      where: {
+                          order_production_id: input.id,
+                      },
+                  })
+                : [];
 
-        const {
-            aMinusB: deleteProductItems,
-            bMinusA: createProductItems,
-            intersection: updateProductItems,
-        } = vennDiagram({
-            a: oldProductItems,
-            b: newProductItems,
-            indexProperties: ['id'],
-        });
+            const {
+                aMinusB: deleteProductItems,
+                bMinusA: createProductItems,
+                intersection: updateProductItems,
+            } = vennDiagram({
+                a: oldProductItems,
+                b: newProductItems,
+                indexProperties: ['id'],
+            });
 
-        // Keyed on `id`, the same property vennDiagram matched on. Keying the
-        // write on product+machine while matching on `id` soft-deleted every
-        // row sharing that pair, not the one the user removed.
-        for await (const delItem of deleteProductItems) {
-            if (delItem && delItem.id) {
-                await this.prisma.order_production_products.updateMany({
+            // Keyed on `id`, the same property vennDiagram matched on. Keying the
+            // write on product+machine while matching on `id` soft-deleted every
+            // row sharing that pair, not the one the user removed.
+            for await (const delItem of deleteProductItems) {
+                if (delItem && delItem.id) {
+                    await tx.order_production_products.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            active: -1,
+                        },
+                        where: {
+                            id: delItem.id,
+                        },
+                    });
+                }
+                // await this.cacheManager.del(`product_inventory`);
+            }
+
+            for await (const createItem of createProductItems) {
+                await tx.order_production_products.create({
+                    data: {
+                        ...getCreatedAtProperty(),
+                        ...getUpdatedAtProperty(),
+                        order_production_id: orderProduction.id,
+                        product_id: createItem.product_id,
+                        machine_id: createItem.machine_id,
+                        kilos: createItem.kilos,
+                        active: 1,
+                        group_weight: createItem.group_weight,
+                        groups: createItem.groups,
+                        hours:
+                            createItem.hours !== null && createItem.hours !== 0
+                                ? createItem.hours
+                                : null,
+                    },
+                });
+                // await this.cacheManager.del(`product_inventory`);
+            }
+
+            // Also keyed on `id`. The old `where` looked for the row by its *new*
+            // product+machine, which no stored row carries yet — so changing either
+            // of them updated nothing and the edit was silently lost.
+            for await (const updateItem of updateProductItems) {
+                if (updateItem && updateItem.id) {
+                    await tx.order_production_products.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            product_id: updateItem.product_id,
+                            machine_id: updateItem.machine_id,
+                            kilos: updateItem.kilos,
+                            active: 1,
+                            group_weight: updateItem.group_weight,
+                            groups: updateItem.groups,
+                            hours:
+                                updateItem.hours !== null &&
+                                updateItem.hours !== 0
+                                    ? updateItem.hours
+                                    : null,
+                        },
+                        where: {
+                            id: updateItem.id,
+                        },
+                    });
+                }
+                // await this.cacheManager.del(`product_inventory`);
+            }
+
+            const newEmployeeItems = input.order_production_employees;
+            const oldEmployeeItems = input.id
+                ? await tx.order_production_employees.findMany({
+                      where: {
+                          order_production_id: input.id,
+                      },
+                  })
+                : [];
+
+            const {
+                aMinusB: deleteEmployeeItems,
+                bMinusA: createEmployeeItems,
+                intersection: updateEmployeeItems,
+            } = vennDiagram({
+                a: oldEmployeeItems,
+                b: newEmployeeItems,
+                indexProperties: ['employee_id'],
+            });
+
+            for await (const delItem of deleteEmployeeItems) {
+                await tx.order_production_employees.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         active: -1,
                     },
                     where: {
-                        id: delItem.id,
+                        employee_id: delItem.employee_id,
+                        order_production_id: orderProduction.id,
                     },
                 });
             }
-            // await this.cacheManager.del(`product_inventory`);
-        }
 
-        for await (const createItem of createProductItems) {
-            await this.prisma.order_production_products.create({
-                data: {
-                    ...getCreatedAtProperty(),
-                    ...getUpdatedAtProperty(),
-                    order_production_id: orderProduction.id,
-                    product_id: createItem.product_id,
-                    machine_id: createItem.machine_id,
-                    kilos: createItem.kilos,
-                    active: 1,
-                    group_weight: createItem.group_weight,
-                    groups: createItem.groups,
-                    hours:
-                        createItem.hours !== null && createItem.hours !== 0
-                            ? createItem.hours
-                            : null,
-                },
-            });
-            // await this.cacheManager.del(`product_inventory`);
-        }
+            for await (const createItem of createEmployeeItems) {
+                await tx.order_production_employees.create({
+                    data: {
+                        ...getCreatedAtProperty(),
+                        ...getUpdatedAtProperty(),
+                        order_production_id: orderProduction.id,
+                        employee_id: createItem.employee_id,
+                        is_leader: createItem.is_leader,
+                    },
+                });
+            }
 
-        // Also keyed on `id`. The old `where` looked for the row by its *new*
-        // product+machine, which no stored row carries yet — so changing either
-        // of them updated nothing and the edit was silently lost.
-        for await (const updateItem of updateProductItems) {
-            if (updateItem && updateItem.id) {
-                await this.prisma.order_production_products.updateMany({
+            for await (const updateItem of updateEmployeeItems) {
+                await tx.order_production_employees.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
-                        product_id: updateItem.product_id,
-                        machine_id: updateItem.machine_id,
-                        kilos: updateItem.kilos,
+                        employee_id: updateItem.employee_id,
+                        is_leader: updateItem.is_leader,
+                    },
+                    where: {
+                        employee_id: updateItem.employee_id,
+                        order_production_id: orderProduction.id,
+                    },
+                });
+            }
+
+            const newResourceItems = input.order_production_products_consumed;
+            const oldResourceItems = input.id
+                ? await tx.order_production_products_consumed.findMany({
+                      where: {
+                          order_production_id: input.id,
+                      },
+                  })
+                : [];
+
+            const {
+                aMinusB: deleteResourceItems,
+                bMinusA: createResourceItems,
+                intersection: updateResourceItems,
+            } = vennDiagram({
+                a: oldResourceItems,
+                b: newResourceItems,
+                indexProperties: ['id'],
+            });
+
+            // Was the widest of the three: `product_id` alone, so removing one
+            // resource row soft-deleted every row for that product regardless of
+            // machine.
+            for await (const delItem of deleteResourceItems) {
+                if (delItem && delItem.id) {
+                    await tx.order_production_products_consumed.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            active: -1,
+                        },
+                        where: {
+                            id: delItem.id,
+                        },
+                    });
+                }
+                // await this.cacheManager.del(`product_inventory`);
+            }
+
+            for await (const createItem of createResourceItems) {
+                await tx.order_production_products_consumed.create({
+                    data: {
+                        ...getCreatedAtProperty(),
+                        ...getUpdatedAtProperty(),
+                        order_production_id: orderProduction.id,
+                        product_id: createItem.product_id,
+                        machine_id: createItem.machine_id,
+                        kilos: createItem.kilos,
                         active: 1,
-                        group_weight: updateItem.group_weight,
-                        groups: updateItem.groups,
+                        group_weight: createItem.group_weight,
+                        groups: createItem.groups,
                         hours:
-                            updateItem.hours !== null && updateItem.hours !== 0
-                                ? updateItem.hours
+                            createItem.hours !== null && createItem.hours !== 0
+                                ? createItem.hours
                                 : null,
                     },
-                    where: {
-                        id: updateItem.id,
-                    },
                 });
+                // await this.cacheManager.del(`product_inventory`);
             }
-            // await this.cacheManager.del(`product_inventory`);
-        }
 
-        const newEmployeeItems = input.order_production_employees;
-        const oldEmployeeItems = input.id
-            ? await this.prisma.order_production_employees.findMany({
-                  where: {
-                      order_production_id: input.id,
-                  },
-              })
-            : [];
+            for await (const updateItem of updateResourceItems) {
+                if (updateItem && updateItem.id) {
+                    await tx.order_production_products_consumed.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            product_id: updateItem.product_id,
+                            machine_id: updateItem.machine_id,
+                            kilos: updateItem.kilos,
+                            active: 1,
+                            group_weight: updateItem.group_weight,
+                            groups: updateItem.groups,
+                            hours:
+                                updateItem.hours !== null &&
+                                updateItem.hours !== 0
+                                    ? updateItem.hours
+                                    : null,
+                        },
+                        where: {
+                            id: updateItem.id,
+                        },
+                    });
+                }
+                // await this.cacheManager.del(`product_inventory`);
+            }
 
-        const {
-            aMinusB: deleteEmployeeItems,
-            bMinusA: createEmployeeItems,
-            intersection: updateEmployeeItems,
-        } = vennDiagram({
-            a: oldEmployeeItems,
-            b: newEmployeeItems,
-            indexProperties: ['employee_id'],
+            return orderProduction;
         });
-
-        for await (const delItem of deleteEmployeeItems) {
-            await this.prisma.order_production_employees.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    active: -1,
-                },
-                where: {
-                    employee_id: delItem.employee_id,
-                    order_production_id: orderProduction.id,
-                },
-            });
-        }
-
-        for await (const createItem of createEmployeeItems) {
-            await this.prisma.order_production_employees.create({
-                data: {
-                    ...getCreatedAtProperty(),
-                    ...getUpdatedAtProperty(),
-                    order_production_id: orderProduction.id,
-                    employee_id: createItem.employee_id,
-                    is_leader: createItem.is_leader,
-                },
-            });
-        }
-
-        for await (const updateItem of updateEmployeeItems) {
-            await this.prisma.order_production_employees.updateMany({
-                data: {
-                    ...getUpdatedAtProperty(),
-                    employee_id: updateItem.employee_id,
-                    is_leader: updateItem.is_leader,
-                },
-                where: {
-                    employee_id: updateItem.employee_id,
-                    order_production_id: orderProduction.id,
-                },
-            });
-        }
-
-        const newResourceItems = input.order_production_products_consumed;
-        const oldResourceItems = input.id
-            ? await this.prisma.order_production_products_consumed.findMany({
-                  where: {
-                      order_production_id: input.id,
-                  },
-              })
-            : [];
-
-        const {
-            aMinusB: deleteResourceItems,
-            bMinusA: createResourceItems,
-            intersection: updateResourceItems,
-        } = vennDiagram({
-            a: oldResourceItems,
-            b: newResourceItems,
-            indexProperties: ['id'],
-        });
-
-        // Was the widest of the three: `product_id` alone, so removing one
-        // resource row soft-deleted every row for that product regardless of
-        // machine.
-        for await (const delItem of deleteResourceItems) {
-            if (delItem && delItem.id) {
-                await this.prisma.order_production_products_consumed.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        active: -1,
-                    },
-                    where: {
-                        id: delItem.id,
-                    },
-                });
-            }
-            // await this.cacheManager.del(`product_inventory`);
-        }
-
-        for await (const createItem of createResourceItems) {
-            await this.prisma.order_production_products_consumed.create({
-                data: {
-                    ...getCreatedAtProperty(),
-                    ...getUpdatedAtProperty(),
-                    order_production_id: orderProduction.id,
-                    product_id: createItem.product_id,
-                    machine_id: createItem.machine_id,
-                    kilos: createItem.kilos,
-                    active: 1,
-                    group_weight: createItem.group_weight,
-                    groups: createItem.groups,
-                    hours:
-                        createItem.hours !== null && createItem.hours !== 0
-                            ? createItem.hours
-                            : null,
-                },
-            });
-            // await this.cacheManager.del(`product_inventory`);
-        }
-
-        for await (const updateItem of updateResourceItems) {
-            if (updateItem && updateItem.id) {
-                await this.prisma.order_production_products_consumed.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        product_id: updateItem.product_id,
-                        machine_id: updateItem.machine_id,
-                        kilos: updateItem.kilos,
-                        active: 1,
-                        group_weight: updateItem.group_weight,
-                        groups: updateItem.groups,
-                        hours:
-                            updateItem.hours !== null && updateItem.hours !== 0
-                                ? updateItem.hours
-                                : null,
-                    },
-                    where: {
-                        id: updateItem.id,
-                    },
-                });
-            }
-            // await this.cacheManager.del(`product_inventory`);
-        }
-
-        return orderProduction;
     }
 
     async validateOrderProduction(input: OrderProductionInput): Promise<void> {
@@ -958,6 +968,69 @@ export class OrderProductionsService {
                 id: branch_id,
                 active: 1,
             },
+        });
+    }
+
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getOrderProductionProductsByOrderProductionIds(
+        orderProductionIds: number[],
+    ): Promise<OrderProductionProduct[]> {
+        if (orderProductionIds.length === 0) return [];
+        return this.prisma.order_production_products.findMany({
+            where: {
+                AND: [
+                    { order_production_id: { in: orderProductionIds } },
+                    { active: 1 },
+                ],
+            },
+        });
+    }
+
+    async getOrderProductionProductsConsumedByOrderProductionIds(
+        orderProductionIds: number[],
+    ): Promise<OrderProductionProductConsumed[]> {
+        if (orderProductionIds.length === 0) return [];
+        return this.prisma.order_production_products_consumed.findMany({
+            where: {
+                AND: [
+                    { order_production_id: { in: orderProductionIds } },
+                    { active: 1 },
+                ],
+            },
+        });
+    }
+
+    async getOrderProductionEmployeesByOrderProductionIds(
+        orderProductionIds: number[],
+    ): Promise<OrderProductionEmployee[]> {
+        if (orderProductionIds.length === 0) return [];
+        return this.prisma.order_production_employees.findMany({
+            where: {
+                AND: [
+                    { order_production_id: { in: orderProductionIds } },
+                    { active: 1 },
+                ],
+            },
+        });
+    }
+
+    async getOrderProductionTypesByIds(
+        ids: number[],
+    ): Promise<OrderProductionType[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.order_production_type.findMany({
+            where: { id: { in: ids }, active: 1 },
+        });
+    }
+
+    async getBranchesByIds(ids: number[]): Promise<Branch[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.branches.findMany({
+            where: { id: { in: ids }, active: 1 },
         });
     }
 }
