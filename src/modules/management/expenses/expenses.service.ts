@@ -411,6 +411,18 @@ export class ExpensesService {
         return res.map((ex) => {
             return {
                 ...ex,
+                // `convertToInt` casts these ids to SQL DECIMAL, which
+                // $queryRawUnsafe returns as Prisma.Decimal objects — not JS
+                // numbers. The resolve-field loaders key their lookup Maps by
+                // real numeric ids (e.g. account.id), so a Decimal key never
+                // matches and `account` resolves to null (blank name). Coerce
+                // the loader-key ids back to numbers here, at the boundary.
+                id: Number(ex.id),
+                account_id: ex.account_id == null ? null : Number(ex.account_id),
+                receipt_type_id:
+                    ex.receipt_type_id == null
+                        ? null
+                        : Number(ex.receipt_type_id),
                 expected_payment_date: ex.expected_payment_date
                     ? new Date(ex.expected_payment_date)
                     : null,
