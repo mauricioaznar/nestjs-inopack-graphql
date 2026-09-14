@@ -138,10 +138,12 @@ export class Account extends AccountBase {
     is_own: boolean;
 
     // Read-only flag (seeded by migration on the "Inopack Notas" account, id 38).
-    // Replaces the hardcoded account_id === 38 check in the accountability export
-    // / balances view split. Shown as a disabled checkbox in the account form.
+    // Marks the INFORMAL-money account: physical cash, never wired, tracked only
+    // internally. The accountability-export exclusion is a derivation of this, and
+    // the transfer rule pairs it with receipt_types.is_informal_receipt. Shown as a
+    // disabled checkbox in the account form.
     @Field(() => Boolean, { nullable: false })
-    exclude_from_accountability_export: boolean;
+    is_informal_account: boolean;
 
     // Audit stamps — server-side only, never part of the upsert input.
     @Field(() => Int, { nullable: true })

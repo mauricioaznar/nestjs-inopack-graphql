@@ -1026,6 +1026,78 @@ export class TransfersService {
             }
         }
 
+        // informal / formal money pairing
+        //
+        // An own account may only be linked to documents whose receipt type
+        // matches its formality: the informal account (is_informal_account, today
+        // "Inopack Notas") pairs with nota receipts (is_informal_receipt), and a
+        // formal own account pairs with fiscal receipts. Compared purely on the two
+        // declared flags — no hardcoded receipt_type_id. Only OWN accounts are
+        // checked; a participating client/supplier account is exempt. Own-account
+        // transfers cleared their receipts above, so this loop is naturally a no-op
+        // for them.
+        {
+            const receipts = input.transfer_receipts;
+            if (receipts.length > 0) {
+                const fromAccount = await this.prisma.accounts.findFirst({
+                    where: { id: input.from_account_id || 0 },
+                });
+                const toAccount = await this.prisma.accounts.findFirst({
+                    where: { id: input.to_account_id || 0 },
+                });
+                const ownAccounts = [fromAccount, toAccount].filter(
+                    (account): account is NonNullable<typeof account> =>
+                        !!account && account.is_own,
+                );
+
+                for (const [index, receipt] of receipts.entries()) {
+                    // Resolve the linked document's receipt-type formality. A row
+                    // with no receipt type (null) is left unrestricted.
+                    let isInformalReceipt: boolean | null = null;
+
+                    if (receipt.order_sale_id !== null) {
+                        const orderSale =
+                            await this.prisma.order_sales.findFirst({
+                                where: { id: receipt.order_sale_id },
+                                include: {
+                                    receipt_types: {
+                                        select: { is_informal_receipt: true },
+                                    },
+                                },
+                            });
+                        isInformalReceipt =
+                            orderSale?.receipt_types?.is_informal_receipt ??
+                            null;
+                    } else if (receipt.expense_id !== null) {
+                        const expense = await this.prisma.expenses.findFirst({
+                            where: { id: receipt.expense_id },
+                            include: {
+                                receipt_types: {
+                                    select: { is_informal_receipt: true },
+                                },
+                            },
+                        });
+                        isInformalReceipt =
+                            expense?.receipt_types?.is_informal_receipt ?? null;
+                    }
+
+                    if (isInformalReceipt === null) {
+                        continue;
+                    }
+
+                    for (const ownAccount of ownAccounts) {
+                        if (
+                            ownAccount.is_informal_account !== isInformalReceipt
+                        ) {
+                            errors.push(
+                                `transfer item[${index}] account "${ownAccount.name}" formality does not match the document's receipt type (informal account ↔ nota, formal account ↔ fiscal)`,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
         if (errors.length > 0) {
             throw new BadRequestException(errors);
         }
