@@ -957,7 +957,7 @@ model accounts {
   client_reconciliation_only                    Boolean             @default(false)
   supplier_reconciliation_only                  Boolean             @default(false)
   supplier_is_draft                             Boolean             @default(false)
-  exclude_from_accountability_export            Boolean             @default(false)
+  is_informal_account                           Boolean             @default(false)
   merged_into_account_id                        Int?                @db.UnsignedInt
   created_by_id                                 Int?                @db.UnsignedInt
   updated_by_id                                 Int?                @db.UnsignedInt
@@ -1118,7 +1118,7 @@ model receipt_types {
   active                           Int           @default(1)
   created_at                       DateTime?     @db.DateTime(0)
   updated_at                       DateTime?     @db.DateTime(0)
-  include_in_accountability_export Boolean       @default(false)
+  is_informal_receipt              Boolean       @default(false)
   tax_rate                         Decimal       @default(0.0000) @db.Decimal(5, 4)
   expenses                         expenses[]
   order_sales                      order_sales[]
