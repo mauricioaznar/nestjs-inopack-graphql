@@ -268,6 +268,13 @@ export class ExpensesService {
                         },
                     },
                     {
+                        accounts: {
+                            abbreviation: {
+                                contains: filter,
+                            },
+                        },
+                    },
+                    {
                         expense_resources: {
                             some: {
                                 resources: {

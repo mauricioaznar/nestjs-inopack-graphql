@@ -10,6 +10,7 @@ import {
     MachineProductPerformanceSummary,
     ProductMachinePerformanceSummary,
     ProductWithRuns,
+    WeeklyAuditRun,
 } from '../../../common/dto/entities';
 import { convertToInt } from '../../../common/helpers/sql/convert-to-int';
 
@@ -196,6 +197,7 @@ export class ProductionPerformanceService {
                 ${convertToInt('op.id', 'order_production_id')},
                 op.start_date as date,
                 pp.kilos_produced as kilos_produced,
+                pp.groups_produced as groups_produced,
                 pp.hours_produced as hours_produced,
                 coalesce(consumed.kilos_consumed, 0) as kilos_consumed,
                 coalesce(consumed.hours_consumed, 0) as hours_consumed,
@@ -204,6 +206,7 @@ export class ProductionPerformanceService {
                 select
                     order_production_id,
                     sum(kilos) as kilos_produced,
+                    sum(coalesce(\`groups\`, 0)) as groups_produced,
                     sum(coalesce(hours, 0)) as hours_produced
                 from order_production_products
                 where active = 1
@@ -316,51 +319,101 @@ export class ProductionPerformanceService {
         // getMachineProductPerformanceSummary (no employee-count divisor).
         const wasteShare = `CASE WHEN pt.total_kilos > 0 THEN op.waste * (opp.kilos / pt.total_kilos) ELSE 0 END`;
 
-        // `all_*` is the single window: every run the shared filter admits, i.e.
-        // since HOURLY_DATA_EPOCH. The name is kept from when a `recent_*` window
-        // stood beside it, so no consumer had to rename its columns.
-        const aggregateSelect = `
-                ${convertToInt('opp.machine_id', 'machine_id')},
-                %PRODUCT_ID%,
-                SUM(COALESCE(opp.kilos, 0)) as all_kilos,
-                SUM(COALESCE(opp.hours, 0)) as all_hours,
-                SUM(COALESCE(opp.groups, 0)) as all_groups,
-                ${convertToInt('COUNT(DISTINCT op.id)', 'all_runs')},
-                SUM(${wasteShare}) as all_waste
-            FROM order_production_products opp
-            JOIN order_productions op
-                ON op.id = opp.order_production_id
-                AND op.active = 1
-            JOIN (
+        // Two-level aggregate. `all_*` is the single window every performance
+        // surface reads: every run since HOURLY_DATA_EPOCH (the name kept from
+        // when a `recent_*` window stood beside it, so no consumer renamed a
+        // column).
+        //
+        // The INNER query collapses each production to ONE per-run row (its
+        // kilos/hours/groups/waste on the machine, or the machine×product for
+        // pair rates). The OUTER query then produces both baselines from that
+        // grain: the `all_*` totals-over-totals sums gradeLine's ratio uses, AND
+        // the mean + SAMPLE stddev of the per-run RATES the weekly audit's
+        // z-layer uses (a distribution the old flat SUM could not expose). The
+        // `all_*` numbers are byte-for-byte what they were before —
+        // SUM(run_x) = SUM(x) and COUNT(*) over per-run rows = COUNT(DISTINCT
+        // op.id) — so the planning board, list flags and Rendimiento tab are
+        // untouched. The `%…%` markers are spliced per level below.
+        const rateAggregate = `
+            SELECT
+                %PRODUCT_ID_OUT%
+                ${convertToInt('runs.machine_id', 'machine_id')},
+                SUM(runs.run_kilos) as all_kilos,
+                SUM(runs.run_hours) as all_hours,
+                SUM(runs.run_groups) as all_groups,
+                ${convertToInt('COUNT(*)', 'all_runs')},
+                SUM(runs.run_waste) as all_waste,
+                AVG(CASE WHEN runs.run_hours > 0 AND runs.run_groups > 0
+                         THEN runs.run_groups / runs.run_hours END)
+                    as all_groups_rate_mean,
+                STDDEV_SAMP(CASE WHEN runs.run_hours > 0 AND runs.run_groups > 0
+                         THEN runs.run_groups / runs.run_hours END)
+                    as all_groups_rate_std,
+                ${convertToInt(
+                    'SUM(CASE WHEN runs.run_hours > 0 AND runs.run_groups > 0 THEN 1 ELSE 0 END)',
+                    'all_groups_rate_n',
+                )},
+                AVG(CASE WHEN runs.run_hours > 0
+                         THEN runs.run_kilos / runs.run_hours END)
+                    as all_kilos_rate_mean,
+                STDDEV_SAMP(CASE WHEN runs.run_hours > 0
+                         THEN runs.run_kilos / runs.run_hours END)
+                    as all_kilos_rate_std,
+                ${convertToInt(
+                    'SUM(CASE WHEN runs.run_hours > 0 THEN 1 ELSE 0 END)',
+                    'all_kilos_rate_n',
+                )}
+            FROM (
                 SELECT
-                    order_production_id,
-                    SUM(kilos) as total_kilos,
-                    COUNT(DISTINCT product_id) as product_count
-                FROM order_production_products
-                WHERE active = 1
-                GROUP BY order_production_id
-            ) pt ON pt.order_production_id = op.id
-            WHERE opp.active = 1
-                AND opp.machine_id IN (${machineIds.join(', ')})
-                ${sharedFilters}
-                ${singleProductFilter}
+                    opp.machine_id as machine_id,
+                    %PRODUCT_ID_IN%
+                    SUM(COALESCE(opp.kilos, 0)) as run_kilos,
+                    SUM(COALESCE(opp.hours, 0)) as run_hours,
+                    SUM(COALESCE(opp.groups, 0)) as run_groups,
+                    SUM(${wasteShare}) as run_waste
+                FROM order_production_products opp
+                JOIN order_productions op
+                    ON op.id = opp.order_production_id
+                    AND op.active = 1
+                JOIN (
+                    SELECT
+                        order_production_id,
+                        SUM(kilos) as total_kilos,
+                        COUNT(DISTINCT product_id) as product_count
+                    FROM order_production_products
+                    WHERE active = 1
+                    GROUP BY order_production_id
+                ) pt ON pt.order_production_id = op.id
+                WHERE opp.active = 1
+                    AND opp.machine_id IN (${machineIds.join(', ')})
+                    ${sharedFilters}
+                    ${singleProductFilter}
+                    %PAIR_FILTER%
+                GROUP BY %GROUP_IN%
+            ) runs
+            GROUP BY %GROUP_OUT%
         `;
 
-        const machineRates = `
-            SELECT
-                ${aggregateSelect.replace('%PRODUCT_ID%', 'NULL as product_id')}
-            GROUP BY opp.machine_id
-        `;
+        const machineRates = rateAggregate
+            .replace('%PRODUCT_ID_OUT%', 'NULL as product_id,')
+            .replace('%PRODUCT_ID_IN%', '')
+            .replace('%PAIR_FILTER%', '')
+            .replace('%GROUP_IN%', 'opp.machine_id, op.id')
+            .replace('%GROUP_OUT%', 'runs.machine_id');
+
         const pairRates = pairConditions.length
-            ? `
-            SELECT
-                ${aggregateSelect.replace(
-                    '%PRODUCT_ID%',
-                    `${convertToInt('opp.product_id', 'product_id')}`,
-                )}
-                AND (${pairConditions.join(' OR ')})
-            GROUP BY opp.machine_id, opp.product_id
-        `
+            ? rateAggregate
+                  .replace(
+                      '%PRODUCT_ID_OUT%',
+                      `${convertToInt('runs.product_id', 'product_id')},`,
+                  )
+                  .replace('%PRODUCT_ID_IN%', 'opp.product_id as product_id,')
+                  .replace(
+                      '%PAIR_FILTER%',
+                      `AND (${pairConditions.join(' OR ')})`,
+                  )
+                  .replace('%GROUP_IN%', 'opp.machine_id, opp.product_id, op.id')
+                  .replace('%GROUP_OUT%', 'runs.machine_id, runs.product_id')
             : '';
 
         return this.prisma.$queryRawUnsafe<MachineProductRate[]>(
@@ -539,6 +592,7 @@ export class ProductionPerformanceService {
                 ${convertToInt('count(distinct op.id)', 'runs')},
                 sum(opp.kilos) as kilos,
                 sum(coalesce(opp.hours, 0)) as hours,
+                sum(coalesce(opp.groups, 0)) as \`groups\`,
                 sum(
                     case
                         when pt.total_kilos > 0
@@ -589,6 +643,7 @@ export class ProductionPerformanceService {
                 ${convertToInt('count(distinct op.id)', 'runs')},
                 sum(opp.kilos) as kilos,
                 sum(coalesce(opp.hours, 0)) as hours,
+                sum(coalesce(opp.groups, 0)) as \`groups\`,
                 sum(
                     case
                         when pt.total_kilos > 0
@@ -640,6 +695,117 @@ export class ProductionPerformanceService {
                 and product_categories.active = 1
             where opp.active = 1
             order by product_categories.name, products.description
+        `);
+    }
+
+    // Weekly audit tab: every corrida line (machine × product) whose production
+    // started inside the given ISO week (Mon–Sun), optionally narrowed to one
+    // order production type. Deliberately NOT filtered by a chosen machine or
+    // product — the tab grades each line against its OWN machine×product baseline
+    // (fetched separately via getMachineProductRates), so it must first see every
+    // line in the week. One row per (production, machine, product): duplicate
+    // lines of the same product on the same machine in a production are summed.
+    //
+    // Raw per-line figures only. bultos/hr, kg/hr, the 8 h projection, the ratio
+    // grade (gradeLine) and the z-flag are all derived client-side from these
+    // rows plus the rate aggregate. Waste is the line's kilo-share of the
+    // production waste — the same proration the summaries use. Employees are a
+    // production-level attribute, so they are comma-joined per production in a
+    // subquery to avoid fanning the line rows out.
+    //
+    // week_start / week_end are required and validated by regex before
+    // interpolation ($queryRawUnsafe); a missing or malformed bound is refused
+    // rather than turned into an unbounded scan of every corrida.
+    async getWeeklyAuditRuns({
+        week_start,
+        week_end,
+        order_production_type_id,
+    }: {
+        week_start: string;
+        week_end: string;
+        order_production_type_id?: number | null;
+    }): Promise<WeeklyAuditRun[]> {
+        const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRe.test(week_start ?? '') || !dateRe.test(week_end ?? '')) {
+            throw new BadRequestException(
+                'Se requiere un rango de semana válido (YYYY-MM-DD).',
+            );
+        }
+        const typeId = Number(order_production_type_id);
+        const typeFilter =
+            Number.isInteger(typeId) && typeId > 0
+                ? `and op.order_production_type_id = ${typeId}`
+                : '';
+        return this.prisma.$queryRawUnsafe(`
+            select
+                ${convertToInt('op.id', 'order_production_id')},
+                op.start_date as date,
+                ${convertToInt('opp.machine_id', 'machine_id')},
+                m.name as machine_name,
+                ${convertToInt('op.branch_id', 'branch_id')},
+                coalesce(b.name, '') as branch_name,
+                ${convertToInt('opp.product_id', 'product_id')},
+                products.description as product_description,
+                sum(opp.kilos) as kilos,
+                sum(coalesce(opp.hours, 0)) as hours,
+                sum(coalesce(opp.groups, 0)) as \`groups\`,
+                sum(
+                    case
+                        when pt.total_kilos > 0
+                        then op.waste * (opp.kilos / pt.total_kilos)
+                        else 0
+                    end
+                ) as waste_share,
+                ${convertToInt('pt.product_count', 'product_count')},
+                ${convertToInt('op.shift', 'shift')},
+                coalesce(emp.employee_names, '') as employee_names
+            from order_production_products opp
+            join order_productions op
+                on op.id = opp.order_production_id
+                and op.active = 1
+                and op.start_date >= '${week_start}'
+                and op.start_date <= '${week_end}'
+                ${typeFilter}
+            join machines m
+                on m.id = opp.machine_id
+            left join branches b
+                on b.id = op.branch_id
+            join products
+                on products.id = opp.product_id
+            join (
+                select
+                    order_production_id,
+                    sum(kilos) as total_kilos,
+                    count(distinct product_id) as product_count
+                from order_production_products
+                where active = 1
+                group by order_production_id
+            ) pt on pt.order_production_id = op.id
+            left join (
+                select
+                    ope.order_production_id,
+                    group_concat(
+                        distinct e.fullname order by e.fullname separator ', '
+                    ) as employee_names
+                from order_production_employees ope
+                join employees e on e.id = ope.employee_id
+                where ope.active = 1
+                group by ope.order_production_id
+            ) emp on emp.order_production_id = op.id
+            where opp.active = 1
+            group by
+                op.id,
+                op.start_date,
+                op.shift,
+                opp.machine_id,
+                m.name,
+                op.branch_id,
+                b.name,
+                opp.product_id,
+                products.description,
+                pt.product_count,
+                emp.employee_names
+            order by op.start_date, m.name, products.description
         `);
     }
 }

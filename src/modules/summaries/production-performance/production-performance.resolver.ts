@@ -11,6 +11,7 @@ import {
     MachineProductPerformanceSummary,
     ProductMachinePerformanceSummary,
     ProductWithRuns,
+    WeeklyAuditRun,
 } from '../../../common/dto/entities';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
@@ -92,6 +93,26 @@ export class ProductionPerformanceResolver {
     @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
     async getProductsWithRuns(): Promise<ProductWithRuns[]> {
         return this.service.getProductsWithRuns();
+    }
+
+    // Weekly audit tab: every corrida line in an ISO week (Mon–Sun),
+    // optionally narrowed to one order production type. weekStart/weekEnd are
+    // required (YYYY-MM-DD); the service refuses a malformed range. Not filtered
+    // by machine/product — each line is graded client-side against its own
+    // machine×product baseline from getMachineProductRates.
+    @Query(() => [WeeklyAuditRun])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getWeeklyAuditRuns(
+        @Args('weekStart', { type: () => String }) weekStart: string,
+        @Args('weekEnd', { type: () => String }) weekEnd: string,
+        @Args('orderProductionTypeId', { type: () => Int, nullable: true })
+        orderProductionTypeId: number | null,
+    ): Promise<WeeklyAuditRun[]> {
+        return this.service.getWeeklyAuditRuns({
+            week_start: weekStart,
+            week_end: weekEnd,
+            order_production_type_id: orderProductionTypeId,
+        });
     }
 
     // Hourly-throughput rows (produced vs consumed kg/hr) for any machine /
