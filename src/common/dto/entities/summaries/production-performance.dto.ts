@@ -161,6 +161,12 @@ export class MachineHourlyRun {
     @Field(() => Float, { nullable: false })
     kilos_produced: number;
 
+    // Bultos (order_production_products.groups) summed over the SAME lines as
+    // kilos_produced, so bultos/hr = groups_produced ÷ hours_produced rides the
+    // packed hours — the primary throughput unit for this surface.
+    @Field(() => Float, { nullable: false })
+    groups_produced: number;
+
     @Field(() => Float, { nullable: false })
     hours_produced: number;
 
@@ -284,6 +290,15 @@ export class WeeklyAuditRun {
 
     @Field(() => String, { nullable: false })
     machine_name: string;
+
+    // Branch (sucursal) of the production — order_productions.branch_id. Null
+    // when the production predates branch capture. Surfaced so the tab can offer
+    // a branch filter (defaulting to Caucel) without a second query.
+    @Field(() => Int, { nullable: true })
+    branch_id: number | null;
+
+    @Field(() => String, { nullable: false })
+    branch_name: string;
 
     @Field(() => Int, { nullable: false })
     product_id: number;

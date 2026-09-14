@@ -197,6 +197,7 @@ export class ProductionPerformanceService {
                 ${convertToInt('op.id', 'order_production_id')},
                 op.start_date as date,
                 pp.kilos_produced as kilos_produced,
+                pp.groups_produced as groups_produced,
                 pp.hours_produced as hours_produced,
                 coalesce(consumed.kilos_consumed, 0) as kilos_consumed,
                 coalesce(consumed.hours_consumed, 0) as hours_consumed,
@@ -205,6 +206,7 @@ export class ProductionPerformanceService {
                 select
                     order_production_id,
                     sum(kilos) as kilos_produced,
+                    sum(coalesce(\`groups\`, 0)) as groups_produced,
                     sum(coalesce(hours, 0)) as hours_produced
                 from order_production_products
                 where active = 1
@@ -740,6 +742,8 @@ export class ProductionPerformanceService {
                 op.start_date as date,
                 ${convertToInt('opp.machine_id', 'machine_id')},
                 m.name as machine_name,
+                ${convertToInt('op.branch_id', 'branch_id')},
+                coalesce(b.name, '') as branch_name,
                 ${convertToInt('opp.product_id', 'product_id')},
                 products.description as product_description,
                 sum(opp.kilos) as kilos,
@@ -764,6 +768,8 @@ export class ProductionPerformanceService {
                 ${typeFilter}
             join machines m
                 on m.id = opp.machine_id
+            left join branches b
+                on b.id = op.branch_id
             join products
                 on products.id = opp.product_id
             join (
@@ -793,6 +799,8 @@ export class ProductionPerformanceService {
                 op.shift,
                 opp.machine_id,
                 m.name,
+                op.branch_id,
+                b.name,
                 opp.product_id,
                 products.description,
                 pt.product_count,
