@@ -1,4 +1,4 @@
-import { Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderProductionProductsService } from './order-production-products.service';
 import { Public } from '../../auth/decorators/public.decorator';
@@ -11,11 +11,6 @@ import { Machine, Product } from '../../../common/dto/entities';
 @Injectable()
 export class OrderProductionProductsResolver {
     constructor(private service: OrderProductionProductsService) {}
-
-    @Query(() => [OrderProductionProduct])
-    async getOrderProductionProducts(): Promise<OrderProductionProduct[]> {
-        return this.service.getOrderProductionProducts();
-    }
 
     @ResolveField(() => OrderProduction, { nullable: true })
     order_production(

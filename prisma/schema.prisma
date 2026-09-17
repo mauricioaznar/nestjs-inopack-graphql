@@ -969,6 +969,7 @@ model accounts {
   supplier_reconciliation_only                  Boolean             @default(false)
   supplier_is_draft                             Boolean             @default(false)
   is_informal_account                           Boolean             @default(false)
+  exclude_from_balances_summary                 Boolean             @default(false)
   merged_into_account_id                        Int?                @db.UnsignedInt
   created_by_id                                 Int?                @db.UnsignedInt
   updated_by_id                                 Int?                @db.UnsignedInt

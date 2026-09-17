@@ -37,6 +37,7 @@ export class OwnAccountTransferSummariesService {
                 on to_transfers.to_account_id = accounts.id
                 where accounts.active = 1
                 and accounts.is_own = 1
+                and accounts.exclude_from_balances_summary = 0
         `);
     }
 

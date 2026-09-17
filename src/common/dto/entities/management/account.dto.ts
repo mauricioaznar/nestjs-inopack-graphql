@@ -145,6 +145,13 @@ export class Account extends AccountBase {
     @Field(() => Boolean, { nullable: false })
     is_informal_account: boolean;
 
+    // Migration-managed like is_informal_account (seeded on Notas + Efectivo).
+    // Excludes the account from the Saldos y Pagos / Transfers "Cuentas propias"
+    // ledger AND the Acumulado seed. Read-only + disabled checkbox in the form;
+    // deliberately NOT on AccountUpsertInput, so it can't be toggled casually.
+    @Field(() => Boolean, { nullable: false })
+    exclude_from_balances_summary: boolean;
+
     // Audit stamps — server-side only, never part of the upsert input.
     @Field(() => Int, { nullable: true })
     created_by_id: number | null;
