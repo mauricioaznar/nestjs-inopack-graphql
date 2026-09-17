@@ -148,7 +148,7 @@ export class SalesSummaryService {
                         osp.fraction * osp.tax tax,
                         osp.subtotal + (osp.fraction * osp.tax) total_with_tax,
                          products.id product_id,
-                         products.description product_name,
+                         products.external_description product_name,
                          products.width width,
                          products.length length,
                          products.calibre calibre,

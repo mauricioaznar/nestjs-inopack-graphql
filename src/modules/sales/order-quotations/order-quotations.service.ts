@@ -151,7 +151,7 @@ export class OrderQuotationsService {
                             select: {
                                 id: true,
                                 code: true,
-                                description: true,
+                                external_description: true,
                             },
                         },
                     },
@@ -278,7 +278,7 @@ export class OrderQuotationsService {
                                       order_quotation_products: {
                                           some: {
                                               products: {
-                                                  description: {
+                                                  external_description: {
                                                       contains: filter,
                                                   },
                                               },

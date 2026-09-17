@@ -110,7 +110,7 @@ export class OrderRequestsService {
                             select: {
                                 id: true,
                                 code: true,
-                                description: true,
+                                external_description: true,
                             },
                         },
                     },
@@ -227,7 +227,7 @@ export class OrderRequestsService {
                                       order_request_products: {
                                           some: {
                                               products: {
-                                                  description: {
+                                                  external_description: {
                                                       contains: filter,
                                                   },
                                               },

@@ -240,7 +240,7 @@ export class AccountsService {
                             select: {
                                 id: true,
                                 code: true,
-                                description: true,
+                                external_description: true,
                             },
                         },
                     },

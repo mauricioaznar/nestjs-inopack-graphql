@@ -57,7 +57,7 @@ export class ProductionResourcesSummaryService {
                          order_production_products_consumed.kilos kilos,
                          order_production_products_consumed.groups \`groups\`,
                          order_production_products_consumed.hours hours,
-                         products.description product_name,
+                         products.external_description product_name,
                          employees.fullname employee_name,
                          employees.id employee_id,
                          products.id product_id,

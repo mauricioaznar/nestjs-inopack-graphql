@@ -60,7 +60,7 @@ export class EmployeesSummaryService {
                          order_production_employees.is_leader is_leader,
                          employees.fullname employee_name,
                          employees.id employee_id,
-                         products.description product_name,
+                         products.external_description product_name,
                          products.id product_id,
                          machines.id machine_id,
                          machines.name machine_name

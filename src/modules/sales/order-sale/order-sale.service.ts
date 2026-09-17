@@ -129,7 +129,7 @@ export class OrderSaleService {
                     order_sale_products: {
                         some: {
                             products: {
-                                description: {
+                                external_description: {
                                     contains: filter,
                                 },
                             },
@@ -345,7 +345,7 @@ export class OrderSaleService {
                             select: {
                                 id: true,
                                 code: true,
-                                description: true,
+                                external_description: true,
                             },
                         },
                     },

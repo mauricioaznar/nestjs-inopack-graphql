@@ -44,6 +44,8 @@ export default async function setupDatabase() {
     // refresh_tokens above. Must be cleared before `users.deleteMany()` or the
     // second consecutive run dies in global setup.
     await prismaService.email_mfa_codes.deleteMany();
+    // user_config: same RESTRICT-FK-to-users trap as the two above.
+    await prismaService.user_config.deleteMany();
     await prismaService.account_contacts.deleteMany();
 
     // level 3

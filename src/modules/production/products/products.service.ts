@@ -147,7 +147,7 @@ export class ProductsService {
                     order_production_type_id: 'asc',
                 },
                 {
-                    description: 'asc',
+                    external_description: 'asc',
                 },
             ],
         });
@@ -181,6 +181,13 @@ export class ProductsService {
                 {
                     discontinued: !productsQueryArgs.include_discontinued
                         ? false
+                        : undefined,
+                },
+                {
+                    // Empty-internal-description filter: '' matches the blanked
+                    // rows; undefined leaves the result unfiltered.
+                    internal_description: productsQueryArgs.only_missing_internal_description
+                        ? ''
                         : undefined,
                 },
                 {
@@ -323,7 +330,6 @@ export class ProductsService {
                 code: input.code,
                 current_group_weight: input.current_group_weight,
                 current_kilo_price: input.current_kilo_price,
-                description: input.external_description,
                 width: input.width,
                 length: input.length,
                 order_production_type_id: input.order_production_type_id,
@@ -345,7 +351,6 @@ export class ProductsService {
                 current_kilo_price: input.current_kilo_price,
                 width: input.width,
                 length: input.length,
-                description: input.external_description,
                 order_production_type_id: input.order_production_type_id,
                 product_category_id: input.product_category_id,
                 product_material_id: input.product_material_id,

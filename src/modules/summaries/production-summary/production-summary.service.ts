@@ -123,7 +123,7 @@ export class ProductionSummaryService {
                  order_production_products.kilos,
                  order_production_products.id order_production_product_id,
                  order_production_products.product_id product_id,
-                 products.description product_description,
+                 products.external_description product_description,
                  products.width width,
                  products.length length,
                  products.calibre calibre

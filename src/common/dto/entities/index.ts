@@ -3,6 +3,7 @@ export * from '../dates/dates';
 
 // auth
 export * from './auth/auth.dto';
+export * from './auth/user-config.dto';
 
 // general
 export * from './general/branch.dto';

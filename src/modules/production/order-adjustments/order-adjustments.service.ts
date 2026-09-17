@@ -92,7 +92,7 @@ export class OrderAdjustmentsService {
                             select: {
                                 id: true,
                                 code: true,
-                                description: true,
+                                external_description: true,
                             },
                         },
                     },
@@ -155,7 +155,7 @@ export class OrderAdjustmentsService {
                                   order_adjustment_products: {
                                       some: {
                                           products: {
-                                              description: {
+                                              external_description: {
                                                   contains: filter,
                                               },
                                           },

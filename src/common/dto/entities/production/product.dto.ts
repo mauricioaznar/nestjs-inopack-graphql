@@ -94,6 +94,11 @@ export class PaginatedProductsQueryArgs {
 
     @Field(() => Boolean, { nullable: false })
     include_discontinued: boolean;
+
+    // When true, restrict to products whose internal_description is still blank
+    // (the shop-floor shorthand not yet filled in). Nullable/absent = no filter.
+    @Field(() => Boolean, { nullable: true })
+    only_missing_internal_description: boolean | null;
 }
 
 export enum ProductsSortableFields {

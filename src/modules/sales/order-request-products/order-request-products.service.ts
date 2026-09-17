@@ -64,7 +64,7 @@ export class OrderRequestProductsService {
                    order_sale_products_delivered.last_sale,
                    order_sale_products_delivered.first_sale,
                    accounts.name                                     account_name,
-                   products.description                             product_description,
+                   products.external_description                    product_description,
                    products.code                                    product_code,
                    products.order_production_type_id                order_production_type_id,
                    order_request_products.kilos                     order_request_kilos,
