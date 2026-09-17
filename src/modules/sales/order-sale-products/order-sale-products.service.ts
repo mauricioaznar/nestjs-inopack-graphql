@@ -10,10 +10,6 @@ import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 export class OrderSaleProductsService {
     constructor(private prisma: PrismaService) {}
 
-    async getOrderSaleProducts(): Promise<OrderSaleProduct[]> {
-        return this.prisma.order_sale_products.findMany();
-    }
-
     async getOrderSale({
         order_sale_id,
     }: {

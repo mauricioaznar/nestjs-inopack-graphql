@@ -1,4 +1,4 @@
-import { Float, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Float, ResolveField, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { OrderSaleProductsService } from './order-sale-products.service';
 import { Public } from '../../auth/decorators/public.decorator';
@@ -13,11 +13,6 @@ import {
 @Injectable()
 export class OrderSaleProductsResolver {
     constructor(private service: OrderSaleProductsService) {}
-
-    @Query(() => [OrderSaleProduct])
-    async getOrderSaleProducts(): Promise<OrderSaleProduct[]> {
-        return this.service.getOrderSaleProducts();
-    }
 
     @ResolveField(() => OrderSale, { nullable: true })
     async order_sale(

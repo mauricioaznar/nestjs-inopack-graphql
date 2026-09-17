@@ -1,48 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { getRangesFromDatePaginator } from '../../../common/helpers';
 import { OrderProduction } from '../../../common/dto/entities/production/order-production.dto';
-import {
-    Machine,
-    OrderProductionProductConsumed,
-    Product,
-} from '../../../common/dto/entities';
+import { Machine, Product } from '../../../common/dto/entities';
 import { PrismaService } from '../../../common/modules/prisma/prisma.service';
 
 @Injectable()
 export class OrderProductionProductsConsumedService {
     constructor(private prisma: PrismaService) {}
-
-    async getOrderProductionProductsConsumed(): Promise<OrderProductionProductConsumed[]> {
-        const { startDate, endDate } = getRangesFromDatePaginator({
-            year: 2022,
-            month: 4,
-        });
-
-        return this.prisma.order_production_products_consumed.findMany({
-            where: {
-                AND: [
-                    {
-                        order_productions: {
-                            AND: [
-                                {
-                                    start_date: { gte: startDate },
-                                },
-                                {
-                                    start_date: { lt: endDate },
-                                },
-                                {
-                                    active: 1,
-                                },
-                            ],
-                        },
-                    },
-                    {
-                        active: 1,
-                    },
-                ],
-            },
-        });
-    }
 
     async getOrderProduction({
         order_production_id,
