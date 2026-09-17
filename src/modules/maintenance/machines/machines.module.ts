@@ -1,16 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MachinesResolver } from './machines.resolver';
 import { MachinesService } from './machines.service';
-import { SpareInventoryService } from '../../../common/services/entities/spare-inventory.service';
-import { AuditUsersService } from '../../../common/services/entities/audit-users.service';
+import { SpareInventoryModule } from '../../../common/services/entities/spare-inventory.module';
 
 @Module({
-    providers: [
-        MachinesResolver,
-        SpareInventoryService,
-        MachinesService,
-        AuditUsersService,
-    ],
-    exports: [MachinesResolver],
+    imports: [SpareInventoryModule],
+    providers: [MachinesResolver, MachinesService],
+    // Injected by MachineSeederModule (via imports), so exported rather than re-declared there.
+    exports: [MachinesService],
 })
 export class MachinesModule {}

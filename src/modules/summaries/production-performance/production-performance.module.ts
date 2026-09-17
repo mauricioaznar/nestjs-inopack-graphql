@@ -4,6 +4,5 @@ import { ProductionPerformanceService } from './production-performance.service';
 
 @Module({
     providers: [ProductionPerformanceResolver, ProductionPerformanceService],
-    exports: [ProductionPerformanceResolver],
 })
 export class ProductionPerformanceModule {}

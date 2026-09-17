@@ -1,10 +1,4 @@
-import {
-    CacheModule,
-    MiddlewareConsumer,
-    Module,
-    NestModule,
-} from '@nestjs/common';
-import { graphqlUploadExpress } from 'graphql-upload';
+import { CacheModule, Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { AuthModule } from './modules/auth/auth.module';
 import { ApolloError } from 'apollo-server-express';
@@ -21,6 +15,7 @@ import { PrismaModule } from './common/modules/prisma/prisma.module';
 import { SummariesModule } from './modules/summaries/summaries.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { PubSubModule } from './common/modules/pub-sub/pub-sub.module';
+import { AuditUsersModule } from './common/services/entities/audit-users.module';
 import { ManagementModule } from './modules/management/management.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 
@@ -28,6 +23,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
     imports: [
         PrismaModule,
         PubSubModule,
+        AuditUsersModule,
         GraphQLModule.forRoot({
             autoSchemaFile: 'schema.gql',
             installSubscriptionHandlers: true,
@@ -115,15 +111,4 @@ import { PayrollModule } from './modules/payroll/payroll.module';
         },
     ],
 })
-export class AppModule implements NestModule {
-    configure(consumer: MiddlewareConsumer) {
-        consumer
-            .apply(
-                graphqlUploadExpress({
-                    maxFileSize: 4000000,
-                    maxFiles: 3,
-                }),
-            )
-            .forRoutes('graphql');
-    }
-}
+export class AppModule {}

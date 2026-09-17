@@ -1,9 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ProductInventoryResolver } from './product-inventory.resolver';
 import { ProductInventoryService } from './product-inventory-service';
+import { ProductInventoryMovementsService } from './product-inventory-movements.service';
 
 @Module({
-    providers: [ProductInventoryResolver, ProductInventoryService],
-    exports: [ProductInventoryResolver],
+    providers: [
+        ProductInventoryResolver,
+        ProductInventoryService,
+        ProductInventoryMovementsService,
+    ],
 })
 export class ProductInventoryModule {}

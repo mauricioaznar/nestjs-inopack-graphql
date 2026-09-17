@@ -4,6 +4,5 @@ import { TransferTypeService } from './transfer-type.service';
 
 @Module({
     providers: [TransferTypeResolver, TransferTypeService],
-    exports: [TransferTypeResolver],
 })
 export class TransferTypeModule {}

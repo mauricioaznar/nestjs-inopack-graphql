@@ -54,9 +54,9 @@ export class ProductionResourcesSummaryService {
                          date (date_add(order_productions.start_date, interval -WEEKDAY(order_productions.start_date) - 1 day)) first_day_of_the_week,
                          date(date_add(date_add(order_productions.start_date, interval -WEEKDAY(order_productions.start_date) - 1 day), interval 6 day)) last_day_of_the_week,
                          order_productions.start_date start_date,
-                         order_production_resources.kilos kilos,
-                         order_production_resources.groups \`groups\`,
-                         order_production_resources.hours hours,
+                         order_production_products_consumed.kilos kilos,
+                         order_production_products_consumed.groups \`groups\`,
+                         order_production_products_consumed.hours hours,
                          products.description product_name,
                          employees.fullname employee_name,
                          employees.id employee_id,
@@ -64,18 +64,18 @@ export class ProductionResourcesSummaryService {
                          machines.id machine_id,
                          machines.name machine_name
                     from order_productions
-                        left join order_production_resources
-                        on order_productions.id = order_production_resources.order_production_id
+                        left join order_production_products_consumed
+                        on order_productions.id = order_production_products_consumed.order_production_id
                         left join products
-                        on products.id = order_production_resources.product_id
+                        on products.id = order_production_products_consumed.product_id
                         left join order_production_employees
                         on order_productions.id = order_production_employees.order_production_id
                         left join employees
                         on employees.id = order_production_employees.employee_id
                         left join machines
-                        on machines.id = order_production_resources.machine_id
+                        on machines.id = order_production_products_consumed.machine_id
                     where order_productions.active = 1
-                    and order_production_resources.active = 1
+                    and order_production_products_consumed.active = 1
                     and order_production_employees.active = 1
                 ) as ctc
             where ctc.start_date >= '${startDate}'

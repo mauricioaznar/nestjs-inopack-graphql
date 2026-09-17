@@ -22,6 +22,15 @@ export class AccountBase {
     @Field()
     abbreviation: string;
 
+    // General account identity, independent of client/supplier role: an account
+    // has one RFC and one address. Empty '' is the "no proporcionado" case; they
+    // print in the cotización's DATOS DEL CLIENTE block.
+    @Field()
+    rfc: string;
+
+    @Field()
+    address: string;
+
     @Field(() => Boolean, { nullable: false })
     is_supplier: boolean;
 
@@ -71,6 +80,20 @@ export class AccountBase {
 
     @Field(() => Boolean, { nullable: false })
     client_automatic_tax_calculation: boolean;
+
+    // Account-level default for a document's `reconciliation_only`: the CLIENT
+    // flag seeds new sales, the SUPPLIER flag seeds new expenses. Independent
+    // because an account is often both.
+    @Field(() => Boolean, { nullable: false })
+    client_reconciliation_only: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    supplier_reconciliation_only: boolean;
+
+    // Default for a manually captured expense's `is_draft`. Monitored-balance
+    // suppliers start ON; other suppliers may opt into draft-by-default.
+    @Field(() => Boolean, { nullable: false })
+    supplier_is_draft: boolean;
 }
 
 @InputType('AccountUpsertInput')
@@ -115,10 +138,12 @@ export class Account extends AccountBase {
     is_own: boolean;
 
     // Read-only flag (seeded by migration on the "Inopack Notas" account, id 38).
-    // Replaces the hardcoded account_id === 38 check in the accountability export
-    // / balances view split. Shown as a disabled checkbox in the account form.
+    // Marks the INFORMAL-money account: physical cash, never wired, tracked only
+    // internally. The accountability-export exclusion is a derivation of this, and
+    // the transfer rule pairs it with receipt_types.is_informal_receipt. Shown as a
+    // disabled checkbox in the account form.
     @Field(() => Boolean, { nullable: false })
-    exclude_from_accountability_export: boolean;
+    is_informal_account: boolean;
 
     // Audit stamps — server-side only, never part of the upsert input.
     @Field(() => Int, { nullable: true })
@@ -192,9 +217,6 @@ export class AccountTransactionItem {
 
     @Field(() => Float)
     transfer_receipts_total: number;
-
-    @Field(() => String, { nullable: true })
-    expense_status_color: string | null;
 }
 
 // A single transfer (payment) as its own ledger row, filtered by its own

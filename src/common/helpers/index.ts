@@ -6,6 +6,7 @@ export * from './dates/get-updated-at-property';
 export * from './dates/get-created-at-property';
 export * from './dates/format-date';
 export * from './dates/business-day';
+export * from './sales/get-compound-order-code';
 export * from './audit/get-created-by-property';
 export * from './audit/get-updated-by-property';
 export * from './number/format-number';

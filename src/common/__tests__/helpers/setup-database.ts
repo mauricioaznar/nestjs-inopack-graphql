@@ -1,5 +1,5 @@
 import { adminUser, salesUser } from '../objects/auth/users';
-import { UserService } from '../../../modules/auth/user.service';
+import { UserService } from '../../../modules/auth/users/user.service';
 import { setupApp } from './setup-app';
 import { orderProductionTypes } from '../objects';
 import { PrismaService } from '../../modules/prisma/prisma.service';
@@ -35,6 +35,15 @@ export default async function setupDatabase() {
     await prismaService.order_requests.deleteMany();
     await prismaService.products.deleteMany();
     await prismaService.user_roles.deleteMany();
+    // Same reason as every other table in this list: the FK to `users` has no
+    // `ON DELETE` clause, so MySQL defaults to RESTRICT and `users.deleteMany()`
+    // below fails while a single refresh-token row survives. Without this line
+    // the *second* consecutive run dies in global setup, before any test runs.
+    await prismaService.refresh_tokens.deleteMany();
+    // Phase 3 email-MFA codes: same RESTRICT-FK-to-users trap as
+    // refresh_tokens above. Must be cleared before `users.deleteMany()` or the
+    // second consecutive run dies in global setup.
+    await prismaService.email_mfa_codes.deleteMany();
     await prismaService.account_contacts.deleteMany();
 
     // level 3

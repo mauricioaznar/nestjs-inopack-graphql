@@ -7,6 +7,5 @@ import { ThirdPartyAccountTransferSummariesService } from './third-party-account
         ThirdPartyAccountTransferSummariesResolver,
         ThirdPartyAccountTransferSummariesService,
     ],
-    exports: [ThirdPartyAccountTransferSummariesResolver],
 })
 export class ThirdPartyAccountTransferSummariesModule {}

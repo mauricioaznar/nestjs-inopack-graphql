@@ -4,6 +4,5 @@ import { TransfersSummaryService } from './transfers-summary.service';
 
 @Module({
     providers: [TransfersSummaryResolver, TransfersSummaryService],
-    exports: [TransfersSummaryResolver],
 })
 export class TransfersSummaryModule {}

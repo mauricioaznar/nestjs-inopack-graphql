@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Float,
     Int,
     Mutation,
@@ -10,6 +11,11 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { ExpensesService } from './expenses.service';
 import {
     Account,
@@ -17,11 +23,11 @@ import {
     ActivityTypeName,
     Expense,
     ExpenseResource,
-    ExpenseStatus,
     ExpensesQueryArgs,
     ExpensesSortArgs,
     ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
+    ExpenseDetailsInput,
     GenerateRecurringExpenseInput,
     GenerateRecurringExpensesResult,
     GetExpensesQueryArgs,
@@ -103,6 +109,49 @@ export class ExpensesResolver {
         return expense;
     }
 
+    // Optional-details edit from the balances views (folio, payment date,
+    // supplement, conciliation, canceled). It bypasses the status-locked upsert
+    // and is audited with old/new snapshots.
+    @Mutation(() => Expense)
+    @UseGuards(GqlAuthGuard)
+    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
+    async updateExpenseDetails(
+        @Args('ExpenseDetailsInput') input: ExpenseDetailsInput,
+        @CurrentUser() currentUser: User,
+    ): Promise<Expense> {
+        const auditContext = {
+            entityName: ActivityEntityName.EXPENSE,
+            entityId: input.expense_id,
+            activityType: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+        };
+        const oldCapture = await captureSnapshotSafely(
+            auditContext,
+            'old_snapshot',
+            () =>
+                this.service.getExpenseSnapshot({
+                    expense_id: input.expense_id,
+                }),
+        );
+        const expense = await this.service.updateExpenseDetails({ input });
+        const newCapture = await captureSnapshotSafely(
+            auditContext,
+            'new_snapshot',
+            () =>
+                this.service.getExpenseSnapshot({
+                    expense_id: input.expense_id,
+                }),
+        );
+        await this.pubSubService.expense({
+            expense,
+            type: ActivityTypeName.UPDATE,
+            userId: currentUser.id,
+            oldCapture,
+            newCapture,
+        });
+        return expense;
+    }
+
     @Mutation(() => Boolean)
     @UseGuards(GqlAuthGuard)
     @RolesDecorator(RoleId.EXPENSES)
@@ -148,13 +197,6 @@ export class ExpensesResolver {
     @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
     async getExpense(@Args('ExpenseId') id: number): Promise<Expense | null> {
         return this.service.getExpense({ expense_id: id });
-    }
-
-    @Query(() => [ExpenseStatus])
-    @UseGuards(GqlAuthGuard)
-    @RolesDecorator(RoleId.EXPENSES, RoleId.EXPENSES_ASSISTANT)
-    async getExpenseStatuses(): Promise<ExpenseStatus[]> {
-        return this.service.getExpenseStatuses();
     }
 
     @Query(() => [Expense])
@@ -232,44 +274,59 @@ export class ExpensesResolver {
     }
 
     @ResolveField(() => Account, { nullable: true })
-    async account(@Parent() expense: Expense): Promise<Account | null> {
-        return this.service.getAccount({
-            account_id: expense.account_id,
-        });
+    account(
+        @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
+    ): Promise<Account | null> {
+        return toOne(
+            ctx,
+            'Expense.account',
+            expense.account_id,
+            (ids) => this.service.getAccountsByIds(ids),
+            (a) => a.id,
+        );
     }
 
     @ResolveField(() => ReceiptType, { nullable: true })
-    async receipt_type(
+    receipt_type(
         @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
     ): Promise<ReceiptType | null> {
-        return this.service.getReceiptType({
-            receipt_type_id: expense.receipt_type_id,
-        });
-    }
-
-    @ResolveField(() => ExpenseStatus, { nullable: true })
-    async expense_status(
-        @Parent() expense: Expense,
-    ): Promise<ExpenseStatus | null> {
-        return this.service.getExpenseStatus({
-            expense_status_id: expense.expense_status_id,
-        });
+        return toOne(
+            ctx,
+            'Expense.receipt_type',
+            expense.receipt_type_id,
+            (ids) => this.service.getReceiptTypesByIds(ids),
+            (rt) => rt.id,
+        );
     }
 
     @ResolveField(() => [ExpenseResource])
-    async expense_resources(expense: Expense): Promise<ExpenseResource[]> {
-        return this.service.getExpenseResources({
-            expense_id: expense.id,
-        });
+    expense_resources(
+        @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
+    ): Promise<ExpenseResource[]> {
+        return toMany(
+            ctx,
+            'Expense.expense_resources',
+            expense.id,
+            (ids) => this.service.getExpenseResourcesByExpenseIds(ids),
+            (er) => er.expense_id,
+        );
     }
 
     @ResolveField(() => [TransferReceipt])
-    async transfer_receipts(
+    transfer_receipts(
         @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
     ): Promise<TransferReceipt[]> {
-        return this.service.getExpenseTransferReceipts({
-            expense_id: expense.id,
-        });
+        return toMany(
+            ctx,
+            'Expense.transfer_receipts',
+            expense.id,
+            (ids) => this.service.getExpenseTransferReceiptsByExpenseIds(ids),
+            (tr) => tr.expense_id,
+        );
     }
 
     @ResolveField(() => String)
@@ -371,17 +428,31 @@ export class ExpensesResolver {
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(@Parent() expense: Expense): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: expense.created_by_id,
-        });
+    created_by(
+        @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            expense.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(@Parent() expense: Expense): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: expense.updated_by_id,
-        });
+    updated_by(
+        @Parent() expense: Expense,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            expense.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @Subscription(() => Expense)

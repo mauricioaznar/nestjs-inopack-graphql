@@ -4,6 +4,5 @@ import { OrderRequestStatusesService } from './order-request-statuses.service';
 
 @Module({
     providers: [OrderRequestStatusesResolver, OrderRequestStatusesService],
-    exports: [OrderRequestStatusesResolver],
 })
 export class OrderRequestStatusesModule {}

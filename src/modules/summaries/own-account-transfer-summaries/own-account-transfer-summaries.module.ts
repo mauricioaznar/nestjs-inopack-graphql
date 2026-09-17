@@ -7,6 +7,5 @@ import { OwnAccountTransferSummariesService } from './own-account-transfer-summa
         OwnAccountTransferSummariesResolver,
         OwnAccountTransferSummariesService,
     ],
-    exports: [OwnAccountTransferSummariesResolver],
 })
 export class OwnAccountTransferSummariesModule {}

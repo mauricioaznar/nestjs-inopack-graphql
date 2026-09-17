@@ -4,6 +4,5 @@ import { PayrollService } from './payroll.service';
 
 @Module({
     providers: [PayrollResolver, PayrollService],
-    exports: [PayrollResolver],
 })
 export class PayrollModule {}

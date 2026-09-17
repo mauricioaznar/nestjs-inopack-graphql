@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Float,
     Mutation,
     Parent,
@@ -9,6 +10,11 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { TransfersService } from './transfers.service';
 import {
     Account,
@@ -188,35 +194,59 @@ export class TransfersResolver {
     }
 
     @ResolveField(() => Account, { nullable: true })
-    async to_account(@Parent() transfer: Transfer): Promise<Account | null> {
-        return this.service.getAccount({
-            account_id: transfer.to_account_id,
-        });
+    to_account(
+        @Parent() transfer: Transfer,
+        @Context() ctx: LoaderContext,
+    ): Promise<Account | null> {
+        return toOne(
+            ctx,
+            'Transfer.to_account',
+            transfer.to_account_id,
+            (ids) => this.service.getAccountsByIds(ids),
+            (a) => a.id,
+        );
     }
 
     @ResolveField(() => TransferType, { nullable: true })
-    async transfer_type(
+    transfer_type(
         @Parent() transfer: Transfer,
+        @Context() ctx: LoaderContext,
     ): Promise<TransferType | null> {
-        return this.service.getTransferType({
-            transfer_type_id: transfer.transfer_type_id,
-        });
+        return toOne(
+            ctx,
+            'Transfer.transfer_type',
+            transfer.transfer_type_id,
+            (ids) => this.service.getTransferTypesByIds(ids),
+            (tt) => tt.id,
+        );
     }
 
     @ResolveField(() => Account, { nullable: true })
-    async from_account(@Parent() transfer: Transfer): Promise<Account | null> {
-        return this.service.getAccount({
-            account_id: transfer.from_account_id,
-        });
+    from_account(
+        @Parent() transfer: Transfer,
+        @Context() ctx: LoaderContext,
+    ): Promise<Account | null> {
+        return toOne(
+            ctx,
+            'Transfer.from_account',
+            transfer.from_account_id,
+            (ids) => this.service.getAccountsByIds(ids),
+            (a) => a.id,
+        );
     }
 
     @ResolveField(() => [TransferReceipt], { nullable: false })
-    async transfer_receipts(
+    transfer_receipts(
         @Parent() transfer: Transfer,
+        @Context() ctx: LoaderContext,
     ): Promise<TransferReceipt[]> {
-        return this.service.getTransferReceipts({
-            transfer_id: transfer.id,
-        });
+        return toMany(
+            ctx,
+            'Transfer.transfer_receipts',
+            transfer.id,
+            (ids) => this.service.getTransferReceiptsByTransferIds(ids),
+            (tr) => tr.transfer_id,
+        );
     }
 
     @ResolveField(() => Float, { nullable: false })
@@ -229,17 +259,31 @@ export class TransfersResolver {
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(@Parent() transfer: Transfer): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: transfer.created_by_id,
-        });
+    created_by(
+        @Parent() transfer: Transfer,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            transfer.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(@Parent() transfer: Transfer): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: transfer.updated_by_id,
-        });
+    updated_by(
+        @Parent() transfer: Transfer,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            transfer.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @Subscription(() => Transfer)

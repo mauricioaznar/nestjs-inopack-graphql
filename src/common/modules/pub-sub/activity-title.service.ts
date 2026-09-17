@@ -144,6 +144,19 @@ export class ActivityTitleService {
         );
     }
 
+    /** `1042 · ACME` */
+    async orderQuotation(orderQuotation: {
+        id: number;
+        order_code: number;
+        account_id?: number | null;
+    }): Promise<string> {
+        return buildTitle(
+            orderQuotation.id,
+            `${orderQuotation.order_code}`,
+            await this.getAccountName(orderQuotation.account_id),
+        );
+    }
+
     /** `15/07/2026 · Turno 2` */
     orderProduction(orderProduction: {
         id: number;

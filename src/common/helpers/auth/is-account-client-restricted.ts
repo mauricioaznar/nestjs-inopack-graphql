@@ -1,5 +1,5 @@
 import { RoleId } from '../../dto/entities/auth/role.dto';
-import { UserWithRoles } from '../../dto/entities';
+import { AuthenticatedUser } from '../../dto/entities';
 
 // Roles that may see *every* account: the global admins (Super, General,
 // Asistente General) and the expenses/Gastos domain, which manages suppliers,
@@ -18,9 +18,8 @@ const BROAD_ACCOUNT_ROLE_IDS: number[] = [
 // read queries themselves (not via a role guard) so the restriction holds no
 // matter what filter the client sends — a Ventas user cannot reach a supplier
 // or own account by hand-crafting query arguments.
-export function isAccountClientRestricted(user: UserWithRoles): boolean {
-    const roleIds = user.user_roles.map((userRole) => userRole.role_id);
-    return !roleIds.some(
-        (roleId) => roleId != null && BROAD_ACCOUNT_ROLE_IDS.includes(roleId),
+export function isAccountClientRestricted(user: AuthenticatedUser): boolean {
+    return !user.role_ids.some((roleId) =>
+        BROAD_ACCOUNT_ROLE_IDS.includes(roleId),
     );
 }

@@ -12,6 +12,7 @@ export enum ActivityEntityName {
     ORDER_PRODUCTION = 'orderProductions',
     ORDER_SALE = 'orderSales',
     ORDER_REQUEST = 'orderRequests',
+    ORDER_QUOTATION = 'orderQuotations',
     PRODUCT = 'products',
     EMPLOYEE = 'employees',
     ORDER_ADJUSTMENT = 'orderAdjustments',

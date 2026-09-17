@@ -347,6 +347,12 @@ export class AccountsService {
     async upsertAccount(
         input: AccountUpsertInput,
         { current_user_id }: { current_user_id?: number | null } = {},
+        // Phase 4 (cross-service transactions): a caller already inside a
+        // $transaction (acceptOrderQuotation's catalog step) passes its tx client
+        // so the whole account write joins that transaction; standalone callers
+        // omit it and get their own transaction below. Validation and the
+        // post-write similar-name read stay OUTSIDE the transaction.
+        client?: Prisma.TransactionClient,
     ): Promise<Account> {
         // Validate everything before any writes so invalid input never leaves
         // the account/contacts/catalog partially saved.
@@ -358,142 +364,165 @@ export class AccountsService {
                   select: { name: true },
               })
             : null;
+        const supplierIsDraft =
+            input.monitor_supplier_expenses || input.supplier_is_draft;
 
-        const account = await this.prisma.accounts.upsert({
-            create: {
-                ...getCreatedAtProperty(),
-                ...getUpdatedAtProperty(),
-                ...getCreatedByProperty(current_user_id),
-                ...getUpdatedByProperty(current_user_id),
-                name: input.name,
-                abbreviation: input.abbreviation,
-                requires_order_request: input.requires_order_request,
-                is_supplier: input.is_supplier,
-                is_client: input.is_client,
-                resource_id: input.resource_id,
-                monitor_supplier_expenses: input.monitor_supplier_expenses,
-                client_credit_days: input.client_credit_days,
-                supplier_credit_days: input.supplier_credit_days,
-                client_require_credit_note: input.client_require_credit_note,
-                client_require_supplement: input.client_require_supplement,
-                client_requires_invoice_code:
-                    input.client_requires_invoice_code,
-                client_requires_tax: input.client_requires_tax,
-                supplier_require_supplement: input.supplier_require_supplement,
-                supplier_requires_external_code:
-                    input.supplier_requires_external_code,
-                supplier_requires_tax: input.supplier_requires_tax,
-                supplier_recurring_expenses:
-                    input.supplier_recurring_expenses,
-                client_automatic_tax_calculation:
-                    input.client_automatic_tax_calculation,
-            },
-            update: {
-                ...getUpdatedAtProperty(),
-                ...getUpdatedByProperty(current_user_id),
-                name: input.name,
-                abbreviation: input.abbreviation,
-                requires_order_request: input.requires_order_request,
-                is_supplier: input.is_supplier,
-                is_client: input.is_client,
-                resource_id: input.resource_id,
-                monitor_supplier_expenses: input.monitor_supplier_expenses,
-                client_credit_days: input.client_credit_days,
-                supplier_credit_days: input.supplier_credit_days,
-                client_require_credit_note: input.client_require_credit_note,
-                client_require_supplement: input.client_require_supplement,
-                client_requires_invoice_code:
-                    input.client_requires_invoice_code,
-                client_requires_tax: input.client_requires_tax,
-                supplier_require_supplement: input.supplier_require_supplement,
-                supplier_requires_external_code:
-                    input.supplier_requires_external_code,
-                supplier_requires_tax: input.supplier_requires_tax,
-                supplier_recurring_expenses:
-                    input.supplier_recurring_expenses,
-                client_automatic_tax_calculation:
-                    input.client_automatic_tax_calculation,
-            },
-            where: {
-                id: input.id || 0,
-            },
-        });
-
-        const newAccountContactItems = input.account_contacts;
-        const oldAccountContactItems = input.id
-            ? await this.prisma.account_contacts.findMany({
-                  where: {
-                      account_id: input.id,
-                  },
-              })
-            : [];
-
-        const {
-            aMinusB: deleteAccountContactItems,
-            bMinusA: createAccountContactItems,
-            intersection: updateAccountContactItems,
-        } = vennDiagram({
-            a: oldAccountContactItems,
-            b: newAccountContactItems,
-            indexProperties: ['id'],
-        });
-
-        for await (const delItem of deleteAccountContactItems) {
-            if (delItem && delItem.id) {
-                await this.prisma.account_contacts.updateMany({
-                    data: {
-                        ...getUpdatedAtProperty(),
-                        active: -1,
-                    },
-                    where: {
-                        id: delItem.id,
-                    },
-                });
-            }
-        }
-
-        for await (const createItem of createAccountContactItems) {
-            await this.prisma.account_contacts.create({
-                data: {
+        const run = async (tx: Prisma.TransactionClient) => {
+            const account = await tx.accounts.upsert({
+                create: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
-                    account_id: account.id,
-                    first_name: createItem.first_name,
-                    last_name: createItem.last_name,
-                    fullname: `${createItem.first_name} ${createItem.last_name}`,
-                    email: createItem.email,
-                    cellphone: createItem.cellphone,
+                    ...getCreatedByProperty(current_user_id),
+                    ...getUpdatedByProperty(current_user_id),
+                    name: input.name,
+                    abbreviation: input.abbreviation,
+                    rfc: input.rfc,
+                    address: input.address,
+                    requires_order_request: input.requires_order_request,
+                    is_supplier: input.is_supplier,
+                    is_client: input.is_client,
+                    resource_id: input.resource_id,
+                    monitor_supplier_expenses: input.monitor_supplier_expenses,
+                    client_credit_days: input.client_credit_days,
+                    supplier_credit_days: input.supplier_credit_days,
+                    client_require_credit_note: input.client_require_credit_note,
+                    client_require_supplement: input.client_require_supplement,
+                    client_requires_invoice_code:
+                        input.client_requires_invoice_code,
+                    client_requires_tax: input.client_requires_tax,
+                    supplier_require_supplement: input.supplier_require_supplement,
+                    supplier_requires_external_code:
+                        input.supplier_requires_external_code,
+                    supplier_requires_tax: input.supplier_requires_tax,
+                    supplier_recurring_expenses:
+                        input.supplier_recurring_expenses,
+                    client_automatic_tax_calculation:
+                        input.client_automatic_tax_calculation,
+                    client_reconciliation_only:
+                        input.client_reconciliation_only,
+                    supplier_reconciliation_only:
+                        input.supplier_reconciliation_only,
+                    supplier_is_draft: supplierIsDraft,
+                },
+                update: {
+                    ...getUpdatedAtProperty(),
+                    ...getUpdatedByProperty(current_user_id),
+                    name: input.name,
+                    abbreviation: input.abbreviation,
+                    rfc: input.rfc,
+                    address: input.address,
+                    requires_order_request: input.requires_order_request,
+                    is_supplier: input.is_supplier,
+                    is_client: input.is_client,
+                    resource_id: input.resource_id,
+                    monitor_supplier_expenses: input.monitor_supplier_expenses,
+                    client_credit_days: input.client_credit_days,
+                    supplier_credit_days: input.supplier_credit_days,
+                    client_require_credit_note: input.client_require_credit_note,
+                    client_require_supplement: input.client_require_supplement,
+                    client_requires_invoice_code:
+                        input.client_requires_invoice_code,
+                    client_requires_tax: input.client_requires_tax,
+                    supplier_require_supplement: input.supplier_require_supplement,
+                    supplier_requires_external_code:
+                        input.supplier_requires_external_code,
+                    supplier_requires_tax: input.supplier_requires_tax,
+                    supplier_recurring_expenses:
+                        input.supplier_recurring_expenses,
+                    client_automatic_tax_calculation:
+                        input.client_automatic_tax_calculation,
+                    client_reconciliation_only:
+                        input.client_reconciliation_only,
+                    supplier_reconciliation_only:
+                        input.supplier_reconciliation_only,
+                    supplier_is_draft: supplierIsDraft,
+                },
+                where: {
+                    id: input.id || 0,
                 },
             });
-        }
 
-        for await (const updateItem of updateAccountContactItems) {
-            if (updateItem && updateItem.id) {
-                await this.prisma.account_contacts.updateMany({
+            const newAccountContactItems = input.account_contacts;
+            const oldAccountContactItems = input.id
+                ? await tx.account_contacts.findMany({
+                      where: {
+                          account_id: input.id,
+                      },
+                  })
+                : [];
+
+            const {
+                aMinusB: deleteAccountContactItems,
+                bMinusA: createAccountContactItems,
+                intersection: updateAccountContactItems,
+            } = vennDiagram({
+                a: oldAccountContactItems,
+                b: newAccountContactItems,
+                indexProperties: ['id'],
+            });
+
+            for await (const delItem of deleteAccountContactItems) {
+                if (delItem && delItem.id) {
+                    await tx.account_contacts.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            active: -1,
+                        },
+                        where: {
+                            id: delItem.id,
+                        },
+                    });
+                }
+            }
+
+            for await (const createItem of createAccountContactItems) {
+                await tx.account_contacts.create({
                     data: {
+                        ...getCreatedAtProperty(),
                         ...getUpdatedAtProperty(),
-                        first_name: updateItem.first_name,
-                        last_name: updateItem.last_name,
-                        fullname: `${updateItem.first_name} ${updateItem.last_name}`,
-                        email: updateItem.email,
-                        cellphone: updateItem.cellphone,
-                    },
-                    where: {
-                        id: updateItem.id,
+                        account_id: account.id,
+                        first_name: createItem.first_name,
+                        last_name: createItem.last_name,
+                        fullname: `${createItem.first_name} ${createItem.last_name}`,
+                        email: createItem.email,
+                        cellphone: createItem.cellphone,
                     },
                 });
             }
-        }
 
-        await this.syncAccountProducts({
-            account_id: account.id,
-            items: input.account_products,
-        });
+            for await (const updateItem of updateAccountContactItems) {
+                if (updateItem && updateItem.id) {
+                    await tx.account_contacts.updateMany({
+                        data: {
+                            ...getUpdatedAtProperty(),
+                            first_name: updateItem.first_name,
+                            last_name: updateItem.last_name,
+                            fullname: `${updateItem.first_name} ${updateItem.last_name}`,
+                            email: updateItem.email,
+                            cellphone: updateItem.cellphone,
+                        },
+                        where: {
+                            id: updateItem.id,
+                        },
+                    });
+                }
+            }
 
-        await this.syncAccountResources({
-            account_id: account.id,
-            items: input.account_resources,
-        });
+            await this.syncAccountProducts({
+                account_id: account.id,
+                items: input.account_products,
+            }, tx);
+
+            await this.syncAccountResources({
+                account_id: account.id,
+                items: input.account_resources,
+            }, tx);
+            return account;
+        };
+
+        const account = client
+            ? await run(client)
+            : await this.prisma.$transaction(run);
 
         const normalizedNameChanged =
             !previousAccount ||
@@ -519,9 +548,9 @@ export class AccountsService {
     }: {
         account_id: number;
         items: AccountProductInput[];
-    }): Promise<void> {
+    }, client: Prisma.TransactionClient = this.prisma): Promise<void> {
         const oldItems = account_id
-            ? await this.prisma.account_products.findMany({
+            ? await client.account_products.findMany({
                   where: {
                       account_id: account_id,
                       active: 1,
@@ -541,7 +570,7 @@ export class AccountsService {
 
         for await (const delItem of deleteItems) {
             if (delItem && delItem.id) {
-                await this.prisma.account_products.updateMany({
+                await client.account_products.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         active: -1,
@@ -554,8 +583,8 @@ export class AccountsService {
         for await (const createItem of createItems) {
             const group_weight = await this.getProductGroupWeight({
                 product_id: createItem.product_id,
-            });
-            await this.prisma.account_products.create({
+            }, client);
+            await client.account_products.create({
                 data: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
@@ -573,8 +602,8 @@ export class AccountsService {
             if (updateItem && updateItem.id) {
                 const group_weight = await this.getProductGroupWeight({
                     product_id: updateItem.product_id,
-                });
-                await this.prisma.account_products.updateMany({
+                }, client);
+                await client.account_products.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         product_id: updateItem.product_id,
@@ -593,9 +622,9 @@ export class AccountsService {
         product_id,
     }: {
         product_id?: number | null;
-    }): Promise<number> {
+    }, client: Prisma.TransactionClient = this.prisma): Promise<number> {
         if (!product_id) return 0;
-        const product = await this.prisma.products.findUnique({
+        const product = await client.products.findUnique({
             where: { id: product_id },
         });
         return product?.current_group_weight || 0;
@@ -612,9 +641,9 @@ export class AccountsService {
     }: {
         account_id: number;
         items: AccountResourceInput[];
-    }): Promise<void> {
+    }, client: Prisma.TransactionClient = this.prisma): Promise<void> {
         const oldItems = account_id
-            ? await this.prisma.account_resources.findMany({
+            ? await client.account_resources.findMany({
                   where: {
                       account_id: account_id,
                       active: 1,
@@ -634,7 +663,7 @@ export class AccountsService {
 
         for await (const delItem of deleteItems) {
             if (delItem && delItem.id) {
-                await this.prisma.account_resources.updateMany({
+                await client.account_resources.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         active: -1,
@@ -645,7 +674,7 @@ export class AccountsService {
         }
 
         for await (const createItem of createItems) {
-            await this.prisma.account_resources.create({
+            await client.account_resources.create({
                 data: {
                     ...getCreatedAtProperty(),
                     ...getUpdatedAtProperty(),
@@ -660,7 +689,7 @@ export class AccountsService {
 
         for await (const updateItem of updateItems) {
             if (updateItem && updateItem.id) {
-                await this.prisma.account_resources.updateMany({
+                await client.account_resources.updateMany({
                     data: {
                         ...getUpdatedAtProperty(),
                         resource_id: updateItem.resource_id,
@@ -864,6 +893,50 @@ export class AccountsService {
             where: {
                 id: resource_id,
             },
+        });
+    }
+
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    // account_contacts does not expose account_id as a GraphQL field, but the
+    // Prisma row carries it — annotate the return type so the loader can group by
+    // it. The extra prop is internal: GraphQL serves only the selected fields.
+    async getAccountContactsByAccountIds(
+        accountIds: number[],
+    ): Promise<(AccountContact & { account_id: number | null })[]> {
+        if (accountIds.length === 0) return [];
+        return this.prisma.account_contacts.findMany({
+            where: {
+                AND: [{ account_id: { in: accountIds } }, { active: 1 }],
+            },
+        });
+    }
+
+    async getAccountProductsByAccountIds(
+        accountIds: number[],
+    ): Promise<AccountProduct[]> {
+        if (accountIds.length === 0) return [];
+        return this.prisma.account_products.findMany({
+            where: { account_id: { in: accountIds }, active: 1 },
+        });
+    }
+
+    async getAccountResourcesByAccountIds(
+        accountIds: number[],
+    ): Promise<AccountResource[]> {
+        if (accountIds.length === 0) return [];
+        return this.prisma.account_resources.findMany({
+            where: { account_id: { in: accountIds }, active: 1 },
+        });
+    }
+
+    async getResourcesByIds(ids: number[]): Promise<Resource[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.resources.findMany({
+            where: { id: { in: ids } },
         });
     }
 
@@ -1080,8 +1153,7 @@ export class AccountsService {
                     'receipt_type_id',
                 )},
                 wtv_s.total as total_with_tax,
-                ifnull(otv_s.total, 0) as transfer_receipts_total,
-                NULL as expense_status_color
+                ifnull(otv_s.total, 0) as transfer_receipts_total
             FROM order_sales
             JOIN (
                 SELECT order_sales.id order_sale_id,
@@ -1117,8 +1189,7 @@ export class AccountsService {
                 expenses.notes,
                 ${convertToInt('expenses.receipt_type_id', 'receipt_type_id')},
                 wtv_e.total as total_with_tax,
-                ifnull(otv_e.total, 0) as transfer_receipts_total,
-                expense_statuses.color as expense_status_color
+                ifnull(otv_e.total, 0) as transfer_receipts_total
             FROM expenses
             JOIN (
                 SELECT expenses.id,
@@ -1138,7 +1209,6 @@ export class AccountsService {
                 AND ex_scope.account_id = ${account_id}
                 GROUP BY expense_id
             ) AS otv_e ON otv_e.expense_id = expenses.id
-            LEFT JOIN expense_statuses ON expense_statuses.id = expenses.expense_status_id
             WHERE expenses.active = 1
             AND expenses.canceled = 0
             AND expenses.account_id = ${account_id}

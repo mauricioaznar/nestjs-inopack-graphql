@@ -1,12 +1,19 @@
 import {
     Args,
+    Context,
     Float,
     Mutation,
+    Parent,
     Query,
     ResolveField,
     Resolver,
 } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { SparesService } from './spares.service';
 import {
     Spare,
@@ -52,10 +59,17 @@ export class SparesResolver {
     }
 
     @ResolveField(() => SpareCategory, { nullable: true })
-    async spare_category(spare: Spare) {
-        return this.sparesService.getSpareCategory({
-            spare_category_id: spare.spare_category_id,
-        });
+    spare_category(
+        @Parent() spare: Spare,
+        @Context() ctx: LoaderContext,
+    ): Promise<SpareCategory | null> {
+        return toOne(
+            ctx,
+            'Spare.spare_category',
+            spare.spare_category_id,
+            (ids) => this.sparesService.getSpareCategoriesByIds(ids),
+            (sc) => sc.id!,
+        );
     }
 
     @ResolveField(() => Float)
@@ -66,8 +80,17 @@ export class SparesResolver {
     }
 
     @ResolveField(() => [SpareTransaction])
-    async spare_transactions(spare: Spare) {
-        return this.sparesService.getSpareTransactions({ spare_id: spare.id });
+    spare_transactions(
+        @Parent() spare: Spare,
+        @Context() ctx: LoaderContext,
+    ): Promise<SpareTransaction[]> {
+        return toMany(
+            ctx,
+            'Spare.spare_transactions',
+            spare.id,
+            (ids) => this.sparesService.getSpareTransactionsBySpareIds(ids),
+            (st) => st.spare_id,
+        );
     }
 
     @ResolveField(() => Boolean)

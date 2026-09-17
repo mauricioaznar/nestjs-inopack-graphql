@@ -4,6 +4,5 @@ import { ExpenseResourcesService } from './expense-resources.service';
 
 @Module({
     providers: [ExpenseResourcesResolver, ExpenseResourcesService],
-    exports: [ExpenseResourcesResolver],
 })
 export class ExpenseResourcesModule {}

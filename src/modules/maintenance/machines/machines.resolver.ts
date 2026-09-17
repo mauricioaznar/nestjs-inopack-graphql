@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Float,
     Mutation,
     Parent,
@@ -9,6 +10,11 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { MachinesService } from './machines.service';
 import {
     ActivityEntityName,
@@ -122,10 +128,17 @@ export class MachinesResolver {
     }
 
     @ResolveField(() => [MachineSection])
-    async machine_sections(machine: Machine): Promise<MachineSection[]> {
-        return this.service.getMachineSections({
-            machineId: machine.id,
-        });
+    machine_sections(
+        @Parent() machine: Machine,
+        @Context() ctx: LoaderContext,
+    ): Promise<MachineSection[]> {
+        return toMany(
+            ctx,
+            'Machine.machine_sections',
+            machine.id,
+            (ids) => this.service.getMachineSectionsByMachineIds(ids),
+            (ms) => ms.machine_id,
+        );
     }
 
     @Query(() => PaginatedMachines)
@@ -141,10 +154,17 @@ export class MachinesResolver {
     }
 
     @ResolveField(() => [MachinePart])
-    async unassigned_parts(machine: Machine): Promise<MachinePart[]> {
-        return this.service.getMachineUnassignedParts({
-            machineId: machine.id,
-        });
+    unassigned_parts(
+        @Parent() machine: Machine,
+        @Context() ctx: LoaderContext,
+    ): Promise<MachinePart[]> {
+        return toMany(
+            ctx,
+            'Machine.unassigned_parts',
+            machine.id,
+            (ids) => this.service.getMachineUnassignedPartsByMachineIds(ids),
+            (mp) => mp.machine_id,
+        );
     }
 
     @ResolveField(() => [MachineDailyProduction])
@@ -160,19 +180,31 @@ export class MachinesResolver {
     }
 
     @ResolveField(() => OrderProductionType, { nullable: true })
-    async order_production_type(
+    order_production_type(
         @Parent() machine: Machine,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderProductionType | null> {
-        return this.service.getOrderProductionType({
-            order_production_type_id: machine.order_production_type_id,
-        });
+        return toOne(
+            ctx,
+            'Machine.order_production_type',
+            machine.order_production_type_id,
+            (ids) => this.service.getOrderProductionTypesByIds(ids),
+            (opt) => opt.id,
+        );
     }
 
     @ResolveField(() => Branch, { nullable: true })
-    async branch(@Parent() machine: Machine): Promise<Branch | null> {
-        return this.service.getBranch({
-            branch_id: machine.branch_id,
-        });
+    branch(
+        @Parent() machine: Machine,
+        @Context() ctx: LoaderContext,
+    ): Promise<Branch | null> {
+        return toOne(
+            ctx,
+            'Machine.branch',
+            machine.branch_id,
+            (ids) => this.service.getBranchesByIds(ids),
+            (b) => b.id,
+        );
     }
 
     @Mutation(() => Boolean)
@@ -213,17 +245,31 @@ export class MachinesResolver {
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(@Parent() machine: Machine): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: machine.created_by_id,
-        });
+    created_by(
+        @Parent() machine: Machine,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            machine.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(@Parent() machine: Machine): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: machine.updated_by_id,
-        });
+    updated_by(
+        @Parent() machine: Machine,
+        @Context() ctx: LoaderContext,
+    ): Promise<User | null> {
+        return toOne(
+            ctx,
+            'audit.user',
+            machine.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @Subscription(() => Machine)

@@ -92,6 +92,27 @@ export class SparesService {
         });
     }
 
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getSpareCategoriesByIds(ids: number[]): Promise<SpareCategory[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.spare_categories.findMany({
+            where: { id: { in: ids } },
+        });
+    }
+
+    async getSpareTransactionsBySpareIds(
+        spareIds: number[],
+    ): Promise<SpareTransaction[]> {
+        if (spareIds.length === 0) return [];
+        return this.prisma.spare_transactions.findMany({
+            where: { spare_id: { in: spareIds } },
+        });
+    }
+
     async deleteSpare({ spare_id }: { spare_id: number }): Promise<boolean> {
         const isDeletable = await this.isDeletable({ spare_id });
 

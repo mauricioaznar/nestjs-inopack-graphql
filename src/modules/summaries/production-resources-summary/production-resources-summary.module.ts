@@ -7,6 +7,5 @@ import { ProductionResourcesSummaryService } from './production-resources-summar
         ProductionResourcesSummaryResolver,
         ProductionResourcesSummaryService,
     ],
-    exports: [ProductionResourcesSummaryResolver],
 })
 export class ProductionResourcesSummaryModule {}

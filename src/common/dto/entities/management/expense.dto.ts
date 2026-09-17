@@ -62,9 +62,6 @@ export class ExpenseBase {
     @Field(() => Int, { nullable: true })
     receipt_type_id: number | null;
 
-    @Field(() => Int, { nullable: true })
-    expense_status_id: number | null;
-
     @Field(() => String, { nullable: false })
     notes: string;
 
@@ -73,6 +70,50 @@ export class ExpenseBase {
 
     @Field(() => Boolean, { nullable: false })
     reconciliation_only: boolean;
+
+    // "This expense is still a draft." Seeds from the supplier account default
+    // (`supplier_is_draft`) on manual create. Recurring-generated expenses are
+    // always drafts. Balance de proveedores presents the inverse as a supplier
+    // agreement checkbox: checked means this stored value is false.
+    @Field(() => Boolean, { nullable: false })
+    is_draft: boolean;
+}
+
+// Lightweight "optional details" edit from the balances views — the expense
+// counterpart of OrderSaleDetailsInput. Only the side-effect-free documentation
+// fields (payment date, folio, supplement, conciliation, draft, canceled) so no
+// totals recompute is triggered; the financial fields live on the full upsert.
+@InputType('ExpenseDetailsInput')
+export class ExpenseDetailsInput {
+    @Field(() => Int, { nullable: false })
+    expense_id: number;
+
+    @Field(() => String, { nullable: false })
+    notes: string;
+
+    @Field(() => Date, { nullable: true })
+    expected_payment_date: Date | null;
+
+    @Field(() => Boolean, { nullable: false })
+    require_external_code: boolean;
+
+    @Field(() => String, { nullable: false })
+    external_code: string;
+
+    @Field(() => Boolean, { nullable: false })
+    require_supplement: boolean;
+
+    @Field(() => String, { nullable: false })
+    supplement_code: string;
+
+    @Field(() => Boolean, { nullable: false })
+    reconciliation_only: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    is_draft: boolean;
+
+    @Field(() => Boolean, { nullable: false })
+    canceled: boolean;
 }
 
 @InputType('ExpenseUpsertInput')
@@ -146,6 +187,7 @@ export class ExpensesQueryArgs {
 
     @Field(() => Int, { nullable: true })
     resource_id: number;
+
 }
 
 @ArgsType()

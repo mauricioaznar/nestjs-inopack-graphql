@@ -4,6 +4,5 @@ import { ReceiptTypeService } from './receipt-type.service';
 
 @Module({
     providers: [ReceiptTypeResolver, ReceiptTypeService],
-    exports: [ReceiptTypeResolver],
 })
 export class ReceiptTypeModule {}

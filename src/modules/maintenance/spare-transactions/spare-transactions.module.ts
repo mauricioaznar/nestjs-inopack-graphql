@@ -4,6 +4,5 @@ import { SpareTransactionsService } from './spare-transactions.service';
 
 @Module({
     providers: [SpareTransactionsResolver, SpareTransactionsService],
-    exports: [SpareTransactionsResolver],
 })
 export class SpareTransactionsModule {}

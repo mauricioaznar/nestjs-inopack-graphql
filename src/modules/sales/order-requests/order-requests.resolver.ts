@@ -1,5 +1,6 @@
 import {
     Args,
+    Context,
     Float,
     Int,
     Mutation,
@@ -10,6 +11,11 @@ import {
     Subscription,
 } from '@nestjs/graphql';
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+    LoaderContext,
+    toMany,
+    toOne,
+} from '../../../common/helpers/graphql/batch-loader';
 import { OrderRequestsService } from './order-requests.service';
 import {
     ActivityEntityName,
@@ -314,12 +320,17 @@ export class OrderRequestsResolver {
     }
 
     @ResolveField(() => [OrderRequestProduct])
-    async order_request_products(
-        orderRequest: OrderRequest,
+    order_request_products(
+        @Parent() orderRequest: OrderRequest,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderRequestProduct[]> {
-        return this.service.getOrderRequestProducts({
-            order_request_id: orderRequest.id,
-        });
+        return toMany(
+            ctx,
+            'OrderRequest.order_request_products',
+            orderRequest.id,
+            (ids) => this.service.getOrderRequestProductsByOrderRequestIds(ids),
+            (orp) => orp.order_request_id,
+        );
     }
 
     @ResolveField(() => [OrderRequestProduct])
@@ -372,37 +383,59 @@ export class OrderRequestsResolver {
     }
 
     @ResolveField(() => Account, { nullable: true })
-    async account(
+    account(
         @Parent() orderRequest: OrderRequest,
+        @Context() ctx: LoaderContext,
     ): Promise<Account | null> {
-        return this.service.getAccount({ account_id: orderRequest.account_id });
+        return toOne(
+            ctx,
+            'OrderRequest.account',
+            orderRequest.account_id,
+            (ids) => this.service.getAccountsByIds(ids),
+            (a) => a.id,
+        );
     }
 
     @ResolveField(() => OrderRequestStatus, { nullable: true })
-    async order_request_status(
+    order_request_status(
         @Parent() orderRequest: OrderRequest,
+        @Context() ctx: LoaderContext,
     ): Promise<OrderRequestStatus | null> {
-        return this.service.getOrderRequestStatus({
-            order_request_status_id: orderRequest.order_request_status_id,
-        });
+        return toOne(
+            ctx,
+            'OrderRequest.order_request_status',
+            orderRequest.order_request_status_id,
+            (ids) => this.service.getOrderRequestStatusesByIds(ids),
+            (st) => st.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async created_by(
+    created_by(
         @Parent() orderRequest: OrderRequest,
+        @Context() ctx: LoaderContext,
     ): Promise<User | null> {
-        return this.auditUsersService.getCreatedBy({
-            created_by_id: orderRequest.created_by_id,
-        });
+        return toOne(
+            ctx,
+            'audit.user',
+            orderRequest.created_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @ResolveField(() => User, { nullable: true })
-    async updated_by(
+    updated_by(
         @Parent() orderRequest: OrderRequest,
+        @Context() ctx: LoaderContext,
     ): Promise<User | null> {
-        return this.auditUsersService.getUpdatedBy({
-            updated_by_id: orderRequest.updated_by_id,
-        });
+        return toOne(
+            ctx,
+            'audit.user',
+            orderRequest.updated_by_id,
+            (ids) => this.auditUsersService.getUsersByIds(ids),
+            (u) => u.id,
+        );
     }
 
     @Subscription(() => OrderRequest)

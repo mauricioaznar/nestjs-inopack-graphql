@@ -2,7 +2,7 @@ import { ArgsType, Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { OrderProductionProductInput } from './order-production-product.dto';
 import { OrderProductionEmployeeInput } from './order-production-employee.dto';
 import { OffsetPaginatorResult } from '../../pagination/offset-paginator-result/offset-paginator-result';
-import { OrderProductionResourceInput } from './order-production-resource.dto';
+import { OrderProductionProductConsumedInput } from './order-production-product-consumed.dto';
 
 @ObjectType({ isAbstract: true })
 @InputType({ isAbstract: true })
@@ -31,8 +31,8 @@ export class OrderProductionInput extends OrderProductionBase {
     @Field(() => [OrderProductionProductInput])
     order_production_products: OrderProductionProductInput[];
 
-    @Field(() => [OrderProductionResourceInput])
-    order_production_resources: OrderProductionResourceInput[];
+    @Field(() => [OrderProductionProductConsumedInput])
+    order_production_products_consumed: OrderProductionProductConsumedInput[];
 
     @Field(() => [OrderProductionEmployeeInput])
     order_production_employees: OrderProductionEmployeeInput[];

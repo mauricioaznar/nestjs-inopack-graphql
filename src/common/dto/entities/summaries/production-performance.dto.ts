@@ -83,6 +83,12 @@ export class MachineProductPerformanceSummary {
     @Field(() => Float, { nullable: false })
     hours: number;
 
+    // Bultos (order_production_products.groups) summed over the same rows as the
+    // kilos. bultos/hr = groups ÷ hours is the primary throughput unit the floor
+    // and planners communicate in; kilos stay for monthly totals.
+    @Field(() => Float, { nullable: false })
+    groups: number;
+
     @Field(() => Float, { nullable: false })
     waste_share_total: number;
 
@@ -110,6 +116,11 @@ export class ProductMachinePerformanceSummary {
     @Field(() => Float, { nullable: false })
     hours: number;
 
+    // See MachineProductPerformanceSummary.groups — bultos summed over the same
+    // rows, so the table can show bultos/hr and the 8 h-shift projection.
+    @Field(() => Float, { nullable: false })
+    groups: number;
+
     @Field(() => Float, { nullable: false })
     waste_share_total: number;
 
@@ -126,6 +137,9 @@ export class ProductWithRuns {
 
     @Field(() => String, { nullable: false })
     description: string;
+
+    @Field(() => String, { nullable: true })
+    product_category_name: string | null;
 }
 
 // One row per production for the MACHINE-level hourly-throughput view (no
@@ -147,17 +161,23 @@ export class MachineHourlyRun {
     @Field(() => Float, { nullable: false })
     kilos_produced: number;
 
+    // Bultos (order_production_products.groups) summed over the SAME lines as
+    // kilos_produced, so bultos/hr = groups_produced ÷ hours_produced rides the
+    // packed hours — the primary throughput unit for this surface.
+    @Field(() => Float, { nullable: false })
+    groups_produced: number;
+
     @Field(() => Float, { nullable: false })
     hours_produced: number;
 
-    // Resource side: SUM over order_production_resources for the same production
-    // + machine (active = 1, coalesce(hours, 0)); 0/0 when the production has no
-    // resource lines.
+    // Consumed side: SUM over order_production_products_consumed for the same
+    // production + machine (active = 1, coalesce(hours, 0)); 0/0 when the
+    // production has no consumed lines.
     @Field(() => Float, { nullable: false })
-    kilos_resource: number;
+    kilos_consumed: number;
 
     @Field(() => Float, { nullable: false })
-    hours_resource: number;
+    hours_consumed: number;
 
     // Distinct products this production ran on the machine — the row aggregates
     // them all, so the UI surfaces how many were mixed together.
@@ -176,10 +196,11 @@ export class MachineProductRatePairInput {
     productId?: number | null;
 }
 
-// Aggregated throughput for one requested machine or machine/product pair.
-// Both windows are returned so the client can preserve the existing rule:
-// prefer the last 12 months, but fall back to all hourly history when that
-// window has no runs.
+// Aggregated throughput for one requested machine or machine/product pair, over
+// the single window every performance surface now reads: all hourly runs since
+// HOURLY_DATA_EPOCH. The `all_` prefix is kept from when a rolling 12-month
+// `recent_` window stood beside it (dropped 2026-08-11); both covered identical
+// runs while hourly data starts at the epoch, so only one is carried.
 @ObjectType('MachineProductRate')
 export class MachineProductRate {
     @Field(() => Int, { nullable: false })
@@ -189,15 +210,6 @@ export class MachineProductRate {
     product_id: number | null;
 
     @Field(() => Float, { nullable: false })
-    recent_kilos: number;
-
-    @Field(() => Float, { nullable: false })
-    recent_hours: number;
-
-    @Field(() => Int, { nullable: false })
-    recent_runs: number;
-
-    @Field(() => Float, { nullable: false })
     all_kilos: number;
 
     @Field(() => Float, { nullable: false })
@@ -205,4 +217,173 @@ export class MachineProductRate {
 
     @Field(() => Int, { nullable: false })
     all_runs: number;
+
+    // Bultos (order_production_products.groups), summed over the same rows as
+    // the kilos. The flags grade throughput in bultos/hr when both the run and
+    // its baseline have them, because that is the unit corte actually counts;
+    // kilos remain the fallback for lines that are only ever weighed. A zero
+    // here is a real "this combo has never recorded bultos", which is what makes
+    // the fallback decidable client-side.
+    @Field(() => Float, { nullable: false })
+    all_groups: number;
+
+    // Waste attributed to this machine (or machine/product) by the line's kilo
+    // share of its production total — the same proration as
+    // getMachineProductPerformanceSummary, without the employee-count divisor.
+    // Paired with all_kilos it yields a baseline merma ratio.
+    @Field(() => Float, { nullable: false })
+    all_waste: number;
+
+    // --- Per-run rate distribution, for the weekly audit's z-score layer ---
+    //
+    // The `all_*` sums above give a totals-over-totals baseline (Σ ÷ Σ), which is
+    // what gradeLine uses for its one-directional under-performance ratio. A
+    // z-score needs the MEAN and SAMPLE STDDEV of the per-run rates instead —
+    // which cannot be reconstructed from sums — so they are computed here over the
+    // same window and returned alongside. One resolver, one cache, both models:
+    // the ratio grade reads the sums, the z-flag reads these. Kept for BOTH units
+    // because the weekly audit grades bultos-first, kilos-fallback (Option 1), so
+    // a weighed line (groups = 0, e.g. extrusión) is still z-graded on kg/hr.
+    //
+    // mean/std are null when fewer than the applicable runs exist (STDDEV_SAMP
+    // needs ≥ 2; the client gates at MIN_BASELINE_RUNS = 10 anyway). The `*_n`
+    // counts are the runs that entered each distribution: bultos counts runs with
+    // hours > 0 AND groups > 0 (a zero-bultos run is "not counted in bultos", not
+    // a zero rate); kilos counts runs with hours > 0 (a zero-kilo run IS a real
+    // zero rate).
+    @Field(() => Float, { nullable: true })
+    all_groups_rate_mean: number | null;
+
+    @Field(() => Float, { nullable: true })
+    all_groups_rate_std: number | null;
+
+    @Field(() => Int, { nullable: false })
+    all_groups_rate_n: number;
+
+    @Field(() => Float, { nullable: true })
+    all_kilos_rate_mean: number | null;
+
+    @Field(() => Float, { nullable: true })
+    all_kilos_rate_std: number | null;
+
+    @Field(() => Int, { nullable: false })
+    all_kilos_rate_n: number;
+}
+
+// One graded corrida line for the weekly audit tab: a machine × product line of
+// one production in the selected ISO week (Mon–Sun) and, optionally, of one order
+// production type. Unlike the summaries this is NOT filtered by a chosen
+// machine/product — it lists every corrida in the week so each can be graded
+// against its OWN machine×product baseline (fetched separately via
+// getMachineProductRates). Raw per-line figures only; kg/hr, bultos/hr, the 8 h
+// projection, the ratio grade and the z-flag are all derived client-side.
+@ObjectType('WeeklyAuditRun')
+export class WeeklyAuditRun {
+    @Field(() => Int, { nullable: false })
+    order_production_id: number;
+
+    @Field(() => Date, { nullable: true })
+    date: Date | null;
+
+    @Field(() => Int, { nullable: false })
+    machine_id: number;
+
+    @Field(() => String, { nullable: false })
+    machine_name: string;
+
+    // Branch (sucursal) of the production — order_productions.branch_id. Null
+    // when the production predates branch capture. Surfaced so the tab can offer
+    // a branch filter (defaulting to Caucel) without a second query.
+    @Field(() => Int, { nullable: true })
+    branch_id: number | null;
+
+    @Field(() => String, { nullable: false })
+    branch_name: string;
+
+    @Field(() => Int, { nullable: false })
+    product_id: number;
+
+    @Field(() => String, { nullable: false })
+    product_description: string;
+
+    // Sums over this product's lines on this machine in this production.
+    @Field(() => Float, { nullable: false })
+    kilos: number;
+
+    @Field(() => Float, { nullable: false })
+    hours: number;
+
+    @Field(() => Float, { nullable: false })
+    groups: number;
+
+    // This line's kilo-share of the production's waste (same proration as the
+    // summaries, no employee divisor), so gradeLine can grade the merma axis.
+    @Field(() => Float, { nullable: false })
+    waste_share: number;
+
+    // Distinct products the whole production made — lets the UI mark shared runs.
+    @Field(() => Int, { nullable: false })
+    product_count: number;
+
+    // Production shift/turno (order_productions.shift): 1, 2, … or null when the
+    // corrida predates shift capture. Shown in the date cell as "#N".
+    @Field(() => Int, { nullable: true })
+    shift: number | null;
+
+    // Distinct employees linked to the production, comma-joined ('' if none).
+    @Field(() => String, { nullable: false })
+    employee_names: string;
+}
+
+// Consumption baseline for the upsert form's Rendimiento tab. Raw sums, not
+// ratios, so the caller can self-exclude the production being edited before
+// dividing. One row per (machine, consumed PRODUCT): `consumed_kilos` is the
+// real per-material breakdown from the consumed rows, while `packed_hours` and
+// `runs` are MACHINE-level (repeated on every product row of a machine), because
+// the borrowed packed hours can't follow a consumed product and the machine-level
+// Rendimiento is what the tab currently shows. Consumed material is a type-2 roll
+// keyed to the machine and is not attributable to a packed (type-1) product.
+@ObjectType('MachineConsumptionRate')
+export class MachineConsumptionRate {
+    @Field(() => Int, { nullable: false })
+    machine_id: number;
+
+    // The consumed material (order_production_products_consumed.product_id → a
+    // type-2 roll). Null only if a consumed row somehow has no product.
+    @Field(() => Int, { nullable: true })
+    product_id: number | null;
+
+    @Field(() => String, { nullable: true })
+    product_name: string | null;
+
+    // Sum of order_production_products_consumed.kilos for THIS (machine, product)
+    // over the window — the real per-material consumed quantity. Numerator of
+    // Rendimiento (kg consumidos / horas) once summed to machine level.
+    @Field(() => Float, { nullable: false })
+    consumed_kilos: number;
+
+    // Two candidate denominators for Rendimiento, both MACHINE-level (repeated
+    // across a machine's product rows) and self-excludable via raw sums:
+    //
+    //   consumed_hours — the consumed side's OWN hours
+    //     (order_production_products_consumed.hours). This is the default
+    //     denominator the tab divides by; it agrees with the Rendimiento page's
+    //     `Consumo kg/hr`, which reads the same column. It is known to be
+    //     wrongly captured — surfaced with a warning, never backfilled, so COGS
+    //     discovery can still measure the capture gap.
+    //
+    //   packed_hours — the PACKED side's hours (order_production_products.hours),
+    //     summed across the production's packed lines on the machine. A
+    //     workaround the tab can opt into to sidestep the consumed-hours
+    //     mis-capture.
+    @Field(() => Float, { nullable: false })
+    consumed_hours: number;
+
+    @Field(() => Float, { nullable: false })
+    packed_hours: number;
+
+    // Distinct productions that consumed material on this machine in the window,
+    // so the caller can drop the edited run (runs − 1) alongside its kilos/hours.
+    @Field(() => Int, { nullable: false })
+    runs: number;
 }

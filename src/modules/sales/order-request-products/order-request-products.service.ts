@@ -70,6 +70,8 @@ export class OrderRequestProductsService {
                    order_request_products.kilos                     order_request_kilos,
                    IFNULL(order_sale_products_delivered.kilos, 0)   order_sale_delivered_kilos,
                    IFNULL(order_sale_products_delivered.groups, 0)   order_sale_delivered_groups,
+                   IFNULL(order_sale_products_committed.kilos, 0)   order_sale_committed_kilos,
+                   IFNULL(order_sale_products_committed.groups, 0)  order_sale_committed_groups,
                    order_request_products.groups                    order_request_groups,
                    (order_request_products.kilos -
                     IFNULL(order_sale_products_delivered.kilos, 0)) order_sale_remaining_kilos,
@@ -115,6 +117,26 @@ export class OrderRequestProductsService {
                  ) order_sale_products_delivered
                  on order_sale_products_delivered.order_request_id = order_requests.id
                      and order_sale_products_delivered.product_id = order_request_products.product_id
+                     -- Mirror of the block above for sales that exist but have
+                     -- NOT been delivered. Same join keys, opposite status test,
+                     -- so the two never overlap and together they account for
+                     -- every active sale line tied to this pedido and product.
+                     left join
+                 (
+                     select order_sale_products.product_id product_id,
+                            order_sales.order_request_id   order_request_id,
+                            sum(order_sale_products.kilos) kilos,
+                            sum(order_sale_products.groups) \'groups\'
+                     from order_sales
+                     join order_sale_products
+                     on order_sale_products.order_sale_id = order_sales.id
+                     where order_sales.active = 1
+                       and order_sale_products.active = 1
+                       and order_sales.order_sale_status_id <> 2
+                     group by order_sales.order_request_id, order_sale_products.product_id
+                 ) order_sale_products_committed
+                 on order_sale_products_committed.order_request_id = order_requests.id
+                     and order_sale_products_committed.product_id = order_request_products.product_id
             where order_requests.active = 1
               and order_request_products.active = 1
               and order_request_statuses.id in (1, 2);

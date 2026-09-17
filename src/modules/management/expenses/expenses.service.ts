@@ -11,6 +11,7 @@ import {
     ExpensesSortArgs,
     ExpensesWithDisparitiesQueryArgs,
     ExpenseUpsertInput,
+    ExpenseDetailsInput,
     GenerateRecurringExpenseInput,
     GenerateRecurringExpensesResult,
     GetExpensesQueryArgs,
@@ -70,6 +71,12 @@ export class ExpensesService {
     //
     // `transfer_receipts` is deliberately excluded — payments applied to an
     // expense are a separate entity with their own activities.
+    //
+    // This is an `include` (not a column `select`), so EVERY scalar column rides
+    // into old_data/new_data — including the boolean flags `reconciliation_only`
+    // and `is_draft`. That is load-bearing: the audit diff surfaces those
+    // toggles. Do NOT narrow this to a `select` without adding those flags back
+    // explicitly, or the changes silently drop out of the trail.
     async getExpenseSnapshot({
         expense_id,
     }: {
@@ -89,12 +96,6 @@ export class ExpensesService {
                     },
                 },
                 receipt_types: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
-                expense_statuses: {
                     select: {
                         id: true,
                         name: true,
@@ -267,6 +268,13 @@ export class ExpensesService {
                         },
                     },
                     {
+                        accounts: {
+                            abbreviation: {
+                                contains: filter,
+                            },
+                        },
+                    },
+                    {
                         expense_resources: {
                             some: {
                                 resources: {
@@ -366,7 +374,6 @@ export class ExpensesService {
                 ${convertToInt('expenses.id', 'id')},
                 ${convertToInt('account_id')},
                 ${convertToInt('receipt_type_id')},
-                ${convertToInt('expense_status_id')},
                 wtv.total as expenses_total,
                 ifnull(otv.total, 0) as transfer_receipts_total
             FROM expenses
@@ -404,6 +411,18 @@ export class ExpensesService {
         return res.map((ex) => {
             return {
                 ...ex,
+                // `convertToInt` casts these ids to SQL DECIMAL, which
+                // $queryRawUnsafe returns as Prisma.Decimal objects — not JS
+                // numbers. The resolve-field loaders key their lookup Maps by
+                // real numeric ids (e.g. account.id), so a Decimal key never
+                // matches and `account` resolves to null (blank name). Coerce
+                // the loader-key ids back to numbers here, at the boundary.
+                id: Number(ex.id),
+                account_id: ex.account_id == null ? null : Number(ex.account_id),
+                receipt_type_id:
+                    ex.receipt_type_id == null
+                        ? null
+                        : Number(ex.receipt_type_id),
                 expected_payment_date: ex.expected_payment_date
                     ? new Date(ex.expected_payment_date)
                     : null,
@@ -412,29 +431,41 @@ export class ExpensesService {
         });
     }
 
-    async getExpenseStatus({
-        expense_status_id,
+    // Lightweight optional-details edit, the expense counterpart of
+    // updateOrderSaleDetails. Touches only side-effect-free workflow fields
+    // so no totals recompute is needed; the status-locked full upsert is
+    // bypassed on purpose (a locked expense can still have its folio fixed).
+    async updateExpenseDetails({
+        input,
     }: {
-        expense_status_id: number | null;
-    }) {
-        if (!expense_status_id) {
-            return null;
-        }
-
-        return this.prisma.expense_statuses.findFirst({
-            where: {
-                id: expense_status_id,
-            },
+        input: ExpenseDetailsInput;
+    }): Promise<Expense> {
+        const existing = await this.getExpense({
+            expense_id: input.expense_id,
         });
-    }
-
-    async getExpenseStatuses() {
-        return this.prisma.expense_statuses.findMany({
-            where: {
-                active: 1,
+        if (!existing) {
+            throw new NotFoundException();
+        }
+        return this.prisma.expenses.update({
+            data: {
+                ...getUpdatedAtProperty(),
+                notes: input.notes,
+                // expected_payment_date is the one nullable column here, so a
+                // null clears it; only a truly omitted field would skip.
+                expected_payment_date:
+                    input.expected_payment_date === undefined
+                        ? undefined
+                        : input.expected_payment_date,
+                require_external_code: input.require_external_code,
+                external_code: input.external_code,
+                require_supplement: input.require_supplement,
+                supplement_code: input.supplement_code,
+                reconciliation_only: input.reconciliation_only,
+                is_draft: input.is_draft,
+                canceled: input.canceled,
             },
-            orderBy: {
-                id: 'asc',
+            where: {
+                id: input.expense_id,
             },
         });
     }
@@ -528,7 +559,6 @@ export class ExpensesService {
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
-                expense_status_id: input.expense_status_id,
                 notes: input.notes,
                 subtotal: input.subtotal,
                 tax: input.tax,
@@ -539,6 +569,7 @@ export class ExpensesService {
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
+                is_draft: input.is_draft,
                 resources_total: input.resources_total,
             },
             update: {
@@ -555,9 +586,8 @@ export class ExpensesService {
                 external_code: input.external_code.replace(' ', ''),
                 internal_code: input.internal_code,
                 receipt_type_id: input.receipt_type_id,
-                expense_status_id: input.expense_status_id,
-                subtotal: input.subtotal,
                 notes: input.notes,
+                subtotal: input.subtotal,
                 tax: input.tax,
                 tax_retained: input.tax_retained,
                 non_tax_retained: input.non_tax_retained,
@@ -566,6 +596,7 @@ export class ExpensesService {
                 supplement_code: input.supplement_code,
                 canceled: input.canceled,
                 reconciliation_only: input.reconciliation_only,
+                is_draft: input.is_draft,
                 resources_total: input.resources_total,
             },
             where: {
@@ -762,47 +793,6 @@ export class ExpensesService {
         }
     }
 
-    async getExpenseTransferReceiptsTotal({
-        expense_id,
-    }: {
-        expense_id: number;
-    }): Promise<number> {
-        const transferReceipts = await this.prisma.transfer_receipts.findMany({
-            where: {
-                AND: [
-                    {
-                        expense_id: expense_id,
-                        active: 1,
-                    },
-                    {
-                        transfers: {
-                            active: 1,
-                        },
-                    },
-                    {
-                        expenses: {
-                            active: 1,
-                        },
-                    },
-                ],
-            },
-        });
-
-        const expense = await this.prisma.expenses.findUnique({
-            where: {
-                id: expense_id,
-            },
-        });
-
-        if (!expense) return 0;
-
-        const total = transferReceipts.reduce((acc, tr) => {
-            return acc + tr.amount;
-        }, 0);
-
-        return Math.round(total * 100) / 100;
-    }
-
     async getExpenseTransferReceipts({
         expense_id,
     }: {
@@ -827,6 +817,55 @@ export class ExpensesService {
                             active: 1,
                         },
                     },
+                ],
+            },
+        });
+    }
+
+    // ── Batch (IN) variants for the resolve-field loaders ────────────────────
+    // Each mirrors the WHERE of its singular sibling above but reads a whole page
+    // of parents in one query; the loader (toOne/toMany) maps rows back per
+    // parent. See feature/nestjs-resolvefield-loaders.
+
+    async getAccountsByIds(ids: number[]): Promise<Account[]> {
+        if (ids.length === 0) return [];
+        return this.prisma.accounts.findMany({ where: { id: { in: ids } } });
+    }
+
+    // Mirrors getReceiptType, including the Number(tax_rate) mapping (the Prisma
+    // column is a Decimal; GraphQL Float wants a number).
+    async getReceiptTypesByIds(ids: number[]): Promise<ReceiptType[]> {
+        if (ids.length === 0) return [];
+        const rows = await this.prisma.receipt_types.findMany({
+            where: { id: { in: ids } },
+        });
+        return rows.map((rt) => ({ ...rt, tax_rate: Number(rt.tax_rate) }));
+    }
+
+    async getExpenseResourcesByExpenseIds(
+        expenseIds: number[],
+    ): Promise<ExpenseResource[]> {
+        if (expenseIds.length === 0) return [];
+        return this.prisma.expense_resources.findMany({
+            where: {
+                AND: [{ expense_id: { in: expenseIds } }, { active: 1 }],
+            },
+        });
+    }
+
+    // transfer_receipts carries a direct expense_id column (exposed on the DTO),
+    // so the loader groups by it; the WHERE mirrors getExpenseTransferReceipts,
+    // reaching the parent through the expenses relation with { in: ids }.
+    async getExpenseTransferReceiptsByExpenseIds(
+        expenseIds: number[],
+    ): Promise<TransferReceipt[]> {
+        if (expenseIds.length === 0) return [];
+        return this.prisma.transfer_receipts.findMany({
+            where: {
+                AND: [
+                    { expenses: { id: { in: expenseIds } }, active: 1 },
+                    { transfers: { active: 1 } },
+                    { expenses: { active: 1 } },
                 ],
             },
         });
@@ -863,6 +902,7 @@ export class ExpensesService {
         await this.prisma.expenses.update({
             data: {
                 active: -1,
+                ...getUpdatedAtProperty(),
                 ...getUpdatedByProperty(current_user_id),
             },
             where: {
@@ -1211,12 +1251,15 @@ export class ExpensesService {
                         require_supplement: source.require_supplement,
                         supplement_code: '',
                         require_external_code: source.require_external_code,
+                        require_tax: source.require_tax,
                         external_code: '',
                         internal_code: 0,
                         canceled: false,
                         reconciliation_only: source.reconciliation_only,
+                        // Anything created through the recurring-expense dialog
+                        // requires review, regardless of the supplier default.
+                        is_draft: true,
                         resources_total: subtotal,
-                        expense_status_id: null,
                         transfer_receipts_total: 0,
                         transfer_receipts_total_no_adjustments: 0,
                         generated_from_expense_id: item.source_expense_id,

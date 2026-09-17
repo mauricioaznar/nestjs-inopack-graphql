@@ -2,6 +2,7 @@ import { Args, Int, Query, Resolver } from '@nestjs/graphql';
 import { Injectable } from '@nestjs/common';
 import { ProductionPerformanceService } from './production-performance.service';
 import {
+    MachineConsumptionRate,
     MachineHourlyRun,
     MachineProduct,
     MachineProductEmployeeRun,
@@ -10,6 +11,7 @@ import {
     MachineProductPerformanceSummary,
     ProductMachinePerformanceSummary,
     ProductWithRuns,
+    WeeklyAuditRun,
 } from '../../../common/dto/entities';
 import { RolesDecorator } from '../../auth/decorators/role.decorator';
 import { RoleId } from '../../../common/dto/entities/auth/role.dto';
@@ -93,6 +95,26 @@ export class ProductionPerformanceResolver {
         return this.service.getProductsWithRuns();
     }
 
+    // Weekly audit tab: every corrida line in an ISO week (Mon–Sun),
+    // optionally narrowed to one order production type. weekStart/weekEnd are
+    // required (YYYY-MM-DD); the service refuses a malformed range. Not filtered
+    // by machine/product — each line is graded client-side against its own
+    // machine×product baseline from getMachineProductRates.
+    @Query(() => [WeeklyAuditRun])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getWeeklyAuditRuns(
+        @Args('weekStart', { type: () => String }) weekStart: string,
+        @Args('weekEnd', { type: () => String }) weekEnd: string,
+        @Args('orderProductionTypeId', { type: () => Int, nullable: true })
+        orderProductionTypeId: number | null,
+    ): Promise<WeeklyAuditRun[]> {
+        return this.service.getWeeklyAuditRuns({
+            week_start: weekStart,
+            week_end: weekEnd,
+            order_production_type_id: orderProductionTypeId,
+        });
+    }
+
     // Hourly-throughput rows (produced vs consumed kg/hr) for any machine /
     // product combination (at least one id required). Feeds the panel's KPI
     // headline and the "Corridas" table. fromDate/toDate bound the window
@@ -117,9 +139,11 @@ export class ProductionPerformanceResolver {
         });
     }
 
-    // Batch rates for production planning. A pair with a null product id asks
-    // for the machine-level fallback; non-null pairs ask for machine x product
-    // rates. The service returns recent and all-history aggregates together.
+    // Batch rates for production planning and for the Producción list's
+    // performance flags. A pair with a null product id asks for the
+    // machine-level fallback; non-null pairs ask for machine x product rates.
+    // The service returns one window: every hourly run since HOURLY_DATA_EPOCH
+    // (the default fromDate the callers pass and the shared filter falls back to).
     @Query(() => [MachineProductRate])
     @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
     async getMachineProductRates(
@@ -127,13 +151,31 @@ export class ProductionPerformanceResolver {
         pairs: MachineProductRatePairInput[],
         @Args('fromDate', { type: () => String, nullable: true })
         fromDate: string | null,
-        @Args('recentFromDate', { type: () => String, nullable: true })
-        recentFromDate: string | null,
+        @Args('singleProductOnly', { type: () => Boolean, nullable: true })
+        singleProductOnly: boolean | null,
     ): Promise<MachineProductRate[]> {
         return this.service.getMachineProductRates({
             pairs,
             from_date: fromDate,
-            recent_from_date: recentFromDate,
+            single_product_only: singleProductOnly,
+        });
+    }
+
+    // Machine-level consumption baseline for the upsert form's Rendimiento tab.
+    // Raw sums (consumed kilos, packed-side hours, run count) so the caller can
+    // self-exclude the edited production before dividing. fromDate defaults to
+    // HOURLY_DATA_EPOCH via the shared filter.
+    @Query(() => [MachineConsumptionRate])
+    @RolesDecorator(RoleId.PRODUCTION, RoleId.PRODUCTION_ASSISTANT)
+    async getMachineConsumptionRates(
+        @Args('machineIds', { type: () => [Int] })
+        machineIds: number[],
+        @Args('fromDate', { type: () => String, nullable: true })
+        fromDate: string | null,
+    ): Promise<MachineConsumptionRate[]> {
+        return this.service.getMachineConsumptionRates({
+            machine_ids: machineIds,
+            from_date: fromDate,
         });
     }
 }
