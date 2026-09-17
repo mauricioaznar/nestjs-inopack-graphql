@@ -61,7 +61,7 @@ CREATE TABLE `account_products` (
   KEY `account_products_product_id_foreign` (`product_id`),
   CONSTRAINT `account_products_account_id_foreign` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`),
   CONSTRAINT `account_products_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1037 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1057 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -85,7 +85,7 @@ CREATE TABLE `account_resources` (
   KEY `account_resources_resource_id_foreign` (`resource_id`),
   CONSTRAINT `account_resources_account_id_foreign` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`),
   CONSTRAINT `account_resources_resource_id_foreign` FOREIGN KEY (`resource_id`) REFERENCES `resources` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=512 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=522 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -118,14 +118,22 @@ CREATE TABLE `accounts` (
   `supplier_credit_days` int NOT NULL DEFAULT '0',
   `client_require_credit_note` tinyint(1) NOT NULL DEFAULT '0',
   `client_require_supplement` tinyint(1) NOT NULL DEFAULT '1',
-  `supplier_require_external_code` tinyint(1) NOT NULL DEFAULT '0',
+  `client_requires_invoice_code` tinyint(1) NOT NULL DEFAULT '1',
+  `client_requires_tax` tinyint(1) NOT NULL DEFAULT '1',
   `supplier_require_supplement` tinyint(1) NOT NULL DEFAULT '0',
+  `supplier_requires_external_code` tinyint(1) NOT NULL DEFAULT '1',
+  `supplier_requires_tax` tinyint(1) NOT NULL DEFAULT '1',
   `client_automatic_tax_calculation` tinyint(1) NOT NULL DEFAULT '1',
-  `exclude_from_accountability_export` tinyint(1) NOT NULL DEFAULT '0',
+  `client_reconciliation_only` tinyint(1) NOT NULL DEFAULT '0',
+  `supplier_reconciliation_only` tinyint(1) NOT NULL DEFAULT '0',
+  `supplier_is_draft` tinyint(1) NOT NULL DEFAULT '0',
+  `is_informal_account` tinyint(1) NOT NULL DEFAULT '0',
   `supplier_recurring_expenses` tinyint(1) NOT NULL DEFAULT '0',
   `created_by_id` int unsigned DEFAULT NULL,
   `updated_by_id` int unsigned DEFAULT NULL,
   `merged_into_account_id` int unsigned DEFAULT NULL,
+  `rfc` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT '',
+  `address` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   KEY `accounts_resource_id_foreign` (`resource_id`),
   KEY `accounts_created_by_id_foreign` (`created_by_id`),
@@ -135,7 +143,7 @@ CREATE TABLE `accounts` (
   CONSTRAINT `accounts_merged_into_account_id_foreign` FOREIGN KEY (`merged_into_account_id`) REFERENCES `accounts` (`id`),
   CONSTRAINT `accounts_resource_id_foreign` FOREIGN KEY (`resource_id`) REFERENCES `resources` (`id`),
   CONSTRAINT `accounts_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=393 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=403 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -151,20 +159,25 @@ CREATE TABLE `activities` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `user_id` int unsigned NOT NULL,
-  `description` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `type` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `entity_name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `entity_id` int unsigned NOT NULL,
+  `old_data` json DEFAULT NULL,
+  `new_data` json DEFAULT NULL,
+  `snapshot_status` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT 'legacy',
   `role_id` int unsigned DEFAULT NULL,
   `branch_id` int unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `activities_user_id_foreign` (`user_id`),
   KEY `activities_role_id_foreign` (`role_id`),
   KEY `activities_branch_id_foreign` (`branch_id`),
+  KEY `activities_entity_index` (`entity_name`,`entity_id`),
+  KEY `activities_created_at_index` (`created_at`),
   CONSTRAINT `activities_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
   CONSTRAINT `activities_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`),
   CONSTRAINT `activities_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=70578 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=74925 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -182,6 +195,27 @@ CREATE TABLE `branches` (
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `email_mfa_codes`
+--
+
+DROP TABLE IF EXISTS `email_mfa_codes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `email_mfa_codes` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `code_hash` char(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `consumed_at` datetime DEFAULT NULL,
+  `attempts` int NOT NULL DEFAULT '0',
+  `created_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `email_mfa_codes_user_id_foreign` (`user_id`),
+  CONSTRAINT `email_mfa_codes_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -287,25 +321,7 @@ CREATE TABLE `expense_resources` (
   KEY `expense_resources_expense_id_foreign` (`expense_id`),
   CONSTRAINT `expense_resources_expense_id_foreign` FOREIGN KEY (`expense_id`) REFERENCES `expenses` (`id`),
   CONSTRAINT `expense_resources_resource_id_foreign` FOREIGN KEY (`resource_id`) REFERENCES `resources` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9236 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `expense_statuses`
---
-
-DROP TABLE IF EXISTS `expense_statuses`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `expense_statuses` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `active` int NOT NULL DEFAULT '1',
-  `name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
-  `color` varchar(7) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `created_at` datetime DEFAULT NULL,
-  `updated_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9865 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -338,27 +354,26 @@ CREATE TABLE `expenses` (
   `transfer_receipts_total_no_adjustments` double(12,2) NOT NULL DEFAULT '0.00',
   `total_with_tax` double(12,2) NOT NULL DEFAULT '0.00',
   `require_external_code` tinyint(1) NOT NULL DEFAULT '1',
+  `require_tax` tinyint(1) NOT NULL DEFAULT '0',
   `resources_total` double(12,2) DEFAULT '0.00',
-  `expense_status_id` int unsigned DEFAULT NULL,
   `internal_code` int NOT NULL DEFAULT '0',
   `generated_from_expense_id` int unsigned DEFAULT NULL,
   `created_by_id` int unsigned DEFAULT NULL,
   `updated_by_id` int unsigned DEFAULT NULL,
   `reconciliation_only` tinyint(1) NOT NULL DEFAULT '0',
+  `is_draft` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `expenses_account_id_foreign` (`account_id`),
   KEY `expenses_receipt_type_foreign` (`receipt_type_id`),
-  KEY `expenses_expense_status_id_foreign` (`expense_status_id`),
   KEY `expenses_generated_from_expense_id_idx` (`generated_from_expense_id`),
   KEY `expenses_created_by_id_foreign` (`created_by_id`),
   KEY `expenses_updated_by_id_foreign` (`updated_by_id`),
   CONSTRAINT `expenses_account_id_foreign` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`),
   CONSTRAINT `expenses_created_by_id_foreign` FOREIGN KEY (`created_by_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `expenses_expense_status_id_foreign` FOREIGN KEY (`expense_status_id`) REFERENCES `expense_statuses` (`id`),
   CONSTRAINT `expenses_generated_from_expense_id_foreign` FOREIGN KEY (`generated_from_expense_id`) REFERENCES `expenses` (`id`) ON DELETE SET NULL,
   CONSTRAINT `expenses_receipt_type_foreign` FOREIGN KEY (`receipt_type_id`) REFERENCES `receipt_types` (`id`),
   CONSTRAINT `expenses_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5065 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5460 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -466,6 +481,7 @@ CREATE TABLE `machines` (
   `discontinued` tinyint(1) NOT NULL DEFAULT '0',
   `created_by_id` int unsigned DEFAULT NULL,
   `updated_by_id` int unsigned DEFAULT NULL,
+  `consumes_input` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `machines_machine_type_id_foreign` (`machine_type_id`),
   KEY `machines_branch_id_foreign` (`branch_id`),
@@ -477,7 +493,7 @@ CREATE TABLE `machines` (
   CONSTRAINT `machines_created_by_id_foreign` FOREIGN KEY (`created_by_id`) REFERENCES `users` (`id`),
   CONSTRAINT `machines_machine_type_id_foreign` FOREIGN KEY (`machine_type_id`) REFERENCES `machine_type` (`id`),
   CONSTRAINT `machines_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -492,7 +508,7 @@ CREATE TABLE `migrations` (
   `timestamp` bigint NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=221 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=237 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -517,7 +533,7 @@ CREATE TABLE `order_adjustment_products` (
   KEY `order_adjustment_products_order_adjustment_id_foreign` (`order_adjustment_id`),
   CONSTRAINT `order_adjustment_products_order_adjustment_id_foreign` FOREIGN KEY (`order_adjustment_id`) REFERENCES `order_adjustments` (`id`),
   CONSTRAINT `order_adjustment_products_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2220 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2259 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -563,7 +579,7 @@ CREATE TABLE `order_adjustments` (
   CONSTRAINT `order_adjustments_order_adjustment_type_id_foreign` FOREIGN KEY (`order_adjustment_type_id`) REFERENCES `order_adjustment_type` (`id`),
   CONSTRAINT `order_adjustments_order_sale_id_foreign` FOREIGN KEY (`order_sale_id`) REFERENCES `order_sales` (`id`),
   CONSTRAINT `order_adjustments_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=584 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=595 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -586,7 +602,7 @@ CREATE TABLE `order_production_employees` (
   KEY `order_production_employees_employee_id_foreign` (`employee_id`),
   CONSTRAINT `order_production_employees_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `order_production_employees_order_production_id_foreign` FOREIGN KEY (`order_production_id`) REFERENCES `order_productions` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=49890 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=52196 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -615,17 +631,17 @@ CREATE TABLE `order_production_products` (
   CONSTRAINT `order_production_products_machine_id_foreign` FOREIGN KEY (`machine_id`) REFERENCES `machines` (`id`),
   CONSTRAINT `order_production_products_order_production_id_foreign` FOREIGN KEY (`order_production_id`) REFERENCES `order_productions` (`id`),
   CONSTRAINT `order_production_products_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=137808 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=140170 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `order_production_resources`
+-- Table structure for table `order_production_products_consumed`
 --
 
-DROP TABLE IF EXISTS `order_production_resources`;
+DROP TABLE IF EXISTS `order_production_products_consumed`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `order_production_resources` (
+CREATE TABLE `order_production_products_consumed` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `active` int NOT NULL DEFAULT '1',
   `created_at` datetime DEFAULT NULL,
@@ -638,13 +654,13 @@ CREATE TABLE `order_production_resources` (
   `machine_id` int unsigned DEFAULT NULL,
   `hours` double(12,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `order_production_resources_product_id_foreign` (`product_id`),
-  KEY `order_production_resources_order_production_id_foreign` (`order_production_id`),
-  KEY `order_production_resources_machine_id_foreign` (`machine_id`),
-  CONSTRAINT `order_production_resources_machine_id_foreign` FOREIGN KEY (`machine_id`) REFERENCES `machines` (`id`),
-  CONSTRAINT `order_production_resources_order_production_id_foreign` FOREIGN KEY (`order_production_id`) REFERENCES `order_productions` (`id`),
-  CONSTRAINT `order_production_resources_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6244 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+  KEY `order_production_products_consumed_product_id_foreign` (`product_id`),
+  KEY `order_production_products_consumed_order_production_id_foreign` (`order_production_id`),
+  KEY `order_production_products_consumed_machine_id_foreign` (`machine_id`),
+  CONSTRAINT `order_production_products_consumed_machine_id_foreign` FOREIGN KEY (`machine_id`) REFERENCES `machines` (`id`),
+  CONSTRAINT `order_production_products_consumed_order_production_id_foreign` FOREIGN KEY (`order_production_id`) REFERENCES `order_productions` (`id`),
+  CONSTRAINT `order_production_products_consumed_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7259 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -695,7 +711,89 @@ CREATE TABLE `order_productions` (
   CONSTRAINT `order_productions_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `order_productions_order_production_type_id_foreign` FOREIGN KEY (`order_production_type_id`) REFERENCES `order_production_type` (`id`),
   CONSTRAINT `order_productions_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=32829 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=34128 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `order_quotation_products`
+--
+
+DROP TABLE IF EXISTS `order_quotation_products`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `order_quotation_products` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `active` int NOT NULL DEFAULT '1',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `kilos` double NOT NULL,
+  `groups` double NOT NULL DEFAULT '0',
+  `kilo_price` double NOT NULL,
+  `group_price` double NOT NULL DEFAULT '0',
+  `group_weight` double NOT NULL DEFAULT '0',
+  `proposed_description` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT '',
+  `product_id` int unsigned DEFAULT NULL,
+  `order_quotation_id` int unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `order_quotation_products_order_quotation_id_foreign` (`order_quotation_id`),
+  KEY `order_quotation_products_product_id_foreign` (`product_id`),
+  CONSTRAINT `order_quotation_products_order_quotation_id_foreign` FOREIGN KEY (`order_quotation_id`) REFERENCES `order_quotations` (`id`),
+  CONSTRAINT `order_quotation_products_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `order_quotation_statuses`
+--
+
+DROP TABLE IF EXISTS `order_quotation_statuses`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `order_quotation_statuses` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `active` int NOT NULL DEFAULT '1',
+  `name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `order_quotations`
+--
+
+DROP TABLE IF EXISTS `order_quotations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `order_quotations` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `order_code` int NOT NULL,
+  `active` int NOT NULL DEFAULT '1',
+  `date` datetime NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `account_id` int unsigned DEFAULT NULL,
+  `order_quotation_status_id` int unsigned DEFAULT NULL,
+  `estimated_delivery_date` datetime DEFAULT NULL,
+  `notes` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `expiration_date` datetime DEFAULT NULL,
+  `payment_terms` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT '',
+  `require_tax` tinyint(1) NOT NULL DEFAULT '0',
+  `account_products_updated_at` datetime DEFAULT NULL,
+  `order_request_completed_at` datetime DEFAULT NULL,
+  `created_by_id` int unsigned DEFAULT NULL,
+  `updated_by_id` int unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `order_quotations_account_id_foreign` (`account_id`),
+  KEY `order_quotations_order_quotation_status_id_foreign` (`order_quotation_status_id`),
+  KEY `order_quotations_created_by_id_foreign` (`created_by_id`),
+  KEY `order_quotations_updated_by_id_foreign` (`updated_by_id`),
+  CONSTRAINT `order_quotations_account_id_foreign` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`),
+  CONSTRAINT `order_quotations_created_by_id_foreign` FOREIGN KEY (`created_by_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `order_quotations_order_quotation_status_id_foreign` FOREIGN KEY (`order_quotation_status_id`) REFERENCES `order_quotation_statuses` (`id`),
+  CONSTRAINT `order_quotations_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -722,7 +820,7 @@ CREATE TABLE `order_request_products` (
   KEY `order_request_products_order_request_id_foreign` (`order_request_id`),
   CONSTRAINT `order_request_products_order_request_id_foreign` FOREIGN KEY (`order_request_id`) REFERENCES `order_requests` (`id`),
   CONSTRAINT `order_request_products_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=19064 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19809 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -763,16 +861,19 @@ CREATE TABLE `order_requests` (
   `notes` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `created_by_id` int unsigned DEFAULT NULL,
   `updated_by_id` int unsigned DEFAULT NULL,
+  `order_quotation_id` int unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `order_requests_order_quotation_id_unique` (`order_quotation_id`),
   KEY `order_requests_company_id_foreign` (`account_id`),
   KEY `order_requests_order_request_status_id_foreign` (`order_request_status_id`),
   KEY `order_requests_created_by_id_foreign` (`created_by_id`),
   KEY `order_requests_updated_by_id_foreign` (`updated_by_id`),
   CONSTRAINT `order_requests_account_id_foreign` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`),
   CONSTRAINT `order_requests_created_by_id_foreign` FOREIGN KEY (`created_by_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `order_requests_order_quotation_id_foreign` FOREIGN KEY (`order_quotation_id`) REFERENCES `order_quotations` (`id`),
   CONSTRAINT `order_requests_order_request_status_id_foreign` FOREIGN KEY (`order_request_status_id`) REFERENCES `order_request_statuses` (`id`),
   CONSTRAINT `order_requests_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4391 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4559 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -800,7 +901,7 @@ CREATE TABLE `order_sale_products` (
   KEY `order_sale_products_order_sale_id_foreign` (`order_sale_id`),
   CONSTRAINT `order_sale_products_order_sale_id_foreign` FOREIGN KEY (`order_sale_id`) REFERENCES `order_sales` (`id`),
   CONSTRAINT `order_sale_products_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20077 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20761 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -838,6 +939,8 @@ CREATE TABLE `order_sales` (
   `order_request_id` int unsigned DEFAULT NULL,
   `receipt_type_id` int unsigned DEFAULT NULL,
   `invoice_code` int NOT NULL DEFAULT '0',
+  `require_invoice_code` tinyint(1) NOT NULL DEFAULT '0',
+  `require_tax` tinyint(1) NOT NULL DEFAULT '0',
   `expected_payment_date` datetime DEFAULT NULL,
   `credit_note_code` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT '',
   `credit_note_amount` double(12,2) NOT NULL DEFAULT '0.00',
@@ -869,7 +972,7 @@ CREATE TABLE `order_sales` (
   CONSTRAINT `order_sales_order_sale_status_id_foreign` FOREIGN KEY (`order_sale_status_id`) REFERENCES `order_sale_statuses` (`id`),
   CONSTRAINT `order_sales_receipt_type_foreign` FOREIGN KEY (`receipt_type_id`) REFERENCES `receipt_types` (`id`),
   CONSTRAINT `order_sales_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5861 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6040 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -998,6 +1101,31 @@ CREATE TABLE `production_plan_row_employees` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `production_plan_row_products`
+--
+
+DROP TABLE IF EXISTS `production_plan_row_products`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `production_plan_row_products` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `active` int NOT NULL DEFAULT '1',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `production_plan_row_id` int unsigned DEFAULT NULL,
+  `product_id` int unsigned DEFAULT NULL,
+  `hours` double NOT NULL DEFAULT '0',
+  `efficiency` double NOT NULL DEFAULT '80',
+  `position` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `ppr_products_row_id_foreign` (`production_plan_row_id`),
+  KEY `ppr_products_product_id_foreign` (`product_id`),
+  CONSTRAINT `ppr_products_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`),
+  CONSTRAINT `ppr_products_row_id_foreign` FOREIGN KEY (`production_plan_row_id`) REFERENCES `production_plan_rows` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `production_plan_rows`
 --
 
@@ -1011,15 +1139,13 @@ CREATE TABLE `production_plan_rows` (
   `updated_at` datetime DEFAULT NULL,
   `production_plan_id` int unsigned DEFAULT NULL,
   `machine_id` int unsigned DEFAULT NULL,
-  `product_id` int unsigned DEFAULT NULL,
+  `shift_hours` double DEFAULT NULL,
   `notes` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `position` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `production_plan_rows_production_plan_id_foreign` (`production_plan_id`),
   KEY `production_plan_rows_machine_id_foreign` (`machine_id`),
-  KEY `production_plan_rows_product_id_foreign` (`product_id`),
   CONSTRAINT `production_plan_rows_machine_id_foreign` FOREIGN KEY (`machine_id`) REFERENCES `machines` (`id`),
-  CONSTRAINT `production_plan_rows_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`),
   CONSTRAINT `production_plan_rows_production_plan_id_foreign` FOREIGN KEY (`production_plan_id`) REFERENCES `production_plans` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1038,6 +1164,7 @@ CREATE TABLE `production_plans` (
   `updated_at` datetime DEFAULT NULL,
   `date` datetime NOT NULL,
   `shift` int NOT NULL DEFAULT '1',
+  `shift_hours` double NOT NULL DEFAULT '8',
   `branch_id` int unsigned DEFAULT NULL,
   `notes` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `product_notes` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
@@ -1059,7 +1186,6 @@ CREATE TABLE `products` (
   `active` int NOT NULL DEFAULT '1',
   `group_weight_strict` int NOT NULL DEFAULT '0',
   `code` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
-  `description` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `current_kilo_price` double(8,2) NOT NULL,
   `width` double(8,2) NOT NULL,
   `length` double(8,2) DEFAULT NULL,
@@ -1089,7 +1215,7 @@ CREATE TABLE `products` (
   CONSTRAINT `products_created_by_id_foreign` FOREIGN KEY (`created_by_id`) REFERENCES `users` (`id`),
   CONSTRAINT `products_order_production_type_id_foreign` FOREIGN KEY (`order_production_type_id`) REFERENCES `order_production_type` (`id`),
   CONSTRAINT `products_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=259 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=262 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1105,10 +1231,36 @@ CREATE TABLE `receipt_types` (
   `active` int NOT NULL DEFAULT '1',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
-  `include_in_accountability_export` tinyint(1) NOT NULL DEFAULT '0',
+  `is_informal_receipt` tinyint(1) NOT NULL DEFAULT '0',
   `tax_rate` decimal(5,4) NOT NULL DEFAULT '0.0000',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `refresh_tokens`
+--
+
+DROP TABLE IF EXISTS `refresh_tokens`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `refresh_tokens` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `token_hash` char(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `family_id` char(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `revoked_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `user_agent` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ip` varchar(45) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `refresh_tokens_token_hash_unique` (`token_hash`),
+  KEY `refresh_tokens_user_id_foreign` (`user_id`),
+  KEY `refresh_tokens_family_id_index` (`family_id`),
+  CONSTRAINT `refresh_tokens_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=602 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1157,7 +1309,7 @@ CREATE TABLE `resources` (
   CONSTRAINT `resources_created_by_id_foreign` FOREIGN KEY (`created_by_id`) REFERENCES `users` (`id`),
   CONSTRAINT `resources_resource_category_id_foreign` FOREIGN KEY (`resource_category_id`) REFERENCES `resource_categories` (`id`),
   CONSTRAINT `resources_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1280,7 +1432,7 @@ CREATE TABLE `transfer_receipts` (
   CONSTRAINT `transfer_receipts_expense_id_foreign` FOREIGN KEY (`expense_id`) REFERENCES `expenses` (`id`),
   CONSTRAINT `transfer_receipts_order_sale_id_foreign` FOREIGN KEY (`order_sale_id`) REFERENCES `order_sales` (`id`),
   CONSTRAINT `transfer_receipts_transfer_id_foreign` FOREIGN KEY (`transfer_id`) REFERENCES `transfers` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13432 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14092 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1334,7 +1486,7 @@ CREATE TABLE `transfers` (
   CONSTRAINT `transfers_to_account_id_foreign` FOREIGN KEY (`to_account_id`) REFERENCES `accounts` (`id`),
   CONSTRAINT `transfers_transfer_type_id_foreign` FOREIGN KEY (`transfer_type_id`) REFERENCES `transfer_type` (`id`),
   CONSTRAINT `transfers_updated_by_id_foreign` FOREIGN KEY (`updated_by_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12241 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12849 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1360,6 +1512,25 @@ CREATE TABLE `user_branches` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `user_config`
+--
+
+DROP TABLE IF EXISTS `user_config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_config` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `dark_mode` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_config_user_id_unique` (`user_id`),
+  CONSTRAINT `user_config_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `user_roles`
 --
 
@@ -1378,7 +1549,7 @@ CREATE TABLE `user_roles` (
   KEY `user_roles_role_id_foreign` (`role_id`),
   CONSTRAINT `user_roles_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`),
   CONSTRAINT `user_roles_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1401,13 +1572,19 @@ CREATE TABLE `users` (
   `role_id` int unsigned DEFAULT NULL,
   `fullname` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `branch_id` int unsigned DEFAULT NULL,
+  `failed_login_count` int NOT NULL DEFAULT '0',
+  `lockout_until` datetime DEFAULT NULL,
+  `mfa_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `must_change_password` tinyint(1) NOT NULL DEFAULT '0',
+  `is_root` tinyint(1) NOT NULL DEFAULT '0',
+  `login_disabled` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `users_email_unique` (`email`),
   KEY `users_role_id_foreign` (`role_id`),
   KEY `users_branch_id_foreign` (`branch_id`),
   CONSTRAINT `users_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
   CONSTRAINT `users_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -1663,6 +1840,22 @@ INSERT INTO `migrations` VALUES (217,1784500000000,'AddCreatedByAndUpdatedByAudi
 INSERT INTO `migrations` VALUES (218,1784592000000,'AddTaxRateToReceiptTypes1784592000000');
 INSERT INTO `migrations` VALUES (219,1784678400000,'MoveReconciliationOnlyToFinancialDocuments1784678400000');
 INSERT INTO `migrations` VALUES (220,1784764800000,'ReconcileDuplicateAccounts1784764800000');
+INSERT INTO `migrations` VALUES (221,1784851200000,'EnableSupplierRequireSupplementDefaults1784851200000');
+INSERT INTO `migrations` VALUES (222,1784937600000,'AddRequireInvoiceCodeToOrderSales1784937600000');
+INSERT INTO `migrations` VALUES (223,1785348109789,'AddAccountTaxRequirements1785348109789');
+INSERT INTO `migrations` VALUES (224,1785600000000,'AddProductionPlanRowProducts1785600000000');
+INSERT INTO `migrations` VALUES (225,1785787200000,'AddDataSnapshotsToActivities1785787200000');
+INSERT INTO `migrations` VALUES (226,1785024000000,'RenameOrderProductionResourcesToProductsConsumed1785024000000');
+INSERT INTO `migrations` VALUES (227,1785873600000,'AddConsumesInputToMachines1785873600000');
+INSERT INTO `migrations` VALUES (228,1785960000000,'AddAccountReconciliationOnlyDefaults1785960000000');
+INSERT INTO `migrations` VALUES (229,1786060000000,'AddOrderQuotations1786060000000');
+INSERT INTO `migrations` VALUES (230,1786046400000,'AddExpenseDraftFlag1786046400000');
+INSERT INTO `migrations` VALUES (231,1788804218804,'CreateRefreshTokens1788804218804');
+INSERT INTO `migrations` VALUES (232,1789000000000,'AddLoginLockoutColumns1789000000000');
+INSERT INTO `migrations` VALUES (233,1789100000000,'AddEmailMfaAndPasswordReset1789100000000');
+INSERT INTO `migrations` VALUES (234,1789200000000,'AddRootAndDisabledFlags1789200000000');
+INSERT INTO `migrations` VALUES (235,1789300000000,'RenameInformalFlags1789300000000');
+INSERT INTO `migrations` VALUES (236,1789400000000,'DropDescriptionBlankInternalAddUserConfig1789400000000');
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
