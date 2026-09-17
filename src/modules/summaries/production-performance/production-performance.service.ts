@@ -41,7 +41,7 @@ export class ProductionPerformanceService {
         return this.prisma.$queryRawUnsafe(`
             select distinct
                 ${convertToInt('products.id', 'id')},
-                products.description as description
+                products.external_description as description
             from order_production_products opp
             join order_productions op
                 on op.id = opp.order_production_id
@@ -50,7 +50,7 @@ export class ProductionPerformanceService {
                 on products.id = opp.product_id
             where opp.active = 1
                 and opp.machine_id = ${Number(machine_id)}
-            order by products.description
+            order by products.external_description
         `);
     }
 
@@ -93,7 +93,7 @@ export class ProductionPerformanceService {
                 ${convertToInt('coalesce(ope.employee_id, 0)', 'employee_id')},
                 coalesce(e.fullname, 'Sin empleado asignado') as employee_name,
                 ${convertToInt('opp.product_id', 'product_id')},
-                products.description as product_description,
+                products.external_description as product_description,
                 ${convertToInt('op.id', 'order_production_id')},
                 op.start_date as date,
                 opp.kilos as kilos,
@@ -485,7 +485,7 @@ export class ProductionPerformanceService {
                 select
                     c.machine_id,
                     c.product_id,
-                    pr.description as product_name,
+                    pr.external_description as product_name,
                     sum(c.consumed_kilos) as consumed_kilos
                 from (
                     select
@@ -503,7 +503,7 @@ export class ProductionPerformanceService {
                     group by opc.order_production_id, opc.machine_id, opc.product_id
                 ) c
                 left join products pr on pr.id = c.product_id
-                group by c.machine_id, c.product_id, pr.description
+                group by c.machine_id, c.product_id, pr.external_description
             ) pp
             join (
                 select
@@ -588,7 +588,7 @@ export class ProductionPerformanceService {
         return this.prisma.$queryRawUnsafe(`
             select
                 ${convertToInt('opp.product_id', 'product_id')},
-                products.description as product_description,
+                products.external_description as product_description,
                 ${convertToInt('count(distinct op.id)', 'runs')},
                 sum(opp.kilos) as kilos,
                 sum(coalesce(opp.hours, 0)) as hours,
@@ -618,7 +618,7 @@ export class ProductionPerformanceService {
             where opp.active = 1
                 and opp.machine_id = ${Number(machine_id)}
                 ${sharedFilters}
-            group by opp.product_id, products.description
+            group by opp.product_id, products.external_description
             order by sum(opp.kilos) desc
         `);
     }
@@ -680,7 +680,7 @@ export class ProductionPerformanceService {
         return this.prisma.$queryRawUnsafe(`
             select distinct
                 ${convertToInt('products.id', 'id')},
-                products.description as description,
+                products.external_description as description,
                 product_categories.name as product_category_name
             from order_production_products opp
             join order_productions op
@@ -694,7 +694,7 @@ export class ProductionPerformanceService {
                 on product_categories.id = products.product_category_id
                 and product_categories.active = 1
             where opp.active = 1
-            order by product_categories.name, products.description
+            order by product_categories.name, products.external_description
         `);
     }
 
@@ -745,7 +745,7 @@ export class ProductionPerformanceService {
                 ${convertToInt('op.branch_id', 'branch_id')},
                 coalesce(b.name, '') as branch_name,
                 ${convertToInt('opp.product_id', 'product_id')},
-                products.description as product_description,
+                products.external_description as product_description,
                 sum(opp.kilos) as kilos,
                 sum(coalesce(opp.hours, 0)) as hours,
                 sum(coalesce(opp.groups, 0)) as \`groups\`,
@@ -802,10 +802,10 @@ export class ProductionPerformanceService {
                 op.branch_id,
                 b.name,
                 opp.product_id,
-                products.description,
+                products.external_description,
                 pt.product_count,
                 emp.employee_names
-            order by op.start_date, m.name, products.description
+            order by op.start_date, m.name, products.external_description
         `);
     }
 }

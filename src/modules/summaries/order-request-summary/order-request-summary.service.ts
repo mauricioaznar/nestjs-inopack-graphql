@@ -80,7 +80,7 @@ export class OrderRequestSummaryService {
                        accounts.name                      account_name,
                        accounts.abbreviation              account_abbreviation,
                        products.id                        product_id,
-                       products.description               product_name,
+                       products.external_description      product_name,
                        products.width                     width,
                        products.length                    length,
                        products.calibre                   calibre,

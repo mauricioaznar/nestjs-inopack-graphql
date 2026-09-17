@@ -344,7 +344,7 @@ export class MaterialBalanceSummaryService {
         const productsQuery = `
             select * from (
             select ${convertToInt('products.id', 'product_id')},
-                   products.description as product_description,
+                   products.external_description as product_description,
                    ${convertToInt(
                        `(select coalesce(sum(order_production_products.kilos), 0)
                          from order_production_products

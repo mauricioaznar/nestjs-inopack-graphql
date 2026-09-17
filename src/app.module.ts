@@ -18,6 +18,7 @@ import { PubSubModule } from './common/modules/pub-sub/pub-sub.module';
 import { AuditUsersModule } from './common/services/entities/audit-users.module';
 import { ManagementModule } from './modules/management/management.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
+import { UserConfigModule } from './modules/user-config/user-config.module';
 
 @Module({
     imports: [
@@ -90,6 +91,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
         }),
         CacheModule.register({ ttl: 0, isGlobal: true }),
         AuthModule,
+        UserConfigModule,
         ProductionModule,
         MaintenanceModule,
         ManagementModule,

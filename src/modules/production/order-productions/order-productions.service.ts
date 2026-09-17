@@ -110,7 +110,7 @@ export class OrderProductionsService {
                             select: {
                                 id: true,
                                 code: true,
-                                description: true,
+                                external_description: true,
                             },
                         },
                         machines: {
@@ -143,7 +143,7 @@ export class OrderProductionsService {
                             select: {
                                 id: true,
                                 code: true,
-                                description: true,
+                                external_description: true,
                             },
                         },
                         machines: {
@@ -294,7 +294,7 @@ export class OrderProductionsService {
                                   order_production_products: {
                                       some: {
                                           products: {
-                                              description: {
+                                              external_description: {
                                                   contains: filter,
                                               },
                                           },
