@@ -10,6 +10,7 @@ import {
     getCreatedByProperty,
     getUpdatedAtProperty,
     getUpdatedByProperty,
+    updateOrderSaleNetTotals,
     vennDiagram,
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
@@ -330,6 +331,17 @@ export class OrderAdjustmentsService {
     ): Promise<OrderAdjustment> {
         await this.validateOrderAdjustment(input);
 
+        // An edit may move the adjustment to another sale or change its type, so
+        // the sale it pointed at before also needs its net totals recomputed.
+        const previousOrderSaleId = input.id
+            ? (
+                  await this.prisma.order_adjustments.findUnique({
+                      select: { order_sale_id: true },
+                      where: { id: input.id },
+                  })
+              )?.order_sale_id
+            : null;
+
         const orderAdjustment = await this.prisma.order_adjustments.upsert({
             create: {
                 ...getCreatedAtProperty(),
@@ -421,6 +433,14 @@ export class OrderAdjustmentsService {
                 });
             }
             // await this.cacheManager.del(`product_inventory`);
+        }
+
+        await updateOrderSaleNetTotals(
+            this.prisma,
+            orderAdjustment.order_sale_id,
+        );
+        if (previousOrderSaleId !== orderAdjustment.order_sale_id) {
+            await updateOrderSaleNetTotals(this.prisma, previousOrderSaleId);
         }
 
         return orderAdjustment;
@@ -566,7 +586,7 @@ export class OrderAdjustmentsService {
         order_adjustment_id: number;
         current_user_id?: number | null;
     }): Promise<boolean> {
-        await this.prisma.order_adjustments.update({
+        const orderAdjustment = await this.prisma.order_adjustments.update({
             data: {
                 ...getUpdatedAtProperty(),
                 ...getUpdatedByProperty(current_user_id),
@@ -586,6 +606,11 @@ export class OrderAdjustmentsService {
                 order_adjustment_id,
             },
         });
+
+        await updateOrderSaleNetTotals(
+            this.prisma,
+            orderAdjustment.order_sale_id,
+        );
 
         return true;
     }

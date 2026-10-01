@@ -782,16 +782,12 @@ export class AccountsService {
             }
         }
 
-        // Exactly one of kilo price / group price must be non-zero.
+        // At most one of kilo price / group price may be non-zero. Both at 0 is
+        // allowed (a free catalog product); order requests must then match it.
         items.forEach((item, index) => {
             if (item.group_price !== 0 && item.kilo_price !== 0) {
                 errors.push(
                     `Only one of kilo price and group price can be different than 0 (index: ${index}, product id: ${item.product_id})`,
-                );
-            }
-            if (item.group_price === 0 && item.kilo_price === 0) {
-                errors.push(
-                    `One of kilo price and group price has to be different than 0 (index: ${index}, product id: ${item.product_id})`,
                 );
             }
         });
@@ -1155,9 +1151,11 @@ export class AccountsService {
                 wtv_s.total as total_with_tax,
                 ifnull(otv_s.total, 0) as transfer_receipts_total
             FROM order_sales
+            -- Sales report their net total (invoice minus Devolución adjustments)
+            -- so the statement's saldo matches what the client still owes.
             JOIN (
                 SELECT order_sales.id order_sale_id,
-                    round(sum(order_sales.subtotal + order_sales.tax), 2) total
+                    round(sum(order_sales.net_total_with_tax), 2) total
                 FROM order_sales
                 WHERE order_sales.active = 1
                 AND order_sales.account_id = ${account_id}
