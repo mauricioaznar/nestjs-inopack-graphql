@@ -124,6 +124,13 @@ export class OrderAdjustmentsService {
                 ? orderAdjustmentQueryArgs.filter
                 : undefined;
 
+        // A whole number may be the linked sale's folio (order_code) or its
+        // invoice (invoice_code). Both are integer columns, so match exactly.
+        const filterCode =
+            filter && /^\d+$/.test(filter.trim())
+                ? Number(filter.trim())
+                : undefined;
+
         const whereInput: Prisma.order_adjustmentsWhereInput = {
             AND: [
                 {
@@ -174,6 +181,20 @@ export class OrderAdjustmentsService {
                                       },
                                   },
                               },
+                              ...(filterCode !== undefined
+                                  ? [
+                                        {
+                                            order_sales: {
+                                                order_code: filterCode,
+                                            },
+                                        },
+                                        {
+                                            order_sales: {
+                                                invoice_code: filterCode,
+                                            },
+                                        },
+                                    ]
+                                  : []),
                           ],
                       }
                     : {},
