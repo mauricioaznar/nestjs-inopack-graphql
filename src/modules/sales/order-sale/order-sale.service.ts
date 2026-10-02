@@ -1334,31 +1334,26 @@ export class OrderSaleService {
                     }
                 });
 
-                const oldProductItems = await this.getOrderSaleProducts({
-                    order_sale_id: input.id,
-                });
+                // Keyed on product_id, not on the line id: keeping a line but
+                // swapping its product drops the old product just like deleting
+                // the line does, and would orphan its adjustment products (the
+                // net totals would silently ignore them).
+                const inputProductIds = new Set(
+                    input.order_sale_products.map((osp) => osp.product_id),
+                );
+                const orphanedProductIds = new Set(
+                    orderAdjustmentProducts
+                        .map((oap) => oap.product_id)
+                        .filter(
+                            (productId) => !inputProductIds.has(productId),
+                        ),
+                );
 
-                const newProductItems = input.order_sale_products;
-
-                const { aMinusB: deleteProductItems } = vennDiagram({
-                    a: oldProductItems,
-                    b: newProductItems,
-                    indexProperties: ['id'],
-                });
-
-                for await (const delItem of deleteProductItems) {
-                    const foundAdjustmentProduct = orderAdjustmentProducts.find(
-                        (oap) => {
-                            return oap.product_id === delItem.product_id;
-                        },
+                orphanedProductIds.forEach((productId) => {
+                    errors.push(
+                        `Cant remove or change sale product (${productId}) (remove order adjustment product first)`,
                     );
-
-                    if (foundAdjustmentProduct) {
-                        errors.push(
-                            'Cant remove sale product (remove order adjustment product first)',
-                        );
-                    }
-                }
+                });
             }
         }
 
