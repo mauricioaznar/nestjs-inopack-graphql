@@ -352,17 +352,6 @@ export class OrderAdjustmentsService {
     ): Promise<OrderAdjustment> {
         await this.validateOrderAdjustment(input);
 
-        // An edit may move the adjustment to another sale or change its type, so
-        // the sale it pointed at before also needs its net totals recomputed.
-        const previousOrderSaleId = input.id
-            ? (
-                  await this.prisma.order_adjustments.findUnique({
-                      select: { order_sale_id: true },
-                      where: { id: input.id },
-                  })
-              )?.order_sale_id
-            : null;
-
         const orderAdjustment = await this.prisma.order_adjustments.upsert({
             create: {
                 ...getCreatedAtProperty(),
@@ -460,9 +449,6 @@ export class OrderAdjustmentsService {
             this.prisma,
             orderAdjustment.order_sale_id,
         );
-        if (previousOrderSaleId !== orderAdjustment.order_sale_id) {
-            await updateOrderSaleNetTotals(this.prisma, previousOrderSaleId);
-        }
 
         return orderAdjustment;
     }
@@ -471,6 +457,37 @@ export class OrderAdjustmentsService {
         const errors: string[] = [];
 
         const orderAdjustmentProducts = input.order_adjustment_products;
+
+        // IsTypeAndOrderSaleUnchanged
+        // An adjustment's type and sale are fixed once created (the form
+        // disables both inputs on edit). To change either, delete the adjustment
+        // and create a new one.
+        if (input.id) {
+            const previousOrderAdjustment =
+                await this.prisma.order_adjustments.findUnique({
+                    select: {
+                        order_adjustment_type_id: true,
+                        order_sale_id: true,
+                    },
+                    where: { id: input.id },
+                });
+
+            if (
+                previousOrderAdjustment &&
+                previousOrderAdjustment.order_adjustment_type_id !==
+                    input.order_adjustment_type_id
+            ) {
+                errors.push(`Cant change order adjustment type`);
+            }
+
+            if (
+                previousOrderAdjustment &&
+                (previousOrderAdjustment.order_sale_id ?? null) !==
+                    (input.order_sale_id ?? null)
+            ) {
+                errors.push(`Cant change order adjustment order sale`);
+            }
+        }
 
         // AreProductsUnique
         {
