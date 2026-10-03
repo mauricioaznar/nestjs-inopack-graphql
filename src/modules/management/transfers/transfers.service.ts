@@ -270,6 +270,48 @@ export class TransfersService {
                       },
                   ]
                 : []),
+            // A transfer is "reconciliation-only" when every active receipt
+            // points at a reconciliation-only sale/expense. Keep it when it has
+            // no receipts yet, or at least one receipt settles a real document
+            // (a mixed transfer still moves real money).
+            ...(transfersQueryArgs.exclude_reconciliation_only
+                ? [
+                      {
+                          OR: [
+                              {
+                                  transfer_receipts: {
+                                      none: { active: 1 },
+                                  },
+                              },
+                              {
+                                  transfer_receipts: {
+                                      some: {
+                                          active: 1,
+                                          OR: [
+                                              {
+                                                  order_sales: {
+                                                      is: {
+                                                          reconciliation_only:
+                                                              false,
+                                                      },
+                                                  },
+                                              },
+                                              {
+                                                  expenses: {
+                                                      is: {
+                                                          reconciliation_only:
+                                                              false,
+                                                      },
+                                                  },
+                                              },
+                                          ],
+                                      },
+                                  },
+                              },
+                          ],
+                      },
+                  ]
+                : []),
             // General free-text filter: matches the from/to account name, the
             // notes, or any linked folio (sale invoice_code / expense order_code).
             // When there's no filter we add nothing, so the list isn't narrowed.
