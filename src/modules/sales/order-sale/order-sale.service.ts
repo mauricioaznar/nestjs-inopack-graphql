@@ -1267,6 +1267,27 @@ export class OrderSaleService {
             }
         }
 
+        // Account is locked once a transfer is applied: the payment came from
+        // that client, so moving the sale would misattribute it.
+        {
+            if (input.id) {
+                const orderSale = await this.getOrderSale({
+                    orderSaleId: input.id,
+                });
+                if (!!orderSale && orderSale.account_id !== input.account_id) {
+                    const { transfer_receipts_count } =
+                        await this.getDependenciesCount({
+                            order_sale_id: input.id,
+                        });
+                    if (transfer_receipts_count > 0) {
+                        errors.push(
+                            'No se puede cambiar el cliente de una venta con transferencias',
+                        );
+                    }
+                }
+            }
+        }
+
         // IsOrderCodeOccupied
         {
             const isOrderCodeOccupied = await this.isOrderSaleCodeOccupied({

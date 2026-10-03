@@ -725,6 +725,27 @@ export class ExpensesService {
             }
         }
 
+        // Account is locked once a transfer is applied: the payment went to
+        // that supplier, so moving the expense would misattribute it.
+        {
+            if (input.id) {
+                const expense = await this.getExpense({
+                    expense_id: input.id,
+                });
+                if (!!expense && expense.account_id !== input.account_id) {
+                    const { transfer_receipts } =
+                        await this.getDependenciesCount({
+                            expense_id: input.id,
+                        });
+                    if (transfer_receipts > 0) {
+                        errors.push(
+                            'No se puede cambiar el proveedor de un gasto con transferencias',
+                        );
+                    }
+                }
+            }
+        }
+
         // tax can only be set when the receipt type applies tax
         {
             let appliesTax = false;

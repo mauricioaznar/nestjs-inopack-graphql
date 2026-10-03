@@ -80,6 +80,12 @@ export class TransfersQueryArgs {
 
     @Field(() => Int, { nullable: true })
     account_id: number | null;
+
+    // Operational views (the dashboard's Cobranzas/Pagos) hide transfers that
+    // only settle reconciliation-only sales/expenses. The full Transferencias
+    // page leaves this unset so accounting still sees every transfer.
+    @Field(() => Boolean, { nullable: true })
+    exclude_reconciliation_only: boolean | null;
 }
 
 export enum TransfersSortableFields {
