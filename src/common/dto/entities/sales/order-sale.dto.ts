@@ -146,6 +146,18 @@ export class OrderSale extends OrderSaleBase {
     @Field(() => Float, { nullable: false })
     total_with_tax: number;
 
+    // Invoice minus Devolución adjustments (IVA shrinks proportionally). Payments
+    // are compared against these; total_with_tax stays the invoiced figure for
+    // contabilidad. Maintained by updateOrderSaleNetTotals.
+    @Field(() => Float, { nullable: false })
+    net_subtotal: number;
+
+    @Field(() => Float, { nullable: false })
+    net_tax: number;
+
+    @Field(() => Float, { nullable: false })
+    net_total_with_tax: number;
+
     // Audit stamps — server-side only, never client-supplied, so they live on
     // the concrete ObjectType rather than the shared (also-InputType) base.
     @Field(() => Int, { nullable: true })

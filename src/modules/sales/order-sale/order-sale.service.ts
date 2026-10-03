@@ -27,6 +27,7 @@ import {
     getCreatedByProperty,
     getUpdatedAtProperty,
     getUpdatedByProperty,
+    updateOrderSaleNetTotals,
     vennDiagram,
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
@@ -209,7 +210,7 @@ export class OrderSaleService {
 
         if (orderSalesQueryArgs.is_transfer_incomplete) {
             orderSalesAndWhere.push({
-                total_with_tax: {
+                net_total_with_tax: {
                     not: {
                         equals: this.prisma.order_sales.fields
                             .transfer_receipts_total,
@@ -438,9 +439,11 @@ export class OrderSaleService {
             FROM order_sales
             JOIN
                 (
+                        -- Net of Devolución adjustments: what the client still
+                        -- owes, not the invoiced total_with_tax.
                         SELECT
                             order_sales.id order_sale_id,
-                            round(sum(order_sales.subtotal + order_sales.tax), 2) total
+                            round(sum(order_sales.net_total_with_tax), 2) total
                         FROM order_sales
                         WHERE order_sales.active = 1
                         GROUP BY order_sales.id
@@ -459,7 +462,9 @@ export class OrderSaleService {
                     group by order_sale_id
                 ) as otv
             on otv.order_sale_id = order_sales.id
-            where ((otv.total - wtv.total) != 0 or isnull(otv.total))
+            -- Same rule as expenses: listed while the rounded saldo is non-zero
+            -- (overpaid → negative) or nothing has been paid yet, even at $0.
+            where (round(otv.total - wtv.total, 2) != 0 or isnull(otv.total))
             and order_sales.canceled = 0
             order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date
         `);
@@ -934,7 +939,13 @@ export class OrderSaleService {
                 }
             }
 
-            return orderSale;
+            // Invoice or line prices may have changed under existing returns, so
+            // the net totals are recomputed from the rows this transaction wrote.
+            await updateOrderSaleNetTotals(tx, orderSale.id);
+
+            return tx.order_sales.findUniqueOrThrow({
+                where: { id: orderSale.id },
+            });
         });
     }
 
@@ -1323,31 +1334,26 @@ export class OrderSaleService {
                     }
                 });
 
-                const oldProductItems = await this.getOrderSaleProducts({
-                    order_sale_id: input.id,
-                });
+                // Keyed on product_id, not on the line id: keeping a line but
+                // swapping its product drops the old product just like deleting
+                // the line does, and would orphan its adjustment products (the
+                // net totals would silently ignore them).
+                const inputProductIds = new Set(
+                    input.order_sale_products.map((osp) => osp.product_id),
+                );
+                const orphanedProductIds = new Set(
+                    orderAdjustmentProducts
+                        .map((oap) => oap.product_id)
+                        .filter(
+                            (productId) => !inputProductIds.has(productId),
+                        ),
+                );
 
-                const newProductItems = input.order_sale_products;
-
-                const { aMinusB: deleteProductItems } = vennDiagram({
-                    a: oldProductItems,
-                    b: newProductItems,
-                    indexProperties: ['id'],
-                });
-
-                for await (const delItem of deleteProductItems) {
-                    const foundAdjustmentProduct = orderAdjustmentProducts.find(
-                        (oap) => {
-                            return oap.product_id === delItem.product_id;
-                        },
+                orphanedProductIds.forEach((productId) => {
+                    errors.push(
+                        `Cant remove or change sale product (${productId}) (remove order adjustment product first)`,
                     );
-
-                    if (foundAdjustmentProduct) {
-                        errors.push(
-                            'Cant remove sale product (remove order adjustment product first)',
-                        );
-                    }
-                }
+                });
             }
         }
 

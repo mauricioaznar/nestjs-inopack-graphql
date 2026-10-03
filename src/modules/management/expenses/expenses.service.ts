@@ -402,7 +402,7 @@ export class ExpensesService {
             on otv.expense_id = expenses.id
             left join accounts
             on accounts.id = expenses.account_id
-            where ((otv.total - wtv.total) != 0  or isnull(otv.total))
+            where (round(otv.total - wtv.total, 2) != 0 or isnull(otv.total))
             and expenses.canceled = 0
             ${andWhereMonitorBalance}
             order by case when expected_payment_date is null then 1 else 0 end, expected_payment_date

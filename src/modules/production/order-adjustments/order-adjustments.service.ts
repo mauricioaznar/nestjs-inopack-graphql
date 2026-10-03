@@ -10,6 +10,7 @@ import {
     getCreatedByProperty,
     getUpdatedAtProperty,
     getUpdatedByProperty,
+    updateOrderSaleNetTotals,
     vennDiagram,
 } from '../../../common/helpers';
 import { Cache } from 'cache-manager';
@@ -123,6 +124,13 @@ export class OrderAdjustmentsService {
                 ? orderAdjustmentQueryArgs.filter
                 : undefined;
 
+        // A whole number may be the linked sale's folio (order_code) or its
+        // invoice (invoice_code). Both are integer columns, so match exactly.
+        const filterCode =
+            filter && /^\d+$/.test(filter.trim())
+                ? Number(filter.trim())
+                : undefined;
+
         const whereInput: Prisma.order_adjustmentsWhereInput = {
             AND: [
                 {
@@ -173,6 +181,20 @@ export class OrderAdjustmentsService {
                                       },
                                   },
                               },
+                              ...(filterCode !== undefined
+                                  ? [
+                                        {
+                                            order_sales: {
+                                                order_code: filterCode,
+                                            },
+                                        },
+                                        {
+                                            order_sales: {
+                                                invoice_code: filterCode,
+                                            },
+                                        },
+                                    ]
+                                  : []),
                           ],
                       }
                     : {},
@@ -423,6 +445,11 @@ export class OrderAdjustmentsService {
             // await this.cacheManager.del(`product_inventory`);
         }
 
+        await updateOrderSaleNetTotals(
+            this.prisma,
+            orderAdjustment.order_sale_id,
+        );
+
         return orderAdjustment;
     }
 
@@ -430,6 +457,37 @@ export class OrderAdjustmentsService {
         const errors: string[] = [];
 
         const orderAdjustmentProducts = input.order_adjustment_products;
+
+        // IsTypeAndOrderSaleUnchanged
+        // An adjustment's type and sale are fixed once created (the form
+        // disables both inputs on edit). To change either, delete the adjustment
+        // and create a new one.
+        if (input.id) {
+            const previousOrderAdjustment =
+                await this.prisma.order_adjustments.findUnique({
+                    select: {
+                        order_adjustment_type_id: true,
+                        order_sale_id: true,
+                    },
+                    where: { id: input.id },
+                });
+
+            if (
+                previousOrderAdjustment &&
+                previousOrderAdjustment.order_adjustment_type_id !==
+                    input.order_adjustment_type_id
+            ) {
+                errors.push(`Cant change order adjustment type`);
+            }
+
+            if (
+                previousOrderAdjustment &&
+                (previousOrderAdjustment.order_sale_id ?? null) !==
+                    (input.order_sale_id ?? null)
+            ) {
+                errors.push(`Cant change order adjustment order sale`);
+            }
+        }
 
         // AreProductsUnique
         {
@@ -566,7 +624,7 @@ export class OrderAdjustmentsService {
         order_adjustment_id: number;
         current_user_id?: number | null;
     }): Promise<boolean> {
-        await this.prisma.order_adjustments.update({
+        const orderAdjustment = await this.prisma.order_adjustments.update({
             data: {
                 ...getUpdatedAtProperty(),
                 ...getUpdatedByProperty(current_user_id),
@@ -586,6 +644,11 @@ export class OrderAdjustmentsService {
                 order_adjustment_id,
             },
         });
+
+        await updateOrderSaleNetTotals(
+            this.prisma,
+            orderAdjustment.order_sale_id,
+        );
 
         return true;
     }
