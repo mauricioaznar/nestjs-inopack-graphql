@@ -101,11 +101,17 @@ export class SalesSummaryService {
                     break;
 
                 case 'orderSale':
+                    // invoice_code and order_request_code are functionally
+                    // dependent on order_sales_id, so grouping by them never
+                    // splits a sale into more rows.
                     selectEntityGroup += `${convertToInt(
                         'order_sales_id',
                         'order_sale_id',
-                    )}, ${convertToInt('order_code')}`;
-                    groupByEntityGroup += 'order_sales_id, order_code';
+                    )}, ${convertToInt('order_code')}, ${convertToInt(
+                        'invoice_code',
+                    )}, ${convertToInt('order_request_code')}`;
+                    groupByEntityGroup +=
+                        'order_sales_id, order_code, invoice_code, order_request_code';
                     break;
 
                 default:
@@ -140,6 +146,8 @@ export class SalesSummaryService {
                         osp.active,
                         osp.fraction,
                         osp.order_code,
+                        osp.invoice_code,
+                        osp.order_request_code,
                         osp.order_sales_id,
                         osp.start_date,
                         if (products.include_units_in_summary = 1,osp.kilos, 0) kilos_sold,
@@ -169,6 +177,8 @@ export class SalesSummaryService {
                                 select
                                     osp_adj.active,
                                     order_sales.order_code,
+                                    order_sales.invoice_code,
+                                    order_requests.order_code order_request_code,
                                     order_sales.id order_sales_id,
                                     order_sales.order_sale_status_id,
                                     osp_adj.product_id,
@@ -210,6 +220,8 @@ export class SalesSummaryService {
                                     where order_sale_products.active = 1
                                 ) as osp_adj
                                 on osp_adj.order_sale_id = order_sales.id
+                                left join order_requests
+                                on order_requests.id = order_sales.order_request_id
                                 where order_sales.canceled = 0
                                 and order_sales.active = 1
                                 ${reconciliationOnlyCondition}

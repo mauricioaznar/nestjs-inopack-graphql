@@ -112,6 +112,12 @@ export class SalesRecord {
     order_code: number | null;
 
     @Field(() => Int, { nullable: true })
+    invoice_code: number | null;
+
+    @Field(() => Int, { nullable: true })
+    order_request_code: number | null;
+
+    @Field(() => Int, { nullable: true })
     status_id: number | null;
 
     @Field(() => String, { nullable: true })
